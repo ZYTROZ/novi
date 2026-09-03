@@ -55,7 +55,8 @@ body::before{
     mask-image:linear-gradient(to bottom,black,transparent);
 }
 
-button,input{
+button,
+input{
     font:inherit;
 }
 
@@ -402,7 +403,7 @@ input:focus{
     font-size:14px;
 }
 
-/* ================= NEW PRICING ================= */
+/* ================= PRICING ================= */
 
 .plans{
     display:grid;
@@ -567,15 +568,6 @@ input:focus{
     display:flex;
     align-items:center;
     gap:7px;
-}
-
-.plan li::first-letter{
-    color:#a78bfa;
-}
-
-.plan-button{
-    width:100%;
-    margin-top:auto;
 }
 
 .popular{
@@ -872,7 +864,7 @@ footer{
         <button
             id="topLoginButton"
             class="btn btn-primary"
-            onclick="saveEmailPassword()">
+            onclick="focusLoginForm()">
             👤 Save Login
         </button>
 
@@ -1123,8 +1115,6 @@ footer{
 
     <div class="plans">
 
-        <!-- 1 DAY -->
-
         <div class="plan glass">
 
             <div class="plan-content">
@@ -1133,9 +1123,7 @@ footer{
                     <div class="plan-icon">⚡</div>
                 </div>
 
-                <h3>
-                    1 Day
-                </h3>
+                <h3>1 Day</h3>
 
                 <p class="plan-description">
                     Quick access for short-term use.
@@ -1151,8 +1139,7 @@ footer{
                     <li>✓ Saved keys</li>
                 </ul>
 
-                <button
-                    class="btn btn-secondary plan-button">
+                <button class="btn btn-secondary plan-button">
                     Select 1 Day
                 </button>
 
@@ -1160,8 +1147,6 @@ footer{
 
         </div>
 
-
-        <!-- 3 DAYS -->
 
         <div class="plan glass">
 
@@ -1171,9 +1156,7 @@ footer{
                     <div class="plan-icon">🔥</div>
                 </div>
 
-                <h3>
-                    3 Days
-                </h3>
+                <h3>3 Days</h3>
 
                 <p class="plan-description">
                     More time without committing to a week.
@@ -1189,8 +1172,7 @@ footer{
                     <li>✓ Saved keys</li>
                 </ul>
 
-                <button
-                    class="btn btn-secondary plan-button">
+                <button class="btn btn-secondary plan-button">
                     Select 3 Days
                 </button>
 
@@ -1198,8 +1180,6 @@ footer{
 
         </div>
 
-
-        <!-- 1 WEEK -->
 
         <div class="plan glass featured">
 
@@ -1217,9 +1197,7 @@ footer{
 
                 </div>
 
-                <h3>
-                    1 Week
-                </h3>
+                <h3>1 Week</h3>
 
                 <p class="plan-description">
                     The perfect balance for regular users.
@@ -1236,8 +1214,7 @@ footer{
                     <li>✓ Inventory generation</li>
                 </ul>
 
-                <button
-                    class="btn btn-primary plan-button">
+                <button class="btn btn-primary plan-button">
                     Select 1 Week
                 </button>
 
@@ -1245,8 +1222,6 @@ footer{
 
         </div>
 
-
-        <!-- 1 MONTH -->
 
         <div class="plan glass">
 
@@ -1256,9 +1231,7 @@ footer{
                     <div class="plan-icon">💎</div>
                 </div>
 
-                <h3>
-                    1 Month
-                </h3>
+                <h3>1 Month</h3>
 
                 <p class="plan-description">
                     Long-term access for active users.
@@ -1275,8 +1248,7 @@ footer{
                     <li>✓ Inventory generation</li>
                 </ul>
 
-                <button
-                    class="btn btn-secondary plan-button">
+                <button class="btn btn-secondary plan-button">
                     Select 1 Month
                 </button>
 
@@ -1284,8 +1256,6 @@ footer{
 
         </div>
 
-
-        <!-- LIFETIME -->
 
         <div class="plan glass lifetime">
 
@@ -1303,9 +1273,7 @@ footer{
 
                 </div>
 
-                <h3>
-                    Lifetime
-                </h3>
+                <h3>Lifetime</h3>
 
                 <p class="plan-description">
                     One purchase for permanent access.
@@ -1322,8 +1290,7 @@ footer{
                     <li>✓ Inventory generation</li>
                 </ul>
 
-                <button
-                    class="btn btn-primary plan-button">
+                <button class="btn btn-primary plan-button">
                     Select Lifetime
                 </button>
 
@@ -1342,6 +1309,7 @@ footer{
 <section id="dashboard">
 
 <div class="container dashboard">
+
 
     <!-- MAIN DASHBOARD -->
 
@@ -1436,6 +1404,11 @@ footer{
                 Save
             </button>
 
+        </div>
+
+        <div
+            id="loginMessage"
+            class="message">
         </div>
 
     </div>
@@ -1547,7 +1520,7 @@ footer{
                 </h2>
 
                 <p>
-                    Items available through your authorized access.
+                    Generate one authorized inventory item at a time.
                 </p>
 
             </div>
@@ -1813,7 +1786,7 @@ function focusLoginForm(){
     }
 
     document
-        .getElementById("loginCard")
+        .getElementById("dashboard")
         .scrollIntoView({
             behavior:"smooth"
         });
@@ -1869,8 +1842,8 @@ async function unlock(){
 
                     body:
                         JSON.stringify({
-                            key,
-                            deviceId
+                            key:key,
+                            deviceId:deviceId
                         })
                 }
             );
@@ -1907,8 +1880,6 @@ async function unlock(){
             toast(
                 "Welcome to Novi!"
             );
-
-            loadStock();
 
             document
                 .getElementById("dashboard")
@@ -2084,9 +2055,11 @@ function renderSavedKeys(){
             <div class="saved-item">
 
                 <div class="saved-item-head">
+
                     <strong>
                         Key ${index + 1}
                     </strong>
+
                 </div>
 
                 <small>
@@ -2191,6 +2164,11 @@ function saveEmailPassword(){
             "passwordInput"
         );
 
+    const loginMessage =
+        document.getElementById(
+            "loginMessage"
+        );
+
     const email =
         emailInput?.value.trim();
 
@@ -2199,7 +2177,8 @@ function saveEmailPassword(){
 
     if(!email || !password){
 
-        focusLoginForm();
+        loginMessage.textContent =
+            "Enter both email and password.";
 
         toast(
             "Enter both email and password."
@@ -2220,6 +2199,9 @@ function saveEmailPassword(){
 
     if(exists){
 
+        loginMessage.textContent =
+            "That login is already saved.";
+
         toast(
             "That login is already saved."
         );
@@ -2228,8 +2210,8 @@ function saveEmailPassword(){
     }
 
     accounts.push({
-        email,
-        password
+        email:email,
+        password:password
     });
 
     localStorage.setItem(
@@ -2239,6 +2221,9 @@ function saveEmailPassword(){
 
     emailInput.value = "";
     passwordInput.value = "";
+
+    loginMessage.textContent =
+        "Login saved successfully.";
 
     renderSavedLogins();
 
@@ -2373,8 +2358,18 @@ function deleteSavedLogin(index){
 
 
 /* =========================================================
-   STOCK
+   INVENTORY
 ========================================================= */
+
+/*
+ * IMPORTANT:
+ *
+ * This function only gets the current STOCK COUNT.
+ * It does NOT render stock into the inventory area.
+ *
+ * That prevents the entire stock list from appearing
+ * when the dashboard loads.
+ */
 
 async function loadStock(){
 
@@ -2397,14 +2392,76 @@ async function loadStock(){
             );
         }
 
-        const stock =
+        const result =
             await response.json();
 
-        renderStock(stock);
+        if(!result.success){
+
+            container.innerHTML = `
+                <div class="inventory-item">
+
+                    <strong>
+                        Inventory unavailable
+                    </strong>
+
+                    <span>
+                        Could not load inventory status.
+                    </span>
+
+                </div>
+            `;
+
+            return;
+        }
+
+        const count =
+            Number(result.count || 0);
+
+        if(count <= 0){
+
+            container.innerHTML = `
+                <div class="inventory-item">
+
+                    <strong>
+                        No inventory available
+                    </strong>
+
+                    <span>
+                        There are currently no authorized items available.
+                    </span>
+
+                </div>
+            `;
+
+            return;
+        }
+
+        /*
+         * Don't display the stock items here.
+         *
+         * Only show how many are available.
+         */
+
+        container.innerHTML = `
+            <div class="inventory-item">
+
+                <strong>
+                    Ready to generate
+                </strong>
+
+                <span>
+                    ${count} authorized item${count === 1 ? "" : "s"} available
+                </span>
+
+            </div>
+        `;
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "Stock error:",
+            error
+        );
 
         container.innerHTML = `
             <div class="inventory-item">
@@ -2414,139 +2471,12 @@ async function loadStock(){
                 </strong>
 
                 <span>
-                    Could not load current stock.
+                    Could not connect to the server.
                 </span>
 
             </div>
         `;
     }
-}
-
-
-function renderStock(stock){
-
-    const container =
-        document.getElementById(
-            "inventory"
-        );
-
-    if(!stock){
-
-        container.innerHTML = `
-            <div class="inventory-item">
-
-                <strong>
-                    No inventory
-                </strong>
-
-                <span>
-                    No items are currently available.
-                </span>
-
-            </div>
-        `;
-
-        return;
-    }
-
-    let items = [];
-
-    if(Array.isArray(stock)){
-
-        items = stock;
-
-    }else if(
-        Array.isArray(stock.items)
-    ){
-
-        items = stock.items;
-
-    }else if(
-        Array.isArray(stock.inventory)
-    ){
-
-        items = stock.inventory;
-
-    }else{
-
-        items =
-            Object.entries(stock)
-                .map(
-                    ([name,value]) => ({
-                        name,
-                        value
-                    })
-                );
-    }
-
-    if(!items.length){
-
-        container.innerHTML = `
-            <div class="inventory-item">
-
-                <strong>
-                    No inventory
-                </strong>
-
-                <span>
-                    No items are currently available.
-                </span>
-
-            </div>
-        `;
-
-        return;
-    }
-
-    container.innerHTML =
-        items.map(
-            item => {
-
-                if(
-                    typeof item ===
-                    "string"
-                ){
-
-                    return `
-                        <div class="inventory-item">
-
-                            <strong>
-                                ${escapeHTML(item)}
-                            </strong>
-
-                            <span>
-                                Available
-                            </span>
-
-                        </div>
-                    `;
-                }
-
-                return `
-                    <div class="inventory-item">
-
-                        <strong>
-                            ${escapeHTML(
-                                item.name ||
-                                item.title ||
-                                item.item ||
-                                "Inventory Item"
-                            )}
-                        </strong>
-
-                        <span>
-                            ${
-                                item.quantity ??
-                                item.stock ??
-                                item.amount ??
-                                "Available"
-                            }
-                        </span>
-
-                    </div>
-                `;
-            }
-        ).join("");
 }
 
 
@@ -2559,6 +2489,11 @@ async function generateInventory(){
     const message =
         document.getElementById(
             "inventoryMessage"
+        );
+
+    const container =
+        document.getElementById(
+            "inventory"
         );
 
     if(
@@ -2595,7 +2530,7 @@ async function generateInventory(){
                     body:
                         JSON.stringify({
                             key:currentKey,
-                            deviceId
+                            deviceId:deviceId
                         })
                 }
             );
@@ -2603,7 +2538,10 @@ async function generateInventory(){
         const result =
             await response.json();
 
-        if(!response.ok){
+        if(
+            !response.ok ||
+            !result.success
+        ){
 
             message.textContent =
                 result.message ||
@@ -2616,6 +2554,82 @@ async function generateInventory(){
             return;
         }
 
+
+        /*
+         * =====================================================
+         * ONLY SHOW THE GENERATED ITEM
+         * =====================================================
+         *
+         * We intentionally DO NOT call loadStock() here.
+         *
+         * We also do NOT display:
+         *
+         * - email
+         * - password
+         * - the entire stock list
+         * - unrelated response properties
+         *
+         * We only display result.item.
+         */
+
+        const item =
+            result.item;
+
+
+        let displayName =
+            "Inventory Item";
+
+        let displayValue =
+            "Generated";
+
+
+        if(
+            typeof item ===
+            "string"
+        ){
+
+            displayName =
+                item;
+
+        }else if(
+            item &&
+            typeof item === "object"
+        ){
+
+            displayName =
+                item.name ||
+                item.title ||
+                item.item ||
+                item.username ||
+                "Inventory Item";
+
+            displayValue =
+                item.quantity ??
+                item.stock ??
+                item.amount ??
+                "Generated";
+        }
+
+
+        container.innerHTML = `
+
+            <div class="inventory-item">
+
+                <strong>
+                    ${escapeHTML(displayName)}
+                </strong>
+
+                <span>
+                    ${escapeHTML(
+                        String(displayValue)
+                    )}
+                </span>
+
+            </div>
+
+        `;
+
+
         message.textContent =
             "Inventory generated successfully.";
 
@@ -2623,11 +2637,13 @@ async function generateInventory(){
             "Inventory generated!"
         );
 
-        loadStock();
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "Generation error:",
+            error
+        );
 
         message.textContent =
             "Could not connect to the server.";
@@ -2662,6 +2678,14 @@ function logout(){
 
     document.getElementById(
         "unlockMessage"
+    ).textContent = "";
+
+    document.getElementById(
+        "inventory"
+    ).innerHTML = "";
+
+    document.getElementById(
+        "inventoryMessage"
     ).textContent = "";
 
     setLockedUI();
