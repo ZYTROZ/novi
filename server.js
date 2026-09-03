@@ -103,7 +103,6 @@ function saveKeys(keys) {
     }
 }
 
-
 /* =========================================================
    EXPIRATION
 ========================================================= */
@@ -153,7 +152,6 @@ function getExpiration(duration) {
     }
 }
 
-
 /* =========================================================
    CHECK KEY EXPIRATION
 ========================================================= */
@@ -182,7 +180,6 @@ function isKeyExpired(keyData) {
     return new Date() > expiration;
 }
 
-
 /* =========================================================
    NORMALIZE KEY
 ========================================================= */
@@ -192,7 +189,6 @@ function normalizeKey(key) {
         .trim()
         .toUpperCase();
 }
-
 
 /* =========================================================
    DEVICE ID VALIDATION
@@ -219,7 +215,6 @@ function isValidDeviceId(deviceId) {
     return true;
 }
 
-
 /* =========================================================
    VERIFY KEY + DEVICE
 ========================================================= */
@@ -238,43 +233,54 @@ function verifyKeyForDevice(
     const keyData =
         keys[cleanKey];
 
+    /* =====================================================
+       KEY DOES NOT EXIST
+    ===================================================== */
+
     if (!keyData) {
         return {
             valid: false,
             success: false,
+            code: "INVALID_KEY",
             message: "Invalid Novi key."
         };
     }
 
-    /* Check expiration */
+    /* =====================================================
+       CHECK EXPIRATION
+    ===================================================== */
 
     if (isKeyExpired(keyData)) {
 
         return {
             valid: false,
             success: false,
+            code: "EXPIRED_KEY",
             message: "This Novi key has expired."
         };
     }
 
-    /* Device ID required */
+    /* =====================================================
+       DEVICE ID REQUIRED
+    ===================================================== */
 
     if (!isValidDeviceId(deviceId)) {
 
         return {
             valid: false,
             success: false,
+            code: "INVALID_DEVICE",
             message:
                 "Unable to verify this device."
         };
     }
 
-    /*
-        FIRST ACTIVATION
+    /* =====================================================
+       FIRST ACTIVATION
 
-        If the key has never been activated,
-        bind it to this device.
-    */
+       The first device to successfully use the key
+       becomes the device that owns the activation.
+    ===================================================== */
 
     if (!keyData.deviceId) {
 
@@ -292,18 +298,20 @@ function verifyKeyForDevice(
             return {
                 valid: false,
                 success: false,
+                code: "ACTIVATION_FAILED",
                 message:
                     "Could not activate this Novi key."
             };
         }
 
         console.log(
-            `Key activated on first device: ${cleanKey}`
+            `🔐 Key activated on first device: ${cleanKey}`
         );
 
         return {
             valid: true,
             success: true,
+            code: "ACTIVATED",
             message:
                 "Novi key activated successfully.",
             duration:
@@ -313,35 +321,43 @@ function verifyKeyForDevice(
         };
     }
 
-    /*
-        EXISTING KEY
+    /* =====================================================
+       DIFFERENT DEVICE
 
-        Only the original device can use it.
-    */
+       This is the important protection.
+
+       If the key already belongs to another device,
+       reject the request.
+    ===================================================== */
 
     if (
         keyData.deviceId !== deviceId
     ) {
 
         console.log(
-            `Blocked different device from key: ${cleanKey}`
+            `🚫 Device blocked from key: ${cleanKey}`
         );
 
         return {
             valid: false,
             success: false,
+            code: "DEVICE_IN_USE",
             message:
-                "This Novi key is already activated on another device."
+                "🚫 Device Already In Use — this Novi key is already activated on another device."
         };
     }
 
-    /*
-        SAME DEVICE
-    */
+    /* =====================================================
+       SAME DEVICE
+
+       The original device is allowed to continue using
+       the key.
+    ===================================================== */
 
     return {
         valid: true,
         success: true,
+        code: "VERIFIED",
         message:
             "Novi key verified.",
         duration:
@@ -350,7 +366,6 @@ function verifyKeyForDevice(
             keyData.expiresAt
     };
 }
-
 
 /* =========================================================
    STOCK SYSTEM
@@ -433,7 +448,6 @@ function saveStock(stock) {
     }
 }
 
-
 /* =========================================================
    PUBLIC WEBSITE
 ========================================================= */
@@ -494,7 +508,6 @@ app.get(
         );
     }
 );
-
 
 /* =========================================================
    CREATE NOVI KEY
@@ -606,6 +619,8 @@ app.post(
 
                 used: false,
 
+                /* One-device binding */
+
                 deviceId: null,
 
                 activatedAt: null,
@@ -663,7 +678,6 @@ app.post(
     }
 );
 
-
 /* =========================================================
    VERIFY NOVI KEY
 ========================================================= */
@@ -686,7 +700,10 @@ app.post(
                     .json({
 
                         success: false,
+
                         valid: false,
+
+                        code: "MISSING_KEY",
 
                         message:
                             "Please enter a key."
@@ -700,9 +717,37 @@ app.post(
                     deviceId
                 );
 
-            return res.json(
-                result
-            );
+            /*
+                Return HTTP 403 when another device
+                attempts to use an already-bound key.
+            */
+
+            if (
+                result.code ===
+                "DEVICE_IN_USE"
+            ) {
+
+                return res
+                    .status(403)
+                    .json(result);
+            }
+
+            /*
+                Return HTTP 401 for invalid/expired keys.
+            */
+
+            if (
+                !result.valid
+            ) {
+
+                return res
+                    .status(401)
+                    .json(result);
+            }
+
+            return res
+                .status(200)
+                .json(result);
 
         } catch (error) {
 
@@ -716,7 +761,10 @@ app.post(
                 .json({
 
                     success: false,
+
                     valid: false,
+
+                    code: "SERVER_ERROR",
 
                     message:
                         "Internal server error."
@@ -725,7 +773,6 @@ app.post(
         }
     }
 );
-
 
 /* =========================================================
    STOCK COUNT
@@ -771,7 +818,6 @@ app.get(
         }
     }
 );
-
 
 /* =========================================================
    ADD STOCK
@@ -948,7 +994,6 @@ app.post(
     }
 );
 
-
 /* =========================================================
    GENERATE STOCK
    REQUIRES VALID KEY + ORIGINAL DEVICE
@@ -973,6 +1018,10 @@ app.post(
 
                         success: false,
 
+                        valid: false,
+
+                        code: "MISSING_KEY",
+
                         message:
                             "A valid Novi key is required."
 
@@ -985,6 +1034,35 @@ app.post(
                     deviceId
                 );
 
+            /* =================================================
+               DEVICE ALREADY IN USE
+            ================================================= */
+
+            if (
+                verification.code ===
+                "DEVICE_IN_USE"
+            ) {
+
+                return res
+                    .status(403)
+                    .json({
+
+                        success: false,
+
+                        valid: false,
+
+                        code: "DEVICE_IN_USE",
+
+                        message:
+                            "🚫 Device Already In Use — this Novi key is already activated on another device."
+
+                    });
+            }
+
+            /* =================================================
+               OTHER VERIFICATION FAILURE
+            ================================================= */
+
             if (
                 !verification.valid
             ) {
@@ -995,12 +1073,22 @@ app.post(
 
                         success: false,
 
+                        valid: false,
+
+                        code:
+                            verification.code ||
+                            "KEY_VERIFICATION_FAILED",
+
                         message:
                             verification.message ||
                             "Novi key verification failed."
 
                     });
             }
+
+            /* =================================================
+               LOAD STOCK
+            ================================================= */
 
             const stock =
                 loadStock();
@@ -1020,6 +1108,10 @@ app.post(
 
                     });
             }
+
+            /* =================================================
+               REMOVE FIRST ITEM
+            ================================================= */
 
             const item =
                 stock.shift();
@@ -1079,7 +1171,6 @@ app.post(
     }
 );
 
-
 /* =========================================================
    HEALTH CHECK
 ========================================================= */
@@ -1093,12 +1184,14 @@ app.get(
             online: true,
 
             message:
-                "Novi server is running."
+                "Novi server is running.",
+
+            oneDeviceActivation:
+                true
 
         });
     }
 );
-
 
 /* =========================================================
    UNKNOWN API
@@ -1121,7 +1214,6 @@ app.use(
     }
 );
 
-
 /* =========================================================
    ERROR HANDLER
 ========================================================= */
@@ -1139,6 +1231,12 @@ app.use(
             error
         );
 
+        if (
+            res.headersSent
+        ) {
+            return next(error);
+        }
+
         return res
             .status(500)
             .json({
@@ -1151,7 +1249,6 @@ app.use(
             });
     }
 );
-
 
 /* =========================================================
    START SERVER
@@ -1203,6 +1300,10 @@ const server =
 
             console.log(
                 "One-device activation: ENABLED"
+            );
+
+            console.log(
+                "Device-in-use protection: ENABLED"
             );
 
             console.log(
