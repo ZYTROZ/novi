@@ -3,27 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novi — Generator</title>
+
+    <title>Novi — Premium Generator</title>
+
+    <meta name="theme-color" content="#090611">
+    <meta name="description" content="Novi premium key and inventory generator">
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        /* =========================================================
+           NOVI — PREMIUM REDESIGN
+        ========================================================= */
 
         :root {
             --bg: #07050d;
-            --bg-secondary: #0d0917;
-            --card: rgba(18, 12, 31, 0.78);
-            --purple: #8b5cf6;
-            --purple-light: #a78bfa;
-            --purple-dark: #6d28d9;
-            --text: #ffffff;
-            --muted: #9892a7;
-            --border: rgba(139, 92, 246, 0.18);
-            --success: #4ade80;
-            --danger: #f87171;
+            --bg-2: #0d0917;
+            --panel: rgba(19, 13, 31, .72);
+            --panel-strong: rgba(25, 17, 40, .92);
+            --border: rgba(255,255,255,.09);
+            --border-hover: rgba(168,85,247,.45);
+
+            --purple: #a855f7;
+            --purple-2: #7c3aed;
+            --violet: #c084fc;
+            --pink: #ec4899;
+
+            --text: #f7f3ff;
+            --muted: #9d94aa;
+            --muted-2: #70677e;
+
+            --success: #34d399;
+            --danger: #fb7185;
+            --warning: #fbbf24;
+
+            --radius: 22px;
+            --shadow: 0 25px 80px rgba(0,0,0,.45);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         html {
@@ -32,12 +51,22 @@
 
         body {
             min-height: 100vh;
-            background:
-                radial-gradient(circle at 15% 5%, rgba(139,92,246,.12), transparent 28%),
-                radial-gradient(circle at 85% 25%, rgba(109,40,217,.10), transparent 30%),
-                linear-gradient(180deg,#07050d 0%,#080610 50%,#06040b 100%);
             color: var(--text);
-            font-family: Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+            font-family:
+                Inter,
+                ui-sans-serif,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            background:
+                radial-gradient(circle at 10% 10%, rgba(124,58,237,.18), transparent 30%),
+                radial-gradient(circle at 90% 20%, rgba(236,72,153,.11), transparent 28%),
+                radial-gradient(circle at 50% 100%, rgba(168,85,247,.10), transparent 35%),
+                var(--bg);
+
             overflow-x: hidden;
         }
 
@@ -46,174 +75,366 @@
             position: fixed;
             inset: 0;
             pointer-events: none;
-            opacity: .22;
+            opacity: .28;
+
             background-image:
-                linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
-                linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+                linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+
             background-size: 55px 55px;
-            mask-image: linear-gradient(to bottom,black,transparent 85%);
-            z-index: -2;
+
+            mask-image: linear-gradient(to bottom, black, transparent 90%);
         }
 
         ::selection {
-            background: rgba(139,92,246,.35);
+            background: rgba(168,85,247,.35);
             color: white;
         }
 
         button,
         input {
-            font-family: inherit;
+            font: inherit;
         }
 
         button {
-            -webkit-tap-highlight-color: transparent;
+            cursor: pointer;
         }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        /* =========================================================
+           BACKGROUND
+        ========================================================= */
 
         .orb {
             position: fixed;
+            width: 420px;
+            height: 420px;
             border-radius: 50%;
             filter: blur(100px);
             pointer-events: none;
             z-index: -1;
+            opacity: .15;
+            animation: floatOrb 12s ease-in-out infinite;
         }
 
-        .orb-one {
-            width: 320px;
-            height: 320px;
-            background: rgba(139,92,246,.09);
-            top: 60px;
-            left: -160px;
+        .orb.one {
+            top: -180px;
+            left: -120px;
+            background: #9333ea;
         }
 
-        .orb-two {
-            width: 380px;
-            height: 380px;
-            background: rgba(109,40,217,.07);
+        .orb.two {
             right: -180px;
-            top: 420px;
+            top: 25%;
+            background: #db2777;
+            animation-delay: -4s;
         }
 
-        .orb-three {
-            width: 280px;
-            height: 280px;
-            background: rgba(167,139,250,.045);
-            bottom: 80px;
-            left: 40%;
+        .orb.three {
+            left: 30%;
+            bottom: -250px;
+            background: #6d28d9;
+            animation-delay: -7s;
         }
 
-        nav {
-            width: 100%;
-            height: 74px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 7%;
-            border-bottom: 1px solid rgba(255,255,255,.045);
-            background: rgba(7,5,13,.72);
-            backdrop-filter: blur(20px);
+        @keyframes floatOrb {
+            0%,100% {
+                transform: translate3d(0,0,0) scale(1);
+            }
+
+            50% {
+                transform: translate3d(25px,-20px,0) scale(1.08);
+            }
+        }
+
+        /* =========================================================
+           NAVBAR
+        ========================================================= */
+
+        .navbar {
             position: sticky;
             top: 0;
             z-index: 100;
+
+            width: 100%;
+            padding: 16px 24px;
+
+            background: rgba(7,5,13,.65);
+            border-bottom: 1px solid rgba(255,255,255,.055);
+
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
         }
 
-        .logo {
+        .nav-inner {
+            width: min(1180px, 100%);
+            margin: auto;
+
             display: flex;
             align-items: center;
-            gap: 11px;
-            text-decoration: none;
-            color: white;
-            font-weight: 900;
-            font-size: 21px;
+            justify-content: space-between;
+            gap: 18px;
         }
 
-        .logo-icon {
-            width: 39px;
-            height: 39px;
-            border-radius: 12px;
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 900;
+            letter-spacing: -.04em;
+        }
+
+        .brand-logo {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+
             display: grid;
             place-items: center;
-            background: linear-gradient(135deg,var(--purple),var(--purple-dark));
-            box-shadow: 0 0 28px rgba(139,92,246,.25);
-            font-size: 17px;
-            font-weight: 950;
+
+            color: white;
+            font-size: 20px;
+
+            background:
+                linear-gradient(135deg, #a855f7, #7c3aed 55%, #ec4899);
+
+            box-shadow:
+                0 10px 35px rgba(168,85,247,.35),
+                inset 0 1px rgba(255,255,255,.35);
         }
 
-        .nav-badge {
-            padding: 7px 13px;
-            border-radius: 999px;
-            font-size: 10px;
-            font-weight: 850;
-            letter-spacing: .7px;
-            color: #c4b5fd;
-            background: rgba(139,92,246,.065);
-            border: 1px solid rgba(139,92,246,.16);
+        .brand-text {
+            font-size: 19px;
         }
 
-        .hero {
-            max-width: 1100px;
-            margin: auto;
-            padding: 112px 25px 70px;
-            text-align: center;
+        .brand-text span {
+            color: var(--violet);
         }
 
-        .eyebrow {
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-pill {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 14px;
-            border: 1px solid rgba(139,92,246,.18);
+
+            padding: 9px 13px;
             border-radius: 999px;
-            color: #c4b5fd;
-            background: rgba(139,92,246,.055);
-            font-size: 11px;
-            font-weight: 850;
-            margin-bottom: 24px;
+
+            background: rgba(255,255,255,.045);
+            border: 1px solid var(--border);
+
+            color: #bcb2ca;
+            font-size: 12px;
+            font-weight: 700;
         }
 
-        .eyebrow-dot {
+        .status-dot {
             width: 7px;
             height: 7px;
             border-radius: 50%;
-            background: var(--purple);
-            box-shadow: 0 0 12px rgba(139,92,246,.8);
+            background: var(--success);
+            box-shadow: 0 0 12px rgba(52,211,153,.8);
+        }
+
+        /* =========================================================
+           CONTAINER
+        ========================================================= */
+
+        .container {
+            width: min(1180px, calc(100% - 36px));
+            margin: auto;
+        }
+
+        /* =========================================================
+           HERO
+        ========================================================= */
+
+        .hero {
+            position: relative;
+            padding: 105px 0 80px;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+
+            padding: 8px 13px;
+            margin-bottom: 22px;
+
+            border-radius: 999px;
+
+            background: rgba(168,85,247,.08);
+            border: 1px solid rgba(168,85,247,.2);
+
+            color: #c9a7ef;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .04em;
+
+            box-shadow: 0 0 35px rgba(168,85,247,.08);
         }
 
         .hero h1 {
-            font-size: clamp(46px,8vw,86px);
+            max-width: 850px;
+            margin: auto;
+
+            font-size: clamp(46px, 7vw, 86px);
             line-height: .98;
-            letter-spacing: -5px;
+            letter-spacing: -.065em;
             font-weight: 950;
-            margin-bottom: 25px;
         }
 
-        .gradient-text {
-            background: linear-gradient(135deg,#fff 5%,#ddd6fe 42%,#8b5cf6 88%);
+        .hero h1 .gradient {
+            background: linear-gradient(
+                100deg,
+                #fff 5%,
+                #e9d5ff 35%,
+                #a855f7 65%,
+                #ec4899
+            );
+
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
 
         .hero p {
-            max-width: 640px;
-            margin: auto;
+            max-width: 650px;
+            margin: 25px auto 0;
+
             color: var(--muted);
-            font-size: 16px;
-            line-height: 1.8;
+            font-size: 17px;
+            line-height: 1.7;
         }
 
+        .hero-actions {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        /* =========================================================
+           BUTTONS
+        ========================================================= */
+
+        .btn {
+            border: 0;
+            border-radius: 14px;
+
+            padding: 13px 18px;
+
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+
+            font-weight: 800;
+            font-size: 13px;
+
+            transition:
+                transform .2s ease,
+                box-shadow .2s ease,
+                border-color .2s ease,
+                background .2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0) scale(.98);
+        }
+
+        .btn-primary {
+            color: white;
+
+            background:
+                linear-gradient(135deg, #a855f7, #7c3aed);
+
+            box-shadow:
+                0 14px 35px rgba(124,58,237,.28),
+                inset 0 1px rgba(255,255,255,.25);
+        }
+
+        .btn-primary:hover {
+            box-shadow:
+                0 18px 45px rgba(124,58,237,.42),
+                inset 0 1px rgba(255,255,255,.3);
+        }
+
+        .btn-secondary {
+            color: #d9d0e3;
+
+            background: rgba(255,255,255,.045);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,.075);
+            border-color: rgba(168,85,247,.25);
+        }
+
+        .btn-danger {
+            color: #fecdd3;
+            background: rgba(244,63,94,.08);
+            border: 1px solid rgba(244,63,94,.18);
+        }
+
+        .btn-danger:hover {
+            background: rgba(244,63,94,.14);
+        }
+
+        .btn-small {
+            padding: 9px 12px;
+            border-radius: 11px;
+            font-size: 12px;
+        }
+
+        /* =========================================================
+           GLASS CARD
+        ========================================================= */
+
+        .glass {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+
+            box-shadow: var(--shadow);
+
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+
+        .glass:hover {
+            border-color: rgba(168,85,247,.18);
+        }
+
+        /* =========================================================
+           ACCESS CARD
+        ========================================================= */
+
         .access-wrap {
-            max-width: 650px;
-            margin: 0 auto 115px;
-            padding: 0 20px;
+            width: min(680px, 100%);
+            margin: 0 auto 100px;
         }
 
         .access-card {
+            padding: 30px;
             position: relative;
-            padding: 35px;
-            border-radius: 26px;
-            background: linear-gradient(145deg,rgba(23,15,39,.96),rgba(10,7,18,.97));
-            border: 1px solid rgba(139,92,246,.18);
-            box-shadow: 0 30px 90px rgba(0,0,0,.48),0 0 60px rgba(139,92,246,.055);
             overflow: hidden;
         }
 
@@ -221,268 +442,221 @@
             content: "";
             position: absolute;
             width: 240px;
-            height: 1px;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(90deg,transparent,rgba(139,92,246,.9),transparent);
-            box-shadow: 0 0 20px rgba(139,92,246,.55);
+            height: 240px;
+            top: -130px;
+            right: -80px;
+
+            background: rgba(168,85,247,.18);
+            filter: blur(70px);
+            border-radius: 50%;
         }
 
-        .card-icon {
-            width: 56px;
-            height: 56px;
-            display: grid;
-            place-items: center;
-            margin-bottom: 20px;
-            border-radius: 16px;
-            background: linear-gradient(145deg,rgba(139,92,246,.14),rgba(109,40,217,.045));
-            border: 1px solid rgba(139,92,246,.2);
-            font-size: 23px;
+        .section-label {
+            color: var(--violet);
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: .12em;
+            text-transform: uppercase;
         }
 
         .access-card h2 {
+            margin-top: 8px;
             font-size: 27px;
-            margin-bottom: 8px;
+            letter-spacing: -.04em;
         }
 
         .access-card > p {
             color: var(--muted);
-            font-size: 13px;
-            line-height: 1.7;
-            margin-bottom: 26px;
+            margin-top: 7px;
+            line-height: 1.6;
+            font-size: 14px;
         }
 
-        .input-label {
+        .key-row {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 9px;
-            padding: 0 2px;
+            gap: 10px;
+            margin-top: 24px;
         }
 
-        .input-label span:first-child {
-            color: #d8d1e4;
-            font-size: 11px;
-            font-weight: 850;
-        }
-
-        .input-label span:last-child {
-            color: #625a70;
-            font-size: 9px;
-            font-weight: 750;
-            letter-spacing: .8px;
-        }
-
-        .input-wrap {
-            position: relative;
-            margin-bottom: 12px;
-        }
-
-        .key-input,
-        .login-input {
+        .input {
             width: 100%;
-            height: 57px;
-            padding: 0 18px;
-            border-radius: 14px;
+            min-width: 0;
+
+            color: white;
+
+            padding: 14px 15px;
+
+            background: rgba(0,0,0,.25);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 13px;
+
             outline: none;
-            border: 1px solid rgba(255,255,255,.07);
-            background: linear-gradient(135deg,rgba(255,255,255,.035),rgba(0,0,0,.25));
-            color: white;
-            transition: .25s ease;
+
+            transition:
+                border-color .2s ease,
+                box-shadow .2s ease,
+                background .2s ease;
         }
 
-        .key-input {
-            padding-left: 50px;
+        .input::placeholder {
+            color: #62596e;
         }
 
-        .key-input:focus,
-        .login-input:focus {
-            border-color: rgba(139,92,246,.45);
-            box-shadow: 0 0 0 4px rgba(139,92,246,.055);
-        }
+        .input:focus {
+            background: rgba(0,0,0,.35);
+            border-color: rgba(168,85,247,.55);
 
-        .key-input::placeholder,
-        .login-input::placeholder {
-            color: #696174;
-        }
-
-        .key-icon {
-            position: absolute;
-            left: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #9f7aea;
-            pointer-events: none;
-        }
-
-        .unlock-button,
-        .generate-button {
-            width: 100%;
-            height: 57px;
-            border: 0;
-            border-radius: 15px;
-            background: linear-gradient(135deg,var(--purple),var(--purple-dark));
-            color: white;
-            font-size: 13px;
-            font-weight: 850;
-            cursor: pointer;
-            transition: .25s ease;
-        }
-
-        .unlock-button {
-            margin-top: 2px;
-            box-shadow: 0 12px 28px rgba(109,40,217,.2);
-        }
-
-        .unlock-button:hover,
-        .generate-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 17px 38px rgba(109,40,217,.3);
-        }
-
-        .unlock-button:disabled,
-        .generate-button:disabled {
-            opacity: .55;
-            cursor: not-allowed;
-            transform: none;
+            box-shadow:
+                0 0 0 4px rgba(168,85,247,.08),
+                0 0 25px rgba(168,85,247,.08);
         }
 
         .message {
             min-height: 20px;
-            margin-top: 15px;
-            text-align: center;
-            font-size: 12px;
+            margin-top: 12px;
+            font-size: 13px;
             color: var(--muted);
         }
 
-        .message.success {
-            color: var(--success);
-        }
+        /* =========================================================
+           STATS
+        ========================================================= */
 
-        .message.error {
-            color: var(--danger);
-        }
-
-        .section {
-            max-width: 1150px;
-            margin: auto;
-            padding: 0 25px 110px;
-        }
-
-        .section-heading {
-            text-align: center;
-            margin-bottom: 42px;
-        }
-
-        .section-heading span {
-            color: #a78bfa;
-            font-size: 11px;
-            font-weight: 850;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .section-heading h2 {
-            margin-top: 10px;
-            font-size: 35px;
-        }
-
-        .feature-grid,
-        .plans {
+        .stats {
             display: grid;
-            grid-template-columns: repeat(3,1fr);
-            gap: 17px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+
+            margin-bottom: 90px;
         }
 
-        .feature-card,
-        .plan {
-            padding: 28px;
-            border-radius: 19px;
-            border: 1px solid rgba(255,255,255,.055);
-            background: linear-gradient(145deg,rgba(18,12,30,.75),rgba(10,7,17,.7));
-            transition: .25s ease;
+        .stat {
+            padding: 22px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .feature-card:hover,
-        .plan:hover {
-            transform: translateY(-5px);
-            border-color: rgba(139,92,246,.2);
+        .stat-icon {
+            width: 42px;
+            height: 42px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 13px;
+
+            background: rgba(168,85,247,.09);
+            border: 1px solid rgba(168,85,247,.14);
+
+            font-size: 19px;
+        }
+
+        .stat-number {
+            margin-top: 18px;
+            font-size: 29px;
+            font-weight: 900;
+            letter-spacing: -.05em;
+        }
+
+        .stat-title {
+            color: var(--muted);
+            margin-top: 4px;
+            font-size: 12px;
+        }
+
+        /* =========================================================
+           SECTION HEADER
+        ========================================================= */
+
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 20px;
+
+            margin-bottom: 22px;
+        }
+
+        .section-head h2 {
+            font-size: 30px;
+            letter-spacing: -.045em;
+        }
+
+        .section-head p {
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        /* =========================================================
+           FEATURES
+        ========================================================= */
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+
+            margin-bottom: 100px;
+        }
+
+        .feature {
+            padding: 25px;
+            transition:
+                transform .25s ease,
+                border-color .25s ease,
+                box-shadow .25s ease;
+        }
+
+        .feature:hover {
+            transform: translateY(-6px);
+            border-color: rgba(168,85,247,.25);
+
+            box-shadow:
+                0 25px 60px rgba(0,0,0,.35),
+                0 0 45px rgba(168,85,247,.06);
         }
 
         .feature-icon {
-            width: 45px;
-            height: 45px;
+            width: 48px;
+            height: 48px;
+
             display: grid;
             place-items: center;
-            border-radius: 13px;
-            margin-bottom: 20px;
-            background: rgba(139,92,246,.075);
-            border: 1px solid rgba(139,92,246,.13);
+
+            border-radius: 15px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(168,85,247,.17),
+                    rgba(236,72,153,.08)
+                );
+
+            border: 1px solid rgba(168,85,247,.15);
+
+            font-size: 21px;
         }
 
-        .feature-card h3 {
-            margin-bottom: 10px;
-            font-size: 16px;
+        .feature h3 {
+            margin-top: 20px;
+            font-size: 17px;
         }
 
-        .feature-card p,
-        .plan p {
+        .feature p {
             color: var(--muted);
-            line-height: 1.7;
-            font-size: 12px;
+            font-size: 13px;
+            line-height: 1.65;
+            margin-top: 7px;
         }
 
-        .plan {
-            position: relative;
-        }
-
-        .plan.featured {
-            border-color: rgba(139,92,246,.3);
-        }
-
-        .plan.featured::before {
-            content: "POPULAR";
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            padding: 5px 8px;
-            border-radius: 999px;
-            background: rgba(139,92,246,.1);
-            border: 1px solid rgba(139,92,246,.18);
-            color: #c4b5fd;
-            font-size: 8px;
-            font-weight: 900;
-        }
-
-        .plan-name {
-            color: #a78bfa;
-            font-size: 11px;
-            font-weight: 850;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-        }
-
-        .plan h3 {
-            font-size: 25px;
-            margin: 10px 0 8px;
-        }
+        /* =========================================================
+           DASHBOARD
+        ========================================================= */
 
         #dashboard {
             display: none;
-        }
-
-        .dashboard-card {
-            max-width: 1150px;
-            margin: 0 auto 100px;
-            padding: 65px 25px 0;
-        }
-
-        .dashboard-inner {
-            padding: 30px;
-            border-radius: 25px;
-            border: 1px solid rgba(139,92,246,.17);
-            background: linear-gradient(145deg,rgba(20,12,34,.96),rgba(9,6,16,.96));
-            box-shadow: 0 30px 100px rgba(0,0,0,.38);
+            padding-bottom: 100px;
         }
 
         .dashboard-top {
@@ -490,407 +664,540 @@
             align-items: center;
             justify-content: space-between;
             gap: 20px;
-            margin-bottom: 25px;
+
+            margin-bottom: 22px;
         }
 
-        .dashboard-title-row {
+        .dashboard-title {
             display: flex;
             align-items: center;
             gap: 14px;
         }
 
-        .dashboard-icon {
-            width: 48px;
-            height: 48px;
+        .dashboard-avatar {
+            width: 52px;
+            height: 52px;
+
             display: grid;
             place-items: center;
-            border-radius: 14px;
-            background: rgba(139,92,246,.085);
-            border: 1px solid rgba(139,92,246,.17);
+
+            border-radius: 17px;
+
+            background:
+                linear-gradient(135deg, #a855f7, #7c3aed);
+
+            box-shadow: 0 10px 35px rgba(124,58,237,.25);
+
+            font-size: 22px;
         }
 
-        .dashboard-top h2 {
-            font-size: 24px;
+        .dashboard-title h2 {
+            font-size: 28px;
+            letter-spacing: -.045em;
         }
 
-        .dashboard-top p {
+        .dashboard-title p {
             color: var(--muted);
+            margin-top: 3px;
             font-size: 12px;
-            margin-top: 5px;
         }
 
         .dashboard-actions {
             display: flex;
-            gap: 8px;
             flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 8px;
         }
 
-        .dashboard-button {
-            height: 41px;
-            padding: 0 14px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: .2s ease;
-            color: #c4b5fd;
-            background: rgba(139,92,246,.065);
-            border: 1px solid rgba(139,92,246,.24);
-        }
+        /* =========================================================
+           DASHBOARD GRID
+        ========================================================= */
 
-        .dashboard-button:hover {
-            color: white;
-            background: rgba(139,92,246,.13);
-            transform: translateY(-1px);
-        }
-
-        .dashboard-button.saved {
-            color: #86efac;
-            border-color: rgba(74,222,128,.24);
-            background: rgba(74,222,128,.055);
-        }
-
-        .logout-button {
-            color: #fca5a5;
-            background: rgba(248,113,113,.045);
-            border-color: rgba(248,113,113,.16);
-        }
-
-        .login-status {
-            margin-top: -8px;
-            margin-bottom: 20px;
-            color: #6f687a;
-            font-size: 10px;
-        }
-
-        .login-status.saved {
-            color: #86efac;
-        }
-
-        .save-section,
-        .saved-panel {
-            margin-bottom: 20px;
-            padding: 22px;
-            border-radius: 19px;
-            background: linear-gradient(145deg,rgba(139,92,246,.045),rgba(0,0,0,.16));
-            border: 1px solid rgba(139,92,246,.11);
-        }
-
-        .save-section h3,
-        .saved-header h3 {
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-
-        .save-section > p,
-        .saved-header p {
-            color: #716a7d;
-            font-size: 10px;
-            margin-bottom: 17px;
-        }
-
-        .login-fields {
+        .dashboard-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 16px;
         }
 
-        .password-wrap {
-            position: relative;
+        .panel {
+            padding: 24px;
         }
 
-        .password-wrap .login-input {
-            padding-right: 75px;
+        .panel.full {
+            grid-column: 1 / -1;
         }
 
-        .show-password {
-            position: absolute;
-            right: 8px;
-            top: 8px;
-            height: 41px;
-            padding: 0 10px;
-            border-radius: 9px;
-            border: 1px solid rgba(139,92,246,.15);
-            background: rgba(139,92,246,.06);
-            color: #c4b5fd;
-            cursor: pointer;
-            font-size: 10px;
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+
+            margin-bottom: 18px;
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        .panel-icon {
+            width: 38px;
+            height: 38px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 11px;
+
+            background: rgba(168,85,247,.09);
+            border: 1px solid rgba(168,85,247,.14);
+        }
+
+        .panel-title h3 {
+            font-size: 15px;
+        }
+
+        .panel-title p {
+            color: var(--muted-2);
+            margin-top: 2px;
+            font-size: 11px;
+        }
+
+        /* =========================================================
+           SAVE LOGIN
+        ========================================================= */
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 11px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 7px;
+
+            color: #a9a0b3;
+            font-size: 11px;
             font-weight: 800;
         }
 
-        .save-row {
-            display: flex;
-            gap: 9px;
+        .save-login-box {
+            padding: 16px;
+
+            background: rgba(0,0,0,.15);
+            border: 1px solid rgba(255,255,255,.055);
+            border-radius: 16px;
+        }
+
+        .save-login-box .btn {
+            width: 100%;
             margin-top: 11px;
         }
 
-        .save-row button {
-            flex: 1;
-            height: 45px;
-            border-radius: 11px;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 850;
-            border: 1px solid rgba(139,92,246,.2);
-            background: rgba(139,92,246,.08);
-            color: #c4b5fd;
-        }
-
-        .save-row button:hover {
-            background: rgba(139,92,246,.16);
-            color: white;
-        }
-
-        .saved-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 17px;
-        }
-
-        .saved-header p {
-            margin-bottom: 0;
-            margin-top: 3px;
-        }
-
-        .saved-count {
-            min-width: 34px;
-            height: 29px;
-            display: grid;
-            place-items: center;
-            padding: 0 9px;
-            border-radius: 999px;
-            background: rgba(139,92,246,.08);
-            border: 1px solid rgba(139,92,246,.15);
-            color: #c4b5fd;
-            font-size: 10px;
-            font-weight: 850;
-        }
+        /* =========================================================
+           SAVED ITEMS
+        ========================================================= */
 
         .saved-list {
             display: grid;
-            gap: 9px;
+            gap: 10px;
         }
 
-        .empty {
-            padding: 23px;
+        .empty-state {
+            padding: 28px 15px;
             text-align: center;
-            border-radius: 13px;
-            border: 1px dashed rgba(255,255,255,.07);
-            color: #6f687a;
-            font-size: 11px;
-            line-height: 1.6;
+
+            border: 1px dashed rgba(255,255,255,.08);
+            border-radius: 15px;
+
+            color: var(--muted-2);
+            font-size: 12px;
         }
 
-        .saved-card {
+        .saved-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 15px;
+            gap: 12px;
+
             padding: 14px;
-            border-radius: 13px;
-            background: linear-gradient(135deg,rgba(255,255,255,.027),rgba(255,255,255,.012));
-            border: 1px solid rgba(255,255,255,.045);
+
+            background: rgba(255,255,255,.025);
+            border: 1px solid rgba(255,255,255,.06);
+            border-radius: 15px;
+
+            transition: .2s ease;
         }
 
-        .saved-info {
+        .saved-item:hover {
+            background: rgba(168,85,247,.045);
+            border-color: rgba(168,85,247,.15);
+        }
+
+        .saved-main {
             min-width: 0;
-            flex: 1;
-        }
-
-        .saved-label {
-            color: #aaa2b7;
-            font-size: 8px;
-            font-weight: 850;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-bottom: 5px;
         }
 
         .saved-value {
-            color: white;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            color: #e9e2f1;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             font-size: 12px;
-            font-weight: 700;
-            word-break: break-all;
         }
 
-        .saved-password {
-            margin-top: 5px;
-            color: #8f879e;
-            font-size: 12px;
-            font-weight: 700;
+        .saved-meta {
+            color: var(--muted-2);
+            margin-top: 4px;
+            font-size: 10px;
         }
 
         .saved-actions {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             flex-shrink: 0;
         }
 
-        .small-button {
-            height: 37px;
-            padding: 0 13px;
-            border-radius: 9px;
-            font-size: 10px;
-            font-weight: 850;
-            cursor: pointer;
+        /* =========================================================
+           STOCK
+        ========================================================= */
+
+        .stock-card {
+            position: relative;
+            overflow: hidden;
         }
 
-        .copy-button {
-            color: #ddd6fe;
-            background: rgba(139,92,246,.14);
-            border: 1px solid rgba(139,92,246,.23);
+        .stock-card::after {
+            content: "";
+
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            right: -70px;
+            bottom: -100px;
+
+            background: rgba(168,85,247,.12);
+            filter: blur(50px);
+            border-radius: 50%;
         }
 
-        .copy-button:hover {
-            background: rgba(139,92,246,.22);
+        .stock-content {
+            position: relative;
+            z-index: 1;
         }
 
-        .delete-button {
-            color: #fca5a5;
-            background: rgba(248,113,113,.04);
-            border: 1px solid rgba(248,113,113,.13);
-        }
+        .stock-number {
+            font-size: 46px;
+            line-height: 1;
+            font-weight: 950;
+            letter-spacing: -.07em;
 
-        .delete-button:hover {
-            background: rgba(248,113,113,.1);
-        }
-
-        .stock-panel {
-            padding: 25px;
-            border-radius: 19px;
-            background: linear-gradient(145deg,rgba(0,0,0,.18),rgba(255,255,255,.012));
-            border: 1px solid rgba(255,255,255,.055);
-        }
-
-        .stock-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: linear-gradient(135deg, white, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
 
         .stock-label {
-            color: #a78bfa;
-            font-size: 10px;
-            font-weight: 850;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
+            color: var(--muted);
+            margin-top: 8px;
+            font-size: 12px;
         }
 
-        .stock-title {
-            margin-top: 5px;
-            font-size: 20px;
+        .stock-items {
+            margin-top: 20px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .stock-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            padding: 12px 14px;
+
+            background: rgba(255,255,255,.025);
+            border: 1px solid rgba(255,255,255,.055);
+            border-radius: 12px;
+
+            font-size: 12px;
+        }
+
+        .stock-item span:first-child {
+            color: #c9c0d1;
+        }
+
+        .stock-item span:last-child {
+            color: var(--success);
             font-weight: 800;
         }
 
-        .stock-count {
-            text-align: right;
+        /* =========================================================
+           PLANS
+        ========================================================= */
+
+        .plans {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+
+            margin-bottom: 100px;
         }
 
-        .stock-count span {
-            display: block;
-            font-size: 29px;
+        .plan {
+            padding: 22px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .plan.featured {
+            border-color: rgba(168,85,247,.35);
+
+            box-shadow:
+                0 25px 70px rgba(0,0,0,.35),
+                0 0 50px rgba(168,85,247,.07);
+        }
+
+        .plan-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+
+            padding: 5px 8px;
+            border-radius: 999px;
+
+            background: rgba(168,85,247,.13);
+            border: 1px solid rgba(168,85,247,.2);
+
+            color: #d8b4fe;
+            font-size: 9px;
             font-weight: 900;
-            color: #c4b5fd;
+            text-transform: uppercase;
         }
 
-        .stock-count small {
-            color: #716a7d;
-            font-size: 8px;
-            font-weight: 850;
+        .plan h3 {
+            font-size: 16px;
         }
 
-        .stock-description {
-            margin-top: 17px;
-            color: var(--muted);
-            font-size: 12px;
-            line-height: 1.6;
-        }
-
-        .generate-button {
-            margin-top: 19px;
-            background: linear-gradient(135deg,rgba(139,92,246,.12),rgba(109,40,217,.07));
-            border: 1px solid rgba(139,92,246,.22);
-            color: #c4b5fd;
-            height: 50px;
-        }
-
-        .stock-message {
-            min-height: 20px;
+        .plan-price {
             margin-top: 13px;
-            text-align: center;
+            font-size: 28px;
+            font-weight: 950;
+            letter-spacing: -.05em;
+        }
+
+        .plan-price span {
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .plan ul {
+            list-style: none;
+            display: grid;
+            gap: 9px;
+            margin-top: 19px;
+        }
+
+        .plan li {
             color: var(--muted);
             font-size: 11px;
         }
 
-        .stock-message.success {
+        .plan li::before {
+            content: "✓";
+            margin-right: 7px;
             color: var(--success);
+            font-weight: 900;
         }
 
-        .stock-message.error {
-            color: var(--danger);
-        }
-
-        .generated-item {
-            margin-top: 17px;
-            padding: 17px;
-            border-radius: 13px;
-            border: 1px solid rgba(74,222,128,.14);
-            background: rgba(74,222,128,.045);
-        }
-
-        .generated-label {
-            font-size: 8px;
-            color: #86efac;
-            font-weight: 850;
-            letter-spacing: 1.5px;
-        }
-
-        .generated-value {
-            margin-top: 8px;
-            color: white;
-            font-size: 13px;
-            font-weight: 700;
-            word-break: break-all;
-        }
+        /* =========================================================
+           FOOTER
+        ========================================================= */
 
         footer {
-            padding: 35px 25px;
-            border-top: 1px solid rgba(255,255,255,.045);
+            padding: 35px 0 45px;
+
+            border-top: 1px solid rgba(255,255,255,.05);
+
+            color: var(--muted-2);
             text-align: center;
-            color: #625c6c;
             font-size: 11px;
         }
 
         footer strong {
-            color: #918a9d;
+            color: #9f8faa;
         }
 
-        @media(max-width:800px) {
-            nav {
-                padding: 0 20px;
+        /* =========================================================
+           TOAST
+        ========================================================= */
+
+        .toast-container {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+
+            z-index: 9999;
+
+            display: grid;
+            gap: 9px;
+        }
+
+        .toast {
+            min-width: 250px;
+            max-width: 350px;
+
+            padding: 14px 16px;
+
+            background: rgba(20,14,30,.92);
+            border: 1px solid rgba(255,255,255,.09);
+            border-radius: 14px;
+
+            box-shadow: 0 20px 50px rgba(0,0,0,.45);
+
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+
+            animation: toastIn .3s ease;
+        }
+
+        .toast-title {
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .toast-text {
+            color: var(--muted);
+            margin-top: 3px;
+            font-size: 11px;
+        }
+
+        .toast.success {
+            border-color: rgba(52,211,153,.2);
+        }
+
+        .toast.error {
+            border-color: rgba(251,113,133,.2);
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px) scale(.97);
             }
 
-            .nav-badge {
-                display: none;
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* =========================================================
+           ANIMATIONS
+        ========================================================= */
+
+        .fade-up {
+            animation: fadeUp .7s cubic-bezier(.2,.7,.2,1) both;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
             }
 
-            .hero {
-                padding-top: 80px;
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
+        }
 
-            .hero h1 {
-                letter-spacing: -3px;
-            }
+        .delay-1 {
+            animation-delay: .08s;
+        }
 
-            .feature-grid,
-            .plans,
-            .login-fields {
+        .delay-2 {
+            animation-delay: .16s;
+        }
+
+        .delay-3 {
+            animation-delay: .24s;
+        }
+
+        /* =========================================================
+           RESPONSIVE
+        ========================================================= */
+
+        @media (max-width: 900px) {
+            .features {
                 grid-template-columns: 1fr;
             }
 
+            .plans {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .panel.full {
+                grid-column: auto;
+            }
+        }
+
+        @media (max-width: 650px) {
+            .navbar {
+                padding: 12px 15px;
+            }
+
+            .nav-pill {
+                display: none;
+            }
+
+            .container {
+                width: min(100% - 24px, 1180px);
+            }
+
+            .hero {
+                padding: 75px 0 60px;
+            }
+
+            .hero h1 {
+                font-size: 49px;
+            }
+
+            .hero p {
+                font-size: 14px;
+            }
+
             .access-card {
-                padding: 25px;
+                padding: 21px;
+            }
+
+            .key-row {
+                flex-direction: column;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+                margin-bottom: 65px;
+            }
+
+            .section-head {
+                align-items: start;
+                flex-direction: column;
+            }
+
+            .plans {
+                grid-template-columns: 1fr;
             }
 
             .dashboard-top {
@@ -900,13 +1207,22 @@
 
             .dashboard-actions {
                 width: 100%;
+                justify-content: stretch;
             }
 
-            .dashboard-button {
+            .dashboard-actions .btn {
                 flex: 1;
             }
 
-            .saved-card {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .panel {
+                padding: 18px;
+            }
+
+            .saved-item {
                 align-items: flex-start;
                 flex-direction: column;
             }
@@ -915,50 +1231,19 @@
                 width: 100%;
             }
 
-            .small-button {
+            .saved-actions .btn {
                 flex: 1;
             }
 
-            .dashboard-inner {
-                padding: 22px;
-            }
-        }
-
-        @media(max-width:500px) {
-            .hero h1 {
-                font-size: 44px;
+            .toast-container {
+                left: 12px;
+                right: 12px;
+                bottom: 12px;
             }
 
-            .access-wrap {
-                padding: 0 14px;
-            }
-
-            .section {
-                padding-left: 17px;
-                padding-right: 17px;
-            }
-
-            .dashboard-card {
-                padding-left: 14px;
-                padding-right: 14px;
-            }
-
-            .saved-panel,
-            .save-section,
-            .stock-panel {
-                padding: 18px;
-            }
-
-            .save-row {
-                flex-direction: column;
-            }
-        }
-
-        @media(prefers-reduced-motion:reduce) {
-            * {
-                scroll-behavior: auto !important;
-                transition: none !important;
-                animation: none !important;
+            .toast {
+                min-width: 0;
+                max-width: none;
             }
         }
     </style>
@@ -966,196 +1251,387 @@
 
 <body>
 
-<div class="orb orb-one"></div>
-<div class="orb orb-two"></div>
-<div class="orb orb-three"></div>
+    <div class="orb one"></div>
+    <div class="orb two"></div>
+    <div class="orb three"></div>
 
-<nav>
-    <a href="#" class="logo">
-        <div class="logo-icon">N</div>
-        <span>Novi</span>
-    </a>
+    <!-- =========================================================
+         NAVBAR
+    ========================================================== -->
 
-    <div class="nav-badge">GENERATOR</div>
-</nav>
+    <header class="navbar">
+        <div class="nav-inner">
 
-<main id="mainContent">
+            <div class="brand">
+                <div class="brand-logo">N</div>
 
-    <section class="hero">
-
-        <div class="eyebrow">
-            <span class="eyebrow-dot"></span>
-            NOVI GENERATOR
-        </div>
-
-        <h1>
-            Welcome to<br>
-            <span class="gradient-text">Novi Generator</span>
-        </h1>
-
-        <p>
-            Enter your Novi access key to unlock your dashboard
-            and access everything available to your account.
-        </p>
-
-    </section>
-
-    <section class="access-wrap">
-
-        <div class="access-card">
-
-            <div class="card-icon">🔐</div>
-
-            <h2>Enter Your Key</h2>
-
-            <p>
-                Use your valid Novi access key below to securely
-                unlock your generator dashboard.
-            </p>
-
-            <div class="input-label">
-                <span>ACCESS KEY</span>
-                <span>NOVI SECURE</span>
+                <div class="brand-text">
+                    No<span>vi</span>
+                </div>
             </div>
 
-            <div class="input-wrap">
+            <div class="nav-right">
+                <div class="nav-pill">
+                    <span class="status-dot"></span>
+                    System Online
+                </div>
 
-                <span class="key-icon">🔑</span>
-
-                <input
-                    id="keyInput"
-                    class="key-input"
-                    type="text"
-                    autocomplete="off"
-                    spellcheck="false"
-                    placeholder="NOVI-XXXX-XXXX-XXXX-XXXX"
+                <button
+                    id="navSaveLogin"
+                    class="btn btn-secondary btn-small"
+                    onclick="saveEmailPassword()"
                 >
-
-            </div>
-
-            <button
-                id="unlockButton"
-                class="unlock-button"
-                type="button"
-                onclick="unlock()"
-            >
-                Unlock Generator
-            </button>
-
-            <div id="message" class="message"></div>
-
-        </div>
-
-    </section>
-
-    <section class="section">
-
-        <div class="section-heading">
-            <span>Built for access</span>
-            <h2>Simple. Secure. Novi.</h2>
-        </div>
-
-        <div class="feature-grid">
-
-            <div class="feature-card">
-                <div class="feature-icon">🔒</div>
-                <h3>Secure Access</h3>
-                <p>Your access key is verified directly through the Novi server.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">⚡</div>
-                <h3>Fast Access</h3>
-                <p>Get into your Novi dashboard quickly without unnecessary steps.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">✦</div>
-                <h3>Clean Dashboard</h3>
-                <p>Everything you need is organized in one clean interface.</p>
+                    👤 Save Login
+                </button>
             </div>
 
         </div>
+    </header>
 
-    </section>
 
-    <section class="section">
+    <main>
 
-        <div class="section-heading">
-            <span>Access options</span>
-            <h2>Choose your access.</h2>
-        </div>
+        <!-- =====================================================
+             HERO
+        ====================================================== -->
 
-        <div class="plans">
+        <section class="hero">
 
-            <div class="plan">
-                <div class="plan-name">Starter</div>
-                <h3>1 Day</h3>
-                <p>Short-term access for testing and quick use.</p>
+            <div class="container">
+
+                <div class="hero-badge fade-up">
+                    ✦ PREMIUM ACCESS SYSTEM
+                </div>
+
+                <h1 class="fade-up delay-1">
+                    Your access.<br>
+                    <span class="gradient">Your control.</span>
+                </h1>
+
+                <p class="fade-up delay-2">
+                    A clean, fast and secure dashboard for managing
+                    your Novi keys, saved logins and authorized inventory.
+                </p>
+
+                <div class="hero-actions fade-up delay-3">
+                    <a href="#access" class="btn btn-primary">
+                        🔐 Enter Dashboard
+                    </a>
+
+                    <a href="#features" class="btn btn-secondary">
+                        Explore Novi
+                    </a>
+                </div>
+
             </div>
 
-            <div class="plan featured">
-                <div class="plan-name">Popular</div>
-                <h3>1 Month</h3>
-                <p>Extended Novi access for regular users and communities.</p>
+        </section>
+
+
+        <!-- =====================================================
+             ACCESS
+        ====================================================== -->
+
+        <section id="access" class="container">
+
+            <div class="access-wrap">
+
+                <div class="glass access-card fade-up">
+
+                    <div class="section-label">
+                        Secure Access
+                    </div>
+
+                    <h2>Unlock your dashboard</h2>
+
+                    <p>
+                        Enter your Novi access key to continue.
+                        Your device is automatically bound to your access.
+                    </p>
+
+                    <div class="key-row">
+
+                        <input
+                            id="keyInput"
+                            class="input"
+                            type="text"
+                            placeholder="Enter your access key..."
+                            autocomplete="off"
+                        >
+
+                        <button
+                            class="btn btn-primary"
+                            onclick="unlock()"
+                        >
+                            Unlock
+                        </button>
+
+                    </div>
+
+                    <div id="unlockMessage" class="message"></div>
+
+                </div>
+
             </div>
 
-            <div class="plan">
-                <div class="plan-name">Ultimate</div>
-                <h3>Lifetime</h3>
-                <p>Long-term access without needing to renew your key.</p>
+        </section>
+
+
+        <!-- =====================================================
+             STATS
+        ====================================================== -->
+
+        <section class="container">
+
+            <div class="stats">
+
+                <div class="glass stat fade-up">
+                    <div class="stat-icon">⚡</div>
+
+                    <div class="stat-number">
+                        Fast
+                    </div>
+
+                    <div class="stat-title">
+                        Instant dashboard access
+                    </div>
+                </div>
+
+
+                <div class="glass stat fade-up delay-1">
+                    <div class="stat-icon">🔒</div>
+
+                    <div class="stat-number">
+                        Bound
+                    </div>
+
+                    <div class="stat-title">
+                        Device-based access protection
+                    </div>
+                </div>
+
+
+                <div class="glass stat fade-up delay-2">
+                    <div class="stat-icon">💾</div>
+
+                    <div class="stat-number">
+                        Saved
+                    </div>
+
+                    <div class="stat-title">
+                        Keep your keys and logins organized
+                    </div>
+                </div>
+
             </div>
 
-        </div>
+        </section>
 
-    </section>
 
-</main>
+        <!-- =====================================================
+             FEATURES
+        ====================================================== -->
 
-<section id="dashboard">
+        <section id="features" class="container">
 
-    <div class="dashboard-card">
+            <div class="section-head">
 
-        <div class="dashboard-inner">
+                <div>
+                    <div class="section-label">
+                        Built for simplicity
+                    </div>
+
+                    <h2>Everything in one place.</h2>
+
+                    <p>
+                        Manage your Novi access without unnecessary clutter.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="features">
+
+                <div class="glass feature fade-up">
+                    <div class="feature-icon">🔑</div>
+
+                    <h3>Key Management</h3>
+
+                    <p>
+                        Save your authorized Novi keys directly in your browser
+                        and copy them whenever you need them.
+                    </p>
+                </div>
+
+
+                <div class="glass feature fade-up delay-1">
+                    <div class="feature-icon">👤</div>
+
+                    <h3>Saved Logins</h3>
+
+                    <p>
+                        Keep your login details organized in a dedicated
+                        section with quick copy controls.
+                    </p>
+                </div>
+
+
+                <div class="glass feature fade-up delay-2">
+                    <div class="feature-icon">📦</div>
+
+                    <h3>Inventory</h3>
+
+                    <p>
+                        View available legitimate inventory and generate
+                        an authorized item when available.
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             PLANS
+        ====================================================== -->
+
+        <section class="container">
+
+            <div class="section-head">
+
+                <div>
+                    <div class="section-label">
+                        Access options
+                    </div>
+
+                    <h2>Choose your access.</h2>
+
+                    <p>
+                        Simple plans. No unnecessary complexity.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="plans">
+
+                <div class="glass plan">
+                    <h3>1 Day</h3>
+
+                    <div class="plan-price">
+                        1D
+                    </div>
+
+                    <ul>
+                        <li>Dashboard access</li>
+                        <li>Device binding</li>
+                        <li>Key management</li>
+                    </ul>
+                </div>
+
+
+                <div class="glass plan">
+                    <h3>1 Week</h3>
+
+                    <div class="plan-price">
+                        7D
+                    </div>
+
+                    <ul>
+                        <li>Dashboard access</li>
+                        <li>Device binding</li>
+                        <li>Key management</li>
+                    </ul>
+                </div>
+
+
+                <div class="glass plan featured">
+
+                    <div class="plan-badge">
+                        Popular
+                    </div>
+
+                    <h3>1 Month</h3>
+
+                    <div class="plan-price">
+                        30D
+                    </div>
+
+                    <ul>
+                        <li>Dashboard access</li>
+                        <li>Device binding</li>
+                        <li>Key management</li>
+                    </ul>
+                </div>
+
+
+                <div class="glass plan">
+                    <h3>Lifetime</h3>
+
+                    <div class="plan-price">
+                        ∞
+                    </div>
+
+                    <ul>
+                        <li>Dashboard access</li>
+                        <li>Device binding</li>
+                        <li>Key management</li>
+                    </ul>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             DASHBOARD
+        ====================================================== -->
+
+        <section id="dashboard" class="container">
 
             <div class="dashboard-top">
 
-                <div class="dashboard-title-row">
+                <div class="dashboard-title">
 
-                    <div class="dashboard-icon">⚡</div>
+                    <div class="dashboard-avatar">
+                        ✦
+                    </div>
 
                     <div>
-                        <h2>Novi Dashboard</h2>
-                        <p>Your access has been verified.</p>
+                        <h2>Dashboard</h2>
+
+                        <p>
+                            Your Novi control center
+                        </p>
                     </div>
 
                 </div>
 
+
                 <div class="dashboard-actions">
 
-                    <!-- SAVE KEY -->
                     <button
                         id="saveKeyButton"
-                        class="dashboard-button"
-                        type="button"
-                        onclick="saveKey()"
+                        class="btn btn-secondary btn-small"
+                        onclick="saveCurrentKey()"
                     >
                         🔑 Save Key
                     </button>
 
-                    <!-- SAVE LOGIN -->
                     <button
                         id="saveLoginButton"
-                        class="dashboard-button"
-                        type="button"
+                        class="btn btn-secondary btn-small"
                         onclick="saveEmailPassword()"
                     >
                         👤 Save Login
                     </button>
 
                     <button
-                        class="dashboard-button logout-button"
-                        type="button"
+                        class="btn btn-danger btn-small"
                         onclick="logout()"
                     >
                         Log Out
@@ -1165,1540 +1641,1544 @@
 
             </div>
 
-            <div id="loginStatus" class="login-status">
-                Nothing saved on this browser yet.
-            </div>
 
-            <!-- SAVE LOGIN -->
+            <div class="dashboard-grid">
 
-            <div class="save-section" id="loginSaveSection">
+                <!-- =================================================
+                     SAVE LOGIN
+                ================================================== -->
 
-                <h3>👤 Save Login</h3>
+                <div class="glass panel">
 
-                <p>
-                    Enter the email and password you want to save.
-                    Press Save Login and it will automatically be stored.
-                </p>
+                    <div class="panel-header">
 
-                <div class="login-fields">
+                        <div class="panel-title">
 
-                    <input
-                        id="emailInput"
-                        class="login-input"
-                        type="email"
-                        autocomplete="username"
-                        placeholder="Email address"
-                    >
+                            <div class="panel-icon">
+                                👤
+                            </div>
 
-                    <div class="password-wrap">
+                            <div>
+                                <h3>Save Login</h3>
+                                <p>Store your login locally</p>
+                            </div>
 
-                        <input
-                            id="passwordInput"
-                            class="login-input"
-                            type="password"
-                            autocomplete="current-password"
-                            placeholder="Password"
-                        >
+                        </div>
+
+                    </div>
+
+
+                    <div class="save-login-box">
+
+                        <div class="form-grid">
+
+                            <div>
+
+                                <label class="form-label">
+                                    Email
+                                </label>
+
+                                <input
+                                    id="emailInput"
+                                    class="input"
+                                    type="email"
+                                    placeholder="you@example.com"
+                                    autocomplete="off"
+                                >
+
+                            </div>
+
+
+                            <div>
+
+                                <label class="form-label">
+                                    Password
+                                </label>
+
+                                <input
+                                    id="passwordInput"
+                                    class="input"
+                                    type="password"
+                                    placeholder="Password"
+                                    autocomplete="off"
+                                >
+
+                            </div>
+
+                        </div>
+
 
                         <button
-                            id="showPasswordButton"
-                            class="show-password"
-                            type="button"
-                            onclick="togglePassword()"
+                            class="btn btn-primary"
+                            onclick="saveEmailPassword()"
                         >
-                            Show
+                            💾 Save Login
                         </button>
 
                     </div>
 
                 </div>
 
-                <div class="save-row">
+
+                <!-- =================================================
+                     DEVICE
+                ================================================== -->
+
+                <div class="glass panel">
+
+                    <div class="panel-header">
+
+                        <div class="panel-title">
+
+                            <div class="panel-icon">
+                                🛡️
+                            </div>
+
+                            <div>
+                                <h3>Device Security</h3>
+                                <p>Your access binding</p>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="save-login-box">
+
+                        <div class="form-label">
+                            DEVICE ID
+                        </div>
+
+                        <div
+                            id="deviceIdDisplay"
+                            class="saved-value"
+                            style="word-break:break-all;white-space:normal;"
+                        >
+                            Loading...
+                        </div>
+
+                        <button
+                            class="btn btn-secondary"
+                            style="width:100%;margin-top:12px;"
+                            onclick="copyDeviceId()"
+                        >
+                            📋 Copy Device ID
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     SAVED KEYS
+                ================================================== -->
+
+                <div class="glass panel">
+
+                    <div class="panel-header">
+
+                        <div class="panel-title">
+
+                            <div class="panel-icon">
+                                🔑
+                            </div>
+
+                            <div>
+                                <h3>Saved Keys</h3>
+                                <p>Your locally saved access keys</p>
+                            </div>
+
+                        </div>
+
+                        <span
+                            id="savedKeyCount"
+                            class="nav-pill"
+                        >
+                            0
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        id="savedKeysList"
+                        class="saved-list"
+                    ></div>
+
+                </div>
+
+
+                <!-- =================================================
+                     SAVED LOGINS
+                ================================================== -->
+
+                <div class="glass panel">
+
+                    <div class="panel-header">
+
+                        <div class="panel-title">
+
+                            <div class="panel-icon">
+                                👤
+                            </div>
+
+                            <div>
+                                <h3>Saved Logins</h3>
+                                <p>Your locally saved login details</p>
+                            </div>
+
+                        </div>
+
+                        <span
+                            id="savedLoginCount"
+                            class="nav-pill"
+                        >
+                            0
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        id="savedLoginsList"
+                        class="saved-list"
+                    ></div>
+
+                </div>
+
+
+                <!-- =================================================
+                     STOCK
+                ================================================== -->
+
+                <div class="glass panel full stock-card">
+
+                    <div class="stock-content">
+
+                        <div class="panel-header">
+
+                            <div class="panel-title">
+
+                                <div class="panel-icon">
+                                    📦
+                                </div>
+
+                                <div>
+                                    <h3>Authorized Inventory</h3>
+                                    <p>Available legitimate inventory</p>
+                                </div>
+
+                            </div>
+
+
+                            <button
+                                class="btn btn-secondary btn-small"
+                                onclick="loadStock()"
+                            >
+                                ↻ Refresh
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            id="stockNumber"
+                            class="stock-number"
+                        >
+                            0
+                        </div>
+
+                        <div class="stock-label">
+                            items currently available
+                        </div>
+
+
+                        <div
+                            id="stockItems"
+                            class="stock-items"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     GENERATE
+                ================================================== -->
+
+                <div class="glass panel full">
+
+                    <div class="panel-header">
+
+                        <div class="panel-title">
+
+                            <div class="panel-icon">
+                                ✨
+                            </div>
+
+                            <div>
+                                <h3>Generate Inventory Item</h3>
+                                <p>Claim one available authorized item</p>
+                            </div>
+
+                        </div>
+
+                    </div>
+
 
                     <button
-                        type="button"
-                        onclick="saveEmailPassword()"
+                        id="generateButton"
+                        class="btn btn-primary"
+                        style="width:100%;"
+                        onclick="generateStock()"
                     >
-                        🔐 Save Login
+                        ✨ Generate Available Item
                     </button>
 
-                    <button
-                        type="button"
-                        onclick="clearLoginFields()"
-                    >
-                        Clear
-                    </button>
-
-                </div>
-
-                <div
-                    id="loginSaveMessage"
-                    class="message"
-                ></div>
-
-            </div>
-
-            <!-- SAVED KEYS -->
-
-            <div class="saved-panel">
-
-                <div class="saved-header">
-
-                    <div>
-                        <h3>🔑 Saved Keys</h3>
-                        <p>Your saved Novi access keys.</p>
-                    </div>
 
                     <div
-                        id="savedKeyCount"
-                        class="saved-count"
-                    >
-                        0
-                    </div>
-
-                </div>
-
-                <div
-                    id="savedKeysList"
-                    class="saved-list"
-                ></div>
-
-            </div>
-
-            <!-- SAVED LOGINS -->
-
-            <div class="saved-panel">
-
-                <div class="saved-header">
-
-                    <div>
-                        <h3>🔐 Saved Logins</h3>
-                        <p>Your saved email and password logins.</p>
-                    </div>
-
-                    <div
-                        id="savedAccountCount"
-                        class="saved-count"
-                    >
-                        0
-                    </div>
-
-                </div>
-
-                <div
-                    id="savedAccountsList"
-                    class="saved-list"
-                ></div>
-
-            </div>
-
-            <!-- STOCK -->
-
-            <div class="stock-panel">
-
-                <div class="stock-header">
-
-                    <div>
-                        <div class="stock-label">Inventory</div>
-                        <div class="stock-title">Epic Games Stock</div>
-                    </div>
-
-                    <div class="stock-count">
-                        <span id="stockCount">0</span>
-                        <small>IN STOCK</small>
-                    </div>
-
-                </div>
-
-                <div class="stock-description">
-                    Generate one available legitimate inventory item.
-                    Each generated item is removed from the available stock.
-                </div>
-
-                <button
-                    id="generateButton"
-                    class="generate-button"
-                    type="button"
-                    onclick="generateStock()"
-                >
-                    ⚡ Generate
-                </button>
-
-                <div
-                    id="stockMessage"
-                    class="stock-message"
-                ></div>
-
-                <div
-                    id="generatedItem"
-                    class="generated-item"
-                    style="display:none;"
-                >
-
-                    <div class="generated-label">
-                        GENERATED ITEM
-                    </div>
-
-                    <div
-                        id="generatedValue"
-                        class="generated-value"
+                        id="generateResult"
+                        class="message"
                     ></div>
 
                 </div>
 
             </div>
 
+        </section>
+
+    </main>
+
+
+    <!-- =========================================================
+         FOOTER
+    ========================================================== -->
+
+    <footer>
+        <div class="container">
+            <strong>Novi</strong> — Premium Access System
+            <br>
+            Built for authorized use.
         </div>
-
-    </div>
-
-</section>
-
-<footer>
-    <strong>Novi</strong> — Secure access system.
-</footer>
-
-<script>
-
-const API_URL = "https://novi-1.onrender.com";
-
-const input =
-    document.getElementById("keyInput");
-
-const unlockButton =
-    document.getElementById("unlockButton");
-
-const message =
-    document.getElementById("message");
-
-let currentKey = "";
-let deviceId = "";
+    </footer>
 
 
-/* =====================================================
-   DEVICE ID
-===================================================== */
+    <!-- =========================================================
+         TOASTS
+    ========================================================== -->
 
-function getDeviceId() {
+    <div
+        id="toastContainer"
+        class="toast-container"
+    ></div>
 
-    try {
 
-        let saved =
-            localStorage.getItem("noviDeviceId");
+    <script>
+        /* =========================================================
+           CONFIG
+        ========================================================= */
 
-        if (saved) {
+        const API_URL = "https://novi-1.onrender.com";
 
-            deviceId = saved;
-            return deviceId;
+        const DEVICE_STORAGE_KEY = "noviDeviceId";
+        const SAVED_KEYS_STORAGE = "noviSavedKeys";
+        const SAVED_ACCOUNTS_STORAGE = "noviSavedAccounts";
+
+
+        /* =========================================================
+           STATE
+        ========================================================= */
+
+        let currentKey = "";
+        let currentDeviceId = "";
+
+
+        /* =========================================================
+           DOM
+        ========================================================= */
+
+        const keyInput = document.getElementById("keyInput");
+        const emailInput = document.getElementById("emailInput");
+        const passwordInput = document.getElementById("passwordInput");
+
+        const unlockMessage =
+            document.getElementById("unlockMessage");
+
+        const generateResult =
+            document.getElementById("generateResult");
+
+
+        /* =========================================================
+           DEVICE ID
+        ========================================================= */
+
+        function getDeviceId() {
+
+            let id = localStorage.getItem(
+                DEVICE_STORAGE_KEY
+            );
+
+            if (!id) {
+
+                id =
+                    "device-" +
+                    crypto.randomUUID();
+
+                localStorage.setItem(
+                    DEVICE_STORAGE_KEY,
+                    id
+                );
+            }
+
+            return id;
+        }
+
+
+        currentDeviceId = getDeviceId();
+
+
+        document.getElementById(
+            "deviceIdDisplay"
+        ).textContent = currentDeviceId;
+
+
+        /* =========================================================
+           LOCAL STORAGE HELPERS
+        ========================================================= */
+
+        function getSavedKeys() {
+
+            try {
+
+                const data =
+                    JSON.parse(
+                        localStorage.getItem(
+                            SAVED_KEYS_STORAGE
+                        ) || "[]"
+                    );
+
+                return Array.isArray(data)
+                    ? data
+                    : [];
+
+            } catch {
+
+                return [];
+            }
+        }
+
+
+        function getSavedAccounts() {
+
+            try {
+
+                const data =
+                    JSON.parse(
+                        localStorage.getItem(
+                            SAVED_ACCOUNTS_STORAGE
+                        ) || "[]"
+                    );
+
+                return Array.isArray(data)
+                    ? data
+                    : [];
+
+            } catch {
+
+                return [];
+            }
+        }
+
+
+        function setSavedKeys(keys) {
+
+            localStorage.setItem(
+                SAVED_KEYS_STORAGE,
+                JSON.stringify(keys)
+            );
 
         }
 
-        if (
-            window.crypto &&
-            typeof window.crypto.randomUUID === "function"
+
+        function setSavedAccounts(accounts) {
+
+            localStorage.setItem(
+                SAVED_ACCOUNTS_STORAGE,
+                JSON.stringify(accounts)
+            );
+
+        }
+
+
+        /* =========================================================
+           TOAST
+        ========================================================== */
+
+        function showToast(
+            title,
+            text,
+            type = "success"
         ) {
 
-            saved =
-                window.crypto.randomUUID();
+            const container =
+                document.getElementById(
+                    "toastContainer"
+                );
 
-        } else {
+            const toast =
+                document.createElement("div");
 
-            saved =
-                "novi-" +
-                Date.now().toString(36) +
-                "-" +
-                Math.random()
-                    .toString(36)
-                    .substring(2,15);
+            toast.className =
+                "toast " + type;
 
+            toast.innerHTML = `
+                <div class="toast-title">
+                    ${escapeHtml(title)}
+                </div>
+
+                <div class="toast-text">
+                    ${escapeHtml(text)}
+                </div>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+
+                toast.style.opacity = "0";
+                toast.style.transform =
+                    "translateY(8px)";
+
+                toast.style.transition =
+                    "all .25s ease";
+
+                setTimeout(() => {
+                    toast.remove();
+                }, 250);
+
+            }, 2800);
         }
 
-        localStorage.setItem(
-            "noviDeviceId",
-            saved
-        );
 
-        deviceId = saved;
+        /* =========================================================
+           ESCAPE HTML
+        ========================================================== */
 
-        return deviceId;
+        function escapeHtml(value) {
 
-    } catch (error) {
-
-        console.error(error);
-
-        return "";
-
-    }
-
-}
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
 
 
-/* =====================================================
-   SAVED KEYS
-===================================================== */
+        /* =========================================================
+           COPY
+        ========================================================== */
 
-function getSavedKeys() {
+        async function copyText(
+            text,
+            successMessage = "Copied to clipboard."
+        ) {
 
-    try {
+            try {
 
-        const raw =
-            localStorage.getItem("noviSavedKeys");
+                await navigator.clipboard.writeText(
+                    String(text)
+                );
 
-        if (!raw) return [];
+                showToast(
+                    "Copied",
+                    successMessage
+                );
 
-        const data =
-            JSON.parse(raw);
+                return true;
 
-        if (!Array.isArray(data)) return [];
+            } catch {
 
-        return [
-            ...new Set(
-                data
-                    .map(key =>
-                        String(key)
-                            .trim()
-                            .toUpperCase()
+                try {
+
+                    const area =
+                        document.createElement(
+                            "textarea"
+                        );
+
+                    area.value = String(text);
+                    area.style.position = "fixed";
+                    area.style.opacity = "0";
+
+                    document.body.appendChild(area);
+
+                    area.focus();
+                    area.select();
+
+                    document.execCommand("copy");
+
+                    area.remove();
+
+                    showToast(
+                        "Copied",
+                        successMessage
+                    );
+
+                    return true;
+
+                } catch {
+
+                    showToast(
+                        "Copy failed",
+                        "Your browser blocked clipboard access.",
+                        "error"
+                    );
+
+                    return false;
+                }
+            }
+        }
+
+
+        function copyDeviceId() {
+
+            copyText(
+                currentDeviceId,
+                "Device ID copied."
+            );
+        }
+
+
+        /* =========================================================
+           SAVE CURRENT KEY
+        ========================================================== */
+
+        function saveCurrentKey() {
+
+            if (!currentKey) {
+
+                showToast(
+                    "No key",
+                    "Unlock with a key first.",
+                    "error"
+                );
+
+                return;
+            }
+
+            const keys = getSavedKeys();
+
+            if (keys.includes(currentKey)) {
+
+                showToast(
+                    "Already saved",
+                    "This key is already in your saved keys."
+                );
+
+                return;
+            }
+
+            keys.unshift(currentKey);
+
+            setSavedKeys(keys);
+
+            renderSavedKeys();
+            updateSaveButtons();
+
+            showToast(
+                "Key saved",
+                "Your key is now available in Saved Keys."
+            );
+        }
+
+
+        /* =========================================================
+           SAVE EMAIL + PASSWORD
+        ========================================================== */
+
+        function saveEmailPassword() {
+
+            const email =
+                emailInput.value.trim();
+
+            const password =
+                passwordInput.value;
+
+            if (!email || !password) {
+
+                showToast(
+                    "Missing information",
+                    "Enter both your email and password.",
+                    "error"
+                );
+
+                document
+                    .getElementById("dashboard")
+                    .scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+
+                emailInput.focus();
+
+                return;
+            }
+
+            const accounts =
+                getSavedAccounts();
+
+            const exists =
+                accounts.some(
+                    account =>
+                        account.email === email
+                );
+
+            if (exists) {
+
+                showToast(
+                    "Already saved",
+                    "A login with this email is already saved."
+                );
+
+                return;
+            }
+
+            accounts.unshift({
+                email,
+                password
+            });
+
+            setSavedAccounts(accounts);
+
+            renderSavedLogins();
+            updateSaveButtons();
+
+            emailInput.value = "";
+            passwordInput.value = "";
+
+            showToast(
+                "Login saved",
+                "Your login was saved locally."
+            );
+        }
+
+
+        /* =========================================================
+           DELETE SAVED KEY
+        ========================================================== */
+
+        function deleteSavedKey(index) {
+
+            const keys = getSavedKeys();
+
+            keys.splice(index, 1);
+
+            setSavedKeys(keys);
+
+            renderSavedKeys();
+            updateSaveButtons();
+
+            showToast(
+                "Key deleted",
+                "The saved key was removed."
+            );
+        }
+
+
+        /* =========================================================
+           DELETE LOGIN
+        ========================================================== */
+
+        function deleteSavedLogin(index) {
+
+            const accounts =
+                getSavedAccounts();
+
+            accounts.splice(index, 1);
+
+            setSavedAccounts(accounts);
+
+            renderSavedLogins();
+            updateSaveButtons();
+
+            showToast(
+                "Login deleted",
+                "The saved login was removed."
+            );
+        }
+
+
+        /* =========================================================
+           MASK PASSWORD
+        ========================================================== */
+
+        function maskPassword(password) {
+
+            return "•".repeat(
+                Math.min(
+                    Math.max(password.length, 8),
+                    18
+                )
+            );
+        }
+
+
+        /* =========================================================
+           RENDER SAVED KEYS
+        ========================================================== */
+
+        function renderSavedKeys() {
+
+            const list =
+                document.getElementById(
+                    "savedKeysList"
+                );
+
+            const count =
+                document.getElementById(
+                    "savedKeyCount"
+                );
+
+            const keys =
+                getSavedKeys();
+
+            count.textContent =
+                keys.length;
+
+            if (!keys.length) {
+
+                list.innerHTML = `
+                    <div class="empty-state">
+                        No saved keys yet.<br>
+                        Unlock a key and press "Save Key".
+                    </div>
+                `;
+
+                return;
+            }
+
+            list.innerHTML =
+                keys.map((key, index) => {
+
+                    return `
+                        <div class="saved-item">
+
+                            <div class="saved-main">
+
+                                <div class="saved-value">
+                                    ${escapeHtml(key)}
+                                </div>
+
+                                <div class="saved-meta">
+                                    Saved access key
+                                </div>
+
+                            </div>
+
+                            <div class="saved-actions">
+
+                                <button
+                                    class="btn btn-secondary btn-small"
+                                    onclick="copyText(
+                                        ${JSON.stringify(key)},
+                                        'Access key copied.'
+                                    )"
+                                >
+                                    Copy
+                                </button>
+
+                                <button
+                                    class="btn btn-danger btn-small"
+                                    onclick="deleteSavedKey(${index})"
+                                >
+                                    Delete
+                                </button>
+
+                            </div>
+
+                        </div>
+                    `;
+
+                }).join("");
+        }
+
+
+        /* =========================================================
+           RENDER SAVED LOGINS
+        ========================================================== */
+
+        function renderSavedLogins() {
+
+            const list =
+                document.getElementById(
+                    "savedLoginsList"
+                );
+
+            const count =
+                document.getElementById(
+                    "savedLoginCount"
+                );
+
+            const accounts =
+                getSavedAccounts();
+
+            count.textContent =
+                accounts.length;
+
+            if (!accounts.length) {
+
+                list.innerHTML = `
+                    <div class="empty-state">
+                        No saved logins yet.<br>
+                        Enter your details and press "Save Login".
+                    </div>
+                `;
+
+                return;
+            }
+
+            list.innerHTML =
+                accounts.map(
+                    (account, index) => {
+
+                    const combined =
+                        `${account.email}:${account.password}`;
+
+                    return `
+                        <div class="saved-item">
+
+                            <div class="saved-main">
+
+                                <div class="saved-value">
+                                    ${escapeHtml(account.email)}
+                                </div>
+
+                                <div class="saved-meta">
+                                    Password:
+                                    ${escapeHtml(
+                                        maskPassword(
+                                            account.password
+                                        )
+                                    )}
+                                </div>
+
+                            </div>
+
+                            <div class="saved-actions">
+
+                                <button
+                                    class="btn btn-secondary btn-small"
+                                    onclick="copyText(
+                                        ${JSON.stringify(combined)},
+                                        'Login copied.'
+                                    )"
+                                >
+                                    Copy
+                                </button>
+
+                                <button
+                                    class="btn btn-danger btn-small"
+                                    onclick="deleteSavedLogin(${index})"
+                                >
+                                    Delete
+                                </button>
+
+                            </div>
+
+                        </div>
+                    `;
+
+                }
+            ).join("");
+        }
+
+
+        /* =========================================================
+           UPDATE BUTTON STATES
+        ========================================================== */
+
+        function updateSaveButtons() {
+
+            const saveKeyButton =
+                document.getElementById(
+                    "saveKeyButton"
+                );
+
+            const saveLoginButton =
+                document.getElementById(
+                    "saveLoginButton"
+                );
+
+            const navSaveLogin =
+                document.getElementById(
+                    "navSaveLogin"
+                );
+
+            const savedKeys =
+                getSavedKeys();
+
+            const savedAccounts =
+                getSavedAccounts();
+
+            if (
+                currentKey &&
+                savedKeys.includes(currentKey)
+            ) {
+
+                saveKeyButton.innerHTML =
+                    "✓ Key Saved";
+
+            } else {
+
+                saveKeyButton.innerHTML =
+                    "🔑 Save Key";
+            }
+
+
+            if (
+                emailInput.value.trim() &&
+                passwordInput.value
+            ) {
+
+                saveLoginButton.innerHTML =
+                    "💾 Save Login";
+
+            } else {
+
+                saveLoginButton.innerHTML =
+                    "👤 Save Login";
+            }
+
+
+            navSaveLogin.innerHTML =
+                savedAccounts.length
+                    ? `👤 Save Login`
+                    : `👤 Save Login`;
+        }
+
+
+        /* =========================================================
+           UNLOCK
+        ========================================================== */
+
+        async function unlock() {
+
+            const key =
+                keyInput.value.trim();
+
+            if (!key) {
+
+                unlockMessage.textContent =
+                    "Please enter an access key.";
+
+                unlockMessage.style.color =
+                    "var(--danger)";
+
+                return;
+            }
+
+
+            unlockMessage.textContent =
+                "Checking access...";
+
+            unlockMessage.style.color =
+                "var(--muted)";
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/api/verify`,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                key,
+                                deviceId:
+                                    currentDeviceId
+                            })
+                        }
+                    );
+
+
+                const result =
+                    await response.json()
+                        .catch(() => ({}));
+
+
+                if (
+                    response.ok &&
+                    (
+                        result.success ||
+                        result.valid
                     )
-                    .filter(Boolean)
-            )
-        ];
+                ) {
 
-    } catch {
+                    currentKey = key;
 
-        return [];
+                    unlockMessage.textContent =
+                        "Access granted.";
 
-    }
+                    unlockMessage.style.color =
+                        "var(--success)";
 
-}
 
+                    document.getElementById(
+                        "dashboard"
+                    ).style.display = "block";
 
-function saveKeys(keys) {
 
-    try {
+                    document
+                        .getElementById("dashboard")
+                        .scrollIntoView({
+                            behavior: "smooth",
+                            block: "start"
+                        });
 
-        localStorage.setItem(
-            "noviSavedKeys",
-            JSON.stringify(keys)
-        );
 
-        return true;
+                    loadStock();
 
-    } catch {
+                    renderSavedKeys();
+                    renderSavedLogins();
 
-        return false;
+                    updateSaveButtons();
 
-    }
+                    showToast(
+                        "Access granted",
+                        "Welcome to your Novi dashboard."
+                    );
 
-}
+                } else {
 
+                    unlockMessage.textContent =
+                        result.message ||
+                        "Invalid or expired key.";
 
-/* =====================================================
-   SAVE KEY
-===================================================== */
+                    unlockMessage.style.color =
+                        "var(--danger)";
 
-function saveKey() {
-
-    if (!currentKey) {
-
-        return;
-
-    }
-
-    const button =
-        document.getElementById("saveKeyButton");
-
-    let keys =
-        getSavedKeys();
-
-    const key =
-        currentKey
-            .trim()
-            .toUpperCase();
-
-    if (keys.includes(key)) {
-
-        button.textContent =
-            "✓ Key Saved";
-
-        button.classList.add("saved");
-
-        updateStatus();
-
-        return;
-
-    }
-
-    keys.unshift(key);
-
-    if (!saveKeys(keys)) {
-
-        alert("Could not save the key.");
-        return;
-
-    }
-
-    button.textContent =
-        "✓ Key Saved";
-
-    button.classList.add("saved");
-
-    renderSavedKeys();
-    updateStatus();
-
-    setTimeout(() => {
-
-        button.textContent =
-            "🔑 Save Key";
-
-        button.classList.remove("saved");
-
-    },2500);
-
-}
-
-
-/* =====================================================
-   SAVED ACCOUNTS
-===================================================== */
-
-function getSavedAccounts() {
-
-    try {
-
-        const raw =
-            localStorage.getItem("noviSavedAccounts");
-
-        if (!raw) return [];
-
-        const data =
-            JSON.parse(raw);
-
-        if (!Array.isArray(data)) {
-            return [];
-        }
-
-        return data.filter(account =>
-            account &&
-            typeof account === "object" &&
-            typeof account.email === "string" &&
-            typeof account.password === "string"
-        );
-
-    } catch {
-
-        return [];
-
-    }
-
-}
-
-
-function saveAccounts(accounts) {
-
-    try {
-
-        localStorage.setItem(
-            "noviSavedAccounts",
-            JSON.stringify(accounts)
-        );
-
-        return true;
-
-    } catch {
-
-        return false;
-
-    }
-
-}
-
-
-/* =====================================================
-   SAVE EMAIL + PASSWORD
-===================================================== */
-
-function saveEmailPassword() {
-
-    const emailInput =
-        document.getElementById("emailInput");
-
-    const passwordInput =
-        document.getElementById("passwordInput");
-
-    const status =
-        document.getElementById("loginSaveMessage");
-
-    const topButton =
-        document.getElementById("saveLoginButton");
-
-    const email =
-        emailInput.value.trim();
-
-    const password =
-        passwordInput.value;
-
-    if (!email) {
-
-        status.textContent =
-            "Please enter an email.";
-
-        status.className =
-            "message error";
-
-        emailInput.focus();
-
-        return;
-
-    }
-
-    if (!password) {
-
-        status.textContent =
-            "Please enter a password.";
-
-        status.className =
-            "message error";
-
-        passwordInput.focus();
-
-        return;
-
-    }
-
-    let accounts =
-        getSavedAccounts();
-
-    const existingIndex =
-        accounts.findIndex(
-            account =>
-                account.email.toLowerCase() ===
-                email.toLowerCase()
-        );
-
-    const account = {
-        email: email,
-        password: password,
-        savedAt: Date.now()
-    };
-
-    if (existingIndex !== -1) {
-
-        accounts[existingIndex] =
-            account;
-
-    } else {
-
-        accounts.unshift(account);
-
-    }
-
-    if (!saveAccounts(accounts)) {
-
-        status.textContent =
-            "Could not save this login.";
-
-        status.className =
-            "message error";
-
-        return;
-
-    }
-
-    /* SUCCESS */
-
-    status.textContent =
-        "✓ Login saved successfully.";
-
-    status.className =
-        "message success";
-
-    topButton.textContent =
-        "✓ Login Saved";
-
-    topButton.classList.add("saved");
-
-    renderSavedAccounts();
-    updateStatus();
-
-    setTimeout(() => {
-
-        topButton.textContent =
-            "👤 Save Login";
-
-        topButton.classList.remove("saved");
-
-    },2500);
-
-}
-
-
-/* =====================================================
-   PASSWORD SHOW / HIDE
-===================================================== */
-
-function togglePassword() {
-
-    const password =
-        document.getElementById("passwordInput");
-
-    const button =
-        document.getElementById("showPasswordButton");
-
-    if (password.type === "password") {
-
-        password.type = "text";
-        button.textContent = "Hide";
-
-    } else {
-
-        password.type = "password";
-        button.textContent = "Show";
-
-    }
-
-}
-
-
-/* =====================================================
-   CLEAR LOGIN
-===================================================== */
-
-function clearLoginFields() {
-
-    document.getElementById(
-        "emailInput"
-    ).value = "";
-
-    document.getElementById(
-        "passwordInput"
-    ).value = "";
-
-    document.getElementById(
-        "passwordInput"
-    ).type = "password";
-
-    document.getElementById(
-        "showPasswordButton"
-    ).textContent = "Show";
-
-    const status =
-        document.getElementById(
-            "loginSaveMessage"
-        );
-
-    status.textContent = "";
-    status.className = "message";
-
-}
-
-
-/* =====================================================
-   FOCUS LOGIN
-===================================================== */
-
-function focusLoginFields() {
-
-    const section =
-        document.getElementById(
-            "loginSaveSection"
-        );
-
-    section.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-    });
-
-    setTimeout(() => {
-
-        document.getElementById(
-            "emailInput"
-        ).focus();
-
-    },500);
-
-}
-
-
-/* =====================================================
-   RENDER SAVED KEYS
-===================================================== */
-
-function renderSavedKeys() {
-
-    const list =
-        document.getElementById(
-            "savedKeysList"
-        );
-
-    const count =
-        document.getElementById(
-            "savedKeyCount"
-        );
-
-    const keys =
-        getSavedKeys();
-
-    count.textContent =
-        keys.length;
-
-    if (!keys.length) {
-
-        list.innerHTML = `
-            <div class="empty">
-                No saved keys yet.<br>
-                Click "Save Key" after unlocking.
-            </div>
-        `;
-
-        return;
-
-    }
-
-    list.innerHTML =
-        keys.map((key,index) => `
-
-            <div class="saved-card">
-
-                <div class="saved-info">
-
-                    <div class="saved-label">
-                        Saved Key ${index + 1}
-                    </div>
-
-                    <div class="saved-value">
-                        ${escapeHtml(key)}
-                    </div>
-
-                </div>
-
-                <div class="saved-actions">
-
-                    <button
-                        class="small-button copy-button"
-                        type="button"
-                        onclick="copyKey(${index},this)"
-                    >
-                        📋 Copy
-                    </button>
-
-                    <button
-                        class="small-button delete-button"
-                        type="button"
-                        onclick="deleteKey(${index})"
-                    >
-                        🗑 Delete
-                    </button>
-
-                </div>
-
-            </div>
-
-        `).join("");
-
-}
-
-
-/* =====================================================
-   RENDER SAVED ACCOUNTS
-===================================================== */
-
-function renderSavedAccounts() {
-
-    const list =
-        document.getElementById(
-            "savedAccountsList"
-        );
-
-    const count =
-        document.getElementById(
-            "savedAccountCount"
-        );
-
-    const accounts =
-        getSavedAccounts();
-
-    count.textContent =
-        accounts.length;
-
-    if (!accounts.length) {
-
-        list.innerHTML = `
-            <div class="empty">
-                No saved logins yet.<br>
-                Enter an email and password above.
-            </div>
-        `;
-
-        return;
-
-    }
-
-    list.innerHTML =
-        accounts.map((account,index) => `
-
-            <div class="saved-card">
-
-                <div class="saved-info">
-
-                    <div class="saved-label">
-                        Login ${index + 1}
-                    </div>
-
-                    <div class="saved-value">
-                        ${escapeHtml(account.email)}
-                    </div>
-
-                    <div class="saved-password">
-                        ••••••••••••••••
-                    </div>
-
-                </div>
-
-                <div class="saved-actions">
-
-                    <button
-                        class="small-button copy-button"
-                        type="button"
-                        onclick="copyAccount(${index},this)"
-                    >
-                        📋 Copy
-                    </button>
-
-                    <button
-                        class="small-button delete-button"
-                        type="button"
-                        onclick="deleteAccount(${index})"
-                    >
-                        🗑 Delete
-                    </button>
-
-                </div>
-
-            </div>
-
-        `).join("");
-
-}
-
-
-/* =====================================================
-   COPY KEY
-===================================================== */
-
-async function copyKey(index,button) {
-
-    const keys =
-        getSavedKeys();
-
-    const key =
-        keys[index];
-
-    if (!key) return;
-
-    await copyToClipboard(
-        key,
-        button,
-        "📋 Copy"
-    );
-
-}
-
-
-/* =====================================================
-   COPY LOGIN
-===================================================== */
-
-async function copyAccount(index,button) {
-
-    const accounts =
-        getSavedAccounts();
-
-    const account =
-        accounts[index];
-
-    if (!account) return;
-
-    const text =
-        `Email: ${account.email}\nPassword: ${account.password}`;
-
-    await copyToClipboard(
-        text,
-        button,
-        "📋 Copy"
-    );
-
-}
-
-
-/* =====================================================
-   CLIPBOARD
-===================================================== */
-
-async function copyToClipboard(
-    text,
-    button,
-    originalText
-) {
-
-    try {
-
-        if (
-            navigator.clipboard &&
-            navigator.clipboard.writeText
-        ) {
-
-            await navigator.clipboard.writeText(
-                text
-            );
-
-        } else {
-
-            const area =
-                document.createElement("textarea");
-
-            area.value = text;
-            area.style.position = "fixed";
-            area.style.opacity = "0";
-
-            document.body.appendChild(area);
-
-            area.focus();
-            area.select();
-
-            document.execCommand("copy");
-
-            area.remove();
-
-        }
-
-        button.textContent =
-            "✓ Copied";
-
-        button.classList.add("saved");
-
-        setTimeout(() => {
-
-            button.textContent =
-                originalText;
-
-            button.classList.remove("saved");
-
-        },1800);
-
-    } catch (error) {
-
-        console.error(
-            "Copy error:",
-            error
-        );
-
-        button.textContent =
-            "Copy failed";
-
-        setTimeout(() => {
-
-            button.textContent =
-                originalText;
-
-        },1800);
-
-    }
-
-}
-
-
-/* =====================================================
-   DELETE ACCOUNT
-===================================================== */
-
-function deleteAccount(index) {
-
-    const accounts =
-        getSavedAccounts();
-
-    if (!accounts[index]) return;
-
-    accounts.splice(
-        index,
-        1
-    );
-
-    saveAccounts(accounts);
-
-    renderSavedAccounts();
-    updateStatus();
-
-}
-
-
-/* =====================================================
-   DELETE KEY
-===================================================== */
-
-function deleteKey(index) {
-
-    const keys =
-        getSavedKeys();
-
-    if (!keys[index]) return;
-
-    keys.splice(
-        index,
-        1
-    );
-
-    saveKeys(keys);
-
-    renderSavedKeys();
-    updateStatus();
-    updateSaveButtons();
-
-}
-
-
-/* =====================================================
-   ESCAPE HTML
-===================================================== */
-
-function escapeHtml(value) {
-
-    return String(value)
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#039;");
-
-}
-
-
-/* =====================================================
-   STATUS
-===================================================== */
-
-function updateStatus() {
-
-    const status =
-        document.getElementById(
-            "loginStatus"
-        );
-
-    const keys =
-        getSavedKeys();
-
-    const accounts =
-        getSavedAccounts();
-
-    if (
-        !keys.length &&
-        !accounts.length
-    ) {
-
-        status.textContent =
-            "Nothing saved on this browser yet.";
-
-        status.className =
-            "login-status";
-
-        return;
-
-    }
-
-    status.textContent =
-        `✓ ${keys.length} saved key${keys.length === 1 ? "" : "s"} • ${accounts.length} saved login${accounts.length === 1 ? "" : "s"}`;
-
-    status.className =
-        "login-status saved";
-
-}
-
-
-/* =====================================================
-   UNLOCK
-===================================================== */
-
-async function unlock() {
-
-    const key =
-        input.value
-            .trim()
-            .toUpperCase();
-
-    if (!key) {
-
-        message.textContent =
-            "Please enter your Novi access key.";
-
-        message.className =
-            "message error";
-
-        input.focus();
-
-        return;
-
-    }
-
-    const currentDeviceId =
-        getDeviceId();
-
-    if (!currentDeviceId) {
-
-        message.textContent =
-            "Unable to identify this browser.";
-
-        message.className =
-            "message error";
-
-        return;
-
-    }
-
-    unlockButton.disabled = true;
-
-    unlockButton.textContent =
-        "Verifying...";
-
-    message.textContent = "";
-
-    try {
-
-        const response =
-            await fetch(
-                `${API_URL}/api/verify`,
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        key: key,
-                        deviceId: currentDeviceId
-                    })
+                    showToast(
+                        "Access denied",
+                        result.message ||
+                        "The key could not be verified.",
+                        "error"
+                    );
                 }
-            );
 
-        const result =
-            await response.json();
+            } catch (error) {
 
-        if (
-            !response.ok ||
-            (
-                !result.success &&
-                !result.valid
-            )
-        ) {
+                console.error(error);
 
-            message.textContent =
-                result.message ||
-                "Invalid or expired Novi key.";
+                unlockMessage.textContent =
+                    "Could not connect to the server.";
 
-            message.className =
-                "message error";
+                unlockMessage.style.color =
+                    "var(--danger)";
 
-            return;
-
+                showToast(
+                    "Connection error",
+                    "The Novi server could not be reached.",
+                    "error"
+                );
+            }
         }
 
-        currentKey = key;
 
-        document.getElementById(
-            "mainContent"
-        ).style.display = "none";
+        /* =========================================================
+           LOAD STOCK
+        ========================================================== */
 
-        document.getElementById(
-            "dashboard"
-        ).style.display = "block";
+        async function loadStock() {
 
+            const stockNumber =
+                document.getElementById(
+                    "stockNumber"
+                );
+
+            const stockItems =
+                document.getElementById(
+                    "stockItems"
+                );
+
+            stockNumber.textContent =
+                "…";
+
+            stockItems.innerHTML = `
+                <div class="empty-state">
+                    Loading inventory...
+                </div>
+            `;
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/api/stock`
+                    );
+
+
+                if (!response.ok) {
+                    throw new Error(
+                        "Stock request failed"
+                    );
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                let items = [];
+
+
+                if (Array.isArray(data)) {
+
+                    items = data;
+
+                } else if (
+                    Array.isArray(data.items)
+                ) {
+
+                    items = data.items;
+
+                } else if (
+                    Array.isArray(data.stock)
+                ) {
+
+                    items = data.stock;
+                }
+
+
+                stockNumber.textContent =
+                    items.length;
+
+
+                if (!items.length) {
+
+                    stockItems.innerHTML = `
+                        <div class="empty-state">
+                            No inventory is currently available.
+                        </div>
+                    `;
+
+                    return;
+                }
+
+
+                stockItems.innerHTML =
+                    items
+                        .slice(0, 10)
+                        .map(
+                            item => {
+
+                                const name =
+                                    typeof item === "string"
+                                        ? item
+                                        : (
+                                            item.name ||
+                                            item.title ||
+                                            item.id ||
+                                            "Inventory Item"
+                                        );
+
+                                return `
+                                    <div class="stock-item">
+
+                                        <span>
+                                            ${escapeHtml(name)}
+                                        </span>
+
+                                        <span>
+                                            Available
+                                        </span>
+
+                                    </div>
+                                `;
+
+                            }
+                        )
+                        .join("");
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                stockNumber.textContent =
+                    "—";
+
+                stockItems.innerHTML = `
+                    <div class="empty-state">
+                        Could not load inventory.
+                    </div>
+                `;
+            }
+        }
+
+
+        /* =========================================================
+           GENERATE STOCK
+        ========================================================== */
+
+        async function generateStock() {
+
+            if (!currentKey) {
+
+                showToast(
+                    "Access required",
+                    "Unlock your dashboard first.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            const button =
+                document.getElementById(
+                    "generateButton"
+                );
+
+
+            button.disabled = true;
+
+            button.style.opacity = ".6";
+
+            button.innerHTML =
+                "⏳ Generating...";
+
+
+            generateResult.textContent =
+                "Requesting an available item...";
+
+            generateResult.style.color =
+                "var(--muted)";
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/api/stock/generate`,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                key: currentKey,
+                                deviceId:
+                                    currentDeviceId
+                            })
+                        }
+                    );
+
+
+                const result =
+                    await response.json()
+                        .catch(() => ({}));
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        result.message ||
+                        "Generation failed."
+                    );
+                }
+
+
+                const item =
+                    result.item ||
+                    result.account ||
+                    result.key ||
+                    result.result ||
+                    result;
+
+
+                const text =
+                    typeof item === "string"
+                        ? item
+                        : JSON.stringify(
+                            item,
+                            null,
+                            2
+                        );
+
+
+                generateResult.innerHTML = `
+                    <div
+                        style="
+                            padding:15px;
+                            margin-top:12px;
+                            background:rgba(52,211,153,.06);
+                            border:1px solid rgba(52,211,153,.16);
+                            border-radius:14px;
+                        "
+                    >
+
+                        <div
+                            style="
+                                color:var(--success);
+                                font-size:11px;
+                                font-weight:900;
+                                margin-bottom:7px;
+                            "
+                        >
+                            ✓ ITEM GENERATED
+                        </div>
+
+                        <div
+                            style="
+                                color:#ddd4e7;
+                                font-family:monospace;
+                                font-size:12px;
+                                white-space:pre-wrap;
+                                word-break:break-word;
+                            "
+                        >
+                            ${escapeHtml(text)}
+                        </div>
+
+                        <button
+                            class="btn btn-secondary btn-small"
+                            style="margin-top:11px;"
+                            onclick="copyText(
+                                ${JSON.stringify(text)},
+                                'Generated item copied.'
+                            )"
+                        >
+                            📋 Copy
+                        </button>
+
+                    </div>
+                `;
+
+
+                showToast(
+                    "Item generated",
+                    "Your authorized inventory item is ready."
+                );
+
+
+                loadStock();
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                generateResult.textContent =
+                    error.message ||
+                    "Could not generate an item.";
+
+                generateResult.style.color =
+                    "var(--danger)";
+
+
+                showToast(
+                    "Generation failed",
+                    error.message ||
+                    "The inventory request failed.",
+                    "error"
+                );
+
+            } finally {
+
+                button.disabled = false;
+
+                button.style.opacity = "1";
+
+                button.innerHTML =
+                    "✨ Generate Available Item";
+            }
+        }
+
+
+        /* =========================================================
+           LOGOUT
+        ========================================================== */
+
+        function logout() {
+
+            currentKey = "";
+
+            keyInput.value = "";
+
+            document.getElementById(
+                "dashboard"
+            ).style.display = "none";
+
+            unlockMessage.textContent = "";
+
+            generateResult.textContent = "";
+
+            updateSaveButtons();
+
+
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+
+
+            showToast(
+                "Logged out",
+                "Your current dashboard session has ended."
+            );
+        }
+
+
+        /* =========================================================
+           ENTER KEY
+        ========================================================== */
+
+        keyInput.addEventListener(
+            "keydown",
+            event => {
+
+                if (event.key === "Enter") {
+                    unlock();
+                }
+
+            }
+        );
+
+
+        emailInput.addEventListener(
+            "input",
+            updateSaveButtons
+        );
+
+
+        passwordInput.addEventListener(
+            "input",
+            updateSaveButtons
+        );
+
+
+        /* =========================================================
+           INITIALIZE
+        ========================================================== */
+
+        renderSavedKeys();
+        renderSavedLogins();
         updateSaveButtons();
-        renderSavedKeys();
-        renderSavedAccounts();
-        updateStatus();
 
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
-
-        loadStock();
-
-    } catch (error) {
-
-        console.error(
-            "Unlock error:",
-            error
-        );
-
-        message.textContent =
-            "Unable to connect to the Novi server.";
-
-        message.className =
-            "message error";
-
-    } finally {
-
-        unlockButton.disabled = false;
-
-        unlockButton.textContent =
-            "Unlock Generator";
-
-    }
-
-}
-
-
-/* =====================================================
-   SAVE BUTTON STATE
-===================================================== */
-
-function updateSaveButtons() {
-
-    const keyButton =
-        document.getElementById(
-            "saveKeyButton"
-        );
-
-    const loginButton =
-        document.getElementById(
-            "saveLoginButton"
-        );
-
-    const keys =
-        getSavedKeys();
-
-    const accounts =
-        getSavedAccounts();
-
-    /* KEY BUTTON */
-
-    if (
-        currentKey &&
-        keys.includes(
-            currentKey
-                .trim()
-                .toUpperCase()
-        )
-    ) {
-
-        keyButton.textContent =
-            "✓ Key Saved";
-
-        keyButton.classList.add(
-            "saved"
-        );
-
-    } else {
-
-        keyButton.textContent =
-            "🔑 Save Key";
-
-        keyButton.classList.remove(
-            "saved"
-        );
-
-    }
-
-    /* LOGIN BUTTON */
-
-    const email =
-        document.getElementById(
-            "emailInput"
-        ).value.trim();
-
-    const savedLogin =
-        email &&
-        accounts.some(
-            account =>
-                account.email.toLowerCase() ===
-                email.toLowerCase()
-        );
-
-    if (savedLogin) {
-
-        loginButton.textContent =
-            "✓ Login Saved";
-
-        loginButton.classList.add(
-            "saved"
-        );
-
-    } else {
-
-        loginButton.textContent =
-            "👤 Save Login";
-
-        loginButton.classList.remove(
-            "saved"
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-   LOAD STOCK
-===================================================== */
-
-async function loadStock() {
-
-    const count =
-        document.getElementById(
-            "stockCount"
-        );
-
-    try {
-
-        const response =
-            await fetch(
-                `${API_URL}/api/stock`
-            );
-
-        if (!response.ok) {
-
-            throw new Error(
-                "Stock request failed"
-            );
-
-        }
-
-        const result =
-            await response.json();
-
-        count.textContent =
-            result.count ?? 0;
-
-    } catch (error) {
-
-        console.error(
-            "Stock error:",
-            error
-        );
-
-        count.textContent =
-            "—";
-
-    }
-
-}
-
-
-/* =====================================================
-   GENERATE STOCK
-===================================================== */
-
-async function generateStock() {
-
-    const button =
-        document.getElementById(
-            "generateButton"
-        );
-
-    const stockMessage =
-        document.getElementById(
-            "stockMessage"
-        );
-
-    const generatedItem =
-        document.getElementById(
-            "generatedItem"
-        );
-
-    const generatedValue =
-        document.getElementById(
-            "generatedValue"
-        );
-
-    if (!currentKey) {
-
-        stockMessage.textContent =
-            "Please unlock your Novi key first.";
-
-        stockMessage.className =
-            "stock-message error";
-
-        return;
-
-    }
-
-    const currentDeviceId =
-        getDeviceId();
-
-    if (!currentDeviceId) {
-
-        stockMessage.textContent =
-            "Unable to identify this browser.";
-
-        stockMessage.className =
-            "stock-message error";
-
-        return;
-
-    }
-
-    button.disabled = true;
-
-    button.textContent =
-        "Generating...";
-
-    stockMessage.textContent = "";
-
-    try {
-
-        const response =
-            await fetch(
-                `${API_URL}/api/stock/generate`,
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        key: currentKey,
-                        deviceId: currentDeviceId
-                    })
-                }
-            );
-
-        const result =
-            await response.json();
-
-        if (
-            !response.ok ||
-            !result.success
-        ) {
-
-            stockMessage.textContent =
-                result.message ||
-                "No legitimate stock is available.";
-
-            stockMessage.className =
-                "stock-message error";
-
-            return;
-
-        }
-
-        generatedValue.textContent =
-            result.item;
-
-        generatedItem.style.display =
-            "block";
-
-        stockMessage.textContent =
-            "Item generated successfully and removed from stock.";
-
-        stockMessage.className =
-            "stock-message success";
-
-        document.getElementById(
-            "stockCount"
-        ).textContent =
-            result.remaining;
-
-    } catch (error) {
-
-        console.error(
-            "Generate error:",
-            error
-        );
-
-        stockMessage.textContent =
-            "Unable to connect to the Novi server.";
-
-        stockMessage.className =
-            "stock-message error";
-
-    } finally {
-
-        button.disabled = false;
-
-        button.textContent =
-            "⚡ Generate";
-
-    }
-
-}
-
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-function logout() {
-
-    document.getElementById(
-        "dashboard"
-    ).style.display = "none";
-
-    document.getElementById(
-        "mainContent"
-    ).style.display = "block";
-
-    currentKey = "";
-
-    message.textContent = "";
-    message.className = "message";
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
-
-}
-
-
-/* =====================================================
-   ENTER KEY
-===================================================== */
-
-input.addEventListener(
-    "keydown",
-    event => {
-
-        if (event.key === "Enter") {
-            unlock();
-        }
-
-    }
-);
-
-
-/* =====================================================
-   LOGIN INPUT CHANGE
-===================================================== */
-
-document.getElementById(
-    "emailInput"
-).addEventListener(
-    "input",
-    updateSaveButtons
-);
-
-
-/* =====================================================
-   PAGE LOAD
-===================================================== */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        getDeviceId();
-
-        renderSavedKeys();
-        renderSavedAccounts();
-        updateStatus();
-
-    }
-);
-
-</script>
+    </script>
 
 </body>
 </html>
