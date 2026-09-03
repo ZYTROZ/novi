@@ -1,4 +1,3 @@
-```js
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
@@ -6,64 +5,124 @@ const path = require("path");
 
 const app = express();
 
-// Render gives the app its port through process.env.PORT
+/* =========================================================
+   CONFIG
+========================================================= */
+
 const PORT = process.env.PORT || 3000;
 
-// Location of keys.json
+const PUBLIC_DIR = path.join(__dirname, "public");
 const KEY_FILE = path.join(__dirname, "keys.json");
 
-// Middleware
+/* =========================================================
+   MIDDLEWARE
+========================================================= */
+
 app.use(cors());
 app.use(express.json());
 
-// Serve your website from the public folder
-app.use(express.static(path.join(__dirname, "public")));
+/* =========================================================
+   CHECK PUBLIC FOLDER
+========================================================= */
 
-// Create keys.json if it doesn't exist
-if (!fs.existsSync(KEY_FILE)) {
-    fs.writeFileSync(KEY_FILE, JSON.stringify({}, null, 2));
+if (!fs.existsSync(PUBLIC_DIR)) {
+    console.error("ERROR: The 'public' folder does not exist.");
+    console.error("Make sure your project looks like this:");
+    console.error("");
+    console.error("project/");
+    console.error("├── server.js");
+    console.error("├── package.json");
+    console.error("├── keys.json");
+    console.error("└── public/");
+    console.error("    └── index.html");
 }
 
-// Load keys
+/* =========================================================
+   KEYS FILE
+========================================================= */
+
+if (!fs.existsSync(KEY_FILE)) {
+    try {
+        fs.writeFileSync(
+            KEY_FILE,
+            JSON.stringify({}, null, 2),
+            "utf8"
+        );
+
+        console.log("Created keys.json");
+    } catch (error) {
+        console.error("Could not create keys.json:", error);
+    }
+}
+
+/* =========================================================
+   KEY FUNCTIONS
+========================================================= */
+
 function loadKeys() {
     try {
-        return JSON.parse(fs.readFileSync(KEY_FILE, "utf8"));
+        if (!fs.existsSync(KEY_FILE)) {
+            return {};
+        }
+
+        const data = fs.readFileSync(KEY_FILE, "utf8");
+
+        if (!data.trim()) {
+            return {};
+        }
+
+        return JSON.parse(data);
     } catch (error) {
         console.error("Could not load keys.json:", error);
         return {};
     }
 }
 
-// Save keys
 function saveKeys(keys) {
-    fs.writeFileSync(KEY_FILE, JSON.stringify(keys, null, 2));
+    try {
+        fs.writeFileSync(
+            KEY_FILE,
+            JSON.stringify(keys, null, 2),
+            "utf8"
+        );
+
+        return true;
+    } catch (error) {
+        console.error("Could not save keys.json:", error);
+        return false;
+    }
 }
 
-// Convert duration into an expiration date
+/* =========================================================
+   EXPIRATION
+========================================================= */
+
 function getExpiration(duration) {
     const now = new Date();
 
     switch (duration) {
         case "1d":
             return new Date(
-                now.getTime() + 1 * 24 * 60 * 60 * 1000
-            );
+                now.getTime() +
+                24 * 60 * 60 * 1000
+            ).toISOString();
 
         case "1week":
             return new Date(
-                now.getTime() + 7 * 24 * 60 * 60 * 1000
-            );
+                now.getTime() +
+                7 * 24 * 60 * 60 * 1000
+            ).toISOString();
 
         case "1month": {
-            const month = new Date(now);
-            month.setMonth(month.getMonth() + 1);
-            return month;
+            const date = new Date(now);
+            date.setMonth(date.getMonth() + 1);
+            return date.toISOString();
         }
 
         case "1year": {
-            const year = new Date(now);
-            year.setFullYear(year.getFullYear() + 1);
-            return year;
+            const date = new Date(now);
+            date.setFullYear(date.getFullYear() + 1);
+            return date.toISOString();
         }
 
         case "lifetime":
@@ -74,106 +133,284 @@ function getExpiration(duration) {
     }
 }
 
-// Homepage
+/* =========================================================
+   SERVE WEBSITE
+========================================================= */
+
+app.use(
+    express.static(PUBLIC_DIR, {
+        extensions: ["html"],
+        index: "index.html"
+    })
+);
+
+/* =========================================================
+   HOMEPAGE
+========================================================= */
+
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
+    const indexPath = path.join(PUBLIC_DIR, "index.html");
+
+    if (!fs.existsSync(indexPath)) {
+        return res.status(404).send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Novi - Website Error</title>
+                <style>
+                    body {
+                        background: #0b0b10;
+                        color: white;
+                        font-family: Arial, sans-serif;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: 100vh;
+                        margin: 0;
+                        text-align: center;
+                    }
+
+                    .box {
+                        max-width: 600px;
+                        padding: 40px;
+                    }
+
+                    h1 {
+                        color: #ff3b3b;
+                    }
+
+                    p {
+                        color: #aaa;
+                        line-height: 1.6;
+                    }
+
+                    code {
+                        background: #181820;
+                        padding: 4px 8px;
+                        border-radius: 6px;
+                    }
+                </style>
+            </head>
+
+            <body>
+                <div class="box">
+                    <h1>Novi Website Error</h1>
+
+                    <p>
+                        The server is running, but
+                        <code>public/index.html</code>
+                        was not found.
+                    </p>
+
+                    <p>
+                        Put your website files inside the
+                        <code>public</code> folder.
+                    </p>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    res.sendFile(indexPath);
 });
 
-// Create a key
+/* =========================================================
+   CREATE KEY
+========================================================= */
+
 app.post("/api/keys", (req, res) => {
-    const { key, duration } = req.body;
+    try {
+        const { key, duration } = req.body || {};
 
-    if (!key || !duration) {
-        return res.status(400).json({
+        if (!key || !duration) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing key or duration."
+            });
+        }
+
+        const cleanKey = String(key).trim();
+
+        const allowedDurations = [
+            "1d",
+            "1week",
+            "1month",
+            "1year",
+            "lifetime"
+        ];
+
+        if (!allowedDurations.includes(duration)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid duration."
+            });
+        }
+
+        if (!cleanKey) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid key."
+            });
+        }
+
+        const keys = loadKeys();
+
+        if (keys[cleanKey]) {
+            return res.status(409).json({
+                success: false,
+                message: "Key already exists."
+            });
+        }
+
+        keys[cleanKey] = {
+            duration: duration,
+            createdAt: new Date().toISOString(),
+            expiresAt: getExpiration(duration),
+            used: false
+        };
+
+        const saved = saveKeys(keys);
+
+        if (!saved) {
+            return res.status(500).json({
+                success: false,
+                message: "Could not save key."
+            });
+        }
+
+        console.log(
+            `Saved key: ${cleanKey} (${duration})`
+        );
+
+        return res.json({
+            success: true,
+            message: "Key saved successfully."
+        });
+
+    } catch (error) {
+        console.error("Create key error:", error);
+
+        return res.status(500).json({
             success: false,
-            message: "Missing key or duration."
+            message: "Internal server error."
         });
     }
-
-    const allowedDurations = [
-        "1d",
-        "1week",
-        "1month",
-        "1year",
-        "lifetime"
-    ];
-
-    if (!allowedDurations.includes(duration)) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid duration."
-        });
-    }
-
-    const keys = loadKeys();
-
-    // Don't allow duplicate keys
-    if (keys[key]) {
-        return res.status(409).json({
-            success: false,
-            message: "Key already exists."
-        });
-    }
-
-    keys[key] = {
-        duration: duration,
-        createdAt: new Date().toISOString(),
-        expiresAt: getExpiration(duration),
-        used: false
-    };
-
-    saveKeys(keys);
-
-    // Correct JavaScript template literal
-  console.log(`Saved key: ${key} (${duration})`);
-
-    res.json({
-        success: true,
-        message: "Key saved successfully."
-    });
 });
 
-// Verify a key
+/* =========================================================
+   VERIFY KEY
+========================================================= */
+
 app.post("/api/verify", (req, res) => {
-    const { key } = req.body;
+    try {
+        const { key } = req.body || {};
 
-    if (!key) {
-        return res.status(400).json({
-            valid: false,
-            message: "Please enter a key."
-        });
-    }
+        if (!key) {
+            return res.status(400).json({
+                valid: false,
+                message: "Please enter a key."
+            });
+        }
 
-    const keys = loadKeys();
-    const keyData = keys[key];
+        const cleanKey = String(key).trim();
 
-    if (!keyData) {
+        const keys = loadKeys();
+        const keyData = keys[cleanKey];
+
+        if (!keyData) {
+            return res.json({
+                valid: false,
+                message: "Invalid Novi key."
+            });
+        }
+
+        /* Check expiration */
+
+        if (keyData.expiresAt) {
+            const expirationDate =
+                new Date(keyData.expiresAt);
+
+            if (
+                Number.isNaN(expirationDate.getTime()) ||
+                new Date() > expirationDate
+            ) {
+                return res.json({
+                    valid: false,
+                    message: "This Novi key has expired."
+                });
+            }
+        }
+
         return res.json({
+            valid: true,
+            duration: keyData.duration,
+            expiresAt: keyData.expiresAt
+        });
+
+    } catch (error) {
+        console.error("Verify key error:", error);
+
+        return res.status(500).json({
             valid: false,
-            message: "Invalid Novi key."
+            message: "Internal server error."
         });
     }
+});
 
-    // Check expiration
-    if (
-        keyData.expiresAt &&
-        new Date() > new Date(keyData.expiresAt)
-    ) {
-        return res.json({
-            valid: false,
-            message: "This Novi key has expired."
-        });
-    }
+/* =========================================================
+   HEALTH CHECK
+========================================================= */
 
+app.get("/api/health", (req, res) => {
     res.json({
-        valid: true,
-        duration: keyData.duration,
-        expiresAt: keyData.expiresAt
+        online: true,
+        message: "Novi server is running."
     });
 });
 
-// Start server
+/* =========================================================
+   404 API HANDLER
+========================================================= */
+
+app.use("/api", (req, res) => {
+    res.status(404).json({
+        success: false,
+        message: "API endpoint not found."
+    });
+});
+
+/* =========================================================
+   ERROR HANDLER
+========================================================= */
+
+app.use((error, req, res, next) => {
+    console.error("Server error:", error);
+
+    res.status(500).json({
+        success: false,
+        message: "Internal server error."
+    });
+});
+
+/* =========================================================
+   START SERVER
+========================================================= */
+
 app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Novi server running on port ${PORT}`);
+    console.log("");
+    console.log("=================================");
+    console.log("       NOVI SERVER ONLINE");
+    console.log("=================================");
+    console.log(`Port: ${PORT}`);
+    console.log(`Public folder: ${PUBLIC_DIR}`);
+    console.log(`Keys file: ${KEY_FILE}`);
+    console.log("");
+    console.log("Website should be available at:");
+    console.log(`http://localhost:${PORT}`);
+    console.log("");
+    console.log("Health check:");
+    console.log(`http://localhost:${PORT}/api/health`);
+    console.log("=================================");
 });
 ```
