@@ -6,17 +6,17 @@ const path = require("path");
 
 const app = express();
 
-// Render provides the PORT automatically
+// Render gives the app its port through process.env.PORT
 const PORT = process.env.PORT || 3000;
 
-// File where your keys are stored
+// Location of keys.json
 const KEY_FILE = path.join(__dirname, "keys.json");
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Serve everything inside the public folder
+// Serve your website from the public folder
 app.use(express.static(path.join(__dirname, "public")));
 
 // Create keys.json if it doesn't exist
@@ -29,6 +29,7 @@ function loadKeys() {
     try {
         return JSON.parse(fs.readFileSync(KEY_FILE, "utf8"));
     } catch (error) {
+        console.error("Could not load keys.json:", error);
         return {};
     }
 }
@@ -73,7 +74,7 @@ function getExpiration(duration) {
     }
 }
 
-// Website homepage
+// Homepage
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
@@ -123,6 +124,7 @@ app.post("/api/keys", (req, res) => {
 
     saveKeys(keys);
 
+    // Correct JavaScript template literal
     console.log(`Saved key: ${key} (${duration})`);
 
     res.json({
@@ -131,7 +133,7 @@ app.post("/api/keys", (req, res) => {
     });
 });
 
-// Check a key
+// Verify a key
 app.post("/api/verify", (req, res) => {
     const { key } = req.body;
 
