@@ -750,6 +750,181 @@
             word-break: break-word;
         }
 
+        /* EPIC GAMES STOCK */
+
+        .stock-panel {
+            margin-top: 18px;
+            padding: 24px;
+
+            border: 1px solid var(--border-purple);
+            border-radius: 20px;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(139, 92, 246, 0.08),
+                    rgba(255,255,255,0.025)
+                );
+
+            box-shadow:
+                0 20px 60px rgba(0,0,0,0.25),
+                inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+
+        .stock-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .stock-label {
+            color: var(--purple-3);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .stock-title {
+            margin-top: 5px;
+            font-size: 19px;
+            font-weight: 800;
+        }
+
+        .stock-count {
+            min-width: 95px;
+            padding: 10px 14px;
+
+            text-align: center;
+
+            border: 1px solid rgba(53,213,138,0.15);
+            border-radius: 12px;
+
+            background: rgba(53,213,138,0.06);
+        }
+
+        .stock-count span {
+            display: block;
+
+            color: var(--green);
+            font-size: 22px;
+            font-weight: 900;
+        }
+
+        .stock-count small {
+            color: #83cbaa;
+            font-size: 8px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .stock-description {
+            margin-top: 18px;
+
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .generate-button {
+            width: 100%;
+            height: 52px;
+            margin-top: 18px;
+
+            border: 0;
+            border-radius: 13px;
+
+            color: white;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #a78bfa,
+                    #7c3aed
+                );
+
+            font-weight: 800;
+            cursor: pointer;
+
+            box-shadow:
+                0 12px 35px rgba(124,58,237,0.25);
+
+            transition: 0.25s ease;
+        }
+
+        .generate-button:hover {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 18px 45px rgba(124,58,237,0.38);
+        }
+
+        .generate-button:disabled {
+            opacity: 0.55;
+            cursor: wait;
+            transform: none;
+        }
+
+        .stock-message {
+            min-height: 18px;
+            margin-top: 12px;
+
+            text-align: center;
+
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .stock-message.success {
+            color: var(--green);
+        }
+
+        .stock-message.error {
+            color: var(--red);
+        }
+
+        .generated-item {
+            margin-top: 15px;
+            padding: 17px;
+
+            border: 1px solid rgba(139,92,246,0.25);
+            border-radius: 14px;
+
+            background: rgba(0,0,0,0.22);
+
+            animation: generatedIn 0.3s ease both;
+        }
+
+        .generated-label {
+            color: var(--muted-2);
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 1.2px;
+        }
+
+        .generated-value {
+            margin-top: 8px;
+
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+
+            word-break: break-word;
+        }
+
+        @keyframes generatedIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .logout-button {
             margin-top: 20px;
             width: 100%;
@@ -867,6 +1042,15 @@
                 flex-direction: column;
             }
 
+            .stock-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .stock-count {
+                width: 100%;
+            }
+
             footer {
                 flex-direction: column;
                 gap: 10px;
@@ -879,12 +1063,17 @@
 <body>
 
     <nav class="nav">
+
         <div class="brand">
-            <div class="brand-logo">N</div>
+
+            <div class="brand-logo">
+                N
+            </div>
 
             <div class="brand-text">
                 No<span>vi</span>
             </div>
+
         </div>
 
         <div class="nav-right">
@@ -894,11 +1083,16 @@
                 System Online
             </div>
 
-            <button class="nav-button" type="button" onclick="focusKey()">
+            <button
+                class="nav-button"
+                type="button"
+                onclick="focusKey()"
+            >
                 Enter Key
             </button>
 
         </div>
+
     </nav>
 
 
@@ -1002,7 +1196,6 @@
 
                     </div>
 
-
                     <div class="feature">
 
                         <div class="feature-icon">
@@ -1019,7 +1212,6 @@
                         </p>
 
                     </div>
-
 
                     <div class="feature">
 
@@ -1074,7 +1266,6 @@
 
                     </div>
 
-
                     <div class="plan">
 
                         <h3>1 Week</h3>
@@ -1088,7 +1279,6 @@
                         </p>
 
                     </div>
-
 
                     <div class="plan popular">
 
@@ -1107,7 +1297,6 @@
                         </p>
 
                     </div>
-
 
                     <div class="plan">
 
@@ -1132,6 +1321,8 @@
     </main>
 
 
+    <!-- DASHBOARD -->
+
     <section id="dashboard">
 
         <div class="page">
@@ -1141,17 +1332,23 @@
                 <div class="dashboard-top">
 
                     <div>
+
                         <div class="dashboard-title">
                             Welcome to Novi
                         </div>
+
                     </div>
 
                     <div class="active-badge">
+
                         <div class="status-dot"></div>
+
                         Access Active
+
                     </div>
 
                 </div>
+
 
                 <div class="dashboard-grid">
 
@@ -1188,6 +1385,84 @@
 
                 </div>
 
+
+                <!-- EPIC GAMES STOCK -->
+
+                <div class="stock-panel">
+
+                    <div class="stock-header">
+
+                        <div>
+
+                            <div class="stock-label">
+                                Inventory
+                            </div>
+
+                            <div class="stock-title">
+                                Epic Games Stock
+                            </div>
+
+                        </div>
+
+
+                        <div class="stock-count">
+
+                            <span id="stockCount">
+                                0
+                            </span>
+
+                            <small>
+                                IN STOCK
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="stock-description">
+                        Generate one available legitimate inventory item.
+                        Each generated item is removed from the available
+                        stock.
+                    </div>
+
+
+                    <button
+                        id="generateButton"
+                        class="generate-button"
+                        type="button"
+                        onclick="generateStock()"
+                    >
+                        ⚡ Generate
+                    </button>
+
+
+                    <div
+                        id="stockMessage"
+                        class="stock-message"
+                    ></div>
+
+
+                    <div
+                        id="generatedItem"
+                        class="generated-item"
+                        style="display:none;"
+                    >
+
+                        <div class="generated-label">
+                            GENERATED ITEM
+                        </div>
+
+                        <div
+                            id="generatedValue"
+                            class="generated-value"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+
                 <button
                     class="logout-button"
                     type="button"
@@ -1218,13 +1493,13 @@
 
     <script>
 
-        /*
-         * Novi API
-         *
-         * The website and API are hosted on Render.
-         */
-        const API_URL = "https://novi-1.onrender.com";
+        const API_URL =
+            "https://novi-1.onrender.com";
 
+
+        /* =========================
+           KEY LOGIN
+        ========================= */
 
         function focusKey() {
 
@@ -1277,6 +1552,7 @@
                 input.focus();
 
                 return;
+
             }
 
 
@@ -1301,7 +1577,8 @@
                             method: "POST",
 
                             headers: {
-                                "Content-Type": "application/json"
+                                "Content-Type":
+                                    "application/json"
                             },
 
                             body: JSON.stringify({
@@ -1354,22 +1631,32 @@
                     setTimeout(function() {
 
                         const loginPage =
-                            document.getElementById("loginPage");
+                            document.getElementById(
+                                "loginPage"
+                            );
 
                         const dashboard =
-                            document.getElementById("dashboard");
+                            document.getElementById(
+                                "dashboard"
+                            );
 
                         const displayKey =
-                            document.getElementById("displayKey");
+                            document.getElementById(
+                                "displayKey"
+                            );
 
                         const displayDuration =
-                            document.getElementById("displayDuration");
+                            document.getElementById(
+                                "displayDuration"
+                            );
 
 
-                        if (!loginPage ||
+                        if (
+                            !loginPage ||
                             !dashboard ||
                             !displayKey ||
-                            !displayDuration) {
+                            !displayDuration
+                        ) {
                             return;
                         }
 
@@ -1388,6 +1675,9 @@
                             duration;
 
 
+                        loadStock();
+
+
                         window.scrollTo({
                             top: 0,
                             behavior: "smooth"
@@ -1395,7 +1685,9 @@
 
                     }, 500);
 
+
                     return;
+
                 }
 
 
@@ -1435,25 +1727,254 @@
         }
 
 
+        /* =========================
+           STOCK COUNT
+        ========================= */
+
+        async function loadStock() {
+
+            const countElement =
+                document.getElementById(
+                    "stockCount"
+                );
+
+
+            if (!countElement) {
+                return;
+            }
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/api/stock`
+                    );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Stock request failed"
+                    );
+
+                }
+
+
+                const result =
+                    await response.json();
+
+
+                countElement.textContent =
+                    result.count ?? 0;
+
+
+            } catch (error) {
+
+                console.error(
+                    "Stock error:",
+                    error
+                );
+
+                countElement.textContent =
+                    "—";
+
+            }
+
+        }
+
+
+        /* =========================
+           GENERATE STOCK
+        ========================= */
+
+        async function generateStock() {
+
+            const button =
+                document.getElementById(
+                    "generateButton"
+                );
+
+            const message =
+                document.getElementById(
+                    "stockMessage"
+                );
+
+            const generatedItem =
+                document.getElementById(
+                    "generatedItem"
+                );
+
+            const generatedValue =
+                document.getElementById(
+                    "generatedValue"
+                );
+
+
+            if (
+                !button ||
+                !message ||
+                !generatedItem ||
+                !generatedValue
+            ) {
+                return;
+            }
+
+
+            button.disabled = true;
+
+            button.textContent =
+                "Generating...";
+
+
+            message.textContent =
+                "";
+
+            message.className =
+                "stock-message";
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/api/stock/generate`,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            }
+                        }
+                    );
+
+
+                const result =
+                    await response.json();
+
+
+                if (
+                    !response.ok ||
+                    !result.success
+                ) {
+
+                    message.textContent =
+                        result.message ||
+                        "No Epic Games stock is available.";
+
+                    message.className =
+                        "stock-message error";
+
+                    return;
+
+                }
+
+
+                generatedValue.textContent =
+                    result.item;
+
+
+                generatedItem.style.display =
+                    "block";
+
+
+                message.textContent =
+                    "Item generated successfully and removed from stock.";
+
+                message.className =
+                    "stock-message success";
+
+
+                const countElement =
+                    document.getElementById(
+                        "stockCount"
+                    );
+
+
+                if (countElement) {
+
+                    countElement.textContent =
+                        result.remaining;
+
+                }
+
+
+            } catch (error) {
+
+                console.error(
+                    "Generate error:",
+                    error
+                );
+
+
+                message.textContent =
+                    "Unable to connect to the Novi server.";
+
+                message.className =
+                    "stock-message error";
+
+
+            } finally {
+
+                button.disabled = false;
+
+                button.textContent =
+                    "⚡ Generate";
+
+            }
+
+        }
+
+
+        /* =========================
+           LOGOUT
+        ========================= */
+
         function logout() {
 
             const dashboard =
-                document.getElementById("dashboard");
+                document.getElementById(
+                    "dashboard"
+                );
 
             const loginPage =
-                document.getElementById("loginPage");
+                document.getElementById(
+                    "loginPage"
+                );
 
             const input =
-                document.getElementById("keyInput");
+                document.getElementById(
+                    "keyInput"
+                );
 
             const message =
-                document.getElementById("message");
+                document.getElementById(
+                    "message"
+                );
+
+            const generatedItem =
+                document.getElementById(
+                    "generatedItem"
+                );
+
+            const generatedValue =
+                document.getElementById(
+                    "generatedValue"
+                );
+
+            const stockMessage =
+                document.getElementById(
+                    "stockMessage"
+                );
 
 
-            if (!dashboard ||
+            if (
+                !dashboard ||
                 !loginPage ||
                 !input ||
-                !message) {
+                !message
+            ) {
                 return;
             }
 
@@ -1473,6 +1994,33 @@
                 "message";
 
 
+            if (generatedItem) {
+
+                generatedItem.style.display =
+                    "none";
+
+            }
+
+
+            if (generatedValue) {
+
+                generatedValue.textContent =
+                    "";
+
+            }
+
+
+            if (stockMessage) {
+
+                stockMessage.textContent =
+                    "";
+
+                stockMessage.className =
+                    "stock-message";
+
+            }
+
+
             window.scrollTo({
                 top: 0,
                 behavior: "smooth"
@@ -1488,31 +2036,40 @@
         }
 
 
+        /* =========================
+           ENTER KEY
+        ========================= */
+
         document.addEventListener(
             "DOMContentLoaded",
             function() {
 
                 const input =
-                    document.getElementById("keyInput");
+                    document.getElementById(
+                        "keyInput"
+                    );
 
-                if (!input) {
-                    return;
-                }
 
-                input.addEventListener(
-                    "keydown",
-                    function(event) {
+                if (input) {
 
-                        if (event.key === "Enter") {
+                    input.addEventListener(
+                        "keydown",
+                        function(event) {
 
-                            event.preventDefault();
+                            if (
+                                event.key === "Enter"
+                            ) {
 
-                            unlock();
+                                event.preventDefault();
+
+                                unlock();
+
+                            }
 
                         }
+                    );
 
-                    }
-                );
+                }
 
             }
         );
