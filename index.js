@@ -21,6 +21,8 @@ const ALLOWED_ROLE_IDS = [
     "1378500563456626719"
 ];
 
+const PORT = process.env.PORT || 3000;
+
 client.once("ready", () => {
     console.log(`Novi bot is online as ${client.user.tag}`);
 });
@@ -39,7 +41,9 @@ client.on("messageCreate", async (message) => {
 
     const args = message.content.trim().split(/\s+/);
 
-    if (args[0].toLowerCase() !== "!gen") return;
+    if (!args[0] || args[0].toLowerCase() !== "!gen") {
+        return;
+    }
 
     if (!message.member) {
         return message.reply(
@@ -76,10 +80,8 @@ client.on("messageCreate", async (message) => {
     const key = generateKey();
 
     try {
-        const port = process.env.PORT || 3000;
-
         const response = await axios.post(
-            `http://127.0.0.1:${port}/api/keys`,
+            `http://127.0.0.1:${PORT}/api/keys`,
             {
                 key: key,
                 duration: duration
@@ -95,7 +97,9 @@ client.on("messageCreate", async (message) => {
             );
         }
 
-        console.log(`✅ Saved key: ${key} (${duration})`);
+        console.log(
+            `✅ Saved key: ${key} (${duration})`
+        );
 
         return message.reply(
             `🔑 **Novi Key Generated**\n\n` +
@@ -114,5 +118,12 @@ client.on("messageCreate", async (message) => {
         );
     }
 });
+
+if (!process.env.DISCORD_TOKEN) {
+    console.error(
+        "❌ DISCORD_TOKEN is missing from Render Environment Variables."
+    );
+    process.exit(1);
+}
 
 client.login(process.env.DISCORD_TOKEN);
