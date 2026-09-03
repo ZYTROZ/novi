@@ -1390,6 +1390,83 @@
 
         let currentKey = "";
 
+        let deviceId = "";
+
+
+        /* =====================================================
+           CREATE / LOAD DEVICE ID
+           
+           This identifies this browser installation.
+           The server uses it to bind a Novi key to one device.
+        ===================================================== */
+
+        function getDeviceId() {
+
+            try {
+
+                let savedDeviceId =
+                    localStorage.getItem(
+                        "noviDeviceId"
+                    );
+
+                if (savedDeviceId) {
+
+                    deviceId =
+                        savedDeviceId;
+
+                    return deviceId;
+                }
+
+
+                if (
+                    window.crypto &&
+                    typeof window.crypto.randomUUID === "function"
+                ) {
+
+                    savedDeviceId =
+                        window.crypto.randomUUID();
+
+                } else {
+
+                    savedDeviceId =
+                        "novi-" +
+                        Date.now().toString(36) +
+                        "-" +
+                        Math.random()
+                            .toString(36)
+                            .substring(2, 15) +
+                        "-" +
+                        Math.random()
+                            .toString(36)
+                            .substring(2, 15);
+
+                }
+
+
+                localStorage.setItem(
+                    "noviDeviceId",
+                    savedDeviceId
+                );
+
+
+                deviceId =
+                    savedDeviceId;
+
+
+                return deviceId;
+
+            } catch (error) {
+
+                console.error(
+                    "Device ID error:",
+                    error
+                );
+
+                return "";
+
+            }
+        }
+
 
         /* =====================================================
            LOAD SAVED LOGIN
@@ -1583,6 +1660,26 @@
             }
 
 
+            /*
+             * Make sure this browser has a device ID.
+             */
+
+            const currentDeviceId =
+                getDeviceId();
+
+
+            if (!currentDeviceId) {
+
+                message.textContent =
+                    "Unable to identify this browser.";
+
+                message.className =
+                    "message error";
+
+                return;
+            }
+
+
             unlockButton.disabled = true;
 
             unlockButton.textContent =
@@ -1609,7 +1706,8 @@
                             },
 
                             body: JSON.stringify({
-                                key: key
+                                key: key,
+                                deviceId: currentDeviceId
                             })
                         }
                     );
@@ -1619,9 +1717,15 @@
                     await response.json();
 
 
+                /*
+                 * The server returns both `success`
+                 * and `valid` for compatibility.
+                 */
+
                 if (
                     !response.ok ||
-                    !result.success
+                    (!result.success &&
+                     !result.valid)
                 ) {
 
                     message.textContent =
@@ -1639,7 +1743,8 @@
                    REMEMBER CURRENT VERIFIED KEY
                 ============================================= */
 
-                currentKey = key;
+                currentKey =
+                    key;
 
 
                 /* =============================================
@@ -1785,6 +1890,39 @@
             }
 
 
+            /*
+             * Do not allow stock generation unless
+             * a verified key exists.
+             */
+
+            if (!currentKey) {
+
+                stockMessage.textContent =
+                    "Please unlock your Novi key first.";
+
+                stockMessage.className =
+                    "stock-message error";
+
+                return;
+            }
+
+
+            const currentDeviceId =
+                getDeviceId();
+
+
+            if (!currentDeviceId) {
+
+                stockMessage.textContent =
+                    "Unable to identify this browser.";
+
+                stockMessage.className =
+                    "stock-message error";
+
+                return;
+            }
+
+
             button.disabled = true;
 
             button.textContent =
@@ -1808,7 +1946,12 @@
                             headers: {
                                 "Content-Type":
                                     "application/json"
-                            }
+                            },
+
+                            body: JSON.stringify({
+                                key: currentKey,
+                                deviceId: currentDeviceId
+                            })
                         }
                     );
 
@@ -1888,6 +2031,10 @@
 
         /* =====================================================
            LOGOUT
+           
+           IMPORTANT:
+           We DO NOT remove the device ID.
+           This keeps the key bound to this browser.
         ===================================================== */
 
         function logout() {
@@ -1947,6 +2094,16 @@
         document.addEventListener(
             "DOMContentLoaded",
             function() {
+
+                /*
+                 * Create/load device ID first.
+                 */
+
+                getDeviceId();
+
+                /*
+                 * Then load saved key.
+                 */
 
                 loadSavedLogin();
 
