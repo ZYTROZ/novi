@@ -71,7 +71,6 @@ function loadKeys() {
         }
 
         return JSON.parse(data);
-
     } catch (error) {
         console.error(
             "Could not load keys:",
@@ -82,7 +81,6 @@ function loadKeys() {
     }
 }
 
-
 function saveKeys(keys) {
     try {
         fs.writeFileSync(
@@ -92,7 +90,6 @@ function saveKeys(keys) {
         );
 
         return true;
-
     } catch (error) {
         console.error(
             "Could not save keys:",
@@ -277,9 +274,6 @@ function verifyKeyForDevice(
 
     /* =====================================================
        FIRST ACTIVATION
-
-       The first device to successfully use the key
-       becomes the device that owns the activation.
     ===================================================== */
 
     if (!keyData.deviceId) {
@@ -323,11 +317,6 @@ function verifyKeyForDevice(
 
     /* =====================================================
        DIFFERENT DEVICE
-
-       This is the important protection.
-
-       If the key already belongs to another device,
-       reject the request.
     ===================================================== */
 
     if (
@@ -349,9 +338,6 @@ function verifyKeyForDevice(
 
     /* =====================================================
        SAME DEVICE
-
-       The original device is allowed to continue using
-       the key.
     ===================================================== */
 
     return {
@@ -420,7 +406,6 @@ function loadStock() {
     }
 }
 
-
 function saveStock(stock) {
 
     try {
@@ -469,16 +454,20 @@ if (
     );
 }
 
-
 app.use(
     express.static(
         PUBLIC_DIR,
         {
-            index: "index.html"
+            index: "index.html",
+            etag: false,
+            maxAge: 0
         }
     )
 );
 
+/* =========================================================
+   HOME PAGE
+========================================================= */
 
 app.get(
     "/",
@@ -532,12 +521,9 @@ app.post(
                 return res
                     .status(400)
                     .json({
-
                         success: false,
-
                         message:
                             "Missing key or duration."
-
                     });
             }
 
@@ -561,12 +547,9 @@ app.post(
                 return res
                     .status(400)
                     .json({
-
                         success: false,
-
                         message:
                             "Invalid duration."
-
                     });
             }
 
@@ -575,12 +558,9 @@ app.post(
                 return res
                     .status(400)
                     .json({
-
                         success: false,
-
                         message:
                             "Invalid key."
-
                     });
             }
 
@@ -594,12 +574,9 @@ app.post(
                 return res
                     .status(409)
                     .json({
-
                         success: false,
-
                         message:
                             "Key already exists."
-
                     });
             }
 
@@ -619,8 +596,6 @@ app.post(
 
                 used: false,
 
-                /* One-device binding */
-
                 deviceId: null,
 
                 activatedAt: null,
@@ -635,12 +610,9 @@ app.post(
                 return res
                     .status(500)
                     .json({
-
                         success: false,
-
                         message:
                             "Could not save key."
-
                     });
             }
 
@@ -649,12 +621,9 @@ app.post(
             );
 
             return res.json({
-
                 success: true,
-
                 message:
                     "Key saved successfully."
-
             });
 
         } catch (error) {
@@ -667,12 +636,9 @@ app.post(
             return res
                 .status(500)
                 .json({
-
                     success: false,
-
                     message:
                         "Internal server error."
-
                 });
         }
     }
@@ -698,16 +664,11 @@ app.post(
                 return res
                     .status(400)
                     .json({
-
                         success: false,
-
                         valid: false,
-
                         code: "MISSING_KEY",
-
                         message:
                             "Please enter a key."
-
                     });
             }
 
@@ -716,11 +677,6 @@ app.post(
                     key,
                     deviceId
                 );
-
-            /*
-                Return HTTP 403 when another device
-                attempts to use an already-bound key.
-            */
 
             if (
                 result.code ===
@@ -731,10 +687,6 @@ app.post(
                     .status(403)
                     .json(result);
             }
-
-            /*
-                Return HTTP 401 for invalid/expired keys.
-            */
 
             if (
                 !result.valid
@@ -759,23 +711,19 @@ app.post(
             return res
                 .status(500)
                 .json({
-
                     success: false,
-
                     valid: false,
-
                     code: "SERVER_ERROR",
-
                     message:
                         "Internal server error."
-
                 });
         }
     }
 );
 
 /* =========================================================
-   STOCK COUNT
+   STOCK
+   RETURNS ACTUAL STOCK LIST
 ========================================================= */
 
 app.get(
@@ -792,14 +740,17 @@ app.get(
                 success: true,
 
                 count:
-                    stock.length
+                    stock.length,
+
+                items:
+                    stock
 
             });
 
         } catch (error) {
 
             console.error(
-                "Stock count error:",
+                "Stock error:",
                 error
             );
 
@@ -810,6 +761,8 @@ app.get(
                     success: false,
 
                     count: 0,
+
+                    items: [],
 
                     message:
                         "Could not load stock."
@@ -840,12 +793,9 @@ app.post(
                 return res
                     .status(400)
                     .json({
-
                         success: false,
-
                         message:
                             "Items must be an array."
-
                     });
             }
 
@@ -856,12 +806,9 @@ app.post(
                 return res
                     .status(400)
                     .json({
-
                         success: false,
-
                         message:
                             "No items were provided."
-
                     });
             }
 
@@ -939,12 +886,9 @@ app.post(
                 return res
                     .status(500)
                     .json({
-
                         success: false,
-
                         message:
                             "Could not save stock."
-
                     });
             }
 
@@ -983,12 +927,9 @@ app.post(
             return res
                 .status(500)
                 .json({
-
                     success: false,
-
                     message:
                         "Could not add stock."
-
                 });
         }
     }
@@ -996,7 +937,6 @@ app.post(
 
 /* =========================================================
    GENERATE STOCK
-   REQUIRES VALID KEY + ORIGINAL DEVICE
 ========================================================= */
 
 app.post(
@@ -1015,16 +955,11 @@ app.post(
                 return res
                     .status(401)
                     .json({
-
                         success: false,
-
                         valid: false,
-
                         code: "MISSING_KEY",
-
                         message:
                             "A valid Novi key is required."
-
                     });
             }
 
@@ -1034,10 +969,6 @@ app.post(
                     deviceId
                 );
 
-            /* =================================================
-               DEVICE ALREADY IN USE
-            ================================================= */
-
             if (
                 verification.code ===
                 "DEVICE_IN_USE"
@@ -1046,22 +977,13 @@ app.post(
                 return res
                     .status(403)
                     .json({
-
                         success: false,
-
                         valid: false,
-
                         code: "DEVICE_IN_USE",
-
                         message:
                             "🚫 Device Already In Use — this Novi key is already activated on another device."
-
                     });
             }
-
-            /* =================================================
-               OTHER VERIFICATION FAILURE
-            ================================================= */
 
             if (
                 !verification.valid
@@ -1070,25 +992,16 @@ app.post(
                 return res
                     .status(403)
                     .json({
-
                         success: false,
-
                         valid: false,
-
                         code:
                             verification.code ||
                             "KEY_VERIFICATION_FAILED",
-
                         message:
                             verification.message ||
                             "Novi key verification failed."
-
                     });
             }
-
-            /* =================================================
-               LOAD STOCK
-            ================================================= */
 
             const stock =
                 loadStock();
@@ -1100,18 +1013,11 @@ app.post(
                 return res
                     .status(400)
                     .json({
-
                         success: false,
-
                         message:
-                            "No Epic Games stock is available."
-
+                            "No authorized inventory is available."
                     });
             }
-
-            /* =================================================
-               REMOVE FIRST ITEM
-            ================================================= */
 
             const item =
                 stock.shift();
@@ -1125,17 +1031,14 @@ app.post(
                 return res
                     .status(500)
                     .json({
-
                         success: false,
-
                         message:
                             "Could not remove the item from stock."
-
                     });
             }
 
             console.log(
-                `Generated stock item. Remaining: ${stock.length}`
+                `Generated inventory item. Remaining: ${stock.length}`
             );
 
             return res.json({
@@ -1160,12 +1063,9 @@ app.post(
             return res
                 .status(500)
                 .json({
-
                     success: false,
-
                     message:
-                        "Could not generate stock."
-
+                        "Could not generate inventory."
                 });
         }
     }
@@ -1204,12 +1104,9 @@ app.use(
         return res
             .status(404)
             .json({
-
                 success: false,
-
                 message:
                     "API endpoint not found."
-
             });
     }
 );
@@ -1240,12 +1137,9 @@ app.use(
         return res
             .status(500)
             .json({
-
                 success: false,
-
                 message:
                     "Internal server error."
-
             });
     }
 );
@@ -1323,7 +1217,6 @@ const server =
             );
         }
     );
-
 
 server.on(
     "error",
