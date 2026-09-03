@@ -5,60 +5,23 @@ const path = require("path");
 
 const app = express();
 
-/* =========================================================
-   CONFIG
-========================================================= */
-
 const PORT = process.env.PORT || 3000;
-
 const PUBLIC_DIR = path.join(__dirname, "public");
 const KEY_FILE = path.join(__dirname, "keys.json");
-
-/* =========================================================
-   MIDDLEWARE
-========================================================= */
 
 app.use(cors());
 app.use(express.json());
 
-/* =========================================================
-   CHECK PUBLIC FOLDER
-========================================================= */
-
-if (!fs.existsSync(PUBLIC_DIR)) {
-    console.error("ERROR: The 'public' folder does not exist.");
-    console.error("Make sure your project looks like this:");
-    console.error("");
-    console.error("project/");
-    console.error("├── server.js");
-    console.error("├── package.json");
-    console.error("├── keys.json");
-    console.error("└── public/");
-    console.error("    └── index.html");
-}
-
-/* =========================================================
-   KEYS FILE
-========================================================= */
-
+/* Create keys.json if it doesn't exist */
 if (!fs.existsSync(KEY_FILE)) {
-    try {
-        fs.writeFileSync(
-            KEY_FILE,
-            JSON.stringify({}, null, 2),
-            "utf8"
-        );
-
-        console.log("Created keys.json");
-    } catch (error) {
-        console.error("Could not create keys.json:", error);
-    }
+    fs.writeFileSync(
+        KEY_FILE,
+        JSON.stringify({}, null, 2),
+        "utf8"
+    );
 }
 
-/* =========================================================
-   KEY FUNCTIONS
-========================================================= */
-
+/* Load keys */
 function loadKeys() {
     try {
         if (!fs.existsSync(KEY_FILE)) {
@@ -73,11 +36,12 @@ function loadKeys() {
 
         return JSON.parse(data);
     } catch (error) {
-        console.error("Could not load keys.json:", error);
+        console.error("Could not load keys:", error);
         return {};
     }
 }
 
+/* Save keys */
 function saveKeys(keys) {
     try {
         fs.writeFileSync(
@@ -88,29 +52,24 @@ function saveKeys(keys) {
 
         return true;
     } catch (error) {
-        console.error("Could not save keys.json:", error);
+        console.error("Could not save keys:", error);
         return false;
     }
 }
 
-/* =========================================================
-   EXPIRATION
-========================================================= */
-
+/* Get expiration date */
 function getExpiration(duration) {
     const now = new Date();
 
     switch (duration) {
         case "1d":
             return new Date(
-                now.getTime() +
-                24 * 60 * 60 * 1000
+                now.getTime() + 24 * 60 * 60 * 1000
             ).toISOString();
 
         case "1week":
             return new Date(
-                now.getTime() +
-                7 * 24 * 60 * 60 * 1000
+                now.getTime() + 7 * 24 * 60 * 60 * 1000
             ).toISOString();
 
         case "1month": {
@@ -133,92 +92,34 @@ function getExpiration(duration) {
     }
 }
 
-/* =========================================================
-   SERVE WEBSITE
-========================================================= */
+/* Check that public folder exists */
+if (!fs.existsSync(PUBLIC_DIR)) {
+    console.error("ERROR: public folder does not exist!");
+} else {
+    console.log("Public folder found.");
+}
 
+/* Serve website */
 app.use(
     express.static(PUBLIC_DIR, {
-        extensions: ["html"],
         index: "index.html"
     })
 );
 
-/* =========================================================
-   HOMEPAGE
-========================================================= */
-
+/* Homepage */
 app.get("/", (req, res) => {
     const indexPath = path.join(PUBLIC_DIR, "index.html");
 
     if (!fs.existsSync(indexPath)) {
-        return res.status(404).send(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Novi - Website Error</title>
-                <style>
-                    body {
-                        background: #0b0b10;
-                        color: white;
-                        font-family: Arial, sans-serif;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        min-height: 100vh;
-                        margin: 0;
-                        text-align: center;
-                    }
-
-                    .box {
-                        max-width: 600px;
-                        padding: 40px;
-                    }
-
-                    h1 {
-                        color: #ff3b3b;
-                    }
-
-                    p {
-                        color: #aaa;
-                        line-height: 1.6;
-                    }
-
-                    code {
-                        background: #181820;
-                        padding: 4px 8px;
-                        border-radius: 6px;
-                    }
-                </style>
-            </head>
-
-            <body>
-                <div class="box">
-                    <h1>Novi Website Error</h1>
-
-                    <p>
-                        The server is running, but
-                        <code>public/index.html</code>
-                        was not found.
-                    </p>
-
-                    <p>
-                        Put your website files inside the
-                        <code>public</code> folder.
-                    </p>
-                </div>
-            </body>
-            </html>
-        `);
+        return res.status(404).send(
+            "Novi is running, but public/index.html was not found."
+        );
     }
 
     res.sendFile(indexPath);
 });
 
-/* =========================================================
-   CREATE KEY
-========================================================= */
-
+/* Create key */
 app.post("/api/keys", (req, res) => {
     try {
         const { key, duration } = req.body || {};
@@ -270,9 +171,7 @@ app.post("/api/keys", (req, res) => {
             used: false
         };
 
-        const saved = saveKeys(keys);
-
-        if (!saved) {
+        if (!saveKeys(keys)) {
             return res.status(500).json({
                 success: false,
                 message: "Could not save key."
@@ -283,7 +182,7 @@ app.post("/api/keys", (req, res) => {
             `Saved key: ${cleanKey} (${duration})`
         );
 
-        return res.json({
+        res.json({
             success: true,
             message: "Key saved successfully."
         });
@@ -291,17 +190,14 @@ app.post("/api/keys", (req, res) => {
     } catch (error) {
         console.error("Create key error:", error);
 
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             message: "Internal server error."
         });
     }
 });
 
-/* =========================================================
-   VERIFY KEY
-========================================================= */
-
+/* Verify key */
 app.post("/api/verify", (req, res) => {
     try {
         const { key } = req.body || {};
@@ -325,8 +221,6 @@ app.post("/api/verify", (req, res) => {
             });
         }
 
-        /* Check expiration */
-
         if (keyData.expiresAt) {
             const expirationDate =
                 new Date(keyData.expiresAt);
@@ -342,7 +236,7 @@ app.post("/api/verify", (req, res) => {
             }
         }
 
-        return res.json({
+        res.json({
             valid: true,
             duration: keyData.duration,
             expiresAt: keyData.expiresAt
@@ -351,17 +245,14 @@ app.post("/api/verify", (req, res) => {
     } catch (error) {
         console.error("Verify key error:", error);
 
-        return res.status(500).json({
+        res.status(500).json({
             valid: false,
             message: "Internal server error."
         });
     }
 });
 
-/* =========================================================
-   HEALTH CHECK
-========================================================= */
-
+/* Health check */
 app.get("/api/health", (req, res) => {
     res.json({
         online: true,
@@ -369,10 +260,7 @@ app.get("/api/health", (req, res) => {
     });
 });
 
-/* =========================================================
-   404 API HANDLER
-========================================================= */
-
+/* Unknown API endpoint */
 app.use("/api", (req, res) => {
     res.status(404).json({
         success: false,
@@ -380,10 +268,7 @@ app.use("/api", (req, res) => {
     });
 });
 
-/* =========================================================
-   ERROR HANDLER
-========================================================= */
-
+/* Server error handler */
 app.use((error, req, res, next) => {
     console.error("Server error:", error);
 
@@ -393,24 +278,14 @@ app.use((error, req, res, next) => {
     });
 });
 
-/* =========================================================
-   START SERVER
-========================================================= */
-
+/* Start server */
 app.listen(PORT, "0.0.0.0", () => {
-    console.log("");
     console.log("=================================");
     console.log("       NOVI SERVER ONLINE");
     console.log("=================================");
     console.log(`Port: ${PORT}`);
     console.log(`Public folder: ${PUBLIC_DIR}`);
     console.log(`Keys file: ${KEY_FILE}`);
-    console.log("");
-    console.log("Website should be available at:");
-    console.log(`http://localhost:${PORT}`);
-    console.log("");
-    console.log("Health check:");
-    console.log(`http://localhost:${PORT}/api/health`);
+    console.log("Website server started successfully.");
     console.log("=================================");
 });
-```
