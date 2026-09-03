@@ -11,20 +11,9 @@ const app = express();
 
 const PORT = process.env.PORT || 3000;
 
-const PUBLIC_DIR = path.join(
-    __dirname,
-    "public"
-);
-
-const KEY_FILE = path.join(
-    __dirname,
-    "keys.json"
-);
-
-const STOCK_FILE = path.join(
-    __dirname,
-    "epicgames-stock.json"
-);
+const PUBLIC_DIR = path.join(__dirname, "public");
+const KEY_FILE = path.join(__dirname, "keys.json");
+const STOCK_FILE = path.join(__dirname, "epicgames-stock.json");
 
 /* =========================================================
    MIDDLEWARE
@@ -81,21 +70,7 @@ function loadKeys() {
             return {};
         }
 
-        const keys = JSON.parse(data);
-
-        if (
-            !keys ||
-            typeof keys !== "object" ||
-            Array.isArray(keys)
-        ) {
-            console.error(
-                "keys.json must contain an object."
-            );
-
-            return {};
-        }
-
-        return keys;
+        return JSON.parse(data);
 
     } catch (error) {
         console.error(
@@ -106,6 +81,7 @@ function loadKeys() {
         return {};
     }
 }
+
 
 function saveKeys(keys) {
     try {
@@ -127,12 +103,12 @@ function saveKeys(keys) {
     }
 }
 
+
 /* =========================================================
-   GET EXPIRATION
+   EXPIRATION
 ========================================================= */
 
 function getExpiration(duration) {
-
     const now = new Date();
 
     switch (duration) {
@@ -177,29 +153,238 @@ function getExpiration(duration) {
     }
 }
 
+
+/* =========================================================
+   CHECK KEY EXPIRATION
+========================================================= */
+
+function isKeyExpired(keyData) {
+
+    if (!keyData) {
+        return true;
+    }
+
+    if (!keyData.expiresAt) {
+        return false;
+    }
+
+    const expiration =
+        new Date(keyData.expiresAt);
+
+    if (
+        Number.isNaN(
+            expiration.getTime()
+        )
+    ) {
+        return true;
+    }
+
+    return new Date() > expiration;
+}
+
+
+/* =========================================================
+   NORMALIZE KEY
+========================================================= */
+
+function normalizeKey(key) {
+    return String(key || "")
+        .trim()
+        .toUpperCase();
+}
+
+
+/* =========================================================
+   DEVICE ID VALIDATION
+========================================================= */
+
+function isValidDeviceId(deviceId) {
+
+    if (!deviceId) {
+        return false;
+    }
+
+    if (typeof deviceId !== "string") {
+        return false;
+    }
+
+    if (deviceId.length < 16) {
+        return false;
+    }
+
+    if (deviceId.length > 200) {
+        return false;
+    }
+
+    return true;
+}
+
+
+/* =========================================================
+   VERIFY KEY + DEVICE
+========================================================= */
+
+function verifyKeyForDevice(
+    key,
+    deviceId
+) {
+
+    const cleanKey =
+        normalizeKey(key);
+
+    const keys =
+        loadKeys();
+
+    const keyData =
+        keys[cleanKey];
+
+    if (!keyData) {
+        return {
+            valid: false,
+            success: false,
+            message: "Invalid Novi key."
+        };
+    }
+
+    /* Check expiration */
+
+    if (isKeyExpired(keyData)) {
+
+        return {
+            valid: false,
+            success: false,
+            message: "This Novi key has expired."
+        };
+    }
+
+    /* Device ID required */
+
+    if (!isValidDeviceId(deviceId)) {
+
+        return {
+            valid: false,
+            success: false,
+            message:
+                "Unable to verify this device."
+        };
+    }
+
+    /*
+        FIRST ACTIVATION
+
+        If the key has never been activated,
+        bind it to this device.
+    */
+
+    if (!keyData.deviceId) {
+
+        keyData.deviceId =
+            deviceId;
+
+        keyData.activatedAt =
+            new Date().toISOString();
+
+        keyData.activations =
+            1;
+
+        if (!saveKeys(keys)) {
+
+            return {
+                valid: false,
+                success: false,
+                message:
+                    "Could not activate this Novi key."
+            };
+        }
+
+        console.log(
+            `Key activated on first device: ${cleanKey}`
+        );
+
+        return {
+            valid: true,
+            success: true,
+            message:
+                "Novi key activated successfully.",
+            duration:
+                keyData.duration,
+            expiresAt:
+                keyData.expiresAt
+        };
+    }
+
+    /*
+        EXISTING KEY
+
+        Only the original device can use it.
+    */
+
+    if (
+        keyData.deviceId !== deviceId
+    ) {
+
+        console.log(
+            `Blocked different device from key: ${cleanKey}`
+        );
+
+        return {
+            valid: false,
+            success: false,
+            message:
+                "This Novi key is already activated on another device."
+        };
+    }
+
+    /*
+        SAME DEVICE
+    */
+
+    return {
+        valid: true,
+        success: true,
+        message:
+            "Novi key verified.",
+        duration:
+            keyData.duration,
+        expiresAt:
+            keyData.expiresAt
+    };
+}
+
+
 /* =========================================================
    STOCK SYSTEM
 ========================================================= */
 
 function loadStock() {
+
     try {
 
-        if (!fs.existsSync(STOCK_FILE)) {
+        if (
+            !fs.existsSync(
+                STOCK_FILE
+            )
+        ) {
             return [];
         }
 
-        const data = fs.readFileSync(
-            STOCK_FILE,
-            "utf8"
-        );
+        const data =
+            fs.readFileSync(
+                STOCK_FILE,
+                "utf8"
+            );
 
         if (!data.trim()) {
             return [];
         }
 
-        const stock = JSON.parse(data);
+        const stock =
+            JSON.parse(data);
 
-        if (!Array.isArray(stock)) {
+        if (
+            !Array.isArray(stock)
+        ) {
+
             console.error(
                 "Stock file must contain an array."
             );
@@ -220,12 +405,18 @@ function loadStock() {
     }
 }
 
+
 function saveStock(stock) {
+
     try {
 
         fs.writeFileSync(
             STOCK_FILE,
-            JSON.stringify(stock, null, 2),
+            JSON.stringify(
+                stock,
+                null,
+                2
+            ),
             "utf8"
         );
 
@@ -242,11 +433,16 @@ function saveStock(stock) {
     }
 }
 
+
 /* =========================================================
    PUBLIC WEBSITE
 ========================================================= */
 
-if (!fs.existsSync(PUBLIC_DIR)) {
+if (
+    !fs.existsSync(
+        PUBLIC_DIR
+    )
+) {
 
     console.error(
         "ERROR: public folder does not exist!"
@@ -259,6 +455,7 @@ if (!fs.existsSync(PUBLIC_DIR)) {
     );
 }
 
+
 app.use(
     express.static(
         PUBLIC_DIR,
@@ -268,16 +465,22 @@ app.use(
     )
 );
 
+
 app.get(
     "/",
     (req, res) => {
 
-        const indexPath = path.join(
-            PUBLIC_DIR,
-            "index.html"
-        );
+        const indexPath =
+            path.join(
+                PUBLIC_DIR,
+                "index.html"
+            );
 
-        if (!fs.existsSync(indexPath)) {
+        if (
+            !fs.existsSync(
+                indexPath
+            )
+        ) {
 
             return res
                 .status(404)
@@ -286,9 +489,12 @@ app.get(
                 );
         }
 
-        res.sendFile(indexPath);
+        res.sendFile(
+            indexPath
+        );
     }
 );
+
 
 /* =========================================================
    CREATE NOVI KEY
@@ -305,31 +511,25 @@ app.post(
                 duration
             } = req.body || {};
 
-            if (!key || !duration) {
+            if (
+                !key ||
+                !duration
+            ) {
 
                 return res
                     .status(400)
                     .json({
+
                         success: false,
+
                         message:
                             "Missing key or duration."
+
                     });
             }
 
-            /*
-                Normalize the key.
-
-                This means:
-                novi-abcd
-                Novi-Abcd
-                NOVI-ABCD
-
-                will all be treated consistently.
-            */
-
-            const cleanKey = String(key)
-                .trim()
-                .toUpperCase();
+            const cleanKey =
+                normalizeKey(key);
 
             const allowedDurations = [
                 "1d",
@@ -348,9 +548,12 @@ app.post(
                 return res
                     .status(400)
                     .json({
+
                         success: false,
+
                         message:
                             "Invalid duration."
+
                     });
             }
 
@@ -359,28 +562,38 @@ app.post(
                 return res
                     .status(400)
                     .json({
+
                         success: false,
+
                         message:
                             "Invalid key."
+
                     });
             }
 
-            const keys = loadKeys();
+            const keys =
+                loadKeys();
 
-            if (keys[cleanKey]) {
+            if (
+                keys[cleanKey]
+            ) {
 
                 return res
                     .status(409)
                     .json({
+
                         success: false,
+
                         message:
                             "Key already exists."
+
                     });
             }
 
             keys[cleanKey] = {
 
-                duration: duration,
+                duration:
+                    duration,
 
                 createdAt:
                     new Date()
@@ -391,17 +604,28 @@ app.post(
                         duration
                     ),
 
-                used: false
+                used: false,
+
+                deviceId: null,
+
+                activatedAt: null,
+
+                activations: 0
             };
 
-            if (!saveKeys(keys)) {
+            if (
+                !saveKeys(keys)
+            ) {
 
                 return res
                     .status(500)
                     .json({
+
                         success: false,
+
                         message:
                             "Could not save key."
+
                     });
             }
 
@@ -428,13 +652,17 @@ app.post(
             return res
                 .status(500)
                 .json({
+
                     success: false,
+
                     message:
                         "Internal server error."
+
                 });
         }
     }
 );
+
 
 /* =========================================================
    VERIFY NOVI KEY
@@ -446,125 +674,35 @@ app.post(
 
         try {
 
-            const { key } =
-                req.body || {};
+            const {
+                key,
+                deviceId
+            } = req.body || {};
 
             if (!key) {
 
                 return res
                     .status(400)
                     .json({
+
+                        success: false,
                         valid: false,
+
                         message:
                             "Please enter a key."
+
                     });
             }
 
-            /*
-                Normalize the entered key
-                the exact same way as when
-                the key was created.
-            */
-
-            const cleanKey = String(key)
-                .trim()
-                .toUpperCase();
-
-            const keys = loadKeys();
-
-            const keyData =
-                keys[cleanKey];
-
-            /* =================================================
-               KEY DOES NOT EXIST
-            ================================================= */
-
-            if (!keyData) {
-
-                console.log(
-                    `Invalid key attempt: ${cleanKey}`
+            const result =
+                verifyKeyForDevice(
+                    key,
+                    deviceId
                 );
 
-                return res.json({
-
-                    valid: false,
-
-                    message:
-                        "Invalid Novi key."
-
-                });
-            }
-
-            /* =================================================
-               CHECK EXPIRATION
-            ================================================= */
-
-            if (keyData.expiresAt) {
-
-                const expirationDate =
-                    new Date(
-                        keyData.expiresAt
-                    );
-
-                if (
-                    Number.isNaN(
-                        expirationDate.getTime()
-                    )
-                ) {
-
-                    console.error(
-                        `Invalid expiration date for key: ${cleanKey}`
-                    );
-
-                    return res.json({
-
-                        valid: false,
-
-                        message:
-                            "Invalid Novi key expiration."
-
-                    });
-                }
-
-                if (
-                    Date.now() >=
-                    expirationDate.getTime()
-                ) {
-
-                    console.log(
-                        `Expired key: ${cleanKey}`
-                    );
-
-                    return res.json({
-
-                        valid: false,
-
-                        message:
-                            "This Novi key has expired."
-
-                    });
-                }
-            }
-
-            /* =================================================
-               KEY IS VALID
-            ================================================= */
-
-            console.log(
-                `Key verified successfully: ${cleanKey}`
+            return res.json(
+                result
             );
-
-            return res.json({
-
-                valid: true,
-
-                duration:
-                    keyData.duration,
-
-                expiresAt:
-                    keyData.expiresAt
-
-            });
 
         } catch (error) {
 
@@ -577,6 +715,7 @@ app.post(
                 .status(500)
                 .json({
 
+                    success: false,
                     valid: false,
 
                     message:
@@ -586,6 +725,7 @@ app.post(
         }
     }
 );
+
 
 /* =========================================================
    STOCK COUNT
@@ -632,6 +772,7 @@ app.get(
     }
 );
 
+
 /* =========================================================
    ADD STOCK
 ========================================================= */
@@ -642,8 +783,9 @@ app.post(
 
         try {
 
-            const { items } =
-                req.body || {};
+            const {
+                items
+            } = req.body || {};
 
             if (
                 !Array.isArray(items)
@@ -704,7 +846,6 @@ app.post(
                 ) {
 
                     invalid++;
-
                     continue;
                 }
 
@@ -716,7 +857,6 @@ app.post(
                 if (!item) {
 
                     invalid++;
-
                     continue;
                 }
 
@@ -730,11 +870,12 @@ app.post(
                 ) {
 
                     duplicates++;
-
                     continue;
                 }
 
-                stock.push(item);
+                stock.push(
+                    item
+                );
 
                 existing.add(
                     normalized
@@ -744,7 +885,9 @@ app.post(
             }
 
             if (
-                !saveStock(stock)
+                !saveStock(
+                    stock
+                )
             ) {
 
                 return res
@@ -805,8 +948,10 @@ app.post(
     }
 );
 
+
 /* =========================================================
-   GENERATE ONE STOCK ITEM
+   GENERATE STOCK
+   REQUIRES VALID KEY + ORIGINAL DEVICE
 ========================================================= */
 
 app.post(
@@ -814,6 +959,48 @@ app.post(
     (req, res) => {
 
         try {
+
+            const {
+                key,
+                deviceId
+            } = req.body || {};
+
+            if (!key) {
+
+                return res
+                    .status(401)
+                    .json({
+
+                        success: false,
+
+                        message:
+                            "A valid Novi key is required."
+
+                    });
+            }
+
+            const verification =
+                verifyKeyForDevice(
+                    key,
+                    deviceId
+                );
+
+            if (
+                !verification.valid
+            ) {
+
+                return res
+                    .status(403)
+                    .json({
+
+                        success: false,
+
+                        message:
+                            verification.message ||
+                            "Novi key verification failed."
+
+                    });
+            }
 
             const stock =
                 loadStock();
@@ -838,7 +1025,9 @@ app.post(
                 stock.shift();
 
             if (
-                !saveStock(stock)
+                !saveStock(
+                    stock
+                )
             ) {
 
                 return res
@@ -890,6 +1079,7 @@ app.post(
     }
 );
 
+
 /* =========================================================
    HEALTH CHECK
 ========================================================= */
@@ -909,8 +1099,9 @@ app.get(
     }
 );
 
+
 /* =========================================================
-   UNKNOWN API ENDPOINT
+   UNKNOWN API
 ========================================================= */
 
 app.use(
@@ -929,6 +1120,7 @@ app.use(
             });
     }
 );
+
 
 /* =========================================================
    ERROR HANDLER
@@ -959,6 +1151,7 @@ app.use(
             });
     }
 );
+
 
 /* =========================================================
    START SERVER
@@ -1009,7 +1202,7 @@ const server =
             );
 
             console.log(
-                "Key verification: ENABLED"
+                "One-device activation: ENABLED"
             );
 
             console.log(
@@ -1030,9 +1223,6 @@ const server =
         }
     );
 
-/* =========================================================
-   SERVER ERROR HANDLER
-========================================================= */
 
 server.on(
     "error",
