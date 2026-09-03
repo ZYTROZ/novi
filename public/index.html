@@ -326,7 +326,7 @@
         }
 
         /* =========================
-           BETTER KEY INPUT
+           KEY INPUT
         ========================= */
 
         .input-label {
@@ -459,27 +459,6 @@
             box-shadow:
                 0 12px 30px rgba(109,40,217,0.22);
             overflow: hidden;
-        }
-
-        .unlock-button::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 70%;
-            height: 100%;
-            background:
-                linear-gradient(
-                    90deg,
-                    transparent,
-                    rgba(255,255,255,0.16),
-                    transparent
-                );
-            transition: 0.5s ease;
-        }
-
-        .unlock-button:hover::before {
-            left: 130%;
         }
 
         .unlock-button:hover {
@@ -690,7 +669,9 @@
             gap: 9px;
         }
 
-        /* SAVE LOGIN IN DASHBOARD */
+        /* =========================
+           SAVE LOGIN BUTTON
+        ========================= */
 
         .save-login-button {
             height: 42px;
@@ -745,6 +726,195 @@
 
         .login-status.saved {
             color: #86efac;
+        }
+
+        /* =========================
+           SAVED LOGINS
+        ========================= */
+
+        .saved-logins-panel {
+            margin-bottom: 22px;
+            padding: 24px;
+            border-radius: 20px;
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(139,92,246,0.055),
+                    rgba(0,0,0,0.18)
+                );
+            border: 1px solid rgba(139,92,246,0.13);
+        }
+
+        .saved-logins-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 18px;
+        }
+
+        .saved-logins-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .saved-logins-icon {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: rgba(139,92,246,0.1);
+            border: 1px solid rgba(139,92,246,0.18);
+            font-size: 18px;
+        }
+
+        .saved-logins-title h3 {
+            font-size: 17px;
+        }
+
+        .saved-logins-title p {
+            margin-top: 3px;
+            color: #716a7d;
+            font-size: 11px;
+        }
+
+        .saved-count {
+            min-width: 36px;
+            height: 30px;
+            padding: 0 10px;
+            display: grid;
+            place-items: center;
+            border-radius: 999px;
+            background: rgba(139,92,246,0.1);
+            border: 1px solid rgba(139,92,246,0.17);
+            color: #c4b5fd;
+            font-size: 11px;
+            font-weight: 850;
+        }
+
+        .saved-logins-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .saved-login-empty {
+            padding: 22px;
+            text-align: center;
+            border-radius: 14px;
+            border: 1px dashed rgba(255,255,255,0.08);
+            color: #6f687a;
+            font-size: 12px;
+        }
+
+        .saved-login-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 15px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(255,255,255,0.055);
+            transition: 0.25s ease;
+            animation: savedLoginIn 0.3s ease both;
+        }
+
+        .saved-login-card:hover {
+            transform: translateY(-2px);
+            background: rgba(139,92,246,0.045);
+            border-color: rgba(139,92,246,0.18);
+        }
+
+        @keyframes savedLoginIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .saved-login-info {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .saved-login-label {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 5px;
+        }
+
+        .saved-login-dot {
+            width: 6px;
+            height: 6px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: #4ade80;
+            box-shadow: 0 0 10px rgba(74,222,128,0.5);
+        }
+
+        .saved-login-name {
+            color: #b9b0c8;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .saved-login-key {
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            word-break: break-all;
+        }
+
+        .saved-login-actions {
+            display: flex;
+            gap: 7px;
+            flex-shrink: 0;
+        }
+
+        .use-login-button,
+        .delete-login-button {
+            height: 35px;
+            padding: 0 11px;
+            border-radius: 9px;
+            font-size: 11px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .use-login-button {
+            color: #c4b5fd;
+            background: rgba(139,92,246,0.1);
+            border: 1px solid rgba(139,92,246,0.2);
+        }
+
+        .use-login-button:hover {
+            color: white;
+            background: rgba(139,92,246,0.2);
+            border-color: rgba(139,92,246,0.4);
+        }
+
+        .delete-login-button {
+            color: #fca5a5;
+            background: rgba(248,113,113,0.06);
+            border: 1px solid rgba(248,113,113,0.15);
+        }
+
+        .delete-login-button:hover {
+            color: white;
+            background: rgba(248,113,113,0.13);
+            border-color: rgba(248,113,113,0.3);
         }
 
         /* =========================
@@ -933,6 +1103,20 @@
             .stock-header {
                 align-items: flex-start;
             }
+
+            .saved-login-card {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .saved-login-actions {
+                width: 100%;
+            }
+
+            .use-login-button,
+            .delete-login-button {
+                flex: 1;
+            }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -1013,12 +1197,10 @@
                     unlock your generator dashboard.
                 </p>
 
-
                 <div class="input-label">
                     <span>ACCESS KEY</span>
                     <span>NOVI SECURE</span>
                 </div>
-
 
                 <div class="input-wrap">
 
@@ -1039,7 +1221,6 @@
 
                 </div>
 
-
                 <button
                     id="unlockButton"
                     class="unlock-button"
@@ -1048,7 +1229,6 @@
                 >
                     Unlock Generator
                 </button>
-
 
                 <div
                     id="message"
@@ -1075,7 +1255,6 @@
 
             </div>
 
-
             <div class="feature-grid">
 
                 <div class="feature-card">
@@ -1095,7 +1274,6 @@
 
                 </div>
 
-
                 <div class="feature-card">
 
                     <div class="feature-icon">
@@ -1112,7 +1290,6 @@
                     </p>
 
                 </div>
-
 
                 <div class="feature-card">
 
@@ -1151,7 +1328,6 @@
 
             </div>
 
-
             <div class="plans">
 
                 <div class="plan">
@@ -1171,7 +1347,6 @@
 
                 </div>
 
-
                 <div class="plan featured">
 
                     <div class="plan-name">
@@ -1188,7 +1363,6 @@
                     </p>
 
                 </div>
-
 
                 <div class="plan">
 
@@ -1277,6 +1451,59 @@
                 </div>
 
 
+                <!-- =========================
+                     SAVED LOGINS
+                ========================= -->
+
+                <div class="saved-logins-panel">
+
+                    <div class="saved-logins-header">
+
+                        <div class="saved-logins-title">
+
+                            <div class="saved-logins-icon">
+                                🔐
+                            </div>
+
+                            <div>
+
+                                <h3>
+                                    Saved Logins
+                                </h3>
+
+                                <p>
+                                    Your saved Novi access keys
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        <div
+                            id="savedLoginCount"
+                            class="saved-count"
+                        >
+                            0
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="savedLoginsList"
+                        class="saved-logins-list"
+                    >
+
+                        <div class="saved-login-empty">
+                            No saved logins yet.
+                            Click "Save Login" above to save this key.
+                        </div>
+
+                    </div>
+
+                </div>
+
+
                 <!-- STOCK -->
                 <div class="stock-panel">
 
@@ -1293,7 +1520,6 @@
                             </div>
 
                         </div>
-
 
                         <div class="stock-count">
 
@@ -1394,10 +1620,7 @@
 
 
         /* =====================================================
-           CREATE / LOAD DEVICE ID
-           
-           This identifies this browser installation.
-           The server uses it to bind a Novi key to one device.
+           DEVICE ID
         ===================================================== */
 
         function getDeviceId() {
@@ -1469,6 +1692,127 @@
 
 
         /* =====================================================
+           SAVED LOGIN STORAGE
+        ===================================================== */
+
+        function getSavedLogins() {
+
+            try {
+
+                const raw =
+                    localStorage.getItem(
+                        "noviSavedLogins"
+                    );
+
+                if (!raw) {
+
+                    return [];
+
+                }
+
+                const parsed =
+                    JSON.parse(raw);
+
+                if (!Array.isArray(parsed)) {
+
+                    return [];
+
+                }
+
+                return [
+                    ...new Set(
+                        parsed
+                            .map(
+                                key =>
+                                    String(key)
+                                        .trim()
+                                        .toUpperCase()
+                            )
+                            .filter(Boolean)
+                    )
+                ];
+
+            } catch (error) {
+
+                console.error(
+                    "Load saved logins error:",
+                    error
+                );
+
+                return [];
+
+            }
+        }
+
+
+        function saveSavedLogins(logins) {
+
+            try {
+
+                localStorage.setItem(
+                    "noviSavedLogins",
+                    JSON.stringify(logins)
+                );
+
+                return true;
+
+            } catch (error) {
+
+                console.error(
+                    "Save saved logins error:",
+                    error
+                );
+
+                return false;
+
+            }
+        }
+
+
+        /* =====================================================
+           MIGRATE OLD SINGLE SAVED LOGIN
+        ===================================================== */
+
+        function migrateOldSavedLogin() {
+
+            try {
+
+                const oldKey =
+                    localStorage.getItem(
+                        "noviSavedKey"
+                    );
+
+                const existing =
+                    getSavedLogins();
+
+                if (
+                    oldKey &&
+                    !existing.includes(
+                        oldKey.trim().toUpperCase()
+                    )
+                ) {
+
+                    existing.unshift(
+                        oldKey.trim().toUpperCase()
+                    );
+
+                    saveSavedLogins(
+                        existing
+                    );
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Migration error:",
+                    error
+                );
+
+            }
+        }
+
+
+        /* =====================================================
            LOAD SAVED LOGIN
         ===================================================== */
 
@@ -1476,17 +1820,21 @@
 
             try {
 
-                const savedKey =
-                    localStorage.getItem(
-                        "noviSavedKey"
-                    );
+                migrateOldSavedLogin();
 
-                if (savedKey) {
+                const savedLogins =
+                    getSavedLogins();
+
+                if (
+                    savedLogins.length > 0
+                ) {
 
                     input.value =
-                        savedKey;
+                        savedLogins[0];
 
                 }
+
+                renderSavedLogins();
 
             } catch (error) {
 
@@ -1500,8 +1848,7 @@
 
 
         /* =====================================================
-           SAVE LOGIN
-           ONLY AVAILABLE FROM DASHBOARD
+           SAVE CURRENT LOGIN
         ===================================================== */
 
         function saveLogin() {
@@ -1509,6 +1856,7 @@
             if (!currentKey) {
 
                 return;
+
             }
 
             const button =
@@ -1523,10 +1871,81 @@
 
             try {
 
+                let savedLogins =
+                    getSavedLogins();
+
+
+                const normalizedKey =
+                    currentKey
+                        .trim()
+                        .toUpperCase();
+
+
+                if (
+                    savedLogins.includes(
+                        normalizedKey
+                    )
+                ) {
+
+                    button.textContent =
+                        "✓ Already Saved";
+
+                    button.classList.add(
+                        "saved"
+                    );
+
+                    status.textContent =
+                        "✓ This Novi login is already saved.";
+
+                    status.classList.add(
+                        "saved"
+                    );
+
+                    renderSavedLogins();
+
+                    setTimeout(() => {
+
+                        button.textContent =
+                            "🔐 Save Login";
+
+                    }, 2500);
+
+                    return;
+                }
+
+
+                savedLogins.unshift(
+                    normalizedKey
+                );
+
+
+                const success =
+                    saveSavedLogins(
+                        savedLogins
+                    );
+
+
+                if (!success) {
+
+                    status.textContent =
+                        "Could not save your login.";
+
+                    status.classList.remove(
+                        "saved"
+                    );
+
+                    return;
+
+                }
+
+
+                /* Keep old storage value compatible */
+
                 localStorage.setItem(
                     "noviSavedKey",
-                    currentKey
+                    normalizedKey
                 );
+
 
                 button.textContent =
                     "✓ Login Saved";
@@ -1541,6 +1960,10 @@
                 status.classList.add(
                     "saved"
                 );
+
+
+                renderSavedLogins();
+
 
                 setTimeout(() => {
 
@@ -1562,7 +1985,266 @@
                 status.classList.remove(
                     "saved"
                 );
+
             }
+        }
+
+
+        /* =====================================================
+           RENDER SAVED LOGINS
+        ===================================================== */
+
+        function renderSavedLogins() {
+
+            const list =
+                document.getElementById(
+                    "savedLoginsList"
+                );
+
+            const count =
+                document.getElementById(
+                    "savedLoginCount"
+                );
+
+            if (
+                !list ||
+                !count
+            ) {
+
+                return;
+
+            }
+
+
+            const savedLogins =
+                getSavedLogins();
+
+
+            count.textContent =
+                savedLogins.length;
+
+
+            if (
+                savedLogins.length === 0
+            ) {
+
+                list.innerHTML = `
+                    <div class="saved-login-empty">
+                        No saved logins yet.
+                        Click "Save Login" above to save this key.
+                    </div>
+                `;
+
+                return;
+
+            }
+
+
+            list.innerHTML =
+                savedLogins
+                    .map(
+                        (key, index) => `
+                            <div
+                                class="saved-login-card"
+                                style="animation-delay:${index * 0.05}s"
+                            >
+
+                                <div class="saved-login-info">
+
+                                    <div class="saved-login-label">
+
+                                        <span class="saved-login-dot"></span>
+
+                                        <span class="saved-login-name">
+                                            Saved Login ${index + 1}
+                                        </span>
+
+                                    </div>
+
+                                    <div class="saved-login-key">
+                                        ${escapeHtml(key)}
+                                    </div>
+
+                                </div>
+
+                                <div class="saved-login-actions">
+
+                                    <button
+                                        class="use-login-button"
+                                        type="button"
+                                        onclick="useSavedLogin(${index})"
+                                    >
+                                        ▶ Use
+                                    </button>
+
+                                    <button
+                                        class="delete-login-button"
+                                        type="button"
+                                        onclick="deleteSavedLogin(${index})"
+                                    >
+                                        🗑 Delete
+                                    </button>
+
+                                </div>
+
+                            </div>
+                        `
+                    )
+                    .join("");
+
+        }
+
+
+        /* =====================================================
+           ESCAPE HTML
+        ===================================================== */
+
+        function escapeHtml(value) {
+
+            return String(value)
+                .replace(
+                    /&/g,
+                    "&amp;"
+                )
+                .replace(
+                    /</g,
+                    "&lt;"
+                )
+                .replace(
+                    />/g,
+                    "&gt;"
+                )
+                .replace(
+                    /"/g,
+                    "&quot;"
+                )
+                .replace(
+                    /'/g,
+                    "&#039;"
+                );
+
+        }
+
+
+        /* =====================================================
+           USE SAVED LOGIN
+        ===================================================== */
+
+        function useSavedLogin(index) {
+
+            const savedLogins =
+                getSavedLogins();
+
+            const selectedKey =
+                savedLogins[index];
+
+            if (!selectedKey) {
+
+                return;
+
+            }
+
+
+            currentKey = "";
+
+
+            input.value =
+                selectedKey;
+
+
+            /* Return to login screen */
+
+            document.getElementById(
+                "dashboard"
+            ).style.display =
+                "none";
+
+
+            document.getElementById(
+                "mainContent"
+            ).style.display =
+                "block";
+
+
+            message.textContent =
+                "Saved login loaded. Click Unlock Generator.";
+
+            message.className =
+                "message";
+
+
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+
+
+            setTimeout(() => {
+
+                input.focus();
+
+            }, 400);
+
+        }
+
+
+        /* =====================================================
+           DELETE SAVED LOGIN
+        ===================================================== */
+
+        function deleteSavedLogin(index) {
+
+            const savedLogins =
+                getSavedLogins();
+
+            if (
+                !savedLogins[index]
+            ) {
+
+                return;
+
+            }
+
+
+            savedLogins.splice(
+                index,
+                1
+            );
+
+
+            saveSavedLogins(
+                savedLogins
+            );
+
+
+            /*
+             * Keep the old compatibility key
+             * synchronized.
+             */
+
+            if (
+                savedLogins.length > 0
+            ) {
+
+                localStorage.setItem(
+                    "noviSavedKey",
+                    savedLogins[0]
+                );
+
+            } else {
+
+                localStorage.removeItem(
+                    "noviSavedKey"
+                );
+
+            }
+
+
+            renderSavedLogins();
+
+
+            updateSaveStatus();
+
         }
 
 
@@ -1584,15 +2266,14 @@
 
             try {
 
-                const savedKey =
-                    localStorage.getItem(
-                        "noviSavedKey"
-                    );
+                const savedLogins =
+                    getSavedLogins();
+
 
                 if (
-                    savedKey &&
-                    currentKey &&
-                    savedKey === currentKey
+                    savedLogins.includes(
+                        currentKey
+                    )
                 ) {
 
                     button.textContent =
@@ -1624,7 +2305,11 @@
                     status.classList.remove(
                         "saved"
                     );
+
                 }
+
+
+                renderSavedLogins();
 
             } catch (error) {
 
@@ -1634,6 +2319,7 @@
                 );
 
             }
+
         }
 
 
@@ -1646,6 +2332,7 @@
             const key =
                 input.value.trim().toUpperCase();
 
+
             if (!key) {
 
                 message.textContent =
@@ -1657,12 +2344,9 @@
                 input.focus();
 
                 return;
+
             }
 
-
-            /*
-             * Make sure this browser has a device ID.
-             */
 
             const currentDeviceId =
                 getDeviceId();
@@ -1677,10 +2361,12 @@
                     "message error";
 
                 return;
+
             }
 
 
-            unlockButton.disabled = true;
+            unlockButton.disabled =
+                true;
 
             unlockButton.textContent =
                 "Verifying...";
@@ -1707,7 +2393,8 @@
 
                             body: JSON.stringify({
                                 key: key,
-                                deviceId: currentDeviceId
+                                deviceId:
+                                    currentDeviceId
                             })
                         }
                     );
@@ -1717,15 +2404,12 @@
                     await response.json();
 
 
-                /*
-                 * The server returns both `success`
-                 * and `valid` for compatibility.
-                 */
-
                 if (
                     !response.ok ||
-                    (!result.success &&
-                     !result.valid)
+                    (
+                        !result.success &&
+                        !result.valid
+                    )
                 ) {
 
                     message.textContent =
@@ -1736,29 +2420,24 @@
                         "message error";
 
                     return;
+
                 }
 
-
-                /* =============================================
-                   REMEMBER CURRENT VERIFIED KEY
-                ============================================= */
 
                 currentKey =
                     key;
 
 
-                /* =============================================
-                   SHOW DASHBOARD
-                ============================================= */
-
                 document.getElementById(
                     "mainContent"
-                ).style.display = "none";
+                ).style.display =
+                    "none";
 
 
                 document.getElementById(
                     "dashboard"
-                ).style.display = "block";
+                ).style.display =
+                    "block";
 
 
                 updateSaveStatus();
@@ -1794,6 +2473,7 @@
                     "Unlock Generator";
 
             }
+
         }
 
 
@@ -1808,8 +2488,11 @@
                     "stockCount"
                 );
 
+
             if (!countElement) {
+
                 return;
+
             }
 
 
@@ -1848,6 +2531,7 @@
                     "—";
 
             }
+
         }
 
 
@@ -1890,11 +2574,6 @@
             }
 
 
-            /*
-             * Do not allow stock generation unless
-             * a verified key exists.
-             */
-
             if (!currentKey) {
 
                 stockMessage.textContent =
@@ -1904,6 +2583,7 @@
                     "stock-message error";
 
                 return;
+
             }
 
 
@@ -1920,10 +2600,12 @@
                     "stock-message error";
 
                 return;
+
             }
 
 
-            button.disabled = true;
+            button.disabled =
+                true;
 
             button.textContent =
                 "Generating...";
@@ -1950,7 +2632,8 @@
 
                             body: JSON.stringify({
                                 key: currentKey,
-                                deviceId: currentDeviceId
+                                deviceId:
+                                    currentDeviceId
                             })
                         }
                     );
@@ -1973,6 +2656,7 @@
                         "stock-message error";
 
                     return;
+
                 }
 
 
@@ -2026,27 +2710,26 @@
                     "⚡ Generate";
 
             }
+
         }
 
 
         /* =====================================================
            LOGOUT
-           
-           IMPORTANT:
-           We DO NOT remove the device ID.
-           This keeps the key bound to this browser.
         ===================================================== */
 
         function logout() {
 
             document.getElementById(
                 "dashboard"
-            ).style.display = "none";
+            ).style.display =
+                "none";
 
 
             document.getElementById(
                 "mainContent"
-            ).style.display = "block";
+            ).style.display =
+                "block";
 
 
             message.textContent =
@@ -2056,7 +2739,8 @@
                 "message";
 
 
-            currentKey = "";
+            currentKey =
+                "";
 
 
             window.scrollTo({
@@ -2095,15 +2779,7 @@
             "DOMContentLoaded",
             function() {
 
-                /*
-                 * Create/load device ID first.
-                 */
-
                 getDeviceId();
-
-                /*
-                 * Then load saved key.
-                 */
 
                 loadSavedLogin();
 
