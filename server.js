@@ -1,14 +1,23 @@
+```js
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
+const path = require("path");
 
 const app = express();
 
+// Render provides the PORT automatically
+const PORT = process.env.PORT || 3000;
+
+// File where your keys are stored
+const KEY_FILE = path.join(__dirname, "keys.json");
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-const PORT = 3000;
-const KEY_FILE = "./keys.json";
+// Serve everything inside the public folder
+app.use(express.static(path.join(__dirname, "public")));
 
 // Create keys.json if it doesn't exist
 if (!fs.existsSync(KEY_FILE)) {
@@ -17,7 +26,11 @@ if (!fs.existsSync(KEY_FILE)) {
 
 // Load keys
 function loadKeys() {
-    return JSON.parse(fs.readFileSync(KEY_FILE, "utf8"));
+    try {
+        return JSON.parse(fs.readFileSync(KEY_FILE, "utf8"));
+    } catch (error) {
+        return {};
+    }
 }
 
 // Save keys
@@ -31,20 +44,26 @@ function getExpiration(duration) {
 
     switch (duration) {
         case "1d":
-            return new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
+            return new Date(
+                now.getTime() + 1 * 24 * 60 * 60 * 1000
+            );
 
         case "1week":
-            return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            return new Date(
+                now.getTime() + 7 * 24 * 60 * 60 * 1000
+            );
 
-        case "1month":
+        case "1month": {
             const month = new Date(now);
             month.setMonth(month.getMonth() + 1);
             return month;
+        }
 
-        case "1year":
+        case "1year": {
             const year = new Date(now);
             year.setFullYear(year.getFullYear() + 1);
             return year;
+        }
 
         case "lifetime":
             return null;
@@ -54,9 +73,9 @@ function getExpiration(duration) {
     }
 }
 
-// Test route
+// Website homepage
 app.get("/", (req, res) => {
-    res.send("Novi server is online!");
+    res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // Create a key
@@ -151,6 +170,8 @@ app.post("/api/verify", (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`Novi server running on http://localhost:${PORT}`);
+// Start server
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Novi server running on port ${PORT}`);
 });
+```
