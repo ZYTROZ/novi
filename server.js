@@ -42,79 +42,62 @@ app.use(
    FILE SETUP
 ========================================================= */
 
-/* Create keys.json if it doesn't exist */
-
 if (!fs.existsSync(KEY_FILE)) {
-
     fs.writeFileSync(
         KEY_FILE,
-        JSON.stringify(
-            {},
-            null,
-            2
-        ),
+        JSON.stringify({}, null, 2),
         "utf8"
     );
 
-    console.log(
-        "Created keys.json"
-    );
+    console.log("Created keys.json");
 }
 
-
-/* Create stock file if it doesn't exist */
-
 if (!fs.existsSync(STOCK_FILE)) {
-
     fs.writeFileSync(
         STOCK_FILE,
-        JSON.stringify(
-            [],
-            null,
-            2
-        ),
+        JSON.stringify([], null, 2),
         "utf8"
     );
 
-    console.log(
-        "Created epicgames-stock.json"
-    );
+    console.log("Created epicgames-stock.json");
 }
 
 /* =========================================================
    KEY SYSTEM
 ========================================================= */
 
-/* Load keys */
-
 function loadKeys() {
-
     try {
-
-        if (
-            !fs.existsSync(
-                KEY_FILE
-            )
-        ) {
+        if (!fs.existsSync(KEY_FILE)) {
             return {};
         }
 
-        const data =
-            fs.readFileSync(
-                KEY_FILE,
-                "utf8"
-            );
+        const data = fs.readFileSync(
+            KEY_FILE,
+            "utf8"
+        );
 
         if (!data.trim()) {
             return {};
         }
 
-        return JSON.parse(
-            data
-        );
+        const keys = JSON.parse(data);
+
+        if (
+            !keys ||
+            typeof keys !== "object" ||
+            Array.isArray(keys)
+        ) {
+            console.error(
+                "keys.json must contain an object."
+            );
+
+            return {};
+        }
+
+        return keys;
 
     } catch (error) {
-
         console.error(
             "Could not load keys:",
             error
@@ -124,27 +107,17 @@ function loadKeys() {
     }
 }
 
-
-/* Save keys */
-
 function saveKeys(keys) {
-
     try {
-
         fs.writeFileSync(
             KEY_FILE,
-            JSON.stringify(
-                keys,
-                null,
-                2
-            ),
+            JSON.stringify(keys, null, 2),
             "utf8"
         );
 
         return true;
 
     } catch (error) {
-
         console.error(
             "Could not save keys:",
             error
@@ -154,45 +127,30 @@ function saveKeys(keys) {
     }
 }
 
+/* =========================================================
+   GET EXPIRATION
+========================================================= */
 
-/* Get expiration date */
+function getExpiration(duration) {
 
-function getExpiration(
-    duration
-) {
-
-    const now =
-        new Date();
+    const now = new Date();
 
     switch (duration) {
 
         case "1d":
-
             return new Date(
                 now.getTime() +
-                24 *
-                60 *
-                60 *
-                1000
+                24 * 60 * 60 * 1000
             ).toISOString();
-
 
         case "1week":
-
             return new Date(
                 now.getTime() +
-                7 *
-                24 *
-                60 *
-                60 *
-                1000
+                7 * 24 * 60 * 60 * 1000
             ).toISOString();
 
-
         case "1month": {
-
-            const date =
-                new Date(now);
+            const date = new Date(now);
 
             date.setMonth(
                 date.getMonth() + 1
@@ -201,11 +159,8 @@ function getExpiration(
             return date.toISOString();
         }
 
-
         case "1year": {
-
-            const date =
-                new Date(now);
+            const date = new Date(now);
 
             date.setFullYear(
                 date.getFullYear() + 1
@@ -214,14 +169,10 @@ function getExpiration(
             return date.toISOString();
         }
 
-
         case "lifetime":
-
             return null;
 
-
         default:
-
             return null;
     }
 }
@@ -230,39 +181,25 @@ function getExpiration(
    STOCK SYSTEM
 ========================================================= */
 
-/* Load stock */
-
 function loadStock() {
-
     try {
 
-        if (
-            !fs.existsSync(
-                STOCK_FILE
-            )
-        ) {
+        if (!fs.existsSync(STOCK_FILE)) {
             return [];
         }
 
-        const data =
-            fs.readFileSync(
-                STOCK_FILE,
-                "utf8"
-            );
+        const data = fs.readFileSync(
+            STOCK_FILE,
+            "utf8"
+        );
 
         if (!data.trim()) {
             return [];
         }
 
-        const stock =
-            JSON.parse(
-                data
-            );
+        const stock = JSON.parse(data);
 
-        if (
-            !Array.isArray(stock)
-        ) {
-
+        if (!Array.isArray(stock)) {
             console.error(
                 "Stock file must contain an array."
             );
@@ -283,20 +220,12 @@ function loadStock() {
     }
 }
 
-
-/* Save stock */
-
 function saveStock(stock) {
-
     try {
 
         fs.writeFileSync(
             STOCK_FILE,
-            JSON.stringify(
-                stock,
-                null,
-                2
-            ),
+            JSON.stringify(stock, null, 2),
             "utf8"
         );
 
@@ -317,11 +246,7 @@ function saveStock(stock) {
    PUBLIC WEBSITE
 ========================================================= */
 
-if (
-    !fs.existsSync(
-        PUBLIC_DIR
-    )
-) {
+if (!fs.existsSync(PUBLIC_DIR)) {
 
     console.error(
         "ERROR: public folder does not exist!"
@@ -334,9 +259,6 @@ if (
     );
 }
 
-
-/* Serve public folder */
-
 app.use(
     express.static(
         PUBLIC_DIR,
@@ -346,24 +268,16 @@ app.use(
     )
 );
 
-
-/* Homepage */
-
 app.get(
     "/",
     (req, res) => {
 
-        const indexPath =
-            path.join(
-                PUBLIC_DIR,
-                "index.html"
-            );
+        const indexPath = path.join(
+            PUBLIC_DIR,
+            "index.html"
+        );
 
-        if (
-            !fs.existsSync(
-                indexPath
-            )
-        ) {
+        if (!fs.existsSync(indexPath)) {
 
             return res
                 .status(404)
@@ -372,9 +286,7 @@ app.get(
                 );
         }
 
-        res.sendFile(
-            indexPath
-        );
+        res.sendFile(indexPath);
     }
 );
 
@@ -393,27 +305,31 @@ app.post(
                 duration
             } = req.body || {};
 
-
-            if (
-                !key ||
-                !duration
-            ) {
+            if (!key || !duration) {
 
                 return res
                     .status(400)
                     .json({
-
                         success: false,
-
                         message:
                             "Missing key or duration."
                     });
             }
 
+            /*
+                Normalize the key.
 
-            const cleanKey =
-                String(key).trim();
+                This means:
+                novi-abcd
+                Novi-Abcd
+                NOVI-ABCD
 
+                will all be treated consistently.
+            */
+
+            const cleanKey = String(key)
+                .trim()
+                .toUpperCase();
 
             const allowedDurations = [
                 "1d",
@@ -422,7 +338,6 @@ app.post(
                 "1year",
                 "lifetime"
             ];
-
 
             if (
                 !allowedDurations.includes(
@@ -433,53 +348,39 @@ app.post(
                 return res
                     .status(400)
                     .json({
-
                         success: false,
-
                         message:
                             "Invalid duration."
                     });
             }
-
 
             if (!cleanKey) {
 
                 return res
                     .status(400)
                     .json({
-
                         success: false,
-
                         message:
                             "Invalid key."
                     });
             }
 
+            const keys = loadKeys();
 
-            const keys =
-                loadKeys();
-
-
-            if (
-                keys[cleanKey]
-            ) {
+            if (keys[cleanKey]) {
 
                 return res
                     .status(409)
                     .json({
-
                         success: false,
-
                         message:
                             "Key already exists."
                     });
             }
 
-
             keys[cleanKey] = {
 
-                duration:
-                    duration,
+                duration: duration,
 
                 createdAt:
                     new Date()
@@ -493,27 +394,20 @@ app.post(
                 used: false
             };
 
-
-            if (
-                !saveKeys(keys)
-            ) {
+            if (!saveKeys(keys)) {
 
                 return res
                     .status(500)
                     .json({
-
                         success: false,
-
                         message:
                             "Could not save key."
                     });
             }
 
-
             console.log(
                 `Saved key: ${cleanKey} (${duration})`
             );
-
 
             return res.json({
 
@@ -521,6 +415,7 @@ app.post(
 
                 message:
                     "Key saved successfully."
+
             });
 
         } catch (error) {
@@ -533,9 +428,7 @@ app.post(
             return res
                 .status(500)
                 .json({
-
                     success: false,
-
                     message:
                         "Internal server error."
                 });
@@ -553,38 +446,44 @@ app.post(
 
         try {
 
-            const {
-                key
-            } = req.body || {};
-
+            const { key } =
+                req.body || {};
 
             if (!key) {
 
                 return res
                     .status(400)
                     .json({
-
                         valid: false,
-
                         message:
                             "Please enter a key."
                     });
             }
 
+            /*
+                Normalize the entered key
+                the exact same way as when
+                the key was created.
+            */
 
-            const cleanKey =
-                String(key).trim();
+            const cleanKey = String(key)
+                .trim()
+                .toUpperCase();
 
-
-            const keys =
-                loadKeys();
-
+            const keys = loadKeys();
 
             const keyData =
                 keys[cleanKey];
 
+            /* =================================================
+               KEY DOES NOT EXIST
+            ================================================= */
 
             if (!keyData) {
+
+                console.log(
+                    `Invalid key attempt: ${cleanKey}`
+                );
 
                 return res.json({
 
@@ -592,27 +491,49 @@ app.post(
 
                     message:
                         "Invalid Novi key."
+
                 });
             }
 
+            /* =================================================
+               CHECK EXPIRATION
+            ================================================= */
 
-            if (
-                keyData.expiresAt
-            ) {
+            if (keyData.expiresAt) {
 
                 const expirationDate =
                     new Date(
                         keyData.expiresAt
                     );
 
-
                 if (
                     Number.isNaN(
                         expirationDate.getTime()
-                    ) ||
-                    new Date() >
-                    expirationDate
+                    )
                 ) {
+
+                    console.error(
+                        `Invalid expiration date for key: ${cleanKey}`
+                    );
+
+                    return res.json({
+
+                        valid: false,
+
+                        message:
+                            "Invalid Novi key expiration."
+
+                    });
+                }
+
+                if (
+                    Date.now() >=
+                    expirationDate.getTime()
+                ) {
+
+                    console.log(
+                        `Expired key: ${cleanKey}`
+                    );
 
                     return res.json({
 
@@ -620,10 +541,18 @@ app.post(
 
                         message:
                             "This Novi key has expired."
+
                     });
                 }
             }
 
+            /* =================================================
+               KEY IS VALID
+            ================================================= */
+
+            console.log(
+                `Key verified successfully: ${cleanKey}`
+            );
 
             return res.json({
 
@@ -634,6 +563,7 @@ app.post(
 
                 expiresAt:
                     keyData.expiresAt
+
             });
 
         } catch (error) {
@@ -651,6 +581,7 @@ app.post(
 
                     message:
                         "Internal server error."
+
                 });
         }
     }
@@ -668,7 +599,6 @@ app.get(
 
             const stock =
                 loadStock();
-
 
             return res.json({
 
@@ -696,6 +626,7 @@ app.get(
 
                     message:
                         "Could not load stock."
+
                 });
         }
     }
@@ -705,42 +636,17 @@ app.get(
    ADD STOCK
 ========================================================= */
 
-/*
-    This is the endpoint your Discord
-    !add command needs.
-
-    Expected JSON:
-
-    {
-        "items": [
-            "ITEM-1",
-            "ITEM-2",
-            "ITEM-3"
-        ]
-    }
-
-    Each item should be a legitimate
-    inventory item/code that you are
-    authorized to distribute.
-*/
-
 app.post(
     "/api/stock/add",
     (req, res) => {
 
         try {
 
-            const {
-                items
-            } = req.body || {};
-
-
-            /* Make sure items is an array */
+            const { items } =
+                req.body || {};
 
             if (
-                !Array.isArray(
-                    items
-                )
+                !Array.isArray(items)
             ) {
 
                 return res
@@ -751,11 +657,9 @@ app.post(
 
                         message:
                             "Items must be an array."
+
                     });
             }
-
-
-            /* Don't allow an empty list */
 
             if (
                 items.length === 0
@@ -769,18 +673,12 @@ app.post(
 
                         message:
                             "No items were provided."
+
                     });
             }
 
-
             const stock =
                 loadStock();
-
-
-            /*
-                Create a Set so duplicate
-                items are not added twice.
-            */
 
             const existing =
                 new Set(
@@ -792,15 +690,9 @@ app.post(
                     )
                 );
 
-
             let added = 0;
             let duplicates = 0;
             let invalid = 0;
-
-
-            /*
-                Process every item.
-            */
 
             for (
                 const rawItem of items
@@ -816,14 +708,10 @@ app.post(
                     continue;
                 }
 
-
                 const item =
                     String(
                         rawItem
                     ).trim();
-
-
-                /* Skip blank items */
 
                 if (!item) {
 
@@ -832,12 +720,8 @@ app.post(
                     continue;
                 }
 
-
                 const normalized =
                     item.toLowerCase();
-
-
-                /* Prevent duplicates */
 
                 if (
                     existing.has(
@@ -850,33 +734,17 @@ app.post(
                     continue;
                 }
 
-
-                /*
-                    Add item to stock.
-                */
-
-                stock.push(
-                    item
-                );
-
+                stock.push(item);
 
                 existing.add(
                     normalized
                 );
 
-
                 added++;
             }
 
-
-            /*
-                Save the new stock.
-            */
-
             if (
-                !saveStock(
-                    stock
-                )
+                !saveStock(stock)
             ) {
 
                 return res
@@ -887,9 +755,9 @@ app.post(
 
                         message:
                             "Could not save stock."
+
                     });
             }
-
 
             console.log(
                 `Added ${added} stock item(s). ` +
@@ -897,7 +765,6 @@ app.post(
                 `Invalid: ${invalid}. ` +
                 `Total stock: ${stock.length}`
             );
-
 
             return res.json({
 
@@ -932,6 +799,7 @@ app.post(
 
                     message:
                         "Could not add stock."
+
                 });
         }
     }
@@ -950,11 +818,6 @@ app.post(
             const stock =
                 loadStock();
 
-
-            /*
-                No stock available.
-            */
-
             if (
                 stock.length === 0
             ) {
@@ -967,26 +830,15 @@ app.post(
 
                         message:
                             "No Epic Games stock is available."
+
                     });
             }
-
-
-            /*
-                Remove the first item.
-            */
 
             const item =
                 stock.shift();
 
-
-            /*
-                Save updated stock.
-            */
-
             if (
-                !saveStock(
-                    stock
-                )
+                !saveStock(stock)
             ) {
 
                 return res
@@ -997,14 +849,13 @@ app.post(
 
                         message:
                             "Could not remove the item from stock."
+
                     });
             }
-
 
             console.log(
                 `Generated stock item. Remaining: ${stock.length}`
             );
-
 
             return res.json({
 
@@ -1033,6 +884,7 @@ app.post(
 
                     message:
                         "Could not generate stock."
+
                 });
         }
     }
@@ -1073,6 +925,7 @@ app.use(
 
                 message:
                     "API endpoint not found."
+
             });
     }
 );
@@ -1094,7 +947,6 @@ app.use(
             error
         );
 
-
         return res
             .status(500)
             .json({
@@ -1103,6 +955,7 @@ app.use(
 
                 message:
                     "Internal server error."
+
             });
     }
 );
@@ -1126,7 +979,6 @@ const server =
 
                 process.exit(1);
             }
-
 
             console.log(
                 "================================="
@@ -1157,6 +1009,10 @@ const server =
             );
 
             console.log(
+                "Key verification: ENABLED"
+            );
+
+            console.log(
                 "Stock add endpoint: ENABLED"
             );
 
@@ -1174,8 +1030,9 @@ const server =
         }
     );
 
-
-/* Handle server errors */
+/* =========================================================
+   SERVER ERROR HANDLER
+========================================================= */
 
 server.on(
     "error",
