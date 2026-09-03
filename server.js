@@ -125,7 +125,7 @@ app.post("/api/keys", (req, res) => {
     saveKeys(keys);
 
     // Correct JavaScript template literal
-    console.log(`Saved key: ${key} (${duration})`);
+  console.log(`Saved key: ${key} (${duration})`);
 
     res.json({
         success: true,
