@@ -20,1211 +20,460 @@ const STOCK_FILE = path.join(__dirname, "epicgames-stock.json");
 ========================================================= */
 
 app.use(cors());
-
-app.use(
-    express.json({
-        limit: "5mb"
-    })
-);
+app.use(express.json());
 
 /* =========================================================
-   FILE SETUP
+   FILE HELPERS
 ========================================================= */
 
-if (!fs.existsSync(KEY_FILE)) {
-    fs.writeFileSync(
-        KEY_FILE,
-        JSON.stringify({}, null, 2),
-        "utf8"
-    );
-
-    console.log("Created keys.json");
-}
-
-if (!fs.existsSync(STOCK_FILE)) {
-    fs.writeFileSync(
-        STOCK_FILE,
-        JSON.stringify([], null, 2),
-        "utf8"
-    );
-
-    console.log("Created epicgames-stock.json");
-}
-
-/* =========================================================
-   KEY SYSTEM
-========================================================= */
-
-function loadKeys() {
-    try {
-        if (!fs.existsSync(KEY_FILE)) {
-            return {};
-        }
-
-        const data = fs.readFileSync(
-            KEY_FILE,
+function ensureFile(file, defaultValue) {
+    if (!fs.existsSync(file)) {
+        fs.writeFileSync(
+            file,
+            JSON.stringify(defaultValue, null, 2),
             "utf8"
         );
+    }
+}
+
+function readJSON(file, fallback) {
+    try {
+        if (!fs.existsSync(file)) {
+            return fallback;
+        }
+
+        const data = fs.readFileSync(file, "utf8");
 
         if (!data.trim()) {
-            return {};
+            return fallback;
         }
 
         return JSON.parse(data);
     } catch (error) {
-        console.error(
-            "Could not load keys:",
-            error
-        );
-
-        return {};
+        console.error(`Failed reading ${file}:`, error);
+        return fallback;
     }
 }
 
-function saveKeys(keys) {
-    try {
-        fs.writeFileSync(
-            KEY_FILE,
-            JSON.stringify(keys, null, 2),
-            "utf8"
-        );
-
-        return true;
-    } catch (error) {
-        console.error(
-            "Could not save keys:",
-            error
-        );
-
-        return false;
-    }
+function writeJSON(file, data) {
+    fs.writeFileSync(
+        file,
+        JSON.stringify(data, null, 2),
+        "utf8"
+    );
 }
 
-/* =========================================================
-   EXPIRATION
-========================================================= */
+function readKeys() {
+    return readJSON(KEY_FILE, []);
+}
 
-function getExpiration(duration) {
-    const now = new Date();
+function writeKeys(keys) {
+    writeJSON(KEY_FILE, keys);
+}
 
-    switch (duration) {
+function readStock() {
+    const stock = readJSON(STOCK_FILE, []);
 
-        case "1d":
-            return new Date(
-                now.getTime() +
-                24 * 60 * 60 * 1000
-            ).toISOString();
+    return Array.isArray(stock) ? stock : [];
+}
 
-        case "1week":
-            return new Date(
-                now.getTime() +
-                7 * 24 * 60 * 60 * 1000
-            ).toISOString();
-
-        case "1month": {
-            const date = new Date(now);
-
-            date.setMonth(
-                date.getMonth() + 1
-            );
-
-            return date.toISOString();
-        }
-
-        case "1year": {
-            const date = new Date(now);
-
-            date.setFullYear(
-                date.getFullYear() + 1
-            );
-
-            return date.toISOString();
-        }
-
-        case "lifetime":
-            return null;
-
-        default:
-            return null;
-    }
+function writeStock(stock) {
+    writeJSON(STOCK_FILE, stock);
 }
 
 /* =========================================================
-   CHECK KEY EXPIRATION
+   CREATE FILES IF MISSING
 ========================================================= */
 
-function isKeyExpired(keyData) {
+ensureFile(KEY_FILE, []);
+ensureFile(STOCK_FILE, []);
 
-    if (!keyData) {
-        return true;
+/* =========================================================
+   KEY HELPERS
+========================================================= */
+
+const DURATIONS = {
+    "1d": 1 * 24 * 60 * 60 * 1000,
+    "1week": 7 * 24 * 60 * 60 * 1000,
+    "1month": 30 * 24 * 60 * 60 * 1000,
+    "1year": 365 * 24 * 60 * 60 * 1000,
+    "lifetime": null
+};
+
+function generateKey() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    let key = "NOVI-";
+
+    for (let i = 0; i < 4; i++) {
+        let section = "";
+
+        for (let j = 0; j < 4; j++) {
+            section += chars[
+                Math.floor(Math.random() * chars.length)
+            ];
+        }
+
+        key += section;
+
+        if (i < 3) {
+            key += "-";
+        }
     }
 
-    if (!keyData.expiresAt) {
-        return false;
+    return key;
+}
+
+function createKey(duration) {
+    const keys = readKeys();
+
+    if (!DURATIONS.hasOwnProperty(duration)) {
+        throw new Error("Invalid duration.");
     }
 
-    const expiration =
-        new Date(keyData.expiresAt);
+    const key = generateKey();
+
+    const createdAt = Date.now();
+
+    const expiresAt =
+        DURATIONS[duration] === null
+            ? null
+            : createdAt + DURATIONS[duration];
+
+    const newKey = {
+        key,
+        duration,
+        createdAt,
+        expiresAt,
+        deviceId: null,
+        activatedAt: null
+    };
+
+    keys.push(newKey);
+
+    writeKeys(keys);
+
+    return newKey;
+}
+
+function verifyKey(key, deviceId) {
+    if (!key || !deviceId) {
+        return {
+            valid: false,
+            message: "Key and device are required."
+        };
+    }
+
+    const keys = readKeys();
+
+    const index = keys.findIndex(
+        item => item.key === key
+    );
+
+    if (index === -1) {
+        return {
+            valid: false,
+            message: "Invalid key."
+        };
+    }
+
+    const currentKey = keys[index];
+
+    /* Expiration */
 
     if (
-        Number.isNaN(
-            expiration.getTime()
-        )
+        currentKey.expiresAt !== null &&
+        Date.now() > currentKey.expiresAt
     ) {
-        return true;
-    }
-
-    return new Date() > expiration;
-}
-
-/* =========================================================
-   NORMALIZE KEY
-========================================================= */
-
-function normalizeKey(key) {
-    return String(key || "")
-        .trim()
-        .toUpperCase();
-}
-
-/* =========================================================
-   DEVICE ID VALIDATION
-========================================================= */
-
-function isValidDeviceId(deviceId) {
-
-    if (!deviceId) {
-        return false;
-    }
-
-    if (typeof deviceId !== "string") {
-        return false;
-    }
-
-    if (deviceId.length < 16) {
-        return false;
-    }
-
-    if (deviceId.length > 200) {
-        return false;
-    }
-
-    return true;
-}
-
-/* =========================================================
-   VERIFY KEY + DEVICE
-========================================================= */
-
-function verifyKeyForDevice(
-    key,
-    deviceId
-) {
-
-    const cleanKey =
-        normalizeKey(key);
-
-    const keys =
-        loadKeys();
-
-    const keyData =
-        keys[cleanKey];
-
-    /* =====================================================
-       KEY DOES NOT EXIST
-    ===================================================== */
-
-    if (!keyData) {
         return {
             valid: false,
-            success: false,
-            code: "INVALID_KEY",
-            message: "Invalid Novi key."
+            message: "This key has expired."
         };
     }
 
-    /* =====================================================
-       CHECK EXPIRATION
-    ===================================================== */
+    /* Device binding */
 
-    if (isKeyExpired(keyData)) {
+    if (!currentKey.deviceId) {
+        currentKey.deviceId = deviceId;
+        currentKey.activatedAt = Date.now();
 
-        return {
-            valid: false,
-            success: false,
-            code: "EXPIRED_KEY",
-            message: "This Novi key has expired."
-        };
-    }
+        keys[index] = currentKey;
 
-    /* =====================================================
-       DEVICE ID REQUIRED
-    ===================================================== */
-
-    if (!isValidDeviceId(deviceId)) {
-
-        return {
-            valid: false,
-            success: false,
-            code: "INVALID_DEVICE",
-            message:
-                "Unable to verify this device."
-        };
-    }
-
-    /* =====================================================
-       FIRST ACTIVATION
-    ===================================================== */
-
-    if (!keyData.deviceId) {
-
-        keyData.deviceId =
-            deviceId;
-
-        keyData.activatedAt =
-            new Date().toISOString();
-
-        keyData.activations =
-            1;
-
-        if (!saveKeys(keys)) {
-
-            return {
-                valid: false,
-                success: false,
-                code: "ACTIVATION_FAILED",
-                message:
-                    "Could not activate this Novi key."
-            };
-        }
-
-        console.log(
-            `🔐 Key activated on first device: ${cleanKey}`
-        );
+        writeKeys(keys);
 
         return {
             valid: true,
-            success: true,
-            code: "ACTIVATED",
-            message:
-                "Novi key activated successfully.",
-            duration:
-                keyData.duration,
-            expiresAt:
-                keyData.expiresAt
+            key: currentKey
         };
     }
 
-    /* =====================================================
-       DIFFERENT DEVICE
-    ===================================================== */
-
-    if (
-        keyData.deviceId !== deviceId
-    ) {
-
-        console.log(
-            `🚫 Device blocked from key: ${cleanKey}`
-        );
-
+    if (currentKey.deviceId !== deviceId) {
         return {
             valid: false,
-            success: false,
-            code: "DEVICE_IN_USE",
-            message:
-                "🚫 Device Already In Use — this Novi key is already activated on another device."
+            message: "This key is already activated on another device."
         };
     }
-
-    /* =====================================================
-       SAME DEVICE
-    ===================================================== */
 
     return {
         valid: true,
-        success: true,
-        code: "VERIFIED",
-        message:
-            "Novi key verified.",
-        duration:
-            keyData.duration,
-        expiresAt:
-            keyData.expiresAt
+        key: currentKey
     };
 }
 
 /* =========================================================
-   STOCK SYSTEM
+   KEY API
 ========================================================= */
 
-function loadStock() {
-
+app.post("/api/keys", (req, res) => {
     try {
+        const { duration } = req.body;
 
-        if (
-            !fs.existsSync(
-                STOCK_FILE
-            )
-        ) {
-            return [];
-        }
+        const newKey = createKey(duration);
 
-        const data =
-            fs.readFileSync(
-                STOCK_FILE,
-                "utf8"
-            );
-
-        if (!data.trim()) {
-            return [];
-        }
-
-        const stock =
-            JSON.parse(data);
-
-        if (
-            !Array.isArray(stock)
-        ) {
-
-            console.error(
-                "Stock file must contain an array."
-            );
-
-            return [];
-        }
-
-        return stock;
+        res.json({
+            success: true,
+            key: newKey
+        });
 
     } catch (error) {
+        console.error("Create key error:", error);
 
-        console.error(
-            "Could not load stock:",
-            error
-        );
-
-        return [];
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
     }
-}
+});
 
-function saveStock(stock) {
+/* =========================================================
+   VERIFY
+========================================================= */
 
+app.post("/api/verify", (req, res) => {
     try {
+        const { key, deviceId } = req.body;
 
-        fs.writeFileSync(
-            STOCK_FILE,
-            JSON.stringify(
-                stock,
-                null,
-                2
-            ),
-            "utf8"
-        );
+        const result = verifyKey(key, deviceId);
 
-        return true;
+        if (!result.valid) {
+            return res.status(403).json({
+                success: false,
+                valid: false,
+                message: result.message
+            });
+        }
+
+        res.json({
+            success: true,
+            valid: true,
+            key: result.key
+        });
 
     } catch (error) {
+        console.error("Verify error:", error);
 
-        console.error(
-            "Could not save stock:",
-            error
-        );
-
-        return false;
+        res.status(500).json({
+            success: false,
+            valid: false,
+            message: "Verification failed."
+        });
     }
-}
+});
 
 /* =========================================================
-   PUBLIC WEBSITE
+   STOCK COUNT
 ========================================================= */
 
-if (
-    !fs.existsSync(
-        PUBLIC_DIR
-    )
-) {
+app.get("/api/stock", (req, res) => {
+    try {
+        const stock = readStock();
 
-    console.error(
-        "ERROR: public folder does not exist!"
-    );
+        res.set("Cache-Control", "no-store");
 
-} else {
+        res.json({
+            success: true,
+            count: stock.length
+        });
 
-    console.log(
-        "Public folder found."
-    );
-}
+    } catch (error) {
+        console.error("Stock error:", error);
 
-app.use(
-    express.static(
-        PUBLIC_DIR,
-        {
-            index: "index.html",
-            etag: false,
-            maxAge: 0
-        }
-    )
-);
-
-/* =========================================================
-   HOME PAGE
-========================================================= */
-
-app.get(
-    "/",
-    (req, res) => {
-
-        const indexPath =
-            path.join(
-                PUBLIC_DIR,
-                "index.html"
-            );
-
-        if (
-            !fs.existsSync(
-                indexPath
-            )
-        ) {
-
-            return res
-                .status(404)
-                .send(
-                    "Novi is running, but public/index.html was not found."
-                );
-        }
-
-        res.sendFile(
-            indexPath
-        );
+        res.status(500).json({
+            success: false,
+            message: "Failed to load stock."
+        });
     }
-);
-
-/* =========================================================
-   CREATE NOVI KEY
-========================================================= */
-
-app.post(
-    "/api/keys",
-    (req, res) => {
-
-        try {
-
-            const {
-                key,
-                duration
-            } = req.body || {};
-
-            if (
-                !key ||
-                !duration
-            ) {
-
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message:
-                            "Missing key or duration."
-                    });
-            }
-
-            const cleanKey =
-                normalizeKey(key);
-
-            const allowedDurations = [
-                "1d",
-                "1week",
-                "1month",
-                "1year",
-                "lifetime"
-            ];
-
-            if (
-                !allowedDurations.includes(
-                    duration
-                )
-            ) {
-
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message:
-                            "Invalid duration."
-                    });
-            }
-
-            if (!cleanKey) {
-
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message:
-                            "Invalid key."
-                    });
-            }
-
-            const keys =
-                loadKeys();
-
-            if (
-                keys[cleanKey]
-            ) {
-
-                return res
-                    .status(409)
-                    .json({
-                        success: false,
-                        message:
-                            "Key already exists."
-                    });
-            }
-
-            keys[cleanKey] = {
-
-                duration:
-                    duration,
-
-                createdAt:
-                    new Date()
-                        .toISOString(),
-
-                expiresAt:
-                    getExpiration(
-                        duration
-                    ),
-
-                used: false,
-
-                deviceId: null,
-
-                activatedAt: null,
-
-                activations: 0
-            };
-
-            if (
-                !saveKeys(keys)
-            ) {
-
-                return res
-                    .status(500)
-                    .json({
-                        success: false,
-                        message:
-                            "Could not save key."
-                    });
-            }
-
-            console.log(
-                `Saved key: ${cleanKey} (${duration})`
-            );
-
-            return res.json({
-                success: true,
-                message:
-                    "Key saved successfully."
-            });
-
-        } catch (error) {
-
-            console.error(
-                "Create key error:",
-                error
-            );
-
-            return res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        "Internal server error."
-                });
-        }
-    }
-);
-
-/* =========================================================
-   VERIFY NOVI KEY
-========================================================= */
-
-app.post(
-    "/api/verify",
-    (req, res) => {
-
-        try {
-
-            const {
-                key,
-                deviceId
-            } = req.body || {};
-
-            if (!key) {
-
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        valid: false,
-                        code: "MISSING_KEY",
-                        message:
-                            "Please enter a key."
-                    });
-            }
-
-            const result =
-                verifyKeyForDevice(
-                    key,
-                    deviceId
-                );
-
-            if (
-                result.code ===
-                "DEVICE_IN_USE"
-            ) {
-
-                return res
-                    .status(403)
-                    .json(result);
-            }
-
-            if (
-                !result.valid
-            ) {
-
-                return res
-                    .status(401)
-                    .json(result);
-            }
-
-            return res
-                .status(200)
-                .json(result);
-
-        } catch (error) {
-
-            console.error(
-                "Verify key error:",
-                error
-            );
-
-            return res
-                .status(500)
-                .json({
-                    success: false,
-                    valid: false,
-                    code: "SERVER_ERROR",
-                    message:
-                        "Internal server error."
-                });
-        }
-    }
-);
-
-/* =========================================================
-   STOCK
-   RETURNS ACTUAL STOCK LIST
-========================================================= */
-
-app.get(
-    "/api/stock",
-    (req, res) => {
-
-        try {
-
-            const stock =
-                loadStock();
-
-            return res.json({
-
-                success: true,
-
-                count:
-                    stock.length,
-
-                items:
-                    stock
-
-            });
-
-        } catch (error) {
-
-            console.error(
-                "Stock error:",
-                error
-            );
-
-            return res
-                .status(500)
-                .json({
-
-                    success: false,
-
-                    count: 0,
-
-                    items: [],
-
-                    message:
-                        "Could not load stock."
-
-                });
-        }
-    }
-);
+});
 
 /* =========================================================
    ADD STOCK
 ========================================================= */
 
-app.post(
-    "/api/stock/add",
-    (req, res) => {
+app.post("/api/stock/add", (req, res) => {
+    try {
+        const { item } = req.body;
 
-        try {
-
-            const {
-                items
-            } = req.body || {};
-
-            if (
-                !Array.isArray(items)
-            ) {
-
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message:
-                            "Items must be an array."
-                    });
-            }
-
-            if (
-                items.length === 0
-            ) {
-
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message:
-                            "No items were provided."
-                    });
-            }
-
-            const stock =
-                loadStock();
-
-            const existing =
-                new Set(
-                    stock.map(
-                        item =>
-                            String(item)
-                                .trim()
-                                .toLowerCase()
-                    )
-                );
-
-            let added = 0;
-            let duplicates = 0;
-            let invalid = 0;
-
-            for (
-                const rawItem of items
-            ) {
-
-                if (
-                    rawItem === null ||
-                    rawItem === undefined
-                ) {
-
-                    invalid++;
-                    continue;
-                }
-
-                const item =
-                    String(
-                        rawItem
-                    ).trim();
-
-                if (!item) {
-
-                    invalid++;
-                    continue;
-                }
-
-                const normalized =
-                    item.toLowerCase();
-
-                if (
-                    existing.has(
-                        normalized
-                    )
-                ) {
-
-                    duplicates++;
-                    continue;
-                }
-
-                stock.push(
-                    item
-                );
-
-                existing.add(
-                    normalized
-                );
-
-                added++;
-            }
-
-            if (
-                !saveStock(
-                    stock
-                )
-            ) {
-
-                return res
-                    .status(500)
-                    .json({
-                        success: false,
-                        message:
-                            "Could not save stock."
-                    });
-            }
-
-            console.log(
-                `Added ${added} stock item(s). ` +
-                `Duplicates: ${duplicates}. ` +
-                `Invalid: ${invalid}. ` +
-                `Total stock: ${stock.length}`
-            );
-
-            return res.json({
-
-                success: true,
-
-                added:
-                    added,
-
-                duplicates:
-                    duplicates,
-
-                invalid:
-                    invalid,
-
-                remaining:
-                    stock.length
-
+        if (
+            item === undefined ||
+            item === null ||
+            item === ""
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Stock item is required."
             });
-
-        } catch (error) {
-
-            console.error(
-                "Add stock error:",
-                error
-            );
-
-            return res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        "Could not add stock."
-                });
         }
-    }
-);
 
-/* =========================================================
-   GENERATE STOCK
-========================================================= */
+        const stock = readStock();
 
-app.post(
-    "/api/stock/generate",
-    (req, res) => {
+        stock.push(item);
 
-        try {
+        writeStock(stock);
 
-            const {
-                key,
-                deviceId
-            } = req.body || {};
+        res.json({
+            success: true,
+            count: stock.length
+        });
 
-            if (!key) {
+    } catch (error) {
+        console.error("Add stock error:", error);
 
-                return res
-                    .status(401)
-                    .json({
-                        success: false,
-                        valid: false,
-                        code: "MISSING_KEY",
-                        message:
-                            "A valid Novi key is required."
-                    });
-            }
-
-            const verification =
-                verifyKeyForDevice(
-                    key,
-                    deviceId
-                );
-
-            if (
-                verification.code ===
-                "DEVICE_IN_USE"
-            ) {
-
-                return res
-                    .status(403)
-                    .json({
-                        success: false,
-                        valid: false,
-                        code: "DEVICE_IN_USE",
-                        message:
-                            "🚫 Device Already In Use — this Novi key is already activated on another device."
-                    });
-            }
-
-            if (
-                !verification.valid
-            ) {
-
-                return res
-                    .status(403)
-                    .json({
-                        success: false,
-                        valid: false,
-                        code:
-                            verification.code ||
-                            "KEY_VERIFICATION_FAILED",
-                        message:
-                            verification.message ||
-                            "Novi key verification failed."
-                    });
-            }
-
-            const stock =
-                loadStock();
-
-            if (
-                stock.length === 0
-            ) {
-
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message:
-                            "No authorized inventory is available."
-                    });
-            }
-
-            const item =
-                stock.shift();
-
-            if (
-                !saveStock(
-                    stock
-                )
-            ) {
-
-                return res
-                    .status(500)
-                    .json({
-                        success: false,
-                        message:
-                            "Could not remove the item from stock."
-                    });
-            }
-
-            console.log(
-                `Generated inventory item. Remaining: ${stock.length}`
-            );
-
-            return res.json({
-
-                success: true,
-
-                item:
-                    item,
-
-                remaining:
-                    stock.length
-
-            });
-
-        } catch (error) {
-
-            console.error(
-                "Generate stock error:",
-                error
-            );
-
-            return res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        "Could not generate inventory."
-                });
-        }
-    }
-);
-
-/* =========================================================
-   HEALTH CHECK
-========================================================= */
-
-app.get(
-    "/api/health",
-    (req, res) => {
-
-        return res.json({
-
-            online: true,
-
-            message:
-                "Novi server is running.",
-
-            oneDeviceActivation:
-                true
-
+        res.status(500).json({
+            success: false,
+            message: "Failed to add stock."
         });
     }
-);
+});
 
 /* =========================================================
-   UNKNOWN API
+   GENERATE ONE STOCK ITEM
+   ITEM IS REMOVED PERMANENTLY
+========================================================= */
+
+app.post("/api/stock/generate", (req, res) => {
+    try {
+        const { key, deviceId } = req.body;
+
+        /* Verify key/device first */
+
+        const verification = verifyKey(
+            key,
+            deviceId
+        );
+
+        if (!verification.valid) {
+            return res.status(403).json({
+                success: false,
+                message: verification.message
+            });
+        }
+
+        /* Read current stock */
+
+        const stock = readStock();
+
+        if (stock.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No stock available."
+            });
+        }
+
+        /*
+         * Remove exactly ONE item.
+         *
+         * shift() removes it from the array,
+         * then writeStock() saves the new array.
+         */
+
+        const generatedItem = stock.shift();
+
+        writeStock(stock);
+
+        /*
+         * Return ONLY the generated inventory item.
+         * We do not return the remaining stock.
+         */
+
+        res.set("Cache-Control", "no-store");
+
+        return res.json({
+            success: true,
+            item: generatedItem,
+            remaining: stock.length
+        });
+
+    } catch (error) {
+        console.error("Generate stock error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to generate stock."
+        });
+    }
+});
+
+/* =========================================================
+   HEALTH
+========================================================= */
+
+app.get("/api/health", (req, res) => {
+    res.json({
+        success: true,
+        status: "online"
+    });
+});
+
+/* =========================================================
+   STATIC WEBSITE
 ========================================================= */
 
 app.use(
-    "/api",
-    (req, res) => {
-
-        return res
-            .status(404)
-            .json({
-                success: false,
-                message:
-                    "API endpoint not found."
-            });
-    }
+    express.static(PUBLIC_DIR, {
+        index: "index.html",
+        etag: false,
+        maxAge: 0
+    })
 );
+
+/* =========================================================
+   HOME
+========================================================= */
+
+app.get("/", (req, res) => {
+    res.sendFile(
+        path.join(PUBLIC_DIR, "index.html")
+    );
+});
+
+/* =========================================================
+   API 404
+========================================================= */
+
+app.use("/api", (req, res) => {
+    res.status(404).json({
+        success: false,
+        message: "API endpoint not found."
+    });
+});
 
 /* =========================================================
    ERROR HANDLER
 ========================================================= */
 
-app.use(
-    (
-        error,
-        req,
-        res,
-        next
-    ) => {
+app.use((error, req, res, next) => {
+    console.error(error);
 
-        console.error(
-            "Server error:",
-            error
-        );
-
-        if (
-            res.headersSent
-        ) {
-            return next(error);
-        }
-
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message:
-                    "Internal server error."
-            });
-    }
-);
+    res.status(500).json({
+        success: false,
+        message: "Internal server error."
+    });
+});
 
 /* =========================================================
-   START SERVER
+   START
 ========================================================= */
 
-const server =
-    app.listen(
-        PORT,
-        "0.0.0.0",
-        (error) => {
-
-            if (error) {
-
-                console.error(
-                    "Server failed to start:",
-                    error
-                );
-
-                process.exit(1);
-            }
-
-            console.log(
-                "================================="
-            );
-
-            console.log(
-                "       NOVI SERVER ONLINE"
-            );
-
-            console.log(
-                "================================="
-            );
-
-            console.log(
-                `Port: ${PORT}`
-            );
-
-            console.log(
-                `Public folder: ${PUBLIC_DIR}`
-            );
-
-            console.log(
-                `Keys file: ${KEY_FILE}`
-            );
-
-            console.log(
-                `Stock file: ${STOCK_FILE}`
-            );
-
-            console.log(
-                "One-device activation: ENABLED"
-            );
-
-            console.log(
-                "Device-in-use protection: ENABLED"
-            );
-
-            console.log(
-                "Stock add endpoint: ENABLED"
-            );
-
-            console.log(
-                "Stock generate endpoint: ENABLED"
-            );
-
-            console.log(
-                "Website server started successfully."
-            );
-
-            console.log(
-                "================================="
-            );
-        }
-    );
-
-server.on(
-    "error",
-    (error) => {
-
-        console.error(
-            "HTTP server error:",
-            error
-        );
-    }
-);
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Novi server running on port ${PORT}`);
+});
