@@ -547,6 +547,11 @@
             font-size: 12px;
         }
 
+        .mini-btn:hover {
+            background: rgba(139,92,246,.15);
+            border-color: rgba(139,92,246,.3);
+        }
+
         /* INVENTORY */
 
         .inventory {
@@ -615,6 +620,7 @@
         /* MOBILE */
 
         @media(max-width: 800px) {
+
             .nav-links {
                 display: none;
             }
@@ -657,6 +663,14 @@
             section {
                 padding: 65px 0;
             }
+
+            .hero p {
+                font-size: 15px;
+            }
+
+            .section-title h2 {
+                font-size: 30px;
+            }
         }
     </style>
 </head>
@@ -678,7 +692,10 @@
         </div>
 
         <div class="nav-actions">
-            <button class="btn btn-secondary" onclick="scrollToAccess()">
+
+            <button
+                class="btn btn-secondary"
+                onclick="scrollToAccess()">
                 🔑 Enter Key
             </button>
 
@@ -688,6 +705,7 @@
                 onclick="saveEmailPassword()">
                 👤 Save Login
             </button>
+
         </div>
 
     </div>
@@ -697,6 +715,7 @@
 <!-- HERO -->
 
 <header class="hero">
+
     <div class="hero-glow"></div>
 
     <div class="container">
@@ -706,7 +725,7 @@
             Novi is online
         </div>
 
-        <h1 class="fade-up delay-1">
+        <h1>
             Welcome to <span class="gradient">Novi</span>
         </h1>
 
@@ -716,22 +735,30 @@
         </p>
 
         <div class="hero-buttons">
-            <button class="btn btn-primary" onclick="scrollToAccess()">
+
+            <button
+                class="btn btn-primary"
+                onclick="scrollToAccess()">
                 Get Started →
             </button>
 
-            <button class="btn btn-secondary" onclick="scrollToDashboard()">
+            <button
+                class="btn btn-secondary"
+                onclick="scrollToDashboard()">
                 Open Dashboard
             </button>
+
         </div>
 
     </div>
+
 </header>
 
 
 <!-- STATS -->
 
 <section>
+
     <div class="container">
 
         <div class="stats">
@@ -754,17 +781,24 @@
         </div>
 
     </div>
+
 </section>
 
 
 <!-- ACCESS -->
 
 <section id="access">
+
     <div class="container">
 
         <div class="section-title">
-            <h2>Unlock <span class="gradient">Novi</span></h2>
-            <p>Enter your access key to continue.</p>
+            <h2>
+                Unlock <span class="gradient">Novi</span>
+            </h2>
+
+            <p>
+                Enter your access key to continue.
+            </p>
         </div>
 
         <div class="access glass">
@@ -772,11 +806,18 @@
             <div class="access-head">
 
                 <div>
+
                     <h3>Access Key</h3>
-                    <p>Your key is bound to this device.</p>
+
+                    <p>
+                        Your key is bound to this device.
+                    </p>
+
                 </div>
 
-                <div id="accessStatus" class="status">
+                <div
+                    id="accessStatus"
+                    class="status">
                     Locked
                 </div>
 
@@ -798,11 +839,15 @@
 
             </div>
 
-            <div id="unlockMessage" class="message"></div>
+            <div
+                id="unlockMessage"
+                class="message">
+            </div>
 
         </div>
 
     </div>
+
 </section>
 
 
@@ -813,37 +858,73 @@
     <div class="container">
 
         <div class="section-title">
-            <h2>Everything in <span class="gradient">one place</span></h2>
-            <p>Simple tools without unnecessary clutter.</p>
+
+            <h2>
+                Everything in
+                <span class="gradient">
+                    one place
+                </span>
+            </h2>
+
+            <p>
+                Simple tools without unnecessary clutter.
+            </p>
+
         </div>
 
         <div class="features">
 
             <div class="feature glass">
-                <div class="feature-icon">🔐</div>
-                <h3>Device Security</h3>
+
+                <div class="feature-icon">
+                    🔐
+                </div>
+
+                <h3>
+                    Device Security
+                </h3>
+
                 <p>
                     Your access is connected to your current device,
                     helping keep keys from being freely shared.
                 </p>
+
             </div>
 
+
             <div class="feature glass">
-                <div class="feature-icon">🔑</div>
-                <h3>Saved Keys</h3>
+
+                <div class="feature-icon">
+                    🔑
+                </div>
+
+                <h3>
+                    Saved Keys
+                </h3>
+
                 <p>
                     Save your authorized Novi keys locally so you don't
                     need to repeatedly type them.
                 </p>
+
             </div>
 
+
             <div class="feature glass">
-                <div class="feature-icon">⚡</div>
-                <h3>Fast Generation</h3>
+
+                <div class="feature-icon">
+                    ⚡
+                </div>
+
+                <h3>
+                    Fast Generation
+                </h3>
+
                 <p>
                     Generate authorized inventory items directly from
                     your dashboard.
                 </p>
+
             </div>
 
         </div>
@@ -860,14 +941,27 @@
     <div class="container">
 
         <div class="section-title">
-            <h2>Choose your <span class="gradient">access</span></h2>
-            <p>Flexible options for different needs.</p>
+
+            <h2>
+                Choose your
+                <span class="gradient">
+                    access
+                </span>
+            </h2>
+
+            <p>
+                Flexible options for different needs.
+            </p>
+
         </div>
 
         <div class="plans">
 
             <div class="plan glass">
-                <h3>Starter</h3>
+
+                <h3>
+                    Starter
+                </h3>
 
                 <div class="price">
                     Free
@@ -878,7 +972,9 @@
                     <li>✓ Device binding</li>
                     <li>✓ Saved keys</li>
                 </ul>
+
             </div>
+
 
             <div class="plan glass featured">
 
@@ -886,7 +982,9 @@
                     POPULAR
                 </div>
 
-                <h3>Premium</h3>
+                <h3>
+                    Premium
+                </h3>
 
                 <div class="price">
                     Pro
@@ -900,9 +998,12 @@
 
             </div>
 
+
             <div class="plan glass">
 
-                <h3>Custom</h3>
+                <h3>
+                    Custom
+                </h3>
 
                 <div class="price">
                     Custom
@@ -929,6 +1030,7 @@
 
     <div class="container dashboard">
 
+
         <!-- MAIN DASHBOARD -->
 
         <div class="dashboard-card glass">
@@ -936,15 +1038,25 @@
             <div class="dashboard-top">
 
                 <div>
-                    <h2>Welcome to your Dashboard</h2>
-                    <p>Manage your Novi access from here.</p>
+
+                    <h2>
+                        Welcome to your Dashboard
+                    </h2>
+
+                    <p>
+                        Manage your Novi access from here.
+                    </p>
+
                 </div>
 
-                <div id="dashboardStatus" class="status">
+                <div
+                    id="dashboardStatus"
+                    class="status">
                     Locked
                 </div>
 
             </div>
+
 
             <div class="action-buttons">
 
@@ -956,7 +1068,7 @@
 
                 <button
                     class="btn btn-secondary"
-                    onclick="saveEmailPassword()">
+                    onclick="focusLoginForm()">
                     👤 Save Login
                 </button>
 
@@ -973,26 +1085,40 @@
 
         <!-- SAVE LOGIN -->
 
-        <div class="dashboard-card glass">
+        <div
+            id="loginCard"
+            class="dashboard-card glass">
 
             <div class="dashboard-top">
+
                 <div>
-                    <h2>Save Login</h2>
-                    <p>Save your login locally for quick copying later.</p>
+
+                    <h2>
+                        Save Login
+                    </h2>
+
+                    <p>
+                        Save your login locally for quick copying later.
+                    </p>
+
                 </div>
+
             </div>
+
 
             <div class="input-row">
 
                 <input
                     id="emailInput"
                     type="email"
-                    placeholder="Email">
+                    placeholder="Email"
+                    autocomplete="off">
 
                 <input
                     id="passwordInput"
                     type="password"
-                    placeholder="Password">
+                    placeholder="Password"
+                    autocomplete="off">
 
                 <button
                     class="btn btn-primary"
@@ -1012,8 +1138,15 @@
             <div class="dashboard-top">
 
                 <div>
-                    <h2>Device Security</h2>
-                    <p>This device's unique identifier.</p>
+
+                    <h2>
+                        Device Security
+                    </h2>
+
+                    <p>
+                        This device's unique identifier.
+                    </p>
+
                 </div>
 
             </div>
@@ -1042,13 +1175,23 @@
             <div class="dashboard-top">
 
                 <div>
-                    <h2>Saved Keys</h2>
-                    <p>Your locally saved Novi keys.</p>
+
+                    <h2>
+                        Saved Keys
+                    </h2>
+
+                    <p>
+                        Your locally saved Novi keys.
+                    </p>
+
                 </div>
 
             </div>
 
-            <div id="savedKeys" class="saved-grid"></div>
+            <div
+                id="savedKeys"
+                class="saved-grid">
+            </div>
 
         </div>
 
@@ -1060,13 +1203,23 @@
             <div class="dashboard-top">
 
                 <div>
-                    <h2>Saved Logins</h2>
-                    <p>Your saved login information.</p>
+
+                    <h2>
+                        Saved Logins
+                    </h2>
+
+                    <p>
+                        Your saved login information.
+                    </p>
+
                 </div>
 
             </div>
 
-            <div id="savedLogins" class="saved-grid"></div>
+            <div
+                id="savedLogins"
+                class="saved-grid">
+            </div>
 
         </div>
 
@@ -1078,8 +1231,15 @@
             <div class="dashboard-top">
 
                 <div>
-                    <h2>Authorized Inventory</h2>
-                    <p>Items available through your authorized access.</p>
+
+                    <h2>
+                        Authorized Inventory
+                    </h2>
+
+                    <p>
+                        Items available through your authorized access.
+                    </p>
+
                 </div>
 
                 <button
@@ -1090,9 +1250,15 @@
 
             </div>
 
-            <div id="inventory" class="inventory"></div>
+            <div
+                id="inventory"
+                class="inventory">
+            </div>
 
-            <div id="inventoryMessage" class="message"></div>
+            <div
+                id="inventoryMessage"
+                class="message">
+            </div>
 
         </div>
 
@@ -1101,18 +1267,26 @@
 </section>
 
 
+<!-- FOOTER -->
+
 <footer>
 
     <div class="container footer-inner">
 
-        <span>© 2026 Novi. All rights reserved.</span>
+        <span>
+            © 2026 Novi. All rights reserved.
+        </span>
 
-        <span>Built for simplicity.</span>
+        <span>
+            Built for simplicity.
+        </span>
 
     </div>
 
 </footer>
 
+
+<!-- TOAST -->
 
 <div id="toast"></div>
 
@@ -1133,67 +1307,116 @@
        DEVICE ID
     ========================================================= */
 
-    let deviceId = localStorage.getItem("noviDeviceId");
+    let deviceId =
+        localStorage.getItem("noviDeviceId");
 
     if (!deviceId) {
 
         deviceId =
             "NVI-" +
-            crypto.randomUUID().replace(/-/g, "").slice(0, 20).toUpperCase();
+            crypto.randomUUID()
+                .replace(/-/g, "")
+                .slice(0, 20)
+                .toUpperCase();
 
-        localStorage.setItem("noviDeviceId", deviceId);
+        localStorage.setItem(
+            "noviDeviceId",
+            deviceId
+        );
     }
 
-    document.getElementById("deviceIdDisplay").value = deviceId;
+
+    document.getElementById(
+        "deviceIdDisplay"
+    ).value = deviceId;
 
 
     /* =========================================================
        CURRENT SESSION
     ========================================================= */
 
-    let currentKey = localStorage.getItem("noviCurrentKey") || "";
+    let currentKey =
+        localStorage.getItem(
+            "noviCurrentKey"
+        ) || "";
 
     let unlocked =
-        localStorage.getItem("noviUnlocked") === "true";
+        localStorage.getItem(
+            "noviUnlocked"
+        ) === "true";
 
 
     /* =========================================================
-       HELPERS
+       TOAST
     ========================================================= */
 
     function toast(message) {
 
-        const el = document.getElementById("toast");
+        const el =
+            document.getElementById("toast");
 
         el.textContent = message;
 
         el.classList.add("show");
 
-        clearTimeout(window.toastTimer);
+        clearTimeout(
+            window.toastTimer
+        );
 
-        window.toastTimer = setTimeout(() => {
-            el.classList.remove("show");
-        }, 2800);
+        window.toastTimer =
+            setTimeout(() => {
+
+                el.classList.remove("show");
+
+            }, 2800);
     }
 
 
-    async function copyText(text, message = "Copied!") {
+    /* =========================================================
+       COPY
+    ========================================================= */
+
+    async function copyText(
+        text,
+        message = "Copied!"
+    ) {
 
         try {
 
-            if (navigator.clipboard) {
-                await navigator.clipboard.writeText(text);
+            if (
+                navigator.clipboard &&
+                window.isSecureContext
+            ) {
+
+                await navigator.clipboard.writeText(
+                    text
+                );
+
             } else {
 
-                const area = document.createElement("textarea");
+                const area =
+                    document.createElement(
+                        "textarea"
+                    );
 
                 area.value = text;
 
-                document.body.appendChild(area);
+                area.style.position =
+                    "fixed";
+
+                area.style.opacity = "0";
+
+                document.body.appendChild(
+                    area
+                );
+
+                area.focus();
 
                 area.select();
 
-                document.execCommand("copy");
+                document.execCommand(
+                    "copy"
+                );
 
                 area.remove();
             }
@@ -1202,36 +1425,50 @@
 
         } catch (error) {
 
-            toast("Could not copy.");
+            console.error(error);
 
+            toast(
+                "Could not copy."
+            );
         }
-
     }
 
+
+    /* =========================================================
+       STORAGE HELPERS
+    ========================================================= */
 
     function getSavedKeys() {
 
         try {
+
             return JSON.parse(
-                localStorage.getItem(KEY_STORAGE) || "[]"
+                localStorage.getItem(
+                    KEY_STORAGE
+                ) || "[]"
             );
+
         } catch {
+
             return [];
         }
-
     }
 
 
     function getSavedLogins() {
 
         try {
+
             return JSON.parse(
-                localStorage.getItem(LOGIN_STORAGE) || "[]"
+                localStorage.getItem(
+                    LOGIN_STORAGE
+                ) || "[]"
             );
+
         } catch {
+
             return [];
         }
-
     }
 
 
@@ -1246,7 +1483,6 @@
             .scrollIntoView({
                 behavior: "smooth"
             });
-
     }
 
 
@@ -1254,7 +1490,9 @@
 
         if (!unlocked) {
 
-            toast("Unlock your Novi key first.");
+            toast(
+                "Unlock your Novi key first."
+            );
 
             scrollToAccess();
 
@@ -1266,7 +1504,35 @@
             .scrollIntoView({
                 behavior: "smooth"
             });
+    }
 
+
+    function focusLoginForm() {
+
+        if (!unlocked) {
+
+            toast(
+                "Unlock your Novi key first."
+            );
+
+            scrollToAccess();
+
+            return;
+        }
+
+        document
+            .getElementById("loginCard")
+            .scrollIntoView({
+                behavior: "smooth"
+            });
+
+        setTimeout(() => {
+
+            document
+                .getElementById("emailInput")
+                .focus();
+
+        }, 500);
     }
 
 
@@ -1277,13 +1543,18 @@
     async function unlock() {
 
         const input =
-            document.getElementById("keyInput");
+            document.getElementById(
+                "keyInput"
+            );
 
         const message =
-            document.getElementById("unlockMessage");
+            document.getElementById(
+                "unlockMessage"
+            );
 
         const key =
             input.value.trim();
+
 
         if (!key) {
 
@@ -1293,26 +1564,31 @@
             return;
         }
 
+
         message.textContent =
             "Checking your key...";
+
 
         try {
 
             const response =
-                await fetch(`${API_URL}/api/verify`, {
+                await fetch(
+                    `${API_URL}/api/verify`,
+                    {
+                        method: "POST",
 
-                    method: "POST",
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
 
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        key,
-                        deviceId
-                    })
-
-                });
+                        body:
+                            JSON.stringify({
+                                key,
+                                deviceId
+                            })
+                    }
+                );
 
 
             const result =
@@ -1321,12 +1597,16 @@
 
             if (
                 response.ok &&
-                (result.success || result.valid)
+                (
+                    result.success ||
+                    result.valid
+                )
             ) {
 
                 currentKey = key;
 
                 unlocked = true;
+
 
                 localStorage.setItem(
                     "noviCurrentKey",
@@ -1338,17 +1618,26 @@
                     "true"
                 );
 
+
                 setUnlockedUI();
+
 
                 message.textContent =
                     "Access granted.";
 
-                toast("Welcome to Novi!");
+
+                toast(
+                    "Welcome to Novi!"
+                );
+
 
                 loadStock();
 
+
                 document
-                    .getElementById("dashboard")
+                    .getElementById(
+                        "dashboard"
+                    )
                     .scrollIntoView({
                         behavior: "smooth"
                     });
@@ -1365,8 +1654,9 @@
                     result.message ||
                     "Invalid or unauthorized key.";
 
-                toast("Access denied.");
-
+                toast(
+                    "Access denied."
+                );
             }
 
         } catch (error) {
@@ -1376,10 +1666,10 @@
             message.textContent =
                 "Could not connect to the Novi server.";
 
-            toast("Server connection failed.");
-
+            toast(
+                "Server connection failed."
+            );
         }
-
     }
 
 
@@ -1390,47 +1680,75 @@
     function setUnlockedUI() {
 
         const status =
-            document.getElementById("accessStatus");
+            document.getElementById(
+                "accessStatus"
+            );
 
         const dashboardStatus =
-            document.getElementById("dashboardStatus");
+            document.getElementById(
+                "dashboardStatus"
+            );
 
-        status.textContent = "Unlocked";
 
-        status.classList.add("active");
+        status.textContent =
+            "Unlocked";
 
-        dashboardStatus.textContent = "Active";
+        status.classList.add(
+            "active"
+        );
 
-        dashboardStatus.classList.add("active");
 
-        document.getElementById("keyInput").value =
-            currentKey;
+        dashboardStatus.textContent =
+            "Active";
 
-        document.getElementById("dashboard").style.display =
-            "block";
+        dashboardStatus.classList.add(
+            "active"
+        );
 
+
+        document.getElementById(
+            "keyInput"
+        ).value = currentKey;
+
+
+        document.getElementById(
+            "dashboard"
+        ).style.display = "block";
     }
 
 
     function setLockedUI() {
 
         const status =
-            document.getElementById("accessStatus");
+            document.getElementById(
+                "accessStatus"
+            );
 
         const dashboardStatus =
-            document.getElementById("dashboardStatus");
+            document.getElementById(
+                "dashboardStatus"
+            );
 
-        status.textContent = "Locked";
 
-        status.classList.remove("active");
+        status.textContent =
+            "Locked";
 
-        dashboardStatus.textContent = "Locked";
+        status.classList.remove(
+            "active"
+        );
 
-        dashboardStatus.classList.remove("active");
 
-        document.getElementById("dashboard").style.display =
-            "none";
+        dashboardStatus.textContent =
+            "Locked";
 
+        dashboardStatus.classList.remove(
+            "active"
+        );
+
+
+        document.getElementById(
+            "dashboard"
+        ).style.display = "none";
     }
 
 
@@ -1442,12 +1760,17 @@
 
         if (!currentKey) {
 
-            toast("Unlock a key first.");
+            toast(
+                "Unlock a key first."
+            );
 
             return;
         }
 
-        let keys = getSavedKeys();
+
+        let keys =
+            getSavedKeys();
+
 
         if (!keys.includes(currentKey)) {
 
@@ -1458,67 +1781,95 @@
                 JSON.stringify(keys)
             );
 
-            toast("Key saved!");
+            toast(
+                "Key saved!"
+            );
 
         } else {
 
-            toast("That key is already saved.");
-
+            toast(
+                "That key is already saved."
+            );
         }
 
-        renderSavedKeys();
 
+        renderSavedKeys();
     }
 
 
     function renderSavedKeys() {
 
         const container =
-            document.getElementById("savedKeys");
+            document.getElementById(
+                "savedKeys"
+            );
 
         const keys =
             getSavedKeys();
+
 
         if (!keys.length) {
 
             container.innerHTML = `
                 <div class="saved-item">
-                    <strong>No saved keys</strong>
-                    <small>Save an authorized key and it will appear here.</small>
+
+                    <strong>
+                        No saved keys
+                    </strong>
+
+                    <small>
+                        Save an authorized key and it will appear here.
+                    </small>
+
                 </div>
             `;
 
             return;
         }
 
+
         container.innerHTML =
-            keys.map((key, index) => `
+            keys.map(
+                (key, index) => `
 
                 <div class="saved-item">
 
                     <div class="saved-item-head">
-                        <strong>Key ${index + 1}</strong>
+
+                        <strong>
+                            Key ${index + 1}
+                        </strong>
+
                     </div>
 
-                    <small>${escapeHTML(key)}</small>
+                    <small>
+                        ${escapeHTML(key)}
+                    </small>
 
                     <div class="item-actions">
 
                         <button
                             class="mini-btn"
-                            onclick="copyText(${JSON.stringify(key)}, 'Key copied!')">
+                            onclick="copyText(
+                                ${JSON.stringify(key)},
+                                'Key copied!'
+                            )">
                             Copy
                         </button>
 
                         <button
                             class="mini-btn"
-                            onclick="useSavedKey(${JSON.stringify(key)})">
+                            onclick="useSavedKey(
+                                ${JSON.stringify(key)}
+                            )">
                             Use
                         </button>
 
                         <button
                             class="mini-btn"
-                            onclick="deleteSavedKey(${JSON.stringify(key)})">
+                            onclick="deleteSavedKey(
+                                ${JSON.stringify(key)}
+                            )">
                             Delete
                         </button>
 
@@ -1526,20 +1877,22 @@
 
                 </div>
 
-            `).join("");
-
+            `
+            ).join("");
     }
 
 
     function useSavedKey(key) {
 
-        document.getElementById("keyInput").value =
-            key;
+        document.getElementById(
+            "keyInput"
+        ).value = key;
 
         scrollToAccess();
 
-        toast("Key loaded.");
-
+        toast(
+            "Key loaded."
+        );
     }
 
 
@@ -1547,17 +1900,23 @@
 
         let keys =
             getSavedKeys()
-                .filter(item => item !== key);
+                .filter(
+                    item => item !== key
+                );
+
 
         localStorage.setItem(
             KEY_STORAGE,
             JSON.stringify(keys)
         );
 
+
         renderSavedKeys();
 
-        toast("Key deleted.");
 
+        toast(
+            "Key deleted."
+        );
     }
 
 
@@ -1567,139 +1926,203 @@
 
     function saveEmailPassword() {
 
-        const email =
-            document.getElementById("emailInput")?.value.trim();
+        if (!unlocked) {
 
-        const password =
-            document.getElementById("passwordInput")?.value;
+            toast(
+                "Unlock your Novi key first."
+            );
 
-        if (!email || !password) {
-
-            document
-                .getElementById("dashboard")
-                .style.display = "block";
-
-            document
-                .getElementById("emailInput")
-                .focus();
-
-            document
-                .getElementById("dashboard")
-                .scrollIntoView({
-                    behavior: "smooth"
-                });
-
-            toast("Enter both email and password.");
+            scrollToAccess();
 
             return;
         }
+
+
+        const emailInput =
+            document.getElementById(
+                "emailInput"
+            );
+
+        const passwordInput =
+            document.getElementById(
+                "passwordInput"
+            );
+
+
+        const email =
+            emailInput?.value.trim();
+
+        const password =
+            passwordInput?.value;
+
+
+        if (!email || !password) {
+
+            focusLoginForm();
+
+            toast(
+                "Enter both email and password."
+            );
+
+            return;
+        }
+
 
         let accounts =
             getSavedLogins();
 
+
         const exists =
-            accounts.some(account =>
-                account.email === email &&
-                account.password === password
+            accounts.some(
+                account =>
+                    account.email === email &&
+                    account.password === password
             );
+
 
         if (exists) {
 
-            toast("That login is already saved.");
+            toast(
+                "That login is already saved."
+            );
 
             return;
         }
+
 
         accounts.push({
             email,
             password
         });
 
+
         localStorage.setItem(
             LOGIN_STORAGE,
             JSON.stringify(accounts)
         );
 
-        document.getElementById("emailInput").value = "";
-        document.getElementById("passwordInput").value = "";
+
+        emailInput.value = "";
+
+        passwordInput.value = "";
+
 
         renderSavedLogins();
 
-        toast("Login saved!");
 
+        toast(
+            "Login saved!"
+        );
     }
 
 
     function renderSavedLogins() {
 
         const container =
-            document.getElementById("savedLogins");
+            document.getElementById(
+                "savedLogins"
+            );
 
         const accounts =
             getSavedLogins();
+
 
         if (!accounts.length) {
 
             container.innerHTML = `
                 <div class="saved-item">
-                    <strong>No saved logins</strong>
-                    <small>Your saved login information will appear here.</small>
+
+                    <strong>
+                        No saved logins
+                    </strong>
+
+                    <small>
+                        Your saved login information will appear here.
+                    </small>
+
                 </div>
             `;
 
             return;
         }
 
+
         container.innerHTML =
-            accounts.map((account, index) => {
+            accounts.map(
+                (account, index) => {
 
-                const loginText =
-                    `${account.email}:${account.password}`;
+                    const loginText =
+                        `${account.email}:${account.password}`;
 
-                return `
 
-                    <div class="saved-item">
+                    const maskedPassword =
+                        "•".repeat(
+                            Math.min(
+                                account.password.length,
+                                12
+                            )
+                        );
 
-                        <div class="saved-item-head">
-                            <strong>Login ${index + 1}</strong>
+
+                    return `
+
+                        <div class="saved-item">
+
+                            <div class="saved-item-head">
+
+                                <strong>
+                                    Login ${index + 1}
+                                </strong>
+
+                            </div>
+
+                            <small>
+                                Email:
+                                ${escapeHTML(
+                                    account.email
+                                )}
+                            </small>
+
+                            <small>
+                                Password:
+                                ${maskedPassword}
+                            </small>
+
+                            <div class="item-actions">
+
+                                <button
+                                    class="mini-btn"
+                                    onclick="copyText(
+                                        ${JSON.stringify(loginText)},
+                                        'Login copied!'
+                                    )">
+                                    Copy
+                                </button>
+
+                                <button
+                                    class="mini-btn"
+                                    onclick="copyText(
+                                        ${JSON.stringify(account.email)},
+                                        'Email copied!'
+                                    )">
+                                    Email
+                                </button>
+
+                                <button
+                                    class="mini-btn"
+                                    onclick="deleteSavedLogin(
+                                        ${index}
+                                    )">
+                                    Delete
+                                </button>
+
+                            </div>
+
                         </div>
 
-                        <small>
-                            Email: ${escapeHTML(account.email)}
-                        </small>
-
-                        <small>
-                            Password: ${"•".repeat(Math.min(account.password.length, 12))}
-                        </small>
-
-                        <div class="item-actions">
-
-                            <button
-                                class="mini-btn"
-                                onclick="copyText(${JSON.stringify(loginText)}, 'Login copied!')">
-                                Copy
-                            </button>
-
-                            <button
-                                class="mini-btn"
-                                onclick="copyText(${JSON.stringify(account.email)}, 'Email copied!')">
-                                Email
-                            </button>
-
-                            <button
-                                class="mini-btn"
-                                onclick="deleteSavedLogin(${index})">
-                                Delete
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                `;
-
-            }).join("");
-
+                    `;
+                }
+            ).join("");
     }
 
 
@@ -1708,17 +2131,25 @@
         let accounts =
             getSavedLogins();
 
-        accounts.splice(index, 1);
+
+        accounts.splice(
+            index,
+            1
+        );
+
 
         localStorage.setItem(
             LOGIN_STORAGE,
             JSON.stringify(accounts)
         );
 
+
         renderSavedLogins();
 
-        toast("Login deleted.");
 
+        toast(
+            "Login deleted."
+        );
     }
 
 
@@ -1729,121 +2160,183 @@
     async function loadStock() {
 
         const container =
-            document.getElementById("inventory");
+            document.getElementById(
+                "inventory"
+            );
+
 
         try {
 
             const response =
-                await fetch(`${API_URL}/api/stock`);
+                await fetch(
+                    `${API_URL}/api/stock`
+                );
+
 
             if (!response.ok) {
-                throw new Error("Stock request failed");
+                throw new Error(
+                    "Stock request failed"
+                );
             }
+
 
             const stock =
                 await response.json();
+
 
             renderStock(stock);
 
         } catch (error) {
 
+            console.error(error);
+
             container.innerHTML = `
                 <div class="inventory-item">
-                    <strong>Inventory unavailable</strong>
-                    <span>Could not load current stock.</span>
+
+                    <strong>
+                        Inventory unavailable
+                    </strong>
+
+                    <span>
+                        Could not load current stock.
+                    </span>
+
                 </div>
             `;
-
         }
-
     }
 
 
     function renderStock(stock) {
 
         const container =
-            document.getElementById("inventory");
+            document.getElementById(
+                "inventory"
+            );
+
 
         if (!stock) {
 
             container.innerHTML = `
                 <div class="inventory-item">
-                    <strong>No inventory</strong>
-                    <span>No items are currently available.</span>
+
+                    <strong>
+                        No inventory
+                    </strong>
+
+                    <span>
+                        No items are currently available.
+                    </span>
+
                 </div>
             `;
 
             return;
         }
 
+
         let items = [];
 
+
         if (Array.isArray(stock)) {
+
             items = stock;
-        } else if (Array.isArray(stock.items)) {
+
+        } else if (
+            Array.isArray(stock.items)
+        ) {
+
             items = stock.items;
-        } else if (Array.isArray(stock.inventory)) {
+
+        } else if (
+            Array.isArray(stock.inventory)
+        ) {
+
             items = stock.inventory;
+
         } else {
 
-            items = Object.entries(stock)
-                .map(([name, value]) => ({
-                    name,
-                    value
-                }));
-
+            items =
+                Object.entries(stock)
+                    .map(
+                        ([name, value]) => ({
+                            name,
+                            value
+                        })
+                    );
         }
+
 
         if (!items.length) {
 
             container.innerHTML = `
                 <div class="inventory-item">
-                    <strong>No inventory</strong>
-                    <span>No items are currently available.</span>
+
+                    <strong>
+                        No inventory
+                    </strong>
+
+                    <span>
+                        No items are currently available.
+                    </span>
+
                 </div>
             `;
 
             return;
         }
 
-        container.innerHTML =
-            items.map(item => {
 
-                if (typeof item === "string") {
+        container.innerHTML =
+            items.map(
+                item => {
+
+                    if (
+                        typeof item ===
+                        "string"
+                    ) {
+
+                        return `
+                            <div class="inventory-item">
+
+                                <strong>
+                                    ${escapeHTML(item)}
+                                </strong>
+
+                                <span>
+                                    Available
+                                </span>
+
+                            </div>
+                        `;
+                    }
+
 
                     return `
                         <div class="inventory-item">
-                            <strong>${escapeHTML(item)}</strong>
-                            <span>Available</span>
+
+                            <strong>
+                                ${escapeHTML(
+                                    item.name ||
+                                    item.title ||
+                                    item.item ||
+                                    "Inventory Item"
+                                )}
+                            </strong>
+
+                            <span>
+                                ${
+                                    item.quantity ??
+                                    item.stock ??
+                                    item.amount ??
+                                    "Available"
+                                }
+                            </span>
+
                         </div>
                     `;
-
                 }
-
-                return `
-                    <div class="inventory-item">
-                        <strong>
-                            ${escapeHTML(
-                                item.name ||
-                                item.title ||
-                                item.item ||
-                                "Inventory Item"
-                            )}
-                        </strong>
-
-                        <span>
-                            ${
-                                item.quantity ??
-                                item.stock ??
-                                item.amount ??
-                                "Available"
-                            }
-                        </span>
-                    </div>
-                `;
-
-            }).join("");
-
+            ).join("");
     }
 
 
@@ -1854,20 +2347,30 @@
     async function generateInventory() {
 
         const message =
-            document.getElementById("inventoryMessage");
+            document.getElementById(
+                "inventoryMessage"
+            );
 
-        if (!unlocked || !currentKey) {
+
+        if (
+            !unlocked ||
+            !currentKey
+        ) {
 
             message.textContent =
                 "Unlock your key first.";
 
-            toast("You need access first.");
+            toast(
+                "You need access first."
+            );
 
             return;
         }
 
+
         message.textContent =
             "Generating...";
+
 
         try {
 
@@ -1878,13 +2381,15 @@
                         method: "POST",
 
                         headers: {
-                            "Content-Type": "application/json"
+                            "Content-Type":
+                                "application/json"
                         },
 
-                        body: JSON.stringify({
-                            key: currentKey,
-                            deviceId
-                        })
+                        body:
+                            JSON.stringify({
+                                key: currentKey,
+                                deviceId
+                            })
                     }
                 );
 
@@ -1899,7 +2404,9 @@
                     result.message ||
                     "Generation failed.";
 
-                toast("Generation failed.");
+                toast(
+                    "Generation failed."
+                );
 
                 return;
             }
@@ -1908,7 +2415,11 @@
             message.textContent =
                 "Inventory generated successfully.";
 
-            toast("Inventory generated!");
+
+            toast(
+                "Inventory generated!"
+            );
+
 
             loadStock();
 
@@ -1919,10 +2430,10 @@
             message.textContent =
                 "Could not connect to the server.";
 
-            toast("Server connection failed.");
-
+            toast(
+                "Server connection failed."
+            );
         }
-
     }
 
 
@@ -1936,6 +2447,7 @@
 
         unlocked = false;
 
+
         localStorage.removeItem(
             "noviCurrentKey"
         );
@@ -1944,17 +2456,26 @@
             "noviUnlocked"
         );
 
-        document.getElementById("keyInput").value = "";
 
-        document.getElementById("unlockMessage").textContent =
-            "";
+        document.getElementById(
+            "keyInput"
+        ).value = "";
+
+
+        document.getElementById(
+            "unlockMessage"
+        ).textContent = "";
+
 
         setLockedUI();
 
-        toast("You have been logged out.");
+
+        toast(
+            "You have been logged out."
+        );
+
 
         scrollToAccess();
-
     }
 
 
@@ -1965,12 +2486,26 @@
     function escapeHTML(value) {
 
         return String(value)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-
+            .replace(
+                /&/g,
+                "&amp;"
+            )
+            .replace(
+                /</g,
+                "&lt;"
+            )
+            .replace(
+                />/g,
+                "&gt;"
+            )
+            .replace(
+                /"/g,
+                "&quot;"
+            )
+            .replace(
+                /'/g,
+                "&#039;"
+            );
     }
 
 
@@ -1982,7 +2517,11 @@
 
     renderSavedLogins();
 
-    if (unlocked && currentKey) {
+
+    if (
+        unlocked &&
+        currentKey
+    ) {
 
         setUnlockedUI();
 
@@ -1991,7 +2530,6 @@
     } else {
 
         setLockedUI();
-
     }
 
 </script>
