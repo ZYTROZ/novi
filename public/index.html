@@ -1,714 +1,884 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Novi — Premium Generator</title>
-
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        :root {
-            --bg: #07050d;
-            --bg2: #0d0918;
-            --card: rgba(18, 12, 31, .72);
-            --card2: rgba(25, 17, 42, .78);
-            --border: rgba(255,255,255,.09);
-            --text: #fff;
-            --muted: #9f96b3;
-            --purple: #8b5cf6;
-            --pink: #d946ef;
-            --green: #22c55e;
-            --red: #ef4444;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: Inter, Arial, sans-serif;
-            color: var(--text);
-            background:
-                radial-gradient(circle at 15% 10%, rgba(139,92,246,.20), transparent 30%),
-                radial-gradient(circle at 85% 20%, rgba(217,70,239,.13), transparent 28%),
-                radial-gradient(circle at 50% 90%, rgba(99,102,241,.10), transparent 35%),
-                var(--bg);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        body::before {
-            content: "";
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            background-image:
-                linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
-            background-size: 55px 55px;
-            mask-image: linear-gradient(to bottom, black, transparent);
-        }
-
-        button,
-        input {
-            font: inherit;
-        }
-
-        button {
-            cursor: pointer;
-        }
-
-        .container {
-            width: min(1180px, calc(100% - 36px));
-            margin: auto;
-        }
-
-        /* NAVBAR */
-
-        nav {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(22px);
-            background: rgba(7,5,13,.72);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .nav-inner {
-            height: 76px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 900;
-            font-size: 21px;
-            letter-spacing: -.5px;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            display: grid;
-            place-items: center;
-            border-radius: 13px;
-            background: linear-gradient(135deg, var(--purple), var(--pink));
-            box-shadow: 0 0 30px rgba(139,92,246,.35);
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 8px;
-        }
-
-        .nav-links a {
-            color: #b9b0c9;
-            text-decoration: none;
-            padding: 10px 14px;
-            border-radius: 10px;
-            transition: .2s;
-            font-size: 14px;
-        }
-
-        .nav-links a:hover {
-            color: white;
-            background: rgba(255,255,255,.06);
-        }
-
-        .nav-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        /* BUTTONS */
-
-        .btn {
-            border: 0;
-            border-radius: 12px;
-            padding: 11px 17px;
-            color: white;
-            font-weight: 700;
-            transition: .2s;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--purple), var(--pink));
-            box-shadow: 0 10px 30px rgba(139,92,246,.25);
-        }
-
-        .btn-secondary {
-            background: rgba(255,255,255,.06);
-            border: 1px solid var(--border);
-        }
-
-        .btn-danger {
-            background: rgba(239,68,68,.12);
-            color: #ff8b8b;
-            border: 1px solid rgba(239,68,68,.2);
-        }
-
-        .btn-success {
-            background: rgba(34,197,94,.12);
-            color: #6ee7a0;
-            border: 1px solid rgba(34,197,94,.2);
-        }
-
-        /* HERO */
-
-        .hero {
-            min-height: 650px;
-            display: grid;
-            place-items: center;
-            text-align: center;
-            position: relative;
-            padding: 100px 0 80px;
-        }
-
-        .hero-glow {
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: rgba(139,92,246,.16);
-            filter: blur(100px);
-            border-radius: 50%;
-            z-index: -1;
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 13px;
-            border: 1px solid rgba(139,92,246,.25);
-            background: rgba(139,92,246,.08);
-            color: #c4b5fd;
-            border-radius: 999px;
-            font-size: 13px;
-            margin-bottom: 25px;
-        }
-
-        .dot {
-            width: 7px;
-            height: 7px;
-            background: #4ade80;
-            border-radius: 50%;
-            box-shadow: 0 0 12px #4ade80;
-        }
-
-        .hero h1 {
-            font-size: clamp(50px, 8vw, 92px);
-            line-height: .98;
-            letter-spacing: -5px;
-            max-width: 950px;
-            margin: auto;
-        }
-
-        .gradient {
-            background: linear-gradient(100deg, #a78bfa, #e879f9, #c084fc);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .hero p {
-            max-width: 650px;
-            margin: 28px auto;
-            color: var(--muted);
-            line-height: 1.7;
-            font-size: 17px;
-        }
-
-        .hero-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        /* CARDS */
-
-        .glass {
-            background: var(--card);
-            border: 1px solid var(--border);
-            backdrop-filter: blur(22px);
-            box-shadow: 0 25px 80px rgba(0,0,0,.25);
-        }
-
-        section {
-            padding: 90px 0;
-        }
-
-        .section-title {
-            text-align: center;
-            margin-bottom: 45px;
-        }
-
-        .section-title h2 {
-            font-size: 38px;
-            letter-spacing: -1.5px;
-        }
-
-        .section-title p {
-            color: var(--muted);
-            margin-top: 10px;
-        }
-
-        /* STATS */
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 14px;
-        }
-
-        .stat {
-            padding: 27px;
-            border-radius: 20px;
-            text-align: center;
-        }
-
-        .stat strong {
-            font-size: 30px;
-            display: block;
-        }
-
-        .stat span {
-            color: var(--muted);
-            font-size: 13px;
-        }
-
-        /* ACCESS */
-
-        .access {
-            max-width: 760px;
-            margin: auto;
-            padding: 35px;
-            border-radius: 25px;
-        }
-
-        .access-head {
-            display: flex;
-            justify-content: space-between;
-            gap: 20px;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-
-        .access-head h3 {
-            font-size: 23px;
-        }
-
-        .access-head p {
-            color: var(--muted);
-            margin-top: 5px;
-            font-size: 13px;
-        }
-
-        .status {
-            padding: 8px 12px;
-            border-radius: 999px;
-            background: rgba(239,68,68,.1);
-            color: #fb7185;
-            font-size: 12px;
-            white-space: nowrap;
-        }
-
-        .status.active {
-            background: rgba(34,197,94,.1);
-            color: #4ade80;
-        }
-
-        .input-row {
-            display: flex;
-            gap: 10px;
-        }
-
-        input {
-            width: 100%;
-            padding: 14px 15px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: rgba(0,0,0,.25);
-            color: white;
-            outline: none;
-        }
-
-        input:focus {
-            border-color: rgba(139,92,246,.65);
-            box-shadow: 0 0 0 3px rgba(139,92,246,.08);
-        }
-
-        .message {
-            margin-top: 14px;
-            color: var(--muted);
-            font-size: 13px;
-            min-height: 20px;
-        }
-
-        /* FEATURES */
-
-        .features {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-        }
-
-        .feature {
-            padding: 28px;
-            border-radius: 20px;
-            transition: .25s;
-        }
-
-        .feature:hover {
-            transform: translateY(-5px);
-            border-color: rgba(139,92,246,.3);
-        }
-
-        .feature-icon {
-            width: 45px;
-            height: 45px;
-            display: grid;
-            place-items: center;
-            border-radius: 13px;
-            background: rgba(139,92,246,.12);
-            margin-bottom: 18px;
-            font-size: 20px;
-        }
-
-        .feature h3 {
-            margin-bottom: 8px;
-        }
-
-        .feature p {
-            color: var(--muted);
-            line-height: 1.6;
-            font-size: 14px;
-        }
-
-        /* PLANS */
-
-        .plans {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-        }
-
-        .plan {
-            padding: 30px;
-            border-radius: 22px;
-            position: relative;
-        }
-
-        .plan.featured {
-            border-color: rgba(139,92,246,.5);
-            box-shadow: 0 0 50px rgba(139,92,246,.1);
-        }
-
-        .popular {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: linear-gradient(135deg,var(--purple),var(--pink));
-            padding: 5px 9px;
-            border-radius: 999px;
-            font-size: 10px;
-            font-weight: 800;
-        }
-
-        .plan h3 {
-            margin-bottom: 15px;
-        }
-
-        .price {
-            font-size: 36px;
-            font-weight: 900;
-            margin-bottom: 20px;
-        }
-
-        .price small {
-            font-size: 13px;
-            color: var(--muted);
-            font-weight: 400;
-        }
-
-        .plan ul {
-            list-style: none;
-            color: #bdb5c9;
-            line-height: 2.1;
-            font-size: 14px;
-        }
-
-        /* DASHBOARD */
-
-        #dashboard {
-            display: none;
-        }
-
-        .dashboard {
-            display: grid;
-            gap: 18px;
-        }
-
-        .dashboard-card {
-            padding: 28px;
-            border-radius: 22px;
-        }
-
-        .dashboard-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 22px;
-        }
-
-        .dashboard-top h2 {
-            font-size: 25px;
-        }
-
-        .dashboard-top p {
-            color: var(--muted);
-            font-size: 13px;
-            margin-top: 4px;
-        }
-
-        .action-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 9px;
-        }
-
-        /* SAVED */
-
-        .saved-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 14px;
-        }
-
-        .saved-item {
-            padding: 18px;
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,.025);
-        }
-
-        .saved-item-head {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .saved-item strong {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .saved-item small {
-            display: block;
-            color: var(--muted);
-            margin-top: 7px;
-            word-break: break-all;
-        }
-
-        .item-actions {
-            display: flex;
-            gap: 6px;
-            margin-top: 14px;
-        }
-
-        .mini-btn {
-            padding: 7px 10px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: rgba(255,255,255,.05);
-            color: white;
-            font-size: 12px;
-        }
-
-        .mini-btn:hover {
-            background: rgba(139,92,246,.15);
-            border-color: rgba(139,92,246,.3);
-        }
-
-        /* INVENTORY */
-
-        .inventory {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
-
-        .inventory-item {
-            padding: 17px;
-            border-radius: 15px;
-            background: rgba(255,255,255,.025);
-            border: 1px solid var(--border);
-        }
-
-        .inventory-item strong {
-            display: block;
-            margin-bottom: 6px;
-        }
-
-        .inventory-item span {
-            color: var(--muted);
-            font-size: 12px;
-        }
-
-        /* TOAST */
-
-        #toast {
-            position: fixed;
-            right: 22px;
-            bottom: 22px;
-            z-index: 999;
-            padding: 14px 18px;
-            border-radius: 13px;
-            background: rgba(20,15,30,.94);
-            border: 1px solid var(--border);
-            box-shadow: 0 20px 50px rgba(0,0,0,.35);
-            transform: translateY(100px);
-            opacity: 0;
-            transition: .3s;
-            pointer-events: none;
-            max-width: 340px;
-            font-size: 13px;
-        }
-
-        #toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        /* FOOTER */
-
-        footer {
-            border-top: 1px solid var(--border);
-            padding: 35px 0;
-            color: var(--muted);
-            font-size: 13px;
-        }
-
-        .footer-inner {
-            display: flex;
-            justify-content: space-between;
-            gap: 20px;
-        }
-
-        /* MOBILE */
-
-        @media(max-width: 800px) {
-
-            .nav-links {
-                display: none;
-            }
-
-            .nav-actions .btn-secondary {
-                display: none;
-            }
-
-            .hero {
-                padding-top: 75px;
-            }
-
-            .hero h1 {
-                letter-spacing: -3px;
-            }
-
-            .stats,
-            .features,
-            .plans,
-            .saved-grid,
-            .inventory {
-                grid-template-columns: 1fr;
-            }
-
-            .input-row {
-                flex-direction: column;
-            }
-
-            .access {
-                padding: 23px;
-            }
-
-            .dashboard-top,
-            .access-head,
-            .footer-inner {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-
-            section {
-                padding: 65px 0;
-            }
-
-            .hero p {
-                font-size: 15px;
-            }
-
-            .section-title h2 {
-                font-size: 30px;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Novi — Premium Generator</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+:root{
+    --bg:#07050d;
+    --bg2:#0d0918;
+    --card:rgba(18,12,31,.72);
+    --card2:rgba(25,17,42,.82);
+    --border:rgba(255,255,255,.09);
+    --text:#fff;
+    --muted:#9f96b3;
+    --purple:#8b5cf6;
+    --pink:#d946ef;
+    --green:#22c55e;
+    --red:#ef4444;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    font-family:Inter,Arial,sans-serif;
+    color:var(--text);
+    background:
+        radial-gradient(circle at 15% 10%,rgba(139,92,246,.20),transparent 30%),
+        radial-gradient(circle at 85% 20%,rgba(217,70,239,.13),transparent 28%),
+        radial-gradient(circle at 50% 90%,rgba(99,102,241,.10),transparent 35%),
+        var(--bg);
+    min-height:100vh;
+    overflow-x:hidden;
+}
+
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    background-image:
+        linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+    background-size:55px 55px;
+    mask-image:linear-gradient(to bottom,black,transparent);
+}
+
+button,input{
+    font:inherit;
+}
+
+button{
+    cursor:pointer;
+}
+
+.container{
+    width:min(1180px,calc(100% - 36px));
+    margin:auto;
+}
+
+/* ================= NAV ================= */
+
+nav{
+    position:sticky;
+    top:0;
+    z-index:100;
+    backdrop-filter:blur(22px);
+    background:rgba(7,5,13,.72);
+    border-bottom:1px solid var(--border);
+}
+
+.nav-inner{
+    height:76px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+}
+
+.logo{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    font-weight:900;
+    font-size:21px;
+}
+
+.logo-icon{
+    width:40px;
+    height:40px;
+    display:grid;
+    place-items:center;
+    border-radius:13px;
+    background:linear-gradient(135deg,var(--purple),var(--pink));
+    box-shadow:0 0 30px rgba(139,92,246,.35);
+}
+
+.nav-links{
+    display:flex;
+    gap:8px;
+}
+
+.nav-links a{
+    color:#b9b0c9;
+    text-decoration:none;
+    padding:10px 14px;
+    border-radius:10px;
+    transition:.2s;
+    font-size:14px;
+}
+
+.nav-links a:hover{
+    color:white;
+    background:rgba(255,255,255,.06);
+}
+
+.nav-actions{
+    display:flex;
+    gap:8px;
+}
+
+/* ================= BUTTONS ================= */
+
+.btn{
+    border:0;
+    border-radius:12px;
+    padding:11px 17px;
+    color:white;
+    font-weight:700;
+    transition:.2s;
+    display:inline-flex;
+    justify-content:center;
+    align-items:center;
+    gap:8px;
+}
+
+.btn:hover{
+    transform:translateY(-2px);
+}
+
+.btn-primary{
+    background:linear-gradient(135deg,var(--purple),var(--pink));
+    box-shadow:0 10px 30px rgba(139,92,246,.25);
+}
+
+.btn-secondary{
+    background:rgba(255,255,255,.06);
+    border:1px solid var(--border);
+}
+
+.btn-danger{
+    background:rgba(239,68,68,.12);
+    color:#ff8b8b;
+    border:1px solid rgba(239,68,68,.2);
+}
+
+.btn-success{
+    background:rgba(34,197,94,.12);
+    color:#6ee7a0;
+    border:1px solid rgba(34,197,94,.2);
+}
+
+/* ================= HERO ================= */
+
+.hero{
+    min-height:650px;
+    display:grid;
+    place-items:center;
+    text-align:center;
+    position:relative;
+    padding:100px 0 80px;
+}
+
+.hero-glow{
+    position:absolute;
+    width:500px;
+    height:500px;
+    background:rgba(139,92,246,.16);
+    filter:blur(100px);
+    border-radius:50%;
+    z-index:-1;
+}
+
+.badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 13px;
+    border:1px solid rgba(139,92,246,.25);
+    background:rgba(139,92,246,.08);
+    color:#c4b5fd;
+    border-radius:999px;
+    font-size:13px;
+    margin-bottom:25px;
+}
+
+.dot{
+    width:7px;
+    height:7px;
+    background:#4ade80;
+    border-radius:50%;
+    box-shadow:0 0 12px #4ade80;
+}
+
+.hero h1{
+    font-size:clamp(50px,8vw,92px);
+    line-height:.98;
+    letter-spacing:-5px;
+    max-width:950px;
+    margin:auto;
+}
+
+.gradient{
+    background:linear-gradient(100deg,#a78bfa,#e879f9,#c084fc);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+}
+
+.hero p{
+    max-width:650px;
+    margin:28px auto;
+    color:var(--muted);
+    line-height:1.7;
+    font-size:17px;
+}
+
+.hero-buttons{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+/* ================= CARDS ================= */
+
+.glass{
+    background:var(--card);
+    border:1px solid var(--border);
+    backdrop-filter:blur(22px);
+    box-shadow:0 25px 80px rgba(0,0,0,.25);
+}
+
+section{
+    padding:90px 0;
+}
+
+.section-title{
+    text-align:center;
+    margin-bottom:45px;
+}
+
+.section-title h2{
+    font-size:38px;
+    letter-spacing:-1.5px;
+}
+
+.section-title p{
+    color:var(--muted);
+    margin-top:10px;
+}
+
+/* ================= STATS ================= */
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+}
+
+.stat{
+    padding:27px;
+    border-radius:20px;
+    text-align:center;
+}
+
+.stat strong{
+    font-size:30px;
+    display:block;
+}
+
+.stat span{
+    color:var(--muted);
+    font-size:13px;
+}
+
+/* ================= ACCESS ================= */
+
+.access{
+    max-width:760px;
+    margin:auto;
+    padding:35px;
+    border-radius:25px;
+}
+
+.access-head{
+    display:flex;
+    justify-content:space-between;
+    gap:20px;
+    align-items:center;
+    margin-bottom:25px;
+}
+
+.access-head h3{
+    font-size:23px;
+}
+
+.access-head p{
+    color:var(--muted);
+    margin-top:5px;
+    font-size:13px;
+}
+
+.status{
+    padding:8px 12px;
+    border-radius:999px;
+    background:rgba(239,68,68,.1);
+    color:#fb7185;
+    font-size:12px;
+    white-space:nowrap;
+}
+
+.status.active{
+    background:rgba(34,197,94,.1);
+    color:#4ade80;
+}
+
+.input-row{
+    display:flex;
+    gap:10px;
+}
+
+input{
+    width:100%;
+    padding:14px 15px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:rgba(0,0,0,.25);
+    color:white;
+    outline:none;
+}
+
+input:focus{
+    border-color:rgba(139,92,246,.65);
+    box-shadow:0 0 0 3px rgba(139,92,246,.08);
+}
+
+.message{
+    margin-top:14px;
+    color:var(--muted);
+    font-size:13px;
+    min-height:20px;
+}
+
+/* ================= FEATURES ================= */
+
+.features{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:15px;
+}
+
+.feature{
+    padding:28px;
+    border-radius:20px;
+    transition:.25s;
+}
+
+.feature:hover{
+    transform:translateY(-5px);
+    border-color:rgba(139,92,246,.3);
+}
+
+.feature-icon{
+    width:45px;
+    height:45px;
+    display:grid;
+    place-items:center;
+    border-radius:13px;
+    background:rgba(139,92,246,.12);
+    margin-bottom:18px;
+    font-size:20px;
+}
+
+.feature h3{
+    margin-bottom:8px;
+}
+
+.feature p{
+    color:var(--muted);
+    line-height:1.6;
+    font-size:14px;
+}
+
+/* ================= NEW PRICING ================= */
+
+.plans{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:14px;
+    align-items:stretch;
+}
+
+.plan{
+    position:relative;
+    padding:28px 22px;
+    border-radius:24px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    min-height:370px;
+    transition:
+        transform .3s ease,
+        border-color .3s ease,
+        box-shadow .3s ease;
+}
+
+.plan::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+        radial-gradient(
+            circle at 50% 0%,
+            rgba(139,92,246,.16),
+            transparent 55%
+        );
+    pointer-events:none;
+}
+
+.plan::after{
+    content:"";
+    position:absolute;
+    top:0;
+    left:12%;
+    right:12%;
+    height:1px;
+    background:linear-gradient(
+        90deg,
+        transparent,
+        rgba(217,70,239,.8),
+        transparent
+    );
+    opacity:.4;
+}
+
+.plan:hover{
+    transform:translateY(-8px);
+    border-color:rgba(167,139,250,.45);
+    box-shadow:
+        0 25px 70px rgba(139,92,246,.13),
+        0 0 35px rgba(217,70,239,.06);
+}
+
+.plan.featured{
+    transform:translateY(-8px);
+    border-color:rgba(139,92,246,.55);
+    background:
+        linear-gradient(
+            145deg,
+            rgba(139,92,246,.16),
+            rgba(217,70,239,.08)
+        ),
+        rgba(18,12,31,.82);
+    box-shadow:
+        0 25px 80px rgba(139,92,246,.18),
+        inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.plan.featured:hover{
+    transform:translateY(-13px);
+}
+
+.plan.lifetime{
+    border-color:rgba(217,70,239,.55);
+    background:
+        linear-gradient(
+            145deg,
+            rgba(217,70,239,.14),
+            rgba(139,92,246,.12)
+        ),
+        rgba(18,12,31,.84);
+    box-shadow:
+        0 25px 90px rgba(217,70,239,.13),
+        inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.plan.lifetime:hover{
+    border-color:rgba(217,70,239,.8);
+    box-shadow:
+        0 30px 90px rgba(217,70,239,.18),
+        0 0 45px rgba(139,92,246,.10);
+}
+
+.plan-content{
+    position:relative;
+    z-index:2;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+}
+
+.plan-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    margin-bottom:15px;
+}
+
+.plan-icon{
+    width:42px;
+    height:42px;
+    display:grid;
+    place-items:center;
+    border-radius:12px;
+    background:rgba(139,92,246,.13);
+    border:1px solid rgba(139,92,246,.16);
+    font-size:18px;
+}
+
+.plan h3{
+    margin-top:18px;
+    font-size:19px;
+}
+
+.plan-description{
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.5;
+    margin-top:7px;
+    min-height:38px;
+}
+
+.price{
+    margin:20px 0;
+    font-size:38px;
+    font-weight:900;
+    letter-spacing:-1px;
+}
+
+.price small{
+    font-size:12px;
+    color:var(--muted);
+    font-weight:500;
+}
+
+.plan ul{
+    list-style:none;
+    color:#bdb5c9;
+    line-height:2;
+    font-size:13px;
+    margin-bottom:24px;
+}
+
+.plan li{
+    display:flex;
+    align-items:center;
+    gap:7px;
+}
+
+.plan li::first-letter{
+    color:#a78bfa;
+}
+
+.plan-button{
+    width:100%;
+    margin-top:auto;
+}
+
+.popular{
+    background:linear-gradient(135deg,var(--purple),var(--pink));
+    padding:5px 9px;
+    border-radius:999px;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:.5px;
+    box-shadow:0 5px 20px rgba(139,92,246,.25);
+}
+
+.best-value{
+    background:rgba(217,70,239,.12);
+    border:1px solid rgba(217,70,239,.22);
+    color:#f0abfc;
+    padding:5px 9px;
+    border-radius:999px;
+    font-size:9px;
+    font-weight:800;
+}
+
+/* ================= DASHBOARD ================= */
+
+#dashboard{
+    display:none;
+}
+
+.dashboard{
+    display:grid;
+    gap:18px;
+}
+
+.dashboard-card{
+    padding:28px;
+    border-radius:22px;
+}
+
+.dashboard-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+    margin-bottom:22px;
+}
+
+.dashboard-top h2{
+    font-size:25px;
+}
+
+.dashboard-top p{
+    color:var(--muted);
+    font-size:13px;
+    margin-top:4px;
+}
+
+.action-buttons{
+    display:flex;
+    flex-wrap:wrap;
+    gap:9px;
+}
+
+/* ================= SAVED ================= */
+
+.saved-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:14px;
+}
+
+.saved-item{
+    padding:18px;
+    border-radius:16px;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.025);
+}
+
+.saved-item-head{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:center;
+}
+
+.saved-item strong{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.saved-item small{
+    display:block;
+    color:var(--muted);
+    margin-top:7px;
+    word-break:break-all;
+}
+
+.item-actions{
+    display:flex;
+    gap:6px;
+    margin-top:14px;
+}
+
+.mini-btn{
+    padding:7px 10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:rgba(255,255,255,.05);
+    color:white;
+    font-size:12px;
+}
+
+.mini-btn:hover{
+    background:rgba(139,92,246,.15);
+    border-color:rgba(139,92,246,.3);
+}
+
+/* ================= INVENTORY ================= */
+
+.inventory{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+}
+
+.inventory-item{
+    padding:17px;
+    border-radius:15px;
+    background:rgba(255,255,255,.025);
+    border:1px solid var(--border);
+}
+
+.inventory-item strong{
+    display:block;
+    margin-bottom:6px;
+}
+
+.inventory-item span{
+    color:var(--muted);
+    font-size:12px;
+}
+
+/* ================= TOAST ================= */
+
+#toast{
+    position:fixed;
+    right:22px;
+    bottom:22px;
+    z-index:999;
+    padding:14px 18px;
+    border-radius:13px;
+    background:rgba(20,15,30,.94);
+    border:1px solid var(--border);
+    box-shadow:0 20px 50px rgba(0,0,0,.35);
+    transform:translateY(100px);
+    opacity:0;
+    transition:.3s;
+    pointer-events:none;
+    max-width:340px;
+    font-size:13px;
+}
+
+#toast.show{
+    transform:translateY(0);
+    opacity:1;
+}
+
+/* ================= FOOTER ================= */
+
+footer{
+    border-top:1px solid var(--border);
+    padding:35px 0;
+    color:var(--muted);
+    font-size:13px;
+}
+
+.footer-inner{
+    display:flex;
+    justify-content:space-between;
+    gap:20px;
+}
+
+/* ================= MOBILE ================= */
+
+@media(max-width:1050px){
+
+    .plans{
+        grid-template-columns:repeat(3,1fr);
+    }
+
+    .plan.featured,
+    .plan.lifetime{
+        transform:none;
+    }
+
+    .plan.featured:hover,
+    .plan.lifetime:hover{
+        transform:translateY(-8px);
+    }
+}
+
+@media(max-width:800px){
+
+    .nav-links{
+        display:none;
+    }
+
+    .nav-actions .btn-secondary{
+        display:none;
+    }
+
+    .hero{
+        padding-top:75px;
+    }
+
+    .hero h1{
+        letter-spacing:-3px;
+    }
+
+    .stats,
+    .features,
+    .saved-grid,
+    .inventory{
+        grid-template-columns:1fr;
+    }
+
+    .plans{
+        grid-template-columns:1fr;
+    }
+
+    .plan{
+        min-height:auto;
+    }
+
+    .plan.featured,
+    .plan.lifetime{
+        transform:none;
+    }
+
+    .input-row{
+        flex-direction:column;
+    }
+
+    .access{
+        padding:23px;
+    }
+
+    .dashboard-top,
+    .access-head,
+    .footer-inner{
+        align-items:flex-start;
+        flex-direction:column;
+    }
+
+    section{
+        padding:65px 0;
+    }
+
+    .hero p{
+        font-size:15px;
+    }
+
+    .section-title h2{
+        font-size:30px;
+    }
+}
+</style>
 </head>
 
 <body>
 
 <nav>
-    <div class="container nav-inner">
+<div class="container nav-inner">
 
-        <div class="logo">
-            <div class="logo-icon">N</div>
-            <span>Novi</span>
-        </div>
+    <div class="logo">
+        <div class="logo-icon">N</div>
+        <span>Novi</span>
+    </div>
 
-        <div class="nav-links">
-            <a href="#features">Features</a>
-            <a href="#plans">Plans</a>
-            <a href="#dashboard">Dashboard</a>
-        </div>
+    <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#plans">Plans</a>
+        <a href="#dashboard">Dashboard</a>
+    </div>
 
-        <div class="nav-actions">
+    <div class="nav-actions">
 
-            <button
-                class="btn btn-secondary"
-                onclick="scrollToAccess()">
-                🔑 Enter Key
-            </button>
+        <button
+            class="btn btn-secondary"
+            onclick="scrollToAccess()">
+            🔑 Enter Key
+        </button>
 
-            <button
-                id="topLoginButton"
-                class="btn btn-primary"
-                onclick="saveEmailPassword()">
-                👤 Save Login
-            </button>
-
-        </div>
+        <button
+            id="topLoginButton"
+            class="btn btn-primary"
+            onclick="saveEmailPassword()">
+            👤 Save Login
+        </button>
 
     </div>
+
+</div>
 </nav>
 
 
@@ -716,42 +886,41 @@
 
 <header class="hero">
 
-    <div class="hero-glow"></div>
+<div class="hero-glow"></div>
 
-    <div class="container">
+<div class="container">
 
-        <div class="badge">
-            <span class="dot"></span>
-            Novi is online
-        </div>
+    <div class="badge">
+        <span class="dot"></span>
+        Novi is online
+    </div>
 
-        <h1>
-            Welcome to <span class="gradient">Novi</span>
-        </h1>
+    <h1>
+        Welcome to <span class="gradient">Novi</span>
+    </h1>
 
-        <p>
-            A modern, secure and simple access platform built to manage
-            your keys, saved logins and authorized inventory from one place.
-        </p>
+    <p>
+        A modern, secure and simple access platform built to manage
+        your keys, saved logins and authorized inventory from one place.
+    </p>
 
-        <div class="hero-buttons">
+    <div class="hero-buttons">
 
-            <button
-                class="btn btn-primary"
-                onclick="scrollToAccess()">
-                Get Started →
-            </button>
+        <button
+            class="btn btn-primary"
+            onclick="scrollToAccess()">
+            Get Started →
+        </button>
 
-            <button
-                class="btn btn-secondary"
-                onclick="scrollToDashboard()">
-                Open Dashboard
-            </button>
-
-        </div>
+        <button
+            class="btn btn-secondary"
+            onclick="scrollToDashboard()">
+            Open Dashboard
+        </button>
 
     </div>
 
+</div>
 </header>
 
 
@@ -759,29 +928,28 @@
 
 <section>
 
-    <div class="container">
+<div class="container">
 
-        <div class="stats">
+    <div class="stats">
 
-            <div class="stat glass">
-                <strong>24/7</strong>
-                <span>Access</span>
-            </div>
+        <div class="stat glass">
+            <strong>24/7</strong>
+            <span>Access</span>
+        </div>
 
-            <div class="stat glass">
-                <strong>100%</strong>
-                <span>Device Bound</span>
-            </div>
+        <div class="stat glass">
+            <strong>100%</strong>
+            <span>Device Bound</span>
+        </div>
 
-            <div class="stat glass">
-                <strong>Fast</strong>
-                <span>Generation</span>
-            </div>
-
+        <div class="stat glass">
+            <strong>Fast</strong>
+            <span>Generation</span>
         </div>
 
     </div>
 
+</div>
 </section>
 
 
@@ -789,65 +957,66 @@
 
 <section id="access">
 
-    <div class="container">
+<div class="container">
 
-        <div class="section-title">
-            <h2>
-                Unlock <span class="gradient">Novi</span>
-            </h2>
+    <div class="section-title">
 
-            <p>
-                Enter your access key to continue.
-            </p>
-        </div>
+        <h2>
+            Unlock <span class="gradient">Novi</span>
+        </h2>
 
-        <div class="access glass">
+        <p>
+            Enter your access key to continue.
+        </p>
 
-            <div class="access-head">
+    </div>
 
-                <div>
+    <div class="access glass">
 
-                    <h3>Access Key</h3>
+        <div class="access-head">
 
-                    <p>
-                        Your key is bound to this device.
-                    </p>
+            <div>
 
-                </div>
+                <h3>Access Key</h3>
 
-                <div
-                    id="accessStatus"
-                    class="status">
-                    Locked
-                </div>
-
-            </div>
-
-            <div class="input-row">
-
-                <input
-                    id="keyInput"
-                    type="text"
-                    placeholder="Enter your Novi key..."
-                    autocomplete="off">
-
-                <button
-                    class="btn btn-primary"
-                    onclick="unlock()">
-                    Unlock
-                </button>
+                <p>
+                    Your key is bound to this device.
+                </p>
 
             </div>
 
             <div
-                id="unlockMessage"
-                class="message">
+                id="accessStatus"
+                class="status">
+                Locked
             </div>
 
         </div>
 
+        <div class="input-row">
+
+            <input
+                id="keyInput"
+                type="text"
+                placeholder="Enter your Novi key..."
+                autocomplete="off">
+
+            <button
+                class="btn btn-primary"
+                onclick="unlock()">
+                Unlock
+            </button>
+
+        </div>
+
+        <div
+            id="unlockMessage"
+            class="message">
+        </div>
+
     </div>
 
+</div>
 </section>
 
 
@@ -855,165 +1024,308 @@
 
 <section id="features">
 
-    <div class="container">
+<div class="container">
 
-        <div class="section-title">
+    <div class="section-title">
 
-            <h2>
-                Everything in
-                <span class="gradient">
-                    one place
-                </span>
-            </h2>
+        <h2>
+            Everything in
+            <span class="gradient">
+                one place
+            </span>
+        </h2>
+
+        <p>
+            Simple tools without unnecessary clutter.
+        </p>
+
+    </div>
+
+    <div class="features">
+
+        <div class="feature glass">
+
+            <div class="feature-icon">
+                🔐
+            </div>
+
+            <h3>
+                Device Security
+            </h3>
 
             <p>
-                Simple tools without unnecessary clutter.
+                Your access is connected to your current device,
+                helping keep keys from being freely shared.
             </p>
 
         </div>
 
-        <div class="features">
+        <div class="feature glass">
 
-            <div class="feature glass">
-
-                <div class="feature-icon">
-                    🔐
-                </div>
-
-                <h3>
-                    Device Security
-                </h3>
-
-                <p>
-                    Your access is connected to your current device,
-                    helping keep keys from being freely shared.
-                </p>
-
+            <div class="feature-icon">
+                🔑
             </div>
 
+            <h3>
+                Saved Keys
+            </h3>
 
-            <div class="feature glass">
+            <p>
+                Save your authorized Novi keys locally so you don't
+                need to repeatedly type them.
+            </p>
 
-                <div class="feature-icon">
-                    🔑
-                </div>
+        </div>
 
-                <h3>
-                    Saved Keys
-                </h3>
+        <div class="feature glass">
 
-                <p>
-                    Save your authorized Novi keys locally so you don't
-                    need to repeatedly type them.
-                </p>
-
+            <div class="feature-icon">
+                ⚡
             </div>
 
+            <h3>
+                Fast Generation
+            </h3>
 
-            <div class="feature glass">
-
-                <div class="feature-icon">
-                    ⚡
-                </div>
-
-                <h3>
-                    Fast Generation
-                </h3>
-
-                <p>
-                    Generate authorized inventory items directly from
-                    your dashboard.
-                </p>
-
-            </div>
+            <p>
+                Generate authorized inventory items directly from
+                your dashboard.
+            </p>
 
         </div>
 
     </div>
 
+</div>
 </section>
 
 
-<!-- PLANS -->
+<!-- PRICING -->
 
 <section id="plans">
 
-    <div class="container">
+<div class="container">
 
-        <div class="section-title">
+    <div class="section-title">
 
-            <h2>
-                Choose your
-                <span class="gradient">
-                    access
-                </span>
-            </h2>
+        <h2>
+            Choose your
+            <span class="gradient">
+                access
+            </span>
+        </h2>
 
-            <p>
-                Flexible options for different needs.
-            </p>
+        <p>
+            Simple pricing. Pick the access period that works for you.
+        </p>
 
-        </div>
+    </div>
 
-        <div class="plans">
+    <div class="plans">
 
-            <div class="plan glass">
+        <!-- 1 DAY -->
+
+        <div class="plan glass">
+
+            <div class="plan-content">
+
+                <div class="plan-top">
+                    <div class="plan-icon">⚡</div>
+                </div>
 
                 <h3>
-                    Starter
+                    1 Day
                 </h3>
 
+                <p class="plan-description">
+                    Quick access for short-term use.
+                </p>
+
                 <div class="price">
-                    Free
+                    $3 <small>/ 1 day</small>
                 </div>
 
                 <ul>
-                    <li>✓ Basic access</li>
+                    <li>✓ Full access</li>
                     <li>✓ Device binding</li>
                     <li>✓ Saved keys</li>
                 </ul>
 
+                <button
+                    class="btn btn-secondary plan-button">
+                    Select 1 Day
+                </button>
+
             </div>
 
+        </div>
 
-            <div class="plan glass featured">
 
-                <div class="popular">
-                    POPULAR
+        <!-- 3 DAYS -->
+
+        <div class="plan glass">
+
+            <div class="plan-content">
+
+                <div class="plan-top">
+                    <div class="plan-icon">🔥</div>
                 </div>
 
                 <h3>
-                    Premium
+                    3 Days
                 </h3>
 
+                <p class="plan-description">
+                    More time without committing to a week.
+                </p>
+
                 <div class="price">
-                    Pro
+                    $5 <small>/ 3 days</small>
                 </div>
 
                 <ul>
-                    <li>✓ Everything in Starter</li>
+                    <li>✓ Full access</li>
+                    <li>✓ Device binding</li>
+                    <li>✓ Saved keys</li>
+                </ul>
+
+                <button
+                    class="btn btn-secondary plan-button">
+                    Select 3 Days
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- 1 WEEK -->
+
+        <div class="plan glass featured">
+
+            <div class="plan-content">
+
+                <div class="plan-top">
+
+                    <div class="plan-icon">
+                        ⭐
+                    </div>
+
+                    <div class="popular">
+                        POPULAR
+                    </div>
+
+                </div>
+
+                <h3>
+                    1 Week
+                </h3>
+
+                <p class="plan-description">
+                    The perfect balance for regular users.
+                </p>
+
+                <div class="price">
+                    $7 <small>/ week</small>
+                </div>
+
+                <ul>
+                    <li>✓ Full access</li>
+                    <li>✓ Device binding</li>
+                    <li>✓ Saved keys</li>
                     <li>✓ Inventory generation</li>
-                    <li>✓ Saved logins</li>
                 </ul>
+
+                <button
+                    class="btn btn-primary plan-button">
+                    Select 1 Week
+                </button>
 
             </div>
 
+        </div>
 
-            <div class="plan glass">
+
+        <!-- 1 MONTH -->
+
+        <div class="plan glass">
+
+            <div class="plan-content">
+
+                <div class="plan-top">
+                    <div class="plan-icon">💎</div>
+                </div>
 
                 <h3>
-                    Custom
+                    1 Month
                 </h3>
 
+                <p class="plan-description">
+                    Long-term access for active users.
+                </p>
+
                 <div class="price">
-                    Custom
+                    $12 <small>/ month</small>
                 </div>
 
                 <ul>
-                    <li>✓ Custom access</li>
-                    <li>✓ Custom inventory</li>
-                    <li>✓ Flexible limits</li>
+                    <li>✓ Full access</li>
+                    <li>✓ Device binding</li>
+                    <li>✓ Saved keys</li>
+                    <li>✓ Inventory generation</li>
                 </ul>
+
+                <button
+                    class="btn btn-secondary plan-button">
+                    Select 1 Month
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- LIFETIME -->
+
+        <div class="plan glass lifetime">
+
+            <div class="plan-content">
+
+                <div class="plan-top">
+
+                    <div class="plan-icon">
+                        👑
+                    </div>
+
+                    <div class="best-value">
+                        BEST VALUE
+                    </div>
+
+                </div>
+
+                <h3>
+                    Lifetime
+                </h3>
+
+                <p class="plan-description">
+                    One purchase for permanent access.
+                </p>
+
+                <div class="price">
+                    $20 <small>/ lifetime</small>
+                </div>
+
+                <ul>
+                    <li>✓ Full access</li>
+                    <li>✓ Device binding</li>
+                    <li>✓ Saved keys</li>
+                    <li>✓ Inventory generation</li>
+                </ul>
+
+                <button
+                    class="btn btn-primary plan-button">
+                    Select Lifetime
+                </button>
 
             </div>
 
@@ -1021,6 +1333,7 @@
 
     </div>
 
+</div>
 </section>
 
 
@@ -1028,242 +1341,238 @@
 
 <section id="dashboard">
 
-    <div class="container dashboard">
+<div class="container dashboard">
 
+    <!-- MAIN DASHBOARD -->
 
-        <!-- MAIN DASHBOARD -->
+    <div class="dashboard-card glass">
 
-        <div class="dashboard-card glass">
+        <div class="dashboard-top">
 
-            <div class="dashboard-top">
+            <div>
 
-                <div>
+                <h2>
+                    Welcome to your Dashboard
+                </h2>
 
-                    <h2>
-                        Welcome to your Dashboard
-                    </h2>
-
-                    <p>
-                        Manage your Novi access from here.
-                    </p>
-
-                </div>
-
-                <div
-                    id="dashboardStatus"
-                    class="status">
-                    Locked
-                </div>
-
-            </div>
-
-
-            <div class="action-buttons">
-
-                <button
-                    class="btn btn-primary"
-                    onclick="saveKey()">
-                    🔑 Save Key
-                </button>
-
-                <button
-                    class="btn btn-secondary"
-                    onclick="focusLoginForm()">
-                    👤 Save Login
-                </button>
-
-                <button
-                    class="btn btn-danger"
-                    onclick="logout()">
-                    Log Out
-                </button>
-
-            </div>
-
-        </div>
-
-
-        <!-- SAVE LOGIN -->
-
-        <div
-            id="loginCard"
-            class="dashboard-card glass">
-
-            <div class="dashboard-top">
-
-                <div>
-
-                    <h2>
-                        Save Login
-                    </h2>
-
-                    <p>
-                        Save your login locally for quick copying later.
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="input-row">
-
-                <input
-                    id="emailInput"
-                    type="email"
-                    placeholder="Email"
-                    autocomplete="off">
-
-                <input
-                    id="passwordInput"
-                    type="password"
-                    placeholder="Password"
-                    autocomplete="off">
-
-                <button
-                    class="btn btn-primary"
-                    onclick="saveEmailPassword()">
-                    Save
-                </button>
-
-            </div>
-
-        </div>
-
-
-        <!-- DEVICE -->
-
-        <div class="dashboard-card glass">
-
-            <div class="dashboard-top">
-
-                <div>
-
-                    <h2>
-                        Device Security
-                    </h2>
-
-                    <p>
-                        This device's unique identifier.
-                    </p>
-
-                </div>
-
-            </div>
-
-            <div class="input-row">
-
-                <input
-                    id="deviceIdDisplay"
-                    readonly>
-
-                <button
-                    class="btn btn-secondary"
-                    onclick="copyText(deviceId, 'Device ID copied!')">
-                    Copy
-                </button>
-
-            </div>
-
-        </div>
-
-
-        <!-- SAVED KEYS -->
-
-        <div class="dashboard-card glass">
-
-            <div class="dashboard-top">
-
-                <div>
-
-                    <h2>
-                        Saved Keys
-                    </h2>
-
-                    <p>
-                        Your locally saved Novi keys.
-                    </p>
-
-                </div>
+                <p>
+                    Manage your Novi access from here.
+                </p>
 
             </div>
 
             <div
-                id="savedKeys"
-                class="saved-grid">
+                id="dashboardStatus"
+                class="status">
+                Locked
             </div>
 
         </div>
 
+        <div class="action-buttons">
 
-        <!-- SAVED LOGINS -->
+            <button
+                class="btn btn-primary"
+                onclick="saveKey()">
+                🔑 Save Key
+            </button>
 
-        <div class="dashboard-card glass">
+            <button
+                class="btn btn-secondary"
+                onclick="focusLoginForm()">
+                👤 Save Login
+            </button>
 
-            <div class="dashboard-top">
-
-                <div>
-
-                    <h2>
-                        Saved Logins
-                    </h2>
-
-                    <p>
-                        Your saved login information.
-                    </p>
-
-                </div>
-
-            </div>
-
-            <div
-                id="savedLogins"
-                class="saved-grid">
-            </div>
-
-        </div>
-
-
-        <!-- INVENTORY -->
-
-        <div class="dashboard-card glass">
-
-            <div class="dashboard-top">
-
-                <div>
-
-                    <h2>
-                        Authorized Inventory
-                    </h2>
-
-                    <p>
-                        Items available through your authorized access.
-                    </p>
-
-                </div>
-
-                <button
-                    class="btn btn-primary"
-                    onclick="generateInventory()">
-                    ⚡ Generate
-                </button>
-
-            </div>
-
-            <div
-                id="inventory"
-                class="inventory">
-            </div>
-
-            <div
-                id="inventoryMessage"
-                class="message">
-            </div>
+            <button
+                class="btn btn-danger"
+                onclick="logout()">
+                Log Out
+            </button>
 
         </div>
 
     </div>
 
+
+    <!-- SAVE LOGIN -->
+
+    <div
+        id="loginCard"
+        class="dashboard-card glass">
+
+        <div class="dashboard-top">
+
+            <div>
+
+                <h2>
+                    Save Login
+                </h2>
+
+                <p>
+                    Save your login locally for quick copying later.
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="input-row">
+
+            <input
+                id="emailInput"
+                type="email"
+                placeholder="Email"
+                autocomplete="off">
+
+            <input
+                id="passwordInput"
+                type="password"
+                placeholder="Password"
+                autocomplete="off">
+
+            <button
+                class="btn btn-primary"
+                onclick="saveEmailPassword()">
+                Save
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- DEVICE -->
+
+    <div class="dashboard-card glass">
+
+        <div class="dashboard-top">
+
+            <div>
+
+                <h2>
+                    Device Security
+                </h2>
+
+                <p>
+                    This device's unique identifier.
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="input-row">
+
+            <input
+                id="deviceIdDisplay"
+                readonly>
+
+            <button
+                class="btn btn-secondary"
+                onclick="copyText(deviceId,'Device ID copied!')">
+                Copy
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- SAVED KEYS -->
+
+    <div class="dashboard-card glass">
+
+        <div class="dashboard-top">
+
+            <div>
+
+                <h2>
+                    Saved Keys
+                </h2>
+
+                <p>
+                    Your locally saved Novi keys.
+                </p>
+
+            </div>
+
+        </div>
+
+        <div
+            id="savedKeys"
+            class="saved-grid">
+        </div>
+
+    </div>
+
+
+    <!-- SAVED LOGINS -->
+
+    <div class="dashboard-card glass">
+
+        <div class="dashboard-top">
+
+            <div>
+
+                <h2>
+                    Saved Logins
+                </h2>
+
+                <p>
+                    Your saved login information.
+                </p>
+
+            </div>
+
+        </div>
+
+        <div
+            id="savedLogins"
+            class="saved-grid">
+        </div>
+
+    </div>
+
+
+    <!-- INVENTORY -->
+
+    <div class="dashboard-card glass">
+
+        <div class="dashboard-top">
+
+            <div>
+
+                <h2>
+                    Authorized Inventory
+                </h2>
+
+                <p>
+                    Items available through your authorized access.
+                </p>
+
+            </div>
+
+            <button
+                class="btn btn-primary"
+                onclick="generateInventory()">
+                ⚡ Generate
+            </button>
+
+        </div>
+
+        <div
+            id="inventory"
+            class="inventory">
+        </div>
+
+        <div
+            id="inventoryMessage"
+            class="message">
+        </div>
+
+    </div>
+
+</div>
 </section>
 
 
@@ -1271,1266 +1580,1136 @@
 
 <footer>
 
-    <div class="container footer-inner">
+<div class="container footer-inner">
 
-        <span>
-            © 2026 Novi. All rights reserved.
-        </span>
+    <span>
+        © 2026 Novi. All rights reserved.
+    </span>
 
-        <span>
-            Built for simplicity.
-        </span>
+    <span>
+        Built for simplicity.
+    </span>
 
-    </div>
+</div>
 
 </footer>
 
-
-<!-- TOAST -->
 
 <div id="toast"></div>
 
 
 <script>
 
-    /* =========================================================
-       CONFIG
-    ========================================================= */
+/* =========================================================
+   CONFIG
+========================================================= */
 
-    const API_URL = window.location.origin;
+const API_URL = window.location.origin;
 
-    const KEY_STORAGE = "noviSavedKeys";
-    const LOGIN_STORAGE = "noviSavedAccounts";
+const KEY_STORAGE = "noviSavedKeys";
+const LOGIN_STORAGE = "noviSavedAccounts";
 
 
-    /* =========================================================
-       DEVICE ID
-    ========================================================= */
+/* =========================================================
+   DEVICE ID
+========================================================= */
 
-    let deviceId =
-        localStorage.getItem("noviDeviceId");
+let deviceId =
+    localStorage.getItem("noviDeviceId");
 
-    if (!deviceId) {
+if(!deviceId){
 
-        deviceId =
-            "NVI-" +
-            crypto.randomUUID()
-                .replace(/-/g, "")
-                .slice(0, 20)
-                .toUpperCase();
+    deviceId =
+        "NVI-" +
+        crypto.randomUUID()
+            .replace(/-/g,"")
+            .slice(0,20)
+            .toUpperCase();
 
-        localStorage.setItem(
-            "noviDeviceId",
-            deviceId
-        );
-    }
+    localStorage.setItem(
+        "noviDeviceId",
+        deviceId
+    );
+}
 
+document.getElementById(
+    "deviceIdDisplay"
+).value = deviceId;
 
-    document.getElementById(
-        "deviceIdDisplay"
-    ).value = deviceId;
 
+/* =========================================================
+   CURRENT SESSION
+========================================================= */
 
-    /* =========================================================
-       CURRENT SESSION
-    ========================================================= */
+let currentKey =
+    localStorage.getItem(
+        "noviCurrentKey"
+    ) || "";
 
-    let currentKey =
-        localStorage.getItem(
-            "noviCurrentKey"
-        ) || "";
+let unlocked =
+    localStorage.getItem(
+        "noviUnlocked"
+    ) === "true";
 
-    let unlocked =
-        localStorage.getItem(
-            "noviUnlocked"
-        ) === "true";
 
+/* =========================================================
+   TOAST
+========================================================= */
 
-    /* =========================================================
-       TOAST
-    ========================================================= */
+function toast(message){
 
-    function toast(message) {
+    const el =
+        document.getElementById("toast");
 
-        const el =
-            document.getElementById("toast");
+    el.textContent = message;
 
-        el.textContent = message;
+    el.classList.add("show");
 
-        el.classList.add("show");
+    clearTimeout(window.toastTimer);
 
-        clearTimeout(
-            window.toastTimer
-        );
-
-        window.toastTimer =
-            setTimeout(() => {
-
-                el.classList.remove("show");
-
-            }, 2800);
-    }
-
-
-    /* =========================================================
-       COPY
-    ========================================================= */
-
-    async function copyText(
-        text,
-        message = "Copied!"
-    ) {
-
-        try {
-
-            if (
-                navigator.clipboard &&
-                window.isSecureContext
-            ) {
-
-                await navigator.clipboard.writeText(
-                    text
-                );
-
-            } else {
-
-                const area =
-                    document.createElement(
-                        "textarea"
-                    );
-
-                area.value = text;
-
-                area.style.position =
-                    "fixed";
-
-                area.style.opacity = "0";
-
-                document.body.appendChild(
-                    area
-                );
-
-                area.focus();
-
-                area.select();
-
-                document.execCommand(
-                    "copy"
-                );
-
-                area.remove();
-            }
-
-            toast(message);
-
-        } catch (error) {
-
-            console.error(error);
-
-            toast(
-                "Could not copy."
-            );
-        }
-    }
-
-
-    /* =========================================================
-       STORAGE HELPERS
-    ========================================================= */
-
-    function getSavedKeys() {
-
-        try {
-
-            return JSON.parse(
-                localStorage.getItem(
-                    KEY_STORAGE
-                ) || "[]"
-            );
-
-        } catch {
-
-            return [];
-        }
-    }
-
-
-    function getSavedLogins() {
-
-        try {
-
-            return JSON.parse(
-                localStorage.getItem(
-                    LOGIN_STORAGE
-                ) || "[]"
-            );
-
-        } catch {
-
-            return [];
-        }
-    }
-
-
-    /* =========================================================
-       NAVIGATION
-    ========================================================= */
-
-    function scrollToAccess() {
-
-        document
-            .getElementById("access")
-            .scrollIntoView({
-                behavior: "smooth"
-            });
-    }
-
-
-    function scrollToDashboard() {
-
-        if (!unlocked) {
-
-            toast(
-                "Unlock your Novi key first."
-            );
-
-            scrollToAccess();
-
-            return;
-        }
-
-        document
-            .getElementById("dashboard")
-            .scrollIntoView({
-                behavior: "smooth"
-            });
-    }
-
-
-    function focusLoginForm() {
-
-        if (!unlocked) {
-
-            toast(
-                "Unlock your Novi key first."
-            );
-
-            scrollToAccess();
-
-            return;
-        }
-
-        document
-            .getElementById("loginCard")
-            .scrollIntoView({
-                behavior: "smooth"
-            });
-
+    window.toastTimer =
         setTimeout(() => {
 
-            document
-                .getElementById("emailInput")
-                .focus();
+            el.classList.remove("show");
 
-        }, 500);
-    }
+        },2800);
+}
 
 
-    /* =========================================================
-       UNLOCK
-    ========================================================= */
+/* =========================================================
+   COPY
+========================================================= */
 
-    async function unlock() {
+async function copyText(
+    text,
+    message="Copied!"
+){
 
-        const input =
-            document.getElementById(
-                "keyInput"
+    try{
+
+        if(
+            navigator.clipboard &&
+            window.isSecureContext
+        ){
+
+            await navigator.clipboard.writeText(
+                text
             );
 
-        const message =
-            document.getElementById(
-                "unlockMessage"
-            );
+        }else{
 
-        const key =
-            input.value.trim();
+            const area =
+                document.createElement("textarea");
 
+            area.value = text;
+            area.style.position = "fixed";
+            area.style.opacity = "0";
 
-        if (!key) {
+            document.body.appendChild(area);
 
-            message.textContent =
-                "Please enter an access key.";
+            area.focus();
+            area.select();
 
-            return;
+            document.execCommand("copy");
+
+            area.remove();
         }
 
+        toast(message);
 
-        message.textContent =
-            "Checking your key...";
+    }catch(error){
 
+        console.error(error);
 
-        try {
-
-            const response =
-                await fetch(
-                    `${API_URL}/api/verify`,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body:
-                            JSON.stringify({
-                                key,
-                                deviceId
-                            })
-                    }
-                );
-
-
-            const result =
-                await response.json();
-
-
-            if (
-                response.ok &&
-                (
-                    result.success ||
-                    result.valid
-                )
-            ) {
-
-                currentKey = key;
-
-                unlocked = true;
-
-
-                localStorage.setItem(
-                    "noviCurrentKey",
-                    key
-                );
-
-                localStorage.setItem(
-                    "noviUnlocked",
-                    "true"
-                );
-
-
-                setUnlockedUI();
-
-
-                message.textContent =
-                    "Access granted.";
-
-
-                toast(
-                    "Welcome to Novi!"
-                );
-
-
-                loadStock();
-
-
-                document
-                    .getElementById(
-                        "dashboard"
-                    )
-                    .scrollIntoView({
-                        behavior: "smooth"
-                    });
-
-            } else {
-
-                unlocked = false;
-
-                localStorage.removeItem(
-                    "noviUnlocked"
-                );
-
-                message.textContent =
-                    result.message ||
-                    "Invalid or unauthorized key.";
-
-                toast(
-                    "Access denied."
-                );
-            }
-
-        } catch (error) {
-
-            console.error(error);
-
-            message.textContent =
-                "Could not connect to the Novi server.";
-
-            toast(
-                "Server connection failed."
-            );
-        }
+        toast("Could not copy.");
     }
+}
 
 
-    /* =========================================================
-       UI STATE
-    ========================================================= */
+/* =========================================================
+   STORAGE
+========================================================= */
 
-    function setUnlockedUI() {
+function getSavedKeys(){
 
-        const status =
-            document.getElementById(
-                "accessStatus"
-            );
+    try{
 
-        const dashboardStatus =
-            document.getElementById(
-                "dashboardStatus"
-            );
-
-
-        status.textContent =
-            "Unlocked";
-
-        status.classList.add(
-            "active"
+        return JSON.parse(
+            localStorage.getItem(
+                KEY_STORAGE
+            ) || "[]"
         );
 
+    }catch{
 
-        dashboardStatus.textContent =
-            "Active";
+        return [];
+    }
+}
 
-        dashboardStatus.classList.add(
-            "active"
+
+function getSavedLogins(){
+
+    try{
+
+        return JSON.parse(
+            localStorage.getItem(
+                LOGIN_STORAGE
+            ) || "[]"
         );
 
+    }catch{
 
-        document.getElementById(
-            "keyInput"
-        ).value = currentKey;
-
-
-        document.getElementById(
-            "dashboard"
-        ).style.display = "block";
+        return [];
     }
+}
 
 
-    function setLockedUI() {
+/* =========================================================
+   NAVIGATION
+========================================================= */
 
-        const status =
-            document.getElementById(
-                "accessStatus"
-            );
+function scrollToAccess(){
 
-        const dashboardStatus =
-            document.getElementById(
-                "dashboardStatus"
-            );
+    document
+        .getElementById("access")
+        .scrollIntoView({
+            behavior:"smooth"
+        });
+}
 
 
-        status.textContent =
-            "Locked";
+function scrollToDashboard(){
 
-        status.classList.remove(
-            "active"
+    if(!unlocked){
+
+        toast(
+            "Unlock your Novi key first."
         );
-
-
-        dashboardStatus.textContent =
-            "Locked";
-
-        dashboardStatus.classList.remove(
-            "active"
-        );
-
-
-        document.getElementById(
-            "dashboard"
-        ).style.display = "none";
-    }
-
-
-    /* =========================================================
-       SAVE KEY
-    ========================================================= */
-
-    function saveKey() {
-
-        if (!currentKey) {
-
-            toast(
-                "Unlock a key first."
-            );
-
-            return;
-        }
-
-
-        let keys =
-            getSavedKeys();
-
-
-        if (!keys.includes(currentKey)) {
-
-            keys.push(currentKey);
-
-            localStorage.setItem(
-                KEY_STORAGE,
-                JSON.stringify(keys)
-            );
-
-            toast(
-                "Key saved!"
-            );
-
-        } else {
-
-            toast(
-                "That key is already saved."
-            );
-        }
-
-
-        renderSavedKeys();
-    }
-
-
-    function renderSavedKeys() {
-
-        const container =
-            document.getElementById(
-                "savedKeys"
-            );
-
-        const keys =
-            getSavedKeys();
-
-
-        if (!keys.length) {
-
-            container.innerHTML = `
-                <div class="saved-item">
-
-                    <strong>
-                        No saved keys
-                    </strong>
-
-                    <small>
-                        Save an authorized key and it will appear here.
-                    </small>
-
-                </div>
-            `;
-
-            return;
-        }
-
-
-        container.innerHTML =
-            keys.map(
-                (key, index) => `
-
-                <div class="saved-item">
-
-                    <div class="saved-item-head">
-
-                        <strong>
-                            Key ${index + 1}
-                        </strong>
-
-                    </div>
-
-                    <small>
-                        ${escapeHTML(key)}
-                    </small>
-
-                    <div class="item-actions">
-
-                        <button
-                            class="mini-btn"
-                            onclick="copyText(
-                                ${JSON.stringify(key)},
-                                'Key copied!'
-                            )">
-                            Copy
-                        </button>
-
-                        <button
-                            class="mini-btn"
-                            onclick="useSavedKey(
-                                ${JSON.stringify(key)}
-                            )">
-                            Use
-                        </button>
-
-                        <button
-                            class="mini-btn"
-                            onclick="deleteSavedKey(
-                                ${JSON.stringify(key)}
-                            )">
-                            Delete
-                        </button>
-
-                    </div>
-
-                </div>
-
-            `
-            ).join("");
-    }
-
-
-    function useSavedKey(key) {
-
-        document.getElementById(
-            "keyInput"
-        ).value = key;
 
         scrollToAccess();
 
-        toast(
-            "Key loaded."
-        );
+        return;
     }
 
+    document
+        .getElementById("dashboard")
+        .scrollIntoView({
+            behavior:"smooth"
+        });
+}
 
-    function deleteSavedKey(key) {
 
-        let keys =
-            getSavedKeys()
-                .filter(
-                    item => item !== key
-                );
+function focusLoginForm(){
 
+    if(!unlocked){
+
+        toast(
+            "Unlock your Novi key first."
+        );
+
+        scrollToAccess();
+
+        return;
+    }
+
+    document
+        .getElementById("loginCard")
+        .scrollIntoView({
+            behavior:"smooth"
+        });
+
+    setTimeout(() => {
+
+        document
+            .getElementById("emailInput")
+            .focus();
+
+    },500);
+}
+
+
+/* =========================================================
+   UNLOCK
+========================================================= */
+
+async function unlock(){
+
+    const input =
+        document.getElementById("keyInput");
+
+    const message =
+        document.getElementById("unlockMessage");
+
+    const key =
+        input.value.trim();
+
+    if(!key){
+
+        message.textContent =
+            "Please enter an access key.";
+
+        return;
+    }
+
+    message.textContent =
+        "Checking your key...";
+
+    try{
+
+        const response =
+            await fetch(
+                `${API_URL}/api/verify`,
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            key,
+                            deviceId
+                        })
+                }
+            );
+
+        const result =
+            await response.json();
+
+        if(
+            response.ok &&
+            (
+                result.success ||
+                result.valid
+            )
+        ){
+
+            currentKey = key;
+            unlocked = true;
+
+            localStorage.setItem(
+                "noviCurrentKey",
+                key
+            );
+
+            localStorage.setItem(
+                "noviUnlocked",
+                "true"
+            );
+
+            setUnlockedUI();
+
+            message.textContent =
+                "Access granted.";
+
+            toast(
+                "Welcome to Novi!"
+            );
+
+            loadStock();
+
+            document
+                .getElementById("dashboard")
+                .scrollIntoView({
+                    behavior:"smooth"
+                });
+
+        }else{
+
+            unlocked = false;
+
+            localStorage.removeItem(
+                "noviUnlocked"
+            );
+
+            message.textContent =
+                result.message ||
+                "Invalid or unauthorized key.";
+
+            toast(
+                "Access denied."
+            );
+        }
+
+    }catch(error){
+
+        console.error(error);
+
+        message.textContent =
+            "Could not connect to the Novi server.";
+
+        toast(
+            "Server connection failed."
+        );
+    }
+}
+
+
+/* =========================================================
+   UI STATE
+========================================================= */
+
+function setUnlockedUI(){
+
+    const status =
+        document.getElementById(
+            "accessStatus"
+        );
+
+    const dashboardStatus =
+        document.getElementById(
+            "dashboardStatus"
+        );
+
+    status.textContent =
+        "Unlocked";
+
+    status.classList.add("active");
+
+    dashboardStatus.textContent =
+        "Active";
+
+    dashboardStatus.classList.add("active");
+
+    document.getElementById(
+        "keyInput"
+    ).value = currentKey;
+
+    document.getElementById(
+        "dashboard"
+    ).style.display = "block";
+}
+
+
+function setLockedUI(){
+
+    const status =
+        document.getElementById(
+            "accessStatus"
+        );
+
+    const dashboardStatus =
+        document.getElementById(
+            "dashboardStatus"
+        );
+
+    status.textContent =
+        "Locked";
+
+    status.classList.remove("active");
+
+    dashboardStatus.textContent =
+        "Locked";
+
+    dashboardStatus.classList.remove("active");
+
+    document.getElementById(
+        "dashboard"
+    ).style.display = "none";
+}
+
+
+/* =========================================================
+   SAVE KEY
+========================================================= */
+
+function saveKey(){
+
+    if(!currentKey){
+
+        toast(
+            "Unlock a key first."
+        );
+
+        return;
+    }
+
+    let keys =
+        getSavedKeys();
+
+    if(!keys.includes(currentKey)){
+
+        keys.push(currentKey);
 
         localStorage.setItem(
             KEY_STORAGE,
             JSON.stringify(keys)
         );
 
+        toast(
+            "Key saved!"
+        );
 
-        renderSavedKeys();
-
+    }else{
 
         toast(
-            "Key deleted."
+            "That key is already saved."
         );
     }
 
-
-    /* =========================================================
-       SAVE LOGIN
-    ========================================================= */
-
-    function saveEmailPassword() {
-
-        if (!unlocked) {
-
-            toast(
-                "Unlock your Novi key first."
-            );
-
-            scrollToAccess();
-
-            return;
-        }
+    renderSavedKeys();
+}
 
 
-        const emailInput =
-            document.getElementById(
-                "emailInput"
-            );
+function renderSavedKeys(){
 
-        const passwordInput =
-            document.getElementById(
-                "passwordInput"
-            );
-
-
-        const email =
-            emailInput?.value.trim();
-
-        const password =
-            passwordInput?.value;
-
-
-        if (!email || !password) {
-
-            focusLoginForm();
-
-            toast(
-                "Enter both email and password."
-            );
-
-            return;
-        }
-
-
-        let accounts =
-            getSavedLogins();
-
-
-        const exists =
-            accounts.some(
-                account =>
-                    account.email === email &&
-                    account.password === password
-            );
-
-
-        if (exists) {
-
-            toast(
-                "That login is already saved."
-            );
-
-            return;
-        }
-
-
-        accounts.push({
-            email,
-            password
-        });
-
-
-        localStorage.setItem(
-            LOGIN_STORAGE,
-            JSON.stringify(accounts)
+    const container =
+        document.getElementById(
+            "savedKeys"
         );
 
+    const keys =
+        getSavedKeys();
 
-        emailInput.value = "";
+    if(!keys.length){
 
-        passwordInput.value = "";
+        container.innerHTML = `
+            <div class="saved-item">
+                <strong>No saved keys</strong>
+                <small>
+                    Save an authorized key and it will appear here.
+                </small>
+            </div>
+        `;
 
-
-        renderSavedLogins();
-
-
-        toast(
-            "Login saved!"
-        );
+        return;
     }
 
+    container.innerHTML =
+        keys.map(
+            (key,index) => `
 
-    function renderSavedLogins() {
+            <div class="saved-item">
 
-        const container =
-            document.getElementById(
-                "savedLogins"
-            );
-
-        const accounts =
-            getSavedLogins();
-
-
-        if (!accounts.length) {
-
-            container.innerHTML = `
-                <div class="saved-item">
-
+                <div class="saved-item-head">
                     <strong>
-                        No saved logins
+                        Key ${index + 1}
                     </strong>
+                </div>
 
-                    <small>
-                        Your saved login information will appear here.
-                    </small>
+                <small>
+                    ${escapeHTML(key)}
+                </small>
+
+                <div class="item-actions">
+
+                    <button
+                        class="mini-btn"
+                        onclick="copyText(
+                            ${JSON.stringify(key)},
+                            'Key copied!'
+                        )">
+                        Copy
+                    </button>
+
+                    <button
+                        class="mini-btn"
+                        onclick="useSavedKey(
+                            ${JSON.stringify(key)}
+                        )">
+                        Use
+                    </button>
+
+                    <button
+                        class="mini-btn"
+                        onclick="deleteSavedKey(
+                            ${JSON.stringify(key)}
+                        )">
+                        Delete
+                    </button>
 
                 </div>
-            `;
 
-            return;
-        }
+            </div>
 
-
-        container.innerHTML =
-            accounts.map(
-                (account, index) => {
-
-                    const loginText =
-                        `${account.email}:${account.password}`;
+        `
+        ).join("");
+}
 
 
-                    const maskedPassword =
-                        "•".repeat(
-                            Math.min(
-                                account.password.length,
-                                12
-                            )
-                        );
+function useSavedKey(key){
+
+    document.getElementById(
+        "keyInput"
+    ).value = key;
+
+    scrollToAccess();
+
+    toast(
+        "Key loaded."
+    );
+}
 
 
-                    return `
+function deleteSavedKey(key){
 
-                        <div class="saved-item">
+    let keys =
+        getSavedKeys()
+            .filter(
+                item => item !== key
+            );
 
-                            <div class="saved-item-head">
+    localStorage.setItem(
+        KEY_STORAGE,
+        JSON.stringify(keys)
+    );
 
-                                <strong>
-                                    Login ${index + 1}
-                                </strong>
+    renderSavedKeys();
 
-                            </div>
+    toast(
+        "Key deleted."
+    );
+}
 
-                            <small>
-                                Email:
-                                ${escapeHTML(
-                                    account.email
-                                )}
-                            </small>
 
-                            <small>
-                                Password:
-                                ${maskedPassword}
-                            </small>
+/* =========================================================
+   SAVE LOGIN
+========================================================= */
 
-                            <div class="item-actions">
+function saveEmailPassword(){
 
-                                <button
-                                    class="mini-btn"
-                                    onclick="copyText(
-                                        ${JSON.stringify(loginText)},
-                                        'Login copied!'
-                                    )">
-                                    Copy
-                                </button>
+    if(!unlocked){
 
-                                <button
-                                    class="mini-btn"
-                                    onclick="copyText(
-                                        ${JSON.stringify(account.email)},
-                                        'Email copied!'
-                                    )">
-                                    Email
-                                </button>
+        toast(
+            "Unlock your Novi key first."
+        );
 
-                                <button
-                                    class="mini-btn"
-                                    onclick="deleteSavedLogin(
-                                        ${index}
-                                    )">
-                                    Delete
-                                </button>
+        scrollToAccess();
 
-                            </div>
+        return;
+    }
+
+    const emailInput =
+        document.getElementById(
+            "emailInput"
+        );
+
+    const passwordInput =
+        document.getElementById(
+            "passwordInput"
+        );
+
+    const email =
+        emailInput?.value.trim();
+
+    const password =
+        passwordInput?.value;
+
+    if(!email || !password){
+
+        focusLoginForm();
+
+        toast(
+            "Enter both email and password."
+        );
+
+        return;
+    }
+
+    let accounts =
+        getSavedLogins();
+
+    const exists =
+        accounts.some(
+            account =>
+                account.email === email &&
+                account.password === password
+        );
+
+    if(exists){
+
+        toast(
+            "That login is already saved."
+        );
+
+        return;
+    }
+
+    accounts.push({
+        email,
+        password
+    });
+
+    localStorage.setItem(
+        LOGIN_STORAGE,
+        JSON.stringify(accounts)
+    );
+
+    emailInput.value = "";
+    passwordInput.value = "";
+
+    renderSavedLogins();
+
+    toast(
+        "Login saved!"
+    );
+}
+
+
+function renderSavedLogins(){
+
+    const container =
+        document.getElementById(
+            "savedLogins"
+        );
+
+    const accounts =
+        getSavedLogins();
+
+    if(!accounts.length){
+
+        container.innerHTML = `
+            <div class="saved-item">
+
+                <strong>
+                    No saved logins
+                </strong>
+
+                <small>
+                    Your saved login information will appear here.
+                </small>
+
+            </div>
+        `;
+
+        return;
+    }
+
+    container.innerHTML =
+        accounts.map(
+            (account,index) => {
+
+                const loginText =
+                    `${account.email}:${account.password}`;
+
+                const maskedPassword =
+                    "•".repeat(
+                        Math.min(
+                            account.password.length,
+                            12
+                        )
+                    );
+
+                return `
+
+                    <div class="saved-item">
+
+                        <div class="saved-item-head">
+
+                            <strong>
+                                Login ${index + 1}
+                            </strong>
 
                         </div>
 
-                    `;
-                }
-            ).join("");
-    }
+                        <small>
+                            Email:
+                            ${escapeHTML(account.email)}
+                        </small>
 
+                        <small>
+                            Password:
+                            ${maskedPassword}
+                        </small>
 
-    function deleteSavedLogin(index) {
+                        <div class="item-actions">
 
-        let accounts =
-            getSavedLogins();
+                            <button
+                                class="mini-btn"
+                                onclick="copyText(
+                                    ${JSON.stringify(loginText)},
+                                    'Login copied!'
+                                )">
+                                Copy
+                            </button>
 
+                            <button
+                                class="mini-btn"
+                                onclick="copyText(
+                                    ${JSON.stringify(account.email)},
+                                    'Email copied!'
+                                )">
+                                Email
+                            </button>
 
-        accounts.splice(
-            index,
-            1
-        );
+                            <button
+                                class="mini-btn"
+                                onclick="deleteSavedLogin(
+                                    ${index}
+                                )">
+                                Delete
+                            </button>
 
+                        </div>
 
-        localStorage.setItem(
-            LOGIN_STORAGE,
-            JSON.stringify(accounts)
-        );
+                    </div>
 
-
-        renderSavedLogins();
-
-
-        toast(
-            "Login deleted."
-        );
-    }
-
-
-    /* =========================================================
-       STOCK
-    ========================================================= */
-
-    async function loadStock() {
-
-        const container =
-            document.getElementById(
-                "inventory"
-            );
-
-
-        try {
-
-            const response =
-                await fetch(
-                    `${API_URL}/api/stock`
-                );
-
-
-            if (!response.ok) {
-                throw new Error(
-                    "Stock request failed"
-                );
+                `;
             }
+        ).join("");
+}
 
 
-            const stock =
-                await response.json();
+function deleteSavedLogin(index){
+
+    let accounts =
+        getSavedLogins();
+
+    accounts.splice(index,1);
+
+    localStorage.setItem(
+        LOGIN_STORAGE,
+        JSON.stringify(accounts)
+    );
+
+    renderSavedLogins();
+
+    toast(
+        "Login deleted."
+    );
+}
 
 
-            renderStock(stock);
+/* =========================================================
+   STOCK
+========================================================= */
 
-        } catch (error) {
+async function loadStock(){
 
-            console.error(error);
+    const container =
+        document.getElementById(
+            "inventory"
+        );
 
-            container.innerHTML = `
-                <div class="inventory-item">
+    try{
 
-                    <strong>
-                        Inventory unavailable
-                    </strong>
-
-                    <span>
-                        Could not load current stock.
-                    </span>
-
-                </div>
-            `;
-        }
-    }
-
-
-    function renderStock(stock) {
-
-        const container =
-            document.getElementById(
-                "inventory"
+        const response =
+            await fetch(
+                `${API_URL}/api/stock`
             );
 
+        if(!response.ok){
 
-        if (!stock) {
-
-            container.innerHTML = `
-                <div class="inventory-item">
-
-                    <strong>
-                        No inventory
-                    </strong>
-
-                    <span>
-                        No items are currently available.
-                    </span>
-
-                </div>
-            `;
-
-            return;
+            throw new Error(
+                "Stock request failed"
+            );
         }
 
+        const stock =
+            await response.json();
 
-        let items = [];
+        renderStock(stock);
 
+    }catch(error){
 
-        if (Array.isArray(stock)) {
+        console.error(error);
 
-            items = stock;
+        container.innerHTML = `
+            <div class="inventory-item">
 
-        } else if (
-            Array.isArray(stock.items)
-        ) {
+                <strong>
+                    Inventory unavailable
+                </strong>
 
-            items = stock.items;
+                <span>
+                    Could not load current stock.
+                </span>
 
-        } else if (
-            Array.isArray(stock.inventory)
-        ) {
-
-            items = stock.inventory;
-
-        } else {
-
-            items =
-                Object.entries(stock)
-                    .map(
-                        ([name, value]) => ({
-                            name,
-                            value
-                        })
-                    );
-        }
+            </div>
+        `;
+    }
+}
 
 
-        if (!items.length) {
+function renderStock(stock){
 
-            container.innerHTML = `
-                <div class="inventory-item">
+    const container =
+        document.getElementById(
+            "inventory"
+        );
 
-                    <strong>
-                        No inventory
-                    </strong>
+    if(!stock){
 
-                    <span>
-                        No items are currently available.
-                    </span>
+        container.innerHTML = `
+            <div class="inventory-item">
 
-                </div>
-            `;
+                <strong>
+                    No inventory
+                </strong>
 
-            return;
-        }
+                <span>
+                    No items are currently available.
+                </span>
 
+            </div>
+        `;
 
-        container.innerHTML =
-            items.map(
-                item => {
+        return;
+    }
 
-                    if (
-                        typeof item ===
-                        "string"
-                    ) {
+    let items = [];
 
-                        return `
-                            <div class="inventory-item">
+    if(Array.isArray(stock)){
 
-                                <strong>
-                                    ${escapeHTML(item)}
-                                </strong>
+        items = stock;
 
-                                <span>
-                                    Available
-                                </span>
+    }else if(
+        Array.isArray(stock.items)
+    ){
 
-                            </div>
-                        `;
-                    }
+        items = stock.items;
 
+    }else if(
+        Array.isArray(stock.inventory)
+    ){
+
+        items = stock.inventory;
+
+    }else{
+
+        items =
+            Object.entries(stock)
+                .map(
+                    ([name,value]) => ({
+                        name,
+                        value
+                    })
+                );
+    }
+
+    if(!items.length){
+
+        container.innerHTML = `
+            <div class="inventory-item">
+
+                <strong>
+                    No inventory
+                </strong>
+
+                <span>
+                    No items are currently available.
+                </span>
+
+            </div>
+        `;
+
+        return;
+    }
+
+    container.innerHTML =
+        items.map(
+            item => {
+
+                if(
+                    typeof item ===
+                    "string"
+                ){
 
                     return `
                         <div class="inventory-item">
 
                             <strong>
-                                ${escapeHTML(
-                                    item.name ||
-                                    item.title ||
-                                    item.item ||
-                                    "Inventory Item"
-                                )}
+                                ${escapeHTML(item)}
                             </strong>
 
                             <span>
-                                ${
-                                    item.quantity ??
-                                    item.stock ??
-                                    item.amount ??
-                                    "Available"
-                                }
+                                Available
                             </span>
 
                         </div>
                     `;
                 }
-            ).join("");
+
+                return `
+                    <div class="inventory-item">
+
+                        <strong>
+                            ${escapeHTML(
+                                item.name ||
+                                item.title ||
+                                item.item ||
+                                "Inventory Item"
+                            )}
+                        </strong>
+
+                        <span>
+                            ${
+                                item.quantity ??
+                                item.stock ??
+                                item.amount ??
+                                "Available"
+                            }
+                        </span>
+
+                    </div>
+                `;
+            }
+        ).join("");
+}
+
+
+/* =========================================================
+   GENERATE INVENTORY
+========================================================= */
+
+async function generateInventory(){
+
+    const message =
+        document.getElementById(
+            "inventoryMessage"
+        );
+
+    if(
+        !unlocked ||
+        !currentKey
+    ){
+
+        message.textContent =
+            "Unlock your key first.";
+
+        toast(
+            "You need access first."
+        );
+
+        return;
     }
 
+    message.textContent =
+        "Generating...";
 
-    /* =========================================================
-       GENERATE INVENTORY
-    ========================================================= */
+    try{
 
-    async function generateInventory() {
+        const response =
+            await fetch(
+                `${API_URL}/api/stock/generate`,
+                {
+                    method:"POST",
 
-        const message =
-            document.getElementById(
-                "inventoryMessage"
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            key:currentKey,
+                            deviceId
+                        })
+                }
             );
 
+        const result =
+            await response.json();
 
-        if (
-            !unlocked ||
-            !currentKey
-        ) {
+        if(!response.ok){
 
             message.textContent =
-                "Unlock your key first.";
+                result.message ||
+                "Generation failed.";
 
             toast(
-                "You need access first."
+                "Generation failed."
             );
 
             return;
         }
 
-
         message.textContent =
-            "Generating...";
-
-
-        try {
-
-            const response =
-                await fetch(
-                    `${API_URL}/api/stock/generate`,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body:
-                            JSON.stringify({
-                                key: currentKey,
-                                deviceId
-                            })
-                    }
-                );
-
-
-            const result =
-                await response.json();
-
-
-            if (!response.ok) {
-
-                message.textContent =
-                    result.message ||
-                    "Generation failed.";
-
-                toast(
-                    "Generation failed."
-                );
-
-                return;
-            }
-
-
-            message.textContent =
-                "Inventory generated successfully.";
-
-
-            toast(
-                "Inventory generated!"
-            );
-
-
-            loadStock();
-
-        } catch (error) {
-
-            console.error(error);
-
-            message.textContent =
-                "Could not connect to the server.";
-
-            toast(
-                "Server connection failed."
-            );
-        }
-    }
-
-
-    /* =========================================================
-       LOGOUT
-    ========================================================= */
-
-    function logout() {
-
-        currentKey = "";
-
-        unlocked = false;
-
-
-        localStorage.removeItem(
-            "noviCurrentKey"
-        );
-
-        localStorage.removeItem(
-            "noviUnlocked"
-        );
-
-
-        document.getElementById(
-            "keyInput"
-        ).value = "";
-
-
-        document.getElementById(
-            "unlockMessage"
-        ).textContent = "";
-
-
-        setLockedUI();
-
+            "Inventory generated successfully.";
 
         toast(
-            "You have been logged out."
+            "Inventory generated!"
         );
-
-
-        scrollToAccess();
-    }
-
-
-    /* =========================================================
-       ESCAPE HTML
-    ========================================================= */
-
-    function escapeHTML(value) {
-
-        return String(value)
-            .replace(
-                /&/g,
-                "&amp;"
-            )
-            .replace(
-                /</g,
-                "&lt;"
-            )
-            .replace(
-                />/g,
-                "&gt;"
-            )
-            .replace(
-                /"/g,
-                "&quot;"
-            )
-            .replace(
-                /'/g,
-                "&#039;"
-            );
-    }
-
-
-    /* =========================================================
-       INITIALIZE
-    ========================================================= */
-
-    renderSavedKeys();
-
-    renderSavedLogins();
-
-
-    if (
-        unlocked &&
-        currentKey
-    ) {
-
-        setUnlockedUI();
 
         loadStock();
 
-    } else {
+    }catch(error){
 
-        setLockedUI();
+        console.error(error);
+
+        message.textContent =
+            "Could not connect to the server.";
+
+        toast(
+            "Server connection failed."
+        );
     }
+}
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+function logout(){
+
+    currentKey = "";
+    unlocked = false;
+
+    localStorage.removeItem(
+        "noviCurrentKey"
+    );
+
+    localStorage.removeItem(
+        "noviUnlocked"
+    );
+
+    document.getElementById(
+        "keyInput"
+    ).value = "";
+
+    document.getElementById(
+        "unlockMessage"
+    ).textContent = "";
+
+    setLockedUI();
+
+    toast(
+        "You have been logged out."
+    );
+
+    scrollToAccess();
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeHTML(value){
+
+    return String(value)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+}
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+renderSavedKeys();
+
+renderSavedLogins();
+
+if(
+    unlocked &&
+    currentKey
+){
+
+    setUnlockedUI();
+
+    loadStock();
+
+}else{
+
+    setLockedUI();
+}
 
 </script>
 
