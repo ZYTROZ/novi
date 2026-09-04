@@ -61,10 +61,6 @@
             cursor: pointer;
         }
 
-        /* =================================================
-           BACKGROUND
-        ================================================= */
-
         body::before {
             content: "";
 
@@ -122,10 +118,6 @@
             pointer-events: none;
         }
 
-        /* =================================================
-           APP SLIDER
-        ================================================= */
-
         .app {
             width: 100%;
             height: 100vh;
@@ -171,10 +163,6 @@
             transform: translateX(-50%);
         }
 
-        /* =================================================
-           GLOBAL
-        ================================================= */
-
         .container {
             width: min(1180px, calc(100% - 40px));
             margin: auto;
@@ -187,10 +175,6 @@
         .muted {
             color: var(--muted);
         }
-
-        /* =================================================
-           BUTTONS
-        ================================================= */
 
         .btn {
             border: 0;
@@ -264,10 +248,6 @@
             background:
                 rgba(139,92,246,.08);
         }
-
-        /* =================================================
-           NAV
-        ================================================= */
 
         nav {
             position: sticky;
@@ -348,10 +328,6 @@
             display: flex;
             gap: 9px;
         }
-
-        /* =================================================
-           HERO
-        ================================================= */
 
         .hero {
             position: relative;
@@ -480,7 +456,7 @@
         }
 
         /* =================================================
-           ACCESS — NOW NEAR TOP
+           KEY ACCESS
         ================================================= */
 
         .access-section {
@@ -488,143 +464,12 @@
                 15px 0 80px;
         }
 
-        .access-layout {
-            display: grid;
-
-            grid-template-columns:
-                1fr 1.2fr;
-
-            gap: 20px;
-
-            align-items: stretch;
-        }
-
-        .access-info {
-            position: relative;
-
-            padding:
-                35px;
-
-            min-height:
-                320px;
-
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-
-            overflow: hidden;
-
-            border:
-                1px solid
-                var(--border);
-
-            border-radius:
-                24px;
-
-            background:
-                linear-gradient(
-                    145deg,
-                    rgba(139,92,246,.09),
-                    rgba(255,255,255,.025)
-                );
-
-            backdrop-filter:
-                blur(22px);
-        }
-
-        .access-info::before {
-            content: "";
-
-            position: absolute;
-
-            width: 220px;
-            height: 220px;
-
-            right: -90px;
-            top: -90px;
-
-            border-radius: 50%;
-
-            background:
-                rgba(139,92,246,.15);
-
-            filter:
-                blur(50px);
-        }
-
-        .access-label {
-            position: relative;
-
-            display: inline-flex;
-
-            width: fit-content;
-
-            padding:
-                7px 10px;
-
-            border-radius: 8px;
-
-            color:
-                #b9a8df;
-
-            background:
-                rgba(139,92,246,.09);
-
-            border:
-                1px solid
-                rgba(139,92,246,.15);
-
-            font-size:
-                11px;
-
-            font-weight:
-                900;
-
-            text-transform:
-                uppercase;
-
-            letter-spacing:
-                1.2px;
-
-            margin-bottom:
-                18px;
-        }
-
-        .access-info h2 {
-            position: relative;
-
-            font-size:
-                clamp(32px, 4vw, 48px);
-
-            line-height:
-                1;
-
-            letter-spacing:
-                -2.5px;
-        }
-
-        .access-info p {
-            position: relative;
-
-            margin-top:
-                16px;
-
-            max-width:
-                420px;
-
-            color:
-                #817b8f;
-
-            line-height:
-                1.7;
-
-            font-size:
-                14px;
-        }
-
         .access-box {
+            max-width: 620px;
+            margin: 0 auto;
+
             min-height:
-                320px;
+                280px;
 
             display: flex;
             flex-direction: column;
@@ -653,10 +498,12 @@
 
         .access-box h3 {
             font-size:
-                22px;
+                26px;
 
             margin-bottom:
                 8px;
+
+            text-align: center;
         }
 
         .access-box > p {
@@ -668,6 +515,8 @@
 
             margin-bottom:
                 20px;
+
+            text-align: center;
         }
 
         .input {
@@ -732,10 +581,6 @@
             font-size:
                 12px;
         }
-
-        /* =================================================
-           WHY NOVI
-        ================================================= */
 
         .section {
             padding:
@@ -946,10 +791,6 @@
             font-size:
                 13px;
         }
-
-        /* =================================================
-           DASHBOARD
-        ================================================= */
 
         .dashboard-page {
             background:
@@ -1208,10 +1049,6 @@
                 break-word;
         }
 
-        /* =================================================
-           LOGIN
-        ================================================= */
-
         .login-grid {
             display:
                 grid;
@@ -1331,16 +1168,7 @@
                 rgba(139,92,246,.08);
         }
 
-        /* =================================================
-           MOBILE
-        ================================================= */
-
         @media (max-width: 900px) {
-
-            .access-layout {
-                grid-template-columns:
-                    1fr;
-            }
 
             .features {
                 grid-template-columns:
@@ -1399,18 +1227,12 @@
                     5px 0 60px;
             }
 
-            .access-info,
             .access-box {
                 min-height:
                     auto;
 
                 padding:
                     26px;
-            }
-
-            .access-info {
-                min-height:
-                    250px;
             }
 
             .login-grid {
@@ -1472,8 +1294,6 @@
 
         <section class="page main-page">
 
-            <!-- NAV -->
-
             <nav>
 
                 <div class="nav-inner">
@@ -1509,9 +1329,7 @@
             </nav>
 
 
-            <!-- =================================================
-                 HERO
-            ================================================= -->
+            <!-- HERO -->
 
             <div class="hero">
 
@@ -1557,9 +1375,7 @@
             </div>
 
 
-            <!-- =================================================
-                 ACCESS — MOVED TO TOP
-            ================================================= -->
+            <!-- KEY ACCESS -->
 
             <section
                 id="access"
@@ -1567,64 +1383,37 @@
 
                 <div class="container">
 
-                    <div class="access-layout">
+                    <div class="access-box">
 
-                        <div class="access-info">
+                        <h3>
+                            Enter your
+                            <span class="purple">
+                                key
+                            </span>
+                        </h3>
 
-                            <div class="access-label">
-                                Secure Access
-                            </div>
+                        <p>
+                            Use your Novi access key
+                            to continue.
+                        </p>
 
-                            <h2>
-                                Your access.
-                                <br>
-                                <span class="purple">
-                                    Your Novi.
-                                </span>
-                            </h2>
+                        <input
+                            id="keyInput"
+                            class="input"
+                            type="text"
+                            placeholder="NOVI-XXXX-XXXX-XXXX-XXXX"
+                            autocomplete="off"
+                        >
 
-                            <p>
-                                Enter your Novi access key
-                                to unlock your private dashboard
-                                and available features.
-                            </p>
+                        <button
+                            class="btn btn-primary"
+                            onclick="unlock()">
+                            Unlock Dashboard
+                        </button>
 
-                        </div>
-
-
-                        <div class="access-box">
-
-                            <h3>
-                                Enter your
-                                <span class="purple">
-                                    key
-                                </span>
-                            </h3>
-
-                            <p>
-                                Use your Novi access key
-                                to continue.
-                            </p>
-
-                            <input
-                                id="keyInput"
-                                class="input"
-                                type="text"
-                                placeholder="NOVI-XXXX-XXXX-XXXX-XXXX"
-                                autocomplete="off"
-                            >
-
-                            <button
-                                class="btn btn-primary"
-                                onclick="unlock()">
-                                Unlock Dashboard
-                            </button>
-
-                            <div
-                                id="unlockMessage"
-                                class="message">
-                            </div>
-
+                        <div
+                            id="unlockMessage"
+                            class="message">
                         </div>
 
                     </div>
@@ -1634,9 +1423,7 @@
             </section>
 
 
-            <!-- =================================================
-                 WHY NOVI?
-            ================================================= -->
+            <!-- WHY NOVI -->
 
             <section class="section">
 
@@ -1661,7 +1448,6 @@
 
 
                     <div class="features">
-
 
                         <div class="feature">
 
@@ -1730,7 +1516,6 @@
                             </p>
 
                         </div>
-
 
                     </div>
 
@@ -1802,7 +1587,6 @@
 
 
                     <div class="dashboard-grid">
-
 
                         <!-- EPICGAMES -->
 
@@ -1968,7 +1752,6 @@
 
                         </div>
 
-
                     </div>
 
                 </div>
@@ -1984,17 +1767,9 @@
 
 <script>
 
-/* =========================================================
-   API
-========================================================= */
-
 const API_URL =
     window.location.origin;
 
-
-/* =========================================================
-   STATE
-========================================================= */
 
 let currentKey =
     localStorage.getItem(
@@ -2011,10 +1786,6 @@ let unlocked =
         "noviUnlocked"
     ) === "true";
 
-
-/* =========================================================
-   DEVICE ID
-========================================================= */
 
 function getDeviceId() {
 
@@ -2040,10 +1811,6 @@ function getDeviceId() {
 }
 
 
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
-
 function escapeHTML(value) {
 
     const div =
@@ -2057,10 +1824,6 @@ function escapeHTML(value) {
     return div.innerHTML;
 }
 
-
-/* =========================================================
-   DASHBOARD
-========================================================= */
 
 function openDashboard() {
 
@@ -2088,10 +1851,6 @@ function openMainPage() {
 }
 
 
-/* =========================================================
-   ACCESS SCROLL
-========================================================= */
-
 function scrollToAccess() {
 
     const access =
@@ -2109,10 +1868,6 @@ function scrollToAccess() {
     });
 }
 
-
-/* =========================================================
-   UNLOCK
-========================================================= */
 
 async function unlock() {
 
@@ -2213,10 +1968,6 @@ async function unlock() {
 }
 
 
-/* =========================================================
-   LOGOUT
-========================================================= */
-
 function logout() {
 
     currentKey =
@@ -2258,10 +2009,6 @@ function logout() {
     }
 }
 
-
-/* =========================================================
-   STOCK
-========================================================= */
 
 async function loadStock() {
 
@@ -2323,10 +2070,6 @@ async function loadStock() {
     }
 }
 
-
-/* =========================================================
-   GENERATE INVENTORY
-========================================================= */
 
 async function generateInventory() {
 
@@ -2503,10 +2246,6 @@ async function generateInventory() {
 }
 
 
-/* =========================================================
-   SAVE LOGIN
-========================================================= */
-
 function saveEmailPassword() {
 
     if (!unlocked) {
@@ -2563,10 +2302,6 @@ function saveEmailPassword() {
     renderSavedLogins();
 }
 
-
-/* =========================================================
-   RENDER LOGINS
-========================================================= */
 
 function renderSavedLogins() {
 
@@ -2644,10 +2379,6 @@ function renderSavedLogins() {
 }
 
 
-/* =========================================================
-   COPY LOGIN
-========================================================= */
-
 async function copyLogin(index) {
 
     const saved =
@@ -2669,10 +2400,6 @@ async function copyLogin(index) {
     );
 }
 
-
-/* =========================================================
-   DELETE LOGIN
-========================================================= */
 
 function deleteLogin(index) {
 
@@ -2696,10 +2423,6 @@ function deleteLogin(index) {
     renderSavedLogins();
 }
 
-
-/* =========================================================
-   SAVE KEY
-========================================================= */
 
 function saveCurrentKey() {
 
@@ -2733,10 +2456,6 @@ function saveCurrentKey() {
     renderSavedKeys();
 }
 
-
-/* =========================================================
-   RENDER SAVED KEYS
-========================================================= */
 
 function renderSavedKeys() {
 
@@ -2804,10 +2523,6 @@ function renderSavedKeys() {
 }
 
 
-/* =========================================================
-   COPY KEY
-========================================================= */
-
 async function copyKey(index) {
 
     const saved =
@@ -2826,10 +2541,6 @@ async function copyKey(index) {
     );
 }
 
-
-/* =========================================================
-   DELETE KEY
-========================================================= */
 
 function deleteKey(index) {
 
@@ -2853,10 +2564,6 @@ function deleteKey(index) {
     renderSavedKeys();
 }
 
-
-/* =========================================================
-   STARTUP
-========================================================= */
 
 getDeviceId();
 
