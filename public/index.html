@@ -1,4084 +1,1564 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang | default('en') }}" dir="{{ dir | default('ltr') }}">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Novi</title>
-
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        :root {
-            --purple: #8b5cf6;
-            --purple-bright: #a78bfa;
-            --purple-light: #c4b5fd;
-            --purple-dark: #6d28d9;
-
-            --bg: #08070d;
-            --bg-soft: #0d0b14;
-
-            --panel: rgba(25, 20, 40, .82);
-            --panel-light: rgba(35, 28, 54, .76);
-
-            --border: rgba(167, 139, 250, .16);
-            --border-bright: rgba(167, 139, 250, .38);
-
-            --text: #ffffff;
-            --muted: #9b95aa;
-        }
-
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-
-            font-family:
-                Inter,
-                ui-sans-serif,
-                system-ui,
-                -apple-system,
-                BlinkMacSystemFont,
-                "Segoe UI",
-                sans-serif;
-
-            background: var(--bg);
-            color: var(--text);
-        }
-
-        body {
-            position: relative;
-        }
-
-        button,
-        input {
-            font: inherit;
-        }
-
-        button {
-            cursor: pointer;
-        }
-
-        button:disabled {
-            cursor: not-allowed;
-        }
-
-        /* =================================================
-           BACKGROUND
-        ================================================= */
-
-        body::before {
-            content: "";
-
-            position: fixed;
-            inset: 0;
-
-            pointer-events: none;
-
-            background-image:
-                linear-gradient(
-                    rgba(255,255,255,.018) 1px,
-                    transparent 1px
-                ),
-                linear-gradient(
-                    90deg,
-                    rgba(255,255,255,.018) 1px,
-                    transparent 1px
-                );
-
-            background-size: 70px 70px;
-
-            mask-image:
-                linear-gradient(
-                    to bottom,
-                    black,
-                    transparent 95%
-                );
-
-            opacity: .42;
-        }
-
-        body::after {
-            content: "";
-
-            position: fixed;
-
-            width: 850px;
-            height: 850px;
-
-            left: 50%;
-            top: -390px;
-
-            transform: translateX(-50%);
-
-            background:
-                radial-gradient(
-                    circle,
-                    rgba(139,92,246,.25),
-                    rgba(124,58,237,.10) 38%,
-                    transparent 72%
-                );
-
-            filter: blur(25px);
-
-            pointer-events: none;
-        }
-
-        .app {
-            width: 100%;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .slider {
-            display: flex;
-
-            width: 200%;
-            height: 100%;
-
-            transition:
-                transform .75s cubic-bezier(.76,0,.24,1);
-        }
-
-        .page {
-            width: 50%;
-            height: 100vh;
-
-            flex-shrink: 0;
-
-            overflow-y: auto;
-            overflow-x: hidden;
-
-            scroll-behavior: smooth;
-
-            scrollbar-width: thin;
-            scrollbar-color: #332b47 transparent;
-        }
-
-        .page::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .page::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .page::-webkit-scrollbar-thumb {
-            background: #332b47;
-            border-radius: 20px;
-        }
-
-        body.dashboard-open .slider {
-            transform: translateX(-50%);
-        }
-
-        .container {
-            width: min(1180px, calc(100% - 40px));
-            margin: auto;
-        }
-
-        .purple {
-            color: var(--purple-bright);
-        }
-
-        .muted {
-            color: var(--muted);
-        }
-
-        /* =================================================
-           BUTTONS
-        ================================================= */
-
-        .btn {
-            border: 0;
-            border-radius: 12px;
-
-            padding: 13px 19px;
-
-            font-weight: 800;
-
-            transition:
-                transform .25s ease,
-                box-shadow .25s ease,
-                border-color .25s ease,
-                background .25s ease,
-                opacity .25s ease;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn:disabled {
-            opacity: .65;
-            transform: none;
-        }
-
-        .btn-primary {
-            color: white;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #9b6cff,
-                    #6d28d9
-                );
-
-            border:
-                1px solid
-                rgba(196,181,253,.38);
-
-            box-shadow:
-                0 10px 35px
-                rgba(109,40,217,.34),
-                0 0 25px
-                rgba(139,92,246,.10);
-        }
-
-        .btn-primary:hover {
-            box-shadow:
-                0 17px 50px
-                rgba(109,40,217,.48),
-                0 0 35px
-                rgba(139,92,246,.15);
-        }
-
-        .btn-secondary {
-            color: #eeeaff;
-
-            background:
-                rgba(255,255,255,.055);
-
-            border:
-                1px solid
-                rgba(255,255,255,.11);
-
-            backdrop-filter:
-                blur(14px);
-        }
-
-        .btn-secondary:hover {
-            border-color:
-                var(--border-bright);
-
-            background:
-                rgba(139,92,246,.10);
-
-            box-shadow:
-                0 10px 30px
-                rgba(139,92,246,.08);
-        }
-
-        /* =================================================
-           NAV
-        ================================================= */
-
-        nav {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-
-            height: 76px;
-
-            display: flex;
-            align-items: center;
-
-            background:
-                rgba(8,7,13,.72);
-
-            border-bottom:
-                1px solid
-                rgba(255,255,255,.065);
-
-            backdrop-filter:
-                blur(24px);
-        }
-
-        .nav-inner {
-            width:
-                min(1180px, calc(100% - 40px));
-
-            margin: auto;
-
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-
-            gap: 10px;
-
-            font-size: 21px;
-            font-weight: 950;
-
-            letter-spacing: -1px;
-        }
-
-        .logo-mark {
-            position: relative;
-
-            width: 38px;
-            height: 38px;
-
-            display: grid;
-            place-items: center;
-
-            border-radius: 12px;
-
-            overflow: hidden;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #9b6cff,
-                    #6d28d9
-                );
-
-            box-shadow:
-                0 8px 28px
-                rgba(109,40,217,.45),
-                0 0 25px
-                rgba(139,92,246,.12);
-
-            font-size: 15px;
-            font-weight: 950;
-        }
-
-        .logo-mark::after {
-            content: "";
-
-            position: absolute;
-
-            width: 90px;
-            height: 20px;
-
-            left: -90px;
-            top: 0;
-
-            transform: rotate(-35deg);
-
-            background:
-                rgba(255,255,255,.2);
-
-            filter: blur(8px);
-
-            animation:
-                logoShine 4s ease-in-out infinite;
-        }
-
-        @keyframes logoShine {
-            0%,
-            35% {
-                left: -90px;
-            }
-
-            70%,
-            100% {
-                left: 100px;
-            }
-        }
-
-        .logo-text {
-            display: flex;
-            align-items: center;
-            gap: 0;
-
-            letter-spacing: -1.1px;
-        }
-
-        .logo-text .logo-no {
-            color: #ffffff;
-        }
-
-        .logo-text .logo-vi {
-            color: var(--purple-bright);
-        }
-
-        .nav-buttons {
-            display: flex;
-            gap: 9px;
-        }
-
-        /* =================================================
-           HOME
-        ================================================= */
-
-        .main-page {
-            position: relative;
-
-            background:
-                radial-gradient(
-                    circle at 50% 0%,
-                    rgba(139,92,246,.20),
-                    transparent 38%
-                ),
-                radial-gradient(
-                    circle at 0% 45%,
-                    rgba(109,40,217,.08),
-                    transparent 25%
-                ),
-                radial-gradient(
-                    circle at 100% 60%,
-                    rgba(167,139,250,.07),
-                    transparent 25%
-                ),
-                #08070d;
-        }
-
-        .hero {
-            position: relative;
-
-            min-height: 560px;
-
-            display: flex;
-
-            align-items: center;
-            justify-content: center;
-
-            padding: 70px 0 45px;
-
-            text-align: center;
-
-            isolation: isolate;
-        }
-
-        .hero::before {
-            content: "";
-
-            position: absolute;
-
-            width: 1000px;
-            height: 600px;
-
-            left: 50%;
-            top: 0;
-
-            transform: translateX(-50%);
-
-            background:
-                radial-gradient(
-                    ellipse,
-                    rgba(139,92,246,.15),
-                    transparent 68%
-                );
-
-            filter: blur(45px);
-
-            pointer-events: none;
-
-            z-index: -2;
-        }
-
-        .hero::after {
-            content: "";
-
-            position: absolute;
-
-            width: 720px;
-            height: 1px;
-
-            left: 50%;
-            bottom: 25px;
-
-            transform: translateX(-50%);
-
-            background:
-                linear-gradient(
-                    90deg,
-                    transparent,
-                    rgba(167,139,250,.28),
-                    transparent
-                );
-
-            pointer-events: none;
-
-            z-index: -1;
-        }
-
-        .hero-content {
-            position: relative;
-
-            z-index: 3;
-
-            width: 100%;
-            max-width: 950px;
-        }
-
-        .hero-orb {
-            position: absolute;
-
-            border-radius: 50%;
-
-            pointer-events: none;
-
-            z-index: -1;
-        }
-
-        .hero-orb.one {
-            width: 9px;
-            height: 9px;
-
-            left: 19%;
-            top: 29%;
-
-            background:
-                var(--purple-bright);
-
-            box-shadow:
-                0 0 25px
-                rgba(167,139,250,.95);
-
-            animation:
-                floatOne 4.5s ease-in-out infinite;
-        }
-
-        .hero-orb.two {
-            width: 6px;
-            height: 6px;
-
-            right: 19%;
-            top: 35%;
-
-            background:
-                var(--purple);
-
-            box-shadow:
-                0 0 18px
-                rgba(139,92,246,.95);
-
-            animation:
-                floatTwo 5.2s ease-in-out infinite;
-        }
-
-        .hero-orb.three {
-            width: 4px;
-            height: 4px;
-
-            left: 25%;
-            bottom: 25%;
-
-            background:
-                var(--purple-light);
-
-            box-shadow:
-                0 0 15px
-                rgba(196,181,253,.9);
-
-            animation:
-                floatThree 4.8s ease-in-out infinite;
-        }
-
-        @keyframes floatOne {
-            0%,
-            100% {
-                transform: translateY(0);
-            }
-
-            50% {
-                transform: translateY(-17px);
-            }
-        }
-
-        @keyframes floatTwo {
-            0%,
-            100% {
-                transform:
-                    translateY(0)
-                    scale(1);
-            }
-
-            50% {
-                transform:
-                    translateY(14px)
-                    scale(1.18);
-            }
-        }
-
-        @keyframes floatThree {
-            0%,
-            100% {
-                transform: translate(0,0);
-            }
-
-            50% {
-                transform: translate(10px,-10px);
-            }
-        }
-
-        .hero-badge {
-            display: inline-flex;
-
-            align-items: center;
-            gap: 9px;
-
-            padding: 9px 15px;
-            margin-bottom: 27px;
-
-            border-radius: 999px;
-
-            border:
-                1px solid
-                rgba(167,139,250,.24);
-
-            background:
-                rgba(139,92,246,.07);
-
-            color: #b4adbf;
-
-            font-size: 12px;
-            font-weight: 800;
-
-            backdrop-filter: blur(14px);
-
-            box-shadow:
-                0 15px 45px
-                rgba(0,0,0,.16),
-                inset 0 1px 0
-                rgba(255,255,255,.04);
-        }
-
-        .hero-badge .dot {
-            width: 7px;
-            height: 7px;
-
-            border-radius: 50%;
-
-            background:
-                var(--purple-bright);
-
-            box-shadow:
-                0 0 15px
-                rgba(167,139,250,1);
-
-            animation:
-                dotPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes dotPulse {
-            0%,
-            100% {
-                opacity: .65;
-                transform: scale(.88);
-            }
-
-            50% {
-                opacity: 1;
-                transform: scale(1.18);
-            }
-        }
-
-        .hero h1 {
-            font-size:
-                clamp(64px, 10vw, 128px);
-
-            line-height: .84;
-
-            letter-spacing: -8px;
-
-            font-weight: 950;
-
-            text-shadow:
-                0 28px 75px
-                rgba(0,0,0,.45),
-                0 0 55px
-                rgba(139,92,246,.08);
-
-            animation:
-                heroIn .8s
-                cubic-bezier(.2,.8,.2,1);
-        }
-
-        .hero h1 .welcome {
-            display: block;
-            color: #ffffff;
-        }
-
-        .hero h1 .brand {
-            display: block;
-
-            margin-top: 11px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #ffffff 0%,
-                    #ede9fe 25%,
-                    #c4b5fd 45%,
-                    #a78bfa 68%,
-                    #7c3aed 100%
-                );
-
-            -webkit-background-clip: text;
-            background-clip: text;
-
-            color: transparent;
-
-            filter:
-                drop-shadow(
-                    0 0 35px
-                    rgba(139,92,246,.32)
-                );
-        }
-
-        @keyframes heroIn {
-            from {
-                opacity: 0;
-                transform:
-                    translateY(16px)
-                    scale(.985);
-            }
-
-            to {
-                opacity: 1;
-                transform:
-                    translateY(0)
-                    scale(1);
-            }
-        }
-
-        .hero-description {
-            max-width: 650px;
-
-            margin: 30px auto 0;
-
-            color: #938c9f;
-
-            font-size: 15px;
-
-            line-height: 1.85;
-
-            animation:
-                heroTextIn .9s
-                .1s both
-                cubic-bezier(.2,.8,.2,1);
-        }
-
-        .hero-description strong {
-            color: #c0b8c9;
-            font-weight: 700;
-        }
-
-        @keyframes heroTextIn {
-            from {
-                opacity: 0;
-                transform: translateY(12px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* =================================================
-           ACCESS
-        ================================================= */
-
-        .access-section {
-            padding: 20px 0 105px;
-        }
-
-        .access-heading {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .access-heading-kicker {
-            color: var(--purple-bright);
-
-            font-size: 10px;
-            font-weight: 900;
-
-            text-transform: uppercase;
-            letter-spacing: 2px;
-
-            margin-bottom: 9px;
-        }
-
-        .access-heading h2 {
-            font-size:
-                clamp(32px,5vw,44px);
-
-            letter-spacing: -2px;
-        }
-
-        .access-heading p {
-            margin-top: 8px;
-
-            color: #817989;
-
-            font-size: 13px;
-        }
-
-        .access-box {
-            position: relative;
-
-            max-width: 700px;
-
-            margin: 0 auto;
-
-            min-height: 310px;
-
-            display: flex;
-
-            flex-direction: column;
-
-            justify-content: center;
-
-            padding: 42px;
-
-            overflow: hidden;
-
-            border:
-                1px solid
-                rgba(167,139,250,.24);
-
-            border-radius: 26px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    rgba(28,22,46,.94),
-                    rgba(13,11,22,.88)
-                );
-
-            box-shadow:
-                0 40px 110px
-                rgba(0,0,0,.40),
-                0 0 50px
-                rgba(109,40,217,.06),
-                inset 0 1px 0
-                rgba(255,255,255,.05);
-
-            backdrop-filter: blur(26px);
-        }
-
-        .access-box::before {
-            content: "";
-
-            position: absolute;
-
-            width: 320px;
-            height: 320px;
-
-            left: -160px;
-            top: -180px;
-
-            border-radius: 50%;
-
-            background:
-                rgba(139,92,246,.18);
-
-            filter: blur(52px);
-
-            pointer-events: none;
-        }
-
-        .access-box::after {
-            content: "";
-
-            position: absolute;
-
-            width: 280px;
-            height: 280px;
-
-            right: -150px;
-            bottom: -155px;
-
-            border-radius: 50%;
-
-            background:
-                rgba(109,40,217,.15);
-
-            filter: blur(52px);
-
-            pointer-events: none;
-        }
-
-        .access-box > * {
-            position: relative;
-            z-index: 2;
-        }
-
-        .access-box h3 {
-            font-size: 28px;
-
-            margin-bottom: 8px;
-
-            text-align: center;
-        }
-
-        .access-box > p {
-            color: #817989;
-
-            font-size: 13px;
-
-            margin-bottom: 23px;
-
-            text-align: center;
-        }
-
-        .input {
-            width: 100%;
-
-            padding: 15px 16px;
-
-            margin-bottom: 11px;
-
-            border-radius: 13px;
-
-            border:
-                1px solid
-                rgba(255,255,255,.10);
-
-            outline: none;
-
-            background:
-                rgba(0,0,0,.32);
-
-            color: white;
-
-            transition:
-                border-color .25s ease,
-                box-shadow .25s ease,
-                background .25s ease;
-        }
-
-        .input::placeholder {
-            color: #6c6674;
-        }
-
-        .input:focus {
-            border-color:
-                rgba(139,92,246,.65);
-
-            background:
-                rgba(139,92,246,.055);
-
-            box-shadow:
-                0 0 0 4px
-                rgba(139,92,246,.09),
-                0 12px 35px
-                rgba(0,0,0,.18);
-        }
-
-        .access-box .btn {
-            width: 100%;
-        }
-
-        .message {
-            min-height: 20px;
-
-            margin-top: 11px;
-
-            text-align: center;
-
-            color: #a09aaa;
-
-            font-size: 12px;
-        }
-
-        /* =================================================
-           WHY NOVI
-        ================================================= */
-
-        .section {
-            padding: 95px 0;
-        }
-
-        .section-title {
-            text-align: center;
-            margin-bottom: 44px;
-        }
-
-        .section-kicker {
-            color: var(--purple-bright);
-
-            font-size: 11px;
-            font-weight: 900;
-
-            text-transform: uppercase;
-            letter-spacing: 2px;
-
-            margin-bottom: 11px;
-        }
-
-        .section-title h2 {
-            font-size:
-                clamp(42px,6vw,60px);
-
-            letter-spacing: -3px;
-        }
-
-        .section-title p {
-            margin-top: 10px;
-
-            color: #817989;
-
-            font-size: 14px;
-        }
-
-        .features {
-            display: grid;
-
-            grid-template-columns:
-                repeat(3,1fr);
-
-            gap: 18px;
-        }
-
-        .feature {
-            position: relative;
-
-            min-height: 265px;
-
-            padding: 31px;
-
-            overflow: hidden;
-
-            border:
-                1px solid
-                rgba(255,255,255,.075);
-
-            border-radius: 23px;
-
-            background:
-                linear-gradient(
-                    145deg,
-                    rgba(255,255,255,.045),
-                    rgba(255,255,255,.015)
-                );
-
-            transition:
-                transform .35s ease,
-                border-color .35s ease,
-                background .35s ease,
-                box-shadow .35s ease;
-
-            backdrop-filter: blur(18px);
-        }
-
-        .feature::before {
-            content: "";
-
-            position: absolute;
-
-            width: 240px;
-            height: 240px;
-
-            right: -120px;
-            top: -140px;
-
-            border-radius: 50%;
-
-            background:
-                rgba(139,92,246,.11);
-
-            filter: blur(45px);
-
-            pointer-events: none;
-        }
-
-        .feature::after {
-            content: "";
-
-            position: absolute;
-
-            width: 180px;
-            height: 180px;
-
-            right: -95px;
-            bottom: -105px;
-
-            border-radius: 50%;
-
-            background:
-                rgba(109,40,217,.13);
-
-            filter: blur(38px);
-
-            pointer-events: none;
-        }
-
-        .feature:hover {
-            transform: translateY(-9px);
-
-            border-color:
-                var(--border-bright);
-
-            background:
-                rgba(139,92,246,.065);
-
-            box-shadow:
-                0 30px 75px
-                rgba(0,0,0,.28),
-                0 0 40px
-                rgba(139,92,246,.07);
-        }
-
-        .feature-number {
-            color:
-                rgba(196,181,253,.65);
-
-            font-size: 10px;
-            font-weight: 900;
-
-            letter-spacing: 1.4px;
-
-            margin-bottom: 25px;
-        }
-
-        .feature-icon {
-            width: 49px;
-            height: 49px;
-
-            display: grid;
-            place-items: center;
-
-            margin-bottom: 18px;
-
-            border-radius: 15px;
-
-            color: #d5c8ff;
-
-            background:
-                rgba(139,92,246,.13);
-
-            border:
-                1px solid
-                rgba(167,139,250,.22);
-
-            font-size: 18px;
-
-            box-shadow:
-                0 14px 32px
-                rgba(109,40,217,.16),
-                0 0 20px
-                rgba(139,92,246,.06);
-        }
-
-        .feature h3 {
-            font-size: 18px;
-            margin-bottom: 9px;
-        }
-
-        .feature p {
-            color: #817989;
-
-            line-height: 1.7;
-
-            font-size: 13px;
-        }
-
-        /* =================================================
-           DASHBOARD
-        ================================================= */
-
-        .dashboard-page {
-            background:
-                radial-gradient(
-                    circle at 85% 5%,
-                    rgba(139,92,246,.20),
-                    transparent 30%
-                ),
-                radial-gradient(
-                    circle at 10% 35%,
-                    rgba(109,40,217,.09),
-                    transparent 28%
-                ),
-                radial-gradient(
-                    circle at 50% 100%,
-                    rgba(139,92,246,.07),
-                    transparent 35%
-                ),
-                #08070d;
-        }
-
-        .dashboard-wrap {
-            min-height: 100vh;
-            padding-bottom: 60px;
-        }
-
-        .dashboard-header {
-            padding: 55px 0 30px;
-        }
-
-        .dashboard-header-row {
-            display: flex;
-
-            align-items: flex-end;
-
-            justify-content: space-between;
-
-            gap: 20px;
-        }
-
-        .dashboard-header h1 {
-            font-size:
-                clamp(38px,6vw,65px);
-
-            letter-spacing: -4px;
-
-            line-height: .95;
-
-            text-shadow:
-                0 0 45px
-                rgba(139,92,246,.08);
-        }
-
-        .dashboard-header p {
-            color: #8b8495;
-
-            margin-top: 10px;
-
-            font-size: 14px;
-        }
-
-        .dashboard-actions {
-            display: flex;
-
-            gap: 9px;
-
-            flex-wrap: wrap;
-        }
-
-        .dashboard-grid {
-            display: grid;
-
-            grid-template-columns:
-                repeat(2,minmax(0,1fr));
-
-            gap: 16px;
-        }
-
-        .panel {
-            position: relative;
-
-            padding: 24px;
-
-            border:
-                1px solid
-                rgba(167,139,250,.13);
-
-            border-radius: 20px;
-
-            background:
-                linear-gradient(
-                    145deg,
-                    rgba(27,22,43,.88),
-                    rgba(13,11,22,.78)
-                );
-
-            backdrop-filter: blur(20px);
-
-            box-shadow:
-                0 25px 70px
-                rgba(0,0,0,.22),
-                inset 0 1px 0
-                rgba(255,255,255,.035);
-
-            overflow: hidden;
-        }
-
-        .panel::before {
-            content: "";
-
-            position: absolute;
-
-            width: 220px;
-            height: 220px;
-
-            right: -130px;
-            top: -150px;
-
-            border-radius: 50%;
-
-            background:
-                rgba(139,92,246,.10);
-
-            filter: blur(50px);
-
-            pointer-events: none;
-        }
-
-        .panel.full {
-            grid-column: 1 / -1;
-        }
-
-        .panel-head {
-            position: relative;
-            z-index: 2;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: space-between;
-
-            gap: 15px;
-
-            margin-bottom: 19px;
-        }
-
-        .panel-head h2 {
-            font-size: 18px;
-        }
-
-        /* =================================================
-           GENERATE
-        ================================================= */
-
-        .stock-number {
-            font-size: 52px;
-
-            font-weight: 950;
-
-            color: var(--purple-bright);
-
-            letter-spacing: -3px;
-
-            line-height: 1;
-
-            text-shadow:
-                0 0 30px
-                rgba(139,92,246,.38),
-                0 0 60px
-                rgba(139,92,246,.12);
-        }
-
-        .stock-status {
-            display: inline-flex;
-
-            align-items: center;
-
-            gap: 7px;
-
-            color: #908999;
-
-            font-size: 12px;
-        }
-
-        .stock-status::before {
-            content: "";
-
-            width: 6px;
-            height: 6px;
-
-            border-radius: 50%;
-
-            background: #a78bfa;
-
-            box-shadow:
-                0 0 10px
-                rgba(167,139,250,.9);
-        }
-
-        .stock-box {
-            position: relative;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: space-between;
-
-            gap: 30px;
-
-            min-height: 190px;
-
-            padding: 28px;
-
-            overflow: hidden;
-
-            border:
-                1px solid
-                rgba(167,139,250,.19);
-
-            border-radius: 19px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    rgba(139,92,246,.11),
-                    rgba(0,0,0,.25) 55%,
-                    rgba(139,92,246,.035)
-                );
-
-            box-shadow:
-                inset 0 1px 0
-                rgba(255,255,255,.03);
-        }
-
-        .stock-box::before,
-        .stock-box::after {
-            content: "";
-
-            position: absolute;
-
-            border-radius: 50%;
-
-            pointer-events: none;
-
-            filter: blur(50px);
-        }
-
-        .stock-box::before {
-            width: 300px;
-            height: 300px;
-
-            left: -160px;
-            top: -180px;
-
-            background:
-                rgba(139,92,246,.17);
-        }
-
-        .stock-box::after {
-            width: 250px;
-            height: 250px;
-
-            right: -140px;
-            bottom: -170px;
-
-            background:
-                rgba(109,40,217,.16);
-        }
-
-        .stock-info {
-            position: relative;
-            z-index: 2;
-        }
-
-        .stock-box h3 {
-            margin-top: 8px;
-            margin-bottom: 6px;
-
-            font-size: 16px;
-        }
-
-        .stock-box p {
-            color: #756e7f;
-
-            font-size: 12px;
-
-            line-height: 1.6;
-        }
-
-        .generate-wrap {
-            position: relative;
-
-            z-index: 3;
-
-            flex-shrink: 0;
-        }
-
-        .generate-wrap::before {
-            content: "";
-
-            position: absolute;
-
-            inset: -12px;
-
-            border-radius: 18px;
-
-            background:
-                rgba(139,92,246,.20);
-
-            filter: blur(22px);
-
-            opacity: .6;
-
-            transition:
-                opacity .3s ease,
-                transform .3s ease;
-        }
-
-        .generate-wrap:hover::before {
-            opacity: 1;
-
-            transform: scale(1.08);
-        }
-
-        .generate-button {
-            position: relative;
-
-            min-width: 170px;
-            min-height: 60px;
-
-            display: inline-flex;
-
-            align-items: center;
-            justify-content: center;
-
-            gap: 10px;
-
-            border:
-                1px solid
-                rgba(196,181,253,.42);
-
-            border-radius: 15px;
-
-            color: white;
-
-            font-size: 14px;
-            font-weight: 900;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #9b6cff,
-                    #6d28d9
-                );
-
-            box-shadow:
-                0 15px 40px
-                rgba(109,40,217,.40),
-                0 0 30px
-                rgba(139,92,246,.10);
-
-            transition:
-                transform .25s ease,
-                box-shadow .25s ease,
-                filter .25s ease;
-        }
-
-        .generate-button:hover {
-            transform:
-                translateY(-3px)
-                scale(1.02);
-
-            box-shadow:
-                0 20px 55px
-                rgba(109,40,217,.55),
-                0 0 35px
-                rgba(139,92,246,.16);
-
-            filter: brightness(1.08);
-        }
-
-        .generate-button:active {
-            transform:
-                translateY(0)
-                scale(.98);
-        }
-
-        .generate-button:disabled {
-            opacity: .75;
-            filter: saturate(.7);
-        }
-
-        .generate-icon {
-            width: 25px;
-            height: 25px;
-
-            display: grid;
-            place-items: center;
-
-            border-radius: 8px;
-
-            background:
-                rgba(255,255,255,.14);
-
-            border:
-                1px solid
-                rgba(255,255,255,.14);
-        }
-
-        .generate-button.loading
-        .generate-icon {
-            animation:
-                generateSpin .8s linear infinite;
-        }
-
-        @keyframes generateSpin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .generated {
-            display: none;
-
-            position: relative;
-
-            margin-top: 15px;
-
-            padding: 21px;
-
-            overflow: hidden;
-
-            border:
-                1px solid
-                rgba(167,139,250,.34);
-
-            border-radius: 17px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    rgba(139,92,246,.11),
-                    rgba(0,0,0,.23)
-                );
-
-            animation:
-                generatedIn .4s
-                cubic-bezier(.2,.8,.2,1);
-        }
-
-        @keyframes generatedIn {
-            from {
-                opacity: 0;
-
-                transform:
-                    translateY(12px)
-                    scale(.98);
-            }
-
-            to {
-                opacity: 1;
-
-                transform:
-                    translateY(0)
-                    scale(1);
-            }
-        }
-
-        .generated-top {
-            position: relative;
-
-            display: flex;
-
-            align-items: center;
-
-            margin-bottom: 12px;
-        }
-
-        .generated-title {
-            display: flex;
-
-            align-items: center;
-
-            gap: 8px;
-
-            color: var(--purple-bright);
-
-            font-size: 10px;
-
-            text-transform: uppercase;
-
-            letter-spacing: 1.5px;
-
-            font-weight: 900;
-        }
-
-        .generated-title::before {
-            content: "✓";
-
-            width: 20px;
-            height: 20px;
-
-            display: grid;
-            place-items: center;
-
-            border-radius: 7px;
-
-            background:
-                rgba(139,92,246,.17);
-
-            border:
-                1px solid
-                rgba(167,139,250,.24);
-        }
-
-        .generated-item {
-            position: relative;
-
-            padding: 15px;
-
-            border:
-                1px solid
-                rgba(255,255,255,.075);
-
-            border-radius: 12px;
-
-            background:
-                rgba(0,0,0,.28);
-
-            font-size: 15px;
-
-            font-weight: 800;
-
-            line-height: 1.5;
-
-            word-break: break-word;
-
-            color: #f4f0ff;
-        }
-
-        .generated .message {
-            position: relative;
-
-            margin-top: 8px;
-
-            text-align: left;
-
-            color: #817989;
-
-            font-size: 11px;
-        }
-
-        /* =================================================
-           SAVED
-        ================================================= */
-
-        .login-grid {
-            display: grid;
-
-            grid-template-columns:
-                1fr 1fr;
-
-            gap: 10px;
-        }
-
-        .saved-grid {
-            display: grid;
-            gap: 9px;
-        }
-
-        .saved-card {
-            display: flex;
-
-            align-items: center;
-
-            justify-content: space-between;
-
-            gap: 15px;
-
-            padding: 13px;
-
-            border:
-                1px solid
-                rgba(255,255,255,.065);
-
-            border-radius: 13px;
-
-            background:
-                rgba(0,0,0,.22);
-
-            transition:
-                border-color .2s ease,
-                background .2s ease,
-                transform .2s ease;
-        }
-
-        .saved-card:hover {
-            transform:
-                translateY(-1px);
-
-            border-color:
-                rgba(167,139,250,.28);
-
-            background:
-                rgba(139,92,246,.045);
-
-            box-shadow:
-                0 8px 25px
-                rgba(0,0,0,.12);
-        }
-
-        .saved-info {
-            min-width: 0;
-        }
-
-        .saved-info strong {
-            display: block;
-
-            overflow: hidden;
-
-            text-overflow: ellipsis;
-
-            white-space: nowrap;
-
-            font-size: 13px;
-        }
-
-        .saved-info small {
-            color: #716a7d;
-            font-size: 11px;
-        }
-
-        .saved-actions {
-            display: flex;
-
-            gap: 6px;
-
-            flex-wrap: wrap;
-        }
-
-        .mini-btn {
-            border:
-                1px solid
-                rgba(255,255,255,.09);
-
-            background:
-                rgba(255,255,255,.045);
-
-            color: #e1dcea;
-
-            border-radius: 8px;
-
-            padding: 7px 10px;
-
-            font-size: 11px;
-
-            font-weight: 700;
-
-            transition: .2s;
-        }
-
-        .mini-btn:hover {
-            border-color:
-                rgba(167,139,250,.45);
-
-            background:
-                rgba(139,92,246,.10);
-
-            transform:
-                translateY(-1px);
-
-            box-shadow:
-                0 7px 20px
-                rgba(139,92,246,.08);
-        }
-
-        .mini-btn.copied {
-            color: #ffffff;
-
-            border-color:
-                rgba(167,139,250,.55);
-
-            background:
-                linear-gradient(
-                    135deg,
-                    rgba(139,92,246,.28),
-                    rgba(109,40,217,.20)
-                );
-
-            box-shadow:
-                0 5px 20px
-                rgba(109,40,217,.20);
-        }
-
-        /* =================================================
-           RESPONSIVE
-        ================================================= */
-
-        @media (max-width: 900px) {
-
-            .features {
-                grid-template-columns: 1fr;
-            }
-
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .panel.full {
-                grid-column: auto;
-            }
-        }
-
-        @media (max-width: 600px) {
-
-            .container,
-            .nav-inner {
-                width:
-                    calc(100% - 24px);
-            }
-
-            nav {
-                height: 68px;
-            }
-
-            .nav-buttons .btn-secondary {
-                display: none;
-            }
-
-            .hero {
-                min-height: 515px;
-                padding-top: 55px;
-            }
-
-            .hero h1 {
-                font-size: 61px;
-                letter-spacing: -5px;
-            }
-
-            .hero-description {
-                font-size: 14px;
-            }
-
-            .access-section {
-                padding:
-                    5px 0 70px;
-            }
-
-            .access-box {
-                min-height: auto;
-                padding: 28px;
-            }
-
-            .section {
-                padding: 70px 0;
-            }
-
-            .section-title h2 {
-                font-size: 42px;
-            }
-
-            .login-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .dashboard-header-row {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-
-            .stock-box {
-                align-items: stretch;
-                flex-direction: column;
-                gap: 25px;
-            }
-
-            .generate-wrap,
-            .generate-button {
-                width: 100%;
-            }
-
-            .saved-card {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-
-            .saved-actions {
-                width: 100%;
-            }
-
-            .saved-actions .mini-btn {
-                flex: 1;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Novi</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #07070b;
+      --card: #101016;
+      --card-2: #14141c;
+      --border: rgba(255,255,255,.08);
+      --text: #fff;
+      --muted: #8f8f9d;
+      --purple: #8b5cf6;
+      --purple-2: #6d28d9;
+      --danger: #ef4444;
+      --success: #22c55e;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 50% -10%, rgba(139,92,246,.18), transparent 35%),
+        radial-gradient(circle at 0% 100%, rgba(109,40,217,.08), transparent 30%),
+        var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      overflow-x: hidden;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================
+       LOGIN
+    ========================= */
+
+    #loginPage {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 430px;
+    }
+
+    .brand {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .brand-logo {
+      width: 62px;
+      height: 62px;
+      margin: 0 auto 18px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 25px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #a78bfa, #6d28d9);
+      box-shadow:
+        0 0 45px rgba(139,92,246,.28),
+        inset 0 1px 0 rgba(255,255,255,.2);
+    }
+
+    .brand h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    .brand p {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .login-card {
+      position: relative;
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      background: rgba(16,16,22,.88);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 25px 80px rgba(0,0,0,.4);
+    }
+
+    .login-card::before {
+      content: "";
+      position: absolute;
+      left: 20%;
+      right: 20%;
+      top: -1px;
+      height: 1px;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(139,92,246,.9),
+        transparent
+      );
+    }
+
+    .login-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 7px;
+    }
+
+    .login-description {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+
+    .input-label {
+      display: block;
+      color: #c8c8d2;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .key-input {
+      width: 100%;
+      height: 50px;
+      border: 1px solid var(--border);
+      outline: none;
+      border-radius: 13px;
+      padding: 0 15px;
+      color: white;
+      background: rgba(255,255,255,.035);
+      transition: .2s;
+    }
+
+    .key-input::placeholder {
+      color: #5f5f6d;
+    }
+
+    .key-input:focus {
+      border-color: rgba(139,92,246,.7);
+      box-shadow: 0 0 0 4px rgba(139,92,246,.08);
+    }
+
+    .unlock-button {
+      width: 100%;
+      height: 50px;
+      margin-top: 13px;
+      border: 0;
+      border-radius: 13px;
+      color: white;
+      font-weight: 800;
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+      box-shadow: 0 10px 30px rgba(109,40,217,.25);
+      transition: .2s;
+    }
+
+    .unlock-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 35px rgba(109,40,217,.35);
+    }
+
+    .unlock-button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #verifyResult {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 11px;
+      font-size: 13px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    #verifyResult.error {
+      display: block;
+      color: #fca5a5;
+      background: rgba(239,68,68,.08);
+      border: 1px solid rgba(239,68,68,.15);
+    }
+
+    #verifyResult.success {
+      display: block;
+      color: #86efac;
+      background: rgba(34,197,94,.08);
+      border: 1px solid rgba(34,197,94,.15);
+    }
+
+    .server-status {
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      color: #777783;
+      font-size: 11px;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 10px rgba(34,197,94,.7);
+    }
+
+    /* =========================
+       DASHBOARD
+    ========================= */
+
+    #dashboardPage {
+      min-height: 100vh;
+      padding: 25px;
+    }
+
+    .dashboard-container {
+      width: 100%;
+      max-width: 1150px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      padding: 0 18px 0 20px;
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      background: rgba(16,16,22,.75);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-weight: 800;
+    }
+
+    .small-logo {
+      width: 35px;
+      height: 35px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      font-size: 14px;
+      background: linear-gradient(135deg,#a78bfa,#6d28d9);
+    }
+
+    .logout-button {
+      height: 36px;
+      padding: 0 14px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: #aaaab6;
+      font-size: 12px;
+      transition: .2s;
+    }
+
+    .logout-button:hover {
+      color: white;
+      background: rgba(255,255,255,.08);
+    }
+
+    .welcome {
+      margin-bottom: 25px;
+    }
+
+    .welcome h2 {
+      font-size: 29px;
+      letter-spacing: -.8px;
+    }
+
+    .welcome p {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3,1fr);
+      gap: 15px;
+      margin-bottom: 18px;
+    }
+
+    .stat-card {
+      padding: 21px;
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      background: rgba(16,16,22,.72);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 25px;
+      font-weight: 800;
+    }
+
+    .main-card {
+      padding: 25px;
+      border: 1px solid var(--border);
+      border-radius: 19px;
+      background: rgba(16,16,22,.72);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .card-header h3 {
+      font-size: 17px;
+    }
+
+    .card-header p {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .generate-button {
+      min-width: 155px;
+      height: 44px;
+      border: 0;
+      border-radius: 11px;
+      color: white;
+      font-weight: 800;
+      background: linear-gradient(135deg,#8b5cf6,#6d28d9);
+      transition: .2s;
+    }
+
+    .generate-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .generate-button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .inventory-result {
+      min-height: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      border: 1px dashed rgba(255,255,255,.09);
+      border-radius: 13px;
+      color: #666673;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .item-box {
+      width: 100%;
+    }
+
+    .item-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .item-field {
+      padding: 15px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: rgba(255,255,255,.025);
+    }
+
+    .item-field span {
+      display: block;
+      color: #777783;
+      font-size: 10px;
+      margin-bottom: 7px;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+    }
+
+    .item-field strong {
+      word-break: break-word;
+      font-size: 13px;
+    }
+
+    .message {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      display: none;
+      font-size: 12px;
+    }
+
+    .message.error {
+      display: block;
+      color: #fca5a5;
+      background: rgba(239,68,68,.08);
+    }
+
+    .message.success {
+      display: block;
+      color: #86efac;
+      background: rgba(34,197,94,.08);
+    }
+
+    /* =========================
+       MOBILE
+    ========================= */
+
+    @media (max-width: 700px) {
+      #dashboardPage {
+        padding: 14px;
+      }
+
+      .topbar {
+        margin-bottom: 20px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card-header {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .generate-button {
+        width: 100%;
+      }
+
+      .item-row {
+        grid-template-columns: 1fr;
+      }
+
+      .login-card {
+        padding: 22px;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="app">
-
-    <div class="slider">
-
-        <!-- =================================================
-             HOME PAGE
-        ================================================= -->
-
-        <section class="page main-page">
-
-            <nav>
-
-                <div class="nav-inner">
-
-                    <div class="logo">
-
-                        <div class="logo-mark">
-                            N
-                        </div>
-
-                        <div class="logo-text">
-                            <span class="logo-no">NO</span><span class="logo-vi">VI</span>
-                        </div>
-
-                    </div>
-
-                    <div class="nav-buttons">
-
-                        <button
-                            class="btn btn-secondary"
-                            onclick="scrollToAccess()">
-                            Access
-                        </button>
-
-                        <button
-                            class="btn btn-primary"
-                            onclick="openDashboard()">
-                            Dashboard
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </nav>
-
-            <div class="hero">
-
-                <div class="hero-orb one"></div>
-                <div class="hero-orb two"></div>
-                <div class="hero-orb three"></div>
-
-                <div class="hero-content container">
-
-                    <div class="hero-badge">
-                        <span class="dot"></span>
-                        Novi is online
-                    </div>
-
-                    <h1>
-                        <span class="welcome">
-                            Welcome to
-                        </span>
-
-                        <span class="brand">
-                            Novi
-                        </span>
-                    </h1>
-
-                    <p class="hero-description">
-                        <strong>
-                            A clean, fast and simple platform
-                        </strong>
-
-                        designed to keep everything you need
-                        in one place.
-                    </p>
-
-                </div>
-
-            </div>
-
-            <section
-                id="access"
-                class="access-section">
-
-                <div class="container">
-
-                    <div class="access-heading">
-
-                        <div class="access-heading-kicker">
-                            Member Access
-                        </div>
-
-                        <h2>
-                            Enter your
-                            <span class="purple">
-                                key
-                            </span>
-                        </h2>
-
-                        <p>
-                            Use your Novi access key to continue.
-                        </p>
-
-                    </div>
-
-                    <div class="access-box">
-
-                        <h3>
-                            Unlock Novi
-                        </h3>
-
-                        <p>
-                            Enter the access key provided to you.
-                        </p>
-
-                        <input
-                            id="keyInput"
-                            class="input"
-                            type="text"
-                            placeholder="NOVI-XXXX-XXXX-XXXX-XXXX"
-                            autocomplete="off"
-                            spellcheck="false"
-                        >
-
-                        <button
-                            id="unlockButton"
-                            class="btn btn-primary"
-                            onclick="unlock()">
-                            Unlock Dashboard
-                        </button>
-
-                        <div
-                            id="unlockMessage"
-                            class="message">
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-            <section class="section">
-
-                <div class="container">
-
-                    <div class="section-title">
-
-                        <div class="section-kicker">
-                            The Novi Difference
-                        </div>
-
-                        <h2>
-                            Built to feel simple.
-                        </h2>
-
-                        <p>
-                            Everything you need without
-                            unnecessary clutter.
-                        </p>
-
-                    </div>
-
-                    <div class="features">
-
-                        <div class="feature">
-
-                            <div class="feature-number">
-                                01 / ACCESS
-                            </div>
-
-                            <div class="feature-icon">
-                                ◈
-                            </div>
-
-                            <h3>
-                                Simple Access
-                            </h3>
-
-                            <p>
-                                Enter your key once and access
-                                your Novi dashboard without
-                                unnecessary steps.
-                            </p>
-
-                        </div>
-
-                        <div class="feature">
-
-                            <div class="feature-number">
-                                02 / SPEED
-                            </div>
-
-                            <div class="feature-icon">
-                                ⚡
-                            </div>
-
-                            <h3>
-                                Built Fast
-                            </h3>
-
-                            <p>
-                                A lightweight interface designed
-                                to keep navigation quick,
-                                smooth and responsive.
-                            </p>
-
-                        </div>
-
-                        <div class="feature">
-
-                            <div class="feature-number">
-                                03 / CONTROL
-                            </div>
-
-                            <div class="feature-icon">
-                                ◇
-                            </div>
-
-                            <h3>
-                                One Dashboard
-                            </h3>
-
-                            <p>
-                                Keep your available inventory,
-                                saved keys and information
-                                organized in one place.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-        </section>
-
-        <!-- =================================================
-             DASHBOARD PAGE
-        ================================================= -->
-
-        <section
-            class="page dashboard-page"
-            id="dashboardPage"
-            aria-hidden="true">
-
-            <div class="dashboard-wrap">
-
-                <div class="container">
-
-                    <div class="dashboard-header">
-
-                        <div class="dashboard-header-row">
-
-                            <div>
-
-                                <div class="hero-badge">
-
-                                    <span class="dot"></span>
-
-                                    Access granted
-
-                                </div>
-
-                                <h1>
-                                    Novi
-                                    <span class="purple">
-                                        Dashboard
-                                    </span>
-                                </h1>
-
-                                <p>
-                                    Manage your saved information
-                                    and available inventory.
-                                </p>
-
-                            </div>
-
-                            <div class="dashboard-actions">
-
-                                <button
-                                    class="btn btn-secondary"
-                                    onclick="openMainPage()">
-                                    ← Home
-                                </button>
-
-                                <button
-                                    class="btn btn-primary"
-                                    onclick="logout()">
-                                    Log Out
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="dashboard-grid">
-
-                        <div class="panel full">
-
-                            <div class="panel-head">
-
-                                <h2>
-                                    EpicGames
-                                </h2>
-
-                                <span
-                                    id="stockStatus"
-                                    class="stock-status">
-                                    Checking stock...
-                                </span>
-
-                            </div>
-
-                            <div class="stock-box">
-
-                                <div class="stock-info">
-
-                                    <div
-                                        id="stockCount"
-                                        class="stock-number">
-                                        —
-                                    </div>
-
-                                    <h3>
-                                        Stock Available
-                                    </h3>
-
-                                    <p>
-                                        Available inventory items
-                                        ready to generate.
-                                    </p>
-
-                                </div>
-
-                                <div class="generate-wrap">
-
-                                    <button
-                                        id="generateButton"
-                                        class="generate-button"
-                                        onclick="generateInventory()">
-
-                                        <span
-                                            id="generateIcon"
-                                            class="generate-icon">
-                                            ✦
-                                        </span>
-
-                                        <span
-                                            id="generateText">
-                                            Generate
-                                        </span>
-
-                                    </button>
-
-                                </div>
-
-                            </div>
-
-                            <div
-                                id="generatedBox"
-                                class="generated">
-
-                                <div class="generated-top">
-
-                                    <div class="generated-title">
-                                        Generated Successfully
-                                    </div>
-
-                                </div>
-
-                                <div
-                                    id="generatedItem"
-                                    class="generated-item">
-                                </div>
-
-                                <div
-                                    id="generatedMessage"
-                                    class="message">
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                        <div class="panel">
-
-                            <div class="panel-head">
-
-                                <h2>
-                                    Save Login
-                                </h2>
-
-                            </div>
-
-                            <div class="login-grid">
-
-                                <input
-                                    id="emailInput"
-                                    class="input"
-                                    type="email"
-                                    placeholder="Email"
-                                    autocomplete="off"
-                                >
-
-                                <input
-                                    id="passwordInput"
-                                    class="input"
-                                    type="password"
-                                    placeholder="Password"
-                                    autocomplete="off"
-                                >
-
-                            </div>
-
-                            <button
-                                class="btn btn-primary"
-                                onclick="saveEmailPassword()"
-                                style="width:100%;">
-                                Save Login
-                            </button>
-
-                            <div
-                                id="loginSaveMessage"
-                                class="message">
-                            </div>
-
-                        </div>
-
-                        <div class="panel">
-
-                            <div class="panel-head">
-
-                                <h2>
-                                    Saved Logins
-                                </h2>
-
-                            </div>
-
-                            <div
-                                id="savedLogins"
-                                class="saved-grid">
-                            </div>
-
-                        </div>
-
-                        <div class="panel full">
-
-                            <div class="panel-head">
-
-                                <h2>
-                                    Saved Keys
-                                </h2>
-
-                                <button
-                                    class="mini-btn"
-                                    onclick="saveCurrentKey()">
-                                    Save Current Key
-                                </button>
-
-                            </div>
-
-                            <div
-                                id="savedKeys"
-                                class="saved-grid">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
+  <!-- =========================
+       LOGIN PAGE
+  ========================= -->
+
+  <section id="loginPage">
+
+    <div class="login-wrapper">
+
+      <div class="brand">
+        <div class="brand-logo">N</div>
+        <h1>Novi</h1>
+        <p>Secure inventory access</p>
+      </div>
+
+      <div class="login-card">
+
+        <div class="login-title">
+          Enter your access key
+        </div>
+
+        <div class="login-description">
+          Enter a valid Novi key to unlock your account and access the dashboard.
+        </div>
+
+        <label class="input-label" for="keyInput">
+          Access Key
+        </label>
+
+        <input
+          id="keyInput"
+          class="key-input"
+          type="text"
+          autocomplete="off"
+          placeholder="NOVI-XXXX-XXXX"
+        >
+
+        <button
+          id="unlockButton"
+          class="unlock-button"
+          type="button"
+        >
+          Unlock Novi
+        </button>
+
+        <div id="verifyResult"></div>
+
+        <div class="server-status">
+          <span class="status-dot"></span>
+          Novi server online
+        </div>
+
+      </div>
 
     </div>
 
-</div>
-
-<script>
-"use strict";
-
-/* =========================================================
-   NOVI FRONTEND
-   MATCHES THE PROVIDED SERVER.JS
-========================================================= */
-
-const API_URL = window.location.origin;
-
-let sessionToken =
-    sessionStorage.getItem("noviSessionToken") || "";
-
-let currentKey = "";
-
-let currentDeviceId =
-    localStorage.getItem("noviDeviceId") || "";
-
-let unlocked = false;
+  </section>
 
 
-/* =========================================================
-   DEVICE ID
-========================================================= */
+  <!-- =========================
+       DASHBOARD
+  ========================= -->
 
-function getDeviceId() {
+  <section id="dashboardPage" class="hidden">
 
-    if (currentDeviceId) {
-        return currentDeviceId;
-    }
+    <div class="dashboard-container">
 
-    if (
-        window.crypto &&
-        typeof window.crypto.randomUUID === "function"
-    ) {
-        currentDeviceId =
-            window.crypto.randomUUID();
-    } else {
-        currentDeviceId =
-            Date.now().toString(36) +
-            "-" +
-            Math.random()
-                .toString(36)
-                .substring(2);
-    }
+      <header class="topbar">
 
-    localStorage.setItem(
-        "noviDeviceId",
-        currentDeviceId
-    );
+        <div class="topbar-brand">
+          <div class="small-logo">N</div>
+          <span>Novi</span>
+        </div>
 
-    return currentDeviceId;
-}
+        <button
+          id="logoutButton"
+          class="logout-button"
+          type="button"
+        >
+          Logout
+        </button>
+
+      </header>
 
 
-/* =========================================================
-   HTML ESCAPING
-========================================================= */
+      <div class="welcome">
 
-function escapeHTML(value) {
+        <h2>Dashboard</h2>
 
-    const div =
-        document.createElement("div");
+        <p>
+          You're authenticated and ready to use Novi.
+        </p>
 
-    div.textContent =
-        String(value ?? "");
-
-    return div.innerHTML;
-}
+      </div>
 
 
-/* =========================================================
-   SESSION
-========================================================= */
+      <div class="stats-grid">
 
-function saveSessionToken(token) {
+        <div class="stat-card">
+          <div class="stat-label">
+            Inventory Available
+          </div>
 
-    if (!token) {
-        return false;
-    }
-
-    sessionToken =
-        String(token);
-
-    sessionStorage.setItem(
-        "noviSessionToken",
-        sessionToken
-    );
-
-    return true;
-}
+          <div
+            id="stockCount"
+            class="stat-value"
+          >
+            —
+          </div>
+        </div>
 
 
-function clearSession() {
+        <div class="stat-card">
+          <div class="stat-label">
+            Key Duration
+          </div>
 
-    sessionToken = "";
-    currentKey = "";
-    unlocked = false;
-
-    sessionStorage.removeItem(
-        "noviSessionToken"
-    );
-}
-
-
-/* =========================================================
-   AUTHENTICATED REQUEST
-   SERVER EXPECTS x-novi-session
-========================================================= */
-
-async function authenticatedFetch(
-    url,
-    options = {}
-) {
-
-    if (!sessionToken) {
-        throw new Error(
-            "NO_SESSION"
-        );
-    }
-
-    const headers = {
-        ...(options.headers || {}),
-        "x-novi-session": sessionToken
-    };
-
-    const response =
-        await fetch(
-            url,
-            {
-                ...options,
-                headers,
-                cache: "no-store"
-            }
-        );
-
-    if (
-        response.status === 401 ||
-        response.status === 403
-    ) {
-        clearSession();
-    }
-
-    return response;
-}
+          <div
+            id="keyDuration"
+            class="stat-value"
+          >
+            —
+          </div>
+        </div>
 
 
-/* =========================================================
-   OPEN DASHBOARD
-========================================================= */
+        <div class="stat-card">
+          <div class="stat-label">
+            Status
+          </div>
 
-function openDashboard() {
+          <div
+            id="accountStatus"
+            class="stat-value"
+          >
+            Active
+          </div>
+        </div>
+
+      </div>
+
+
+      <div class="main-card">
+
+        <div class="card-header">
+
+          <div>
+            <h3>Inventory</h3>
+
+            <p>
+              Generate the next available inventory item.
+            </p>
+          </div>
+
+          <button
+            id="generateButton"
+            class="generate-button"
+            type="button"
+          >
+            Generate Item
+          </button>
+
+        </div>
+
+
+        <div
+          id="inventoryResult"
+          class="inventory-result"
+        >
+          Click "Generate Item" to retrieve inventory.
+        </div>
+
+
+        <div
+          id="dashboardMessage"
+          class="message"
+        ></div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <script>
+    "use strict";
 
     /*
-        Never trust localStorage as authentication.
-        A session token must exist.
+      IMPORTANT:
+      This is the actual Render backend.
     */
+    const API_URL = "https://novi-1.onrender.com";
 
-    if (!sessionToken || !unlocked) {
-        scrollToAccess();
-        return;
+    let sessionToken =
+      sessionStorage.getItem("noviSessionToken") || "";
+
+    let currentKey = "";
+
+    let currentDeviceId =
+      localStorage.getItem("noviDeviceId") || "";
+
+    let unlocked = false;
+
+
+    /* =========================
+       DEVICE ID
+    ========================= */
+
+    function getDeviceId() {
+
+      if (currentDeviceId) {
+        return currentDeviceId;
+      }
+
+      if (
+        window.crypto &&
+        typeof window.crypto.randomUUID === "function"
+      ) {
+        currentDeviceId = window.crypto.randomUUID();
+      } else {
+        currentDeviceId =
+          "novi-" +
+          Date.now().toString(36) +
+          "-" +
+          Math.random().toString(36).slice(2);
+      }
+
+      localStorage.setItem(
+        "noviDeviceId",
+        currentDeviceId
+      );
+
+      return currentDeviceId;
     }
 
-    const dashboard =
-        document.getElementById(
-            "dashboardPage"
-        );
 
-    if (dashboard) {
-        dashboard.setAttribute(
-            "aria-hidden",
-            "false"
-        );
+    /* =========================
+       ELEMENTS
+    ========================= */
+
+    const loginPage =
+      document.getElementById("loginPage");
+
+    const dashboardPage =
+      document.getElementById("dashboardPage");
+
+    const keyInput =
+      document.getElementById("keyInput");
+
+    const unlockButton =
+      document.getElementById("unlockButton");
+
+    const verifyResult =
+      document.getElementById("verifyResult");
+
+    const logoutButton =
+      document.getElementById("logoutButton");
+
+    const stockCount =
+      document.getElementById("stockCount");
+
+    const keyDuration =
+      document.getElementById("keyDuration");
+
+    const accountStatus =
+      document.getElementById("accountStatus");
+
+    const generateButton =
+      document.getElementById("generateButton");
+
+    const inventoryResult =
+      document.getElementById("inventoryResult");
+
+    const dashboardMessage =
+      document.getElementById("dashboardMessage");
+
+
+    /* =========================
+       UI HELPERS
+    ========================= */
+
+    function showVerifyMessage(
+      message,
+      type = "error"
+    ) {
+
+      verifyResult.textContent = message;
+
+      verifyResult.className = "";
+
+      verifyResult.classList.add(type);
     }
 
-    document.body.classList.add(
-        "dashboard-open"
-    );
-}
 
+    function clearVerifyMessage() {
 
-function openMainPage() {
+      verifyResult.textContent = "";
 
-    document.body.classList.remove(
-        "dashboard-open"
-    );
-
-    const dashboard =
-        document.getElementById(
-            "dashboardPage"
-        );
-
-    if (dashboard) {
-        dashboard.setAttribute(
-            "aria-hidden",
-            "true"
-        );
-    }
-}
-
-
-/* =========================================================
-   ACCESS SCROLL
-========================================================= */
-
-function scrollToAccess() {
-
-    openMainPage();
-
-    const access =
-        document.getElementById(
-            "access"
-        );
-
-    if (!access) {
-        return;
+      verifyResult.className = "";
     }
 
-    setTimeout(() => {
 
-        access.scrollIntoView({
-            behavior: "smooth",
-            block: "center"
-        });
+    function showDashboardMessage(
+      message,
+      type = "error"
+    ) {
 
-    }, 100);
-}
+      dashboardMessage.textContent = message;
 
-
-/* =========================================================
-   SERVER SESSION CHECK
-========================================================= */
-
-async function verifyCurrentSession() {
-
-    if (!sessionToken) {
-        unlocked = false;
-        return false;
+      dashboardMessage.className =
+        "message " + type;
     }
 
-    try {
 
-        const response =
-            await authenticatedFetch(
-                `${API_URL}/api/stock`,
-                {
-                    method: "GET"
-                }
-            );
+    function clearDashboardMessage() {
 
-        if (
-            response.status === 401 ||
-            response.status === 403
-        ) {
-            clearSession();
-            return false;
+      dashboardMessage.textContent = "";
+
+      dashboardMessage.className = "message";
+    }
+
+
+    function showLogin() {
+
+      loginPage.classList.remove("hidden");
+
+      dashboardPage.classList.add("hidden");
+
+      unlocked = false;
+    }
+
+
+    function showDashboard() {
+
+      loginPage.classList.add("hidden");
+
+      dashboardPage.classList.remove("hidden");
+
+      unlocked = true;
+    }
+
+
+    function clearSession() {
+
+      sessionToken = "";
+
+      currentKey = "";
+
+      unlocked = false;
+
+      sessionStorage.removeItem(
+        "noviSessionToken"
+      );
+
+      showLogin();
+    }
+
+
+    /* =========================
+       AUTHENTICATED FETCH
+    ========================= */
+
+    async function authenticatedFetch(
+      endpoint,
+      options = {}
+    ) {
+
+      if (!sessionToken) {
+        throw new Error("NO_SESSION");
+      }
+
+      const headers = {
+        ...(options.headers || {}),
+        "x-novi-session": sessionToken
+      };
+
+      const response = await fetch(
+        API_URL + endpoint,
+        {
+          ...options,
+          headers,
+          cache: "no-store"
         }
+      );
 
-        if (!response.ok) {
-            return false;
-        }
+      if (
+        response.status === 401 ||
+        response.status === 403
+      ) {
 
-        const result =
-            await response.json();
+        clearSession();
 
-        if (
-            !result ||
-            result.success !== true
-        ) {
-            clearSession();
-            return false;
-        }
-
-        unlocked = true;
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            "Session check failed:",
-            error
+        throw new Error(
+          "Your session has expired."
         );
+      }
 
-        unlocked = false;
-
-        return false;
-    }
-}
-
-
-/* =========================================================
-   UNLOCK
-========================================================= */
-
-async function unlock() {
-
-    const input =
-        document.getElementById(
-            "keyInput"
-        );
-
-    const message =
-        document.getElementById(
-            "unlockMessage"
-        );
-
-    const button =
-        document.getElementById(
-            "unlockButton"
-        );
-
-    if (!input || !message) {
-        return;
+      return response;
     }
 
-    const key =
-        input.value.trim();
 
-    if (!key) {
+    /* =========================
+       VERIFY KEY
+    ========================= */
 
-        message.textContent =
-            "Enter your key.";
+    async function unlock() {
+
+      const key =
+        keyInput.value.trim();
+
+      if (!key) {
+
+        showVerifyMessage(
+          "Please enter your Novi key."
+        );
+
+        keyInput.focus();
 
         return;
-    }
+      }
 
-    if (button) {
-        button.disabled = true;
-    }
+      unlockButton.disabled = true;
 
-    message.textContent =
-        "Checking key...";
+      unlockButton.textContent =
+        "Verifying...";
 
-    try {
+      clearVerifyMessage();
+
+
+      try {
 
         /*
-            /api/verify expects:
-
-            {
-                key,
-                deviceId
-            }
+          Test the actual Render API.
         */
+        const response = await fetch(
+          API_URL + "/api/verify",
+          {
+            method: "POST",
 
-        const response =
-            await fetch(
-                `${API_URL}/api/verify`,
-                {
-                    method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
 
-                    headers: {
-                        "Content-Type":
-                            "application/json",
+              "Accept":
+                "application/json"
+            },
 
-                        "Accept":
-                            "application/json"
-                    },
+            body: JSON.stringify({
+              key: key,
+              deviceId: getDeviceId()
+            }),
 
-                    body:
-                        JSON.stringify({
-                            key: key,
-                            deviceId:
-                                getDeviceId()
-                        })
-                }
-            );
+            cache: "no-store"
+          }
+        );
+
 
         let result = {};
 
         const contentType =
-            response.headers.get(
-                "content-type"
-            ) || "";
+          response.headers.get(
+            "content-type"
+          ) || "";
+
 
         if (
-            contentType.includes(
-                "application/json"
-            )
+          contentType.includes(
+            "application/json"
+          )
         ) {
 
-            try {
-                result =
-                    await response.json();
-            } catch {
-                result = {};
-            }
-        }
-
-        /*
-            Server returns:
-
-            {
-                success: true,
-                valid: true,
-                sessionToken: "...",
-                expiresAt: ...
-            }
-        */
-
-        if (
-            !response.ok ||
-            result.success !== true ||
-            result.valid !== true
-        ) {
-
-            clearSession();
-
-            message.textContent =
-                result.message ||
-                `Verification failed (${response.status}).`;
-
-            return;
-        }
-
-        if (!result.sessionToken) {
-
-            clearSession();
-
-            message.textContent =
-                "Server did not provide a session token.";
-
-            return;
-        }
-
-        saveSessionToken(
-            result.sessionToken
-        );
-
-        currentKey =
-            key;
-
-        unlocked = true;
-
-        message.textContent =
-            "Access granted.";
-
-        renderSavedKeys();
-        renderSavedLogins();
-
-        openDashboard();
-
-        await loadStock();
-
-    } catch (error) {
-
-        console.error(
-            "Novi unlock error:",
-            error
-        );
-
-        clearSession();
-
-        /*
-            This message is intentionally more accurate.
-        */
-
-        if (
-            error &&
-            error.name === "TypeError"
-        ) {
-
-            message.textContent =
-                "Could not connect to the Novi server.";
+          result =
+            await response.json();
 
         } else {
 
-            message.textContent =
-                "Connection failed. Please try again.";
+          const text =
+            await response.text();
+
+          throw new Error(
+            text ||
+            "The server returned an invalid response."
+          );
         }
 
-    } finally {
-
-        if (button) {
-            button.disabled = false;
-        }
-    }
-}
-
-
-/* =========================================================
-   LOGOUT
-========================================================= */
-
-async function logout() {
-
-    const token =
-        sessionToken;
-
-    /*
-        Server supports:
-        POST /api/logout
-        x-novi-session
-    */
-
-    if (token) {
-
-        try {
-
-            await fetch(
-                `${API_URL}/api/logout`,
-                {
-                    method: "POST",
-
-                    headers: {
-                        "x-novi-session":
-                            token,
-
-                        "Accept":
-                            "application/json"
-                    }
-                }
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Logout request failed:",
-                error
-            );
-        }
-    }
-
-    clearSession();
-
-    openMainPage();
-
-    const keyInput =
-        document.getElementById(
-            "keyInput"
-        );
-
-    if (keyInput) {
-        keyInput.value = "";
-    }
-
-    const message =
-        document.getElementById(
-            "unlockMessage"
-        );
-
-    if (message) {
-        message.textContent =
-            "Logged out.";
-    }
-
-    const stockCount =
-        document.getElementById(
-            "stockCount"
-        );
-
-    if (stockCount) {
-        stockCount.textContent = "—";
-    }
-
-    const stockStatus =
-        document.getElementById(
-            "stockStatus"
-        );
-
-    if (stockStatus) {
-        stockStatus.textContent =
-            "Locked";
-    }
-
-    const generatedBox =
-        document.getElementById(
-            "generatedBox"
-        );
-
-    if (generatedBox) {
-        generatedBox.style.display =
-            "none";
-    }
-}
-
-
-/* =========================================================
-   LOAD STOCK
-========================================================= */
-
-async function loadStock() {
-
-    if (!sessionToken) {
-        return;
-    }
-
-    const count =
-        document.getElementById(
-            "stockCount"
-        );
-
-    const status =
-        document.getElementById(
-            "stockStatus"
-        );
-
-    if (!count || !status) {
-        return;
-    }
-
-    status.textContent =
-        "Checking stock...";
-
-    try {
-
-        const response =
-            await authenticatedFetch(
-                `${API_URL}/api/stock`,
-                {
-                    method: "GET"
-                }
-            );
-
-        let result = {};
-
-        try {
-            result =
-                await response.json();
-        } catch {
-            result = {};
-        }
-
-        if (
-            response.status === 401 ||
-            response.status === 403
-        ) {
-
-            showLoggedOutState();
-
-            return;
-        }
 
         if (!response.ok) {
 
-            count.textContent = "—";
-
-            status.textContent =
-                result.message ||
-                `Server error (${response.status}).`;
-
-            return;
+          throw new Error(
+            result.message ||
+            "Invalid key."
+          );
         }
+
 
         if (
-            result.success !== true
+          result.success !== true ||
+          result.valid !== true
         ) {
 
-            count.textContent = "—";
-
-            status.textContent =
-                "Unable to load stock.";
-
-            return;
+          throw new Error(
+            result.message ||
+            "Invalid or expired key."
+          );
         }
 
-        const stockCount =
-            Number(result.count);
 
-        count.textContent =
-            Number.isFinite(stockCount)
-                ? stockCount
-                : "0";
+        if (!result.sessionToken) {
 
-        status.textContent =
-            stockCount > 0
-                ? "Stock available"
-                : "Out of stock";
+          throw new Error(
+            "The server did not return a session."
+          );
+        }
 
-    } catch (error) {
 
-        console.error(
-            "Stock load error:",
-            error
+        sessionToken =
+          result.sessionToken;
+
+        currentKey = key;
+
+        sessionStorage.setItem(
+          "noviSessionToken",
+          sessionToken
         );
 
-        count.textContent = "—";
 
-        status.textContent =
-            "Server unavailable.";
-    }
-}
+        unlocked = true;
 
 
-/* =========================================================
-   FORCE LOGOUT
-========================================================= */
+        if (
+          result.key &&
+          result.key.duration
+        ) {
 
-function showLoggedOutState() {
-
-    clearSession();
-
-    openMainPage();
-
-    const message =
-        document.getElementById(
-            "unlockMessage"
-        );
-
-    if (message) {
-        message.textContent =
-            "Your session expired. Please enter your key again.";
-    }
-
-    scrollToAccess();
-}
-
-
-/* =========================================================
-   GENERATE INVENTORY
-========================================================= */
-
-async function generateInventory() {
-
-    if (!sessionToken) {
-
-        showGeneratedMessage(
-            "Please unlock your dashboard first."
-        );
-
-        return;
-    }
-
-    const button =
-        document.getElementById(
-            "generateButton"
-        );
-
-    const buttonText =
-        document.getElementById(
-            "generateText"
-        );
-
-    const generatedBox =
-        document.getElementById(
-            "generatedBox"
-        );
-
-    const generatedItem =
-        document.getElementById(
-            "generatedItem"
-        );
-
-    const generatedMessage =
-        document.getElementById(
-            "generatedMessage"
-        );
-
-    if (
-        !button ||
-        !buttonText ||
-        !generatedBox ||
-        !generatedItem ||
-        !generatedMessage
-    ) {
-        return;
-    }
-
-    button.disabled = true;
-
-    button.classList.add(
-        "loading"
-    );
-
-    buttonText.textContent =
-        "Generating...";
-
-    generatedBox.style.display =
-        "block";
-
-    generatedItem.textContent =
-        "";
-
-    generatedMessage.textContent =
-        "Generating your item...";
-
-    try {
-
-        /*
-            IMPORTANT:
-
-            The key is NOT sent.
-
-            The server authenticates this request
-            through:
-
-            x-novi-session
-        */
-
-        const response =
-            await authenticatedFetch(
-                `${API_URL}/api/stock/generate`,
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json",
-
-                        "Accept":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({})
-                }
+          keyDuration.textContent =
+            formatDuration(
+              result.key.duration
             );
 
-        let result = {};
+        } else {
 
-        try {
-            result =
-                await response.json();
-        } catch {
-            result = {};
+          keyDuration.textContent =
+            "Active";
         }
 
-        if (
-            response.status === 401 ||
-            response.status === 403
-        ) {
 
-            generatedMessage.textContent =
-                "Your session is no longer valid.";
+        showVerifyMessage(
+          "Access granted.",
+          "success"
+        );
 
-            setTimeout(() => {
-                showLoggedOutState();
-            }, 700);
 
-            return;
-        }
+        showDashboard();
+
+        await loadStock();
+
+      } catch (error) {
+
+        console.error(
+          "Novi verification error:",
+          error
+        );
+
+
+        sessionStorage.removeItem(
+          "noviSessionToken"
+        );
+
+        sessionToken = "";
+
+
+        showVerifyMessage(
+          error.message ||
+          "Could not connect to the Novi server."
+        );
+
+      } finally {
+
+        unlockButton.disabled = false;
+
+        unlockButton.textContent =
+          "Unlock Novi";
+      }
+    }
+
+
+    /* =========================
+       DURATION
+    ========================= */
+
+    function formatDuration(
+      duration
+    ) {
+
+      const values = {
+        "1d": "1 Day",
+        "3d": "3 Days",
+        "1week": "1 Week",
+        "1month": "1 Month",
+        "1year": "1 Year",
+        "lifetime": "Lifetime"
+      };
+
+      return (
+        values[duration] ||
+        duration ||
+        "Active"
+      );
+    }
+
+
+    /* =========================
+       LOAD STOCK
+    ========================= */
+
+    async function loadStock() {
+
+      try {
+
+        const response =
+          await authenticatedFetch(
+            "/api/stock",
+            {
+              method: "GET"
+            }
+          );
+
+
+        const result =
+          await response.json();
+
 
         if (!response.ok) {
 
-            generatedMessage.textContent =
-                result.message ||
-                `Unable to generate item (${response.status}).`;
-
-            return;
+          throw new Error(
+            result.message ||
+            "Failed to load inventory."
+          );
         }
+
+
+        stockCount.textContent =
+          typeof result.count === "number"
+            ? result.count
+            : "0";
+
+
+        accountStatus.textContent =
+          "Active";
+
+
+      } catch (error) {
 
         if (
-            result.success !== true
+          error.message ===
+          "Your session has expired."
         ) {
-
-            generatedMessage.textContent =
-                result.message ||
-                "Unable to generate item.";
-
-            return;
+          return;
         }
-
-        let displayItem =
-            result.item;
-
-        if (
-            typeof displayItem === "object" &&
-            displayItem !== null
-        ) {
-
-            if (
-                displayItem.name !== undefined
-            ) {
-
-                displayItem =
-                    displayItem.name;
-
-            } else if (
-                displayItem.code !== undefined
-            ) {
-
-                displayItem =
-                    displayItem.code;
-
-            } else if (
-                displayItem.item !== undefined
-            ) {
-
-                displayItem =
-                    displayItem.item;
-
-            } else {
-
-                displayItem =
-                    JSON.stringify(
-                        displayItem
-                    );
-            }
-        }
-
-        generatedItem.textContent =
-            String(displayItem ?? "");
-
-        generatedMessage.textContent =
-            "Your item has been generated successfully.";
-
-        if (
-            typeof result.remaining === "number"
-        ) {
-
-            const stockCount =
-                document.getElementById(
-                    "stockCount"
-                );
-
-            const stockStatus =
-                document.getElementById(
-                    "stockStatus"
-                );
-
-            if (stockCount) {
-                stockCount.textContent =
-                    result.remaining;
-            }
-
-            if (stockStatus) {
-                stockStatus.textContent =
-                    result.remaining > 0
-                        ? "Stock available"
-                        : "Out of stock";
-            }
-        }
-
-    } catch (error) {
 
         console.error(
-            "Generate error:",
-            error
+          "Stock error:",
+          error
         );
 
-        generatedItem.textContent =
-            "";
-
-        generatedMessage.textContent =
-            "Could not connect to the Novi server.";
-
-    } finally {
-
-        button.disabled = false;
-
-        button.classList.remove(
-            "loading"
-        );
-
-        buttonText.textContent =
-            "Generate";
-    }
-}
-
-
-/* =========================================================
-   GENERATED MESSAGE
-========================================================= */
-
-function showGeneratedMessage(text) {
-
-    const box =
-        document.getElementById(
-            "generatedBox"
-        );
-
-    const item =
-        document.getElementById(
-            "generatedItem"
-        );
-
-    const message =
-        document.getElementById(
-            "generatedMessage"
-        );
-
-    if (!box) {
-        return;
+        stockCount.textContent =
+          "Error";
+      }
     }
 
-    box.style.display =
-        "block";
 
-    if (item) {
-        item.textContent = "";
-    }
+    /* =========================
+       GENERATE INVENTORY
+    ========================= */
 
-    if (message) {
-        message.textContent = text;
-    }
-}
+    async function generateInventory() {
 
-
-/* =========================================================
-   SAVE LOGIN
-========================================================= */
-
-function saveEmailPassword() {
-
-    if (!sessionToken) {
-
-        showLoginSaveMessage(
-            "Please unlock your dashboard first."
-        );
-
-        return;
-    }
-
-    const emailInput =
-        document.getElementById(
-            "emailInput"
-        );
-
-    const passwordInput =
-        document.getElementById(
-            "passwordInput"
-        );
-
-    if (
-        !emailInput ||
-        !passwordInput
-    ) {
-        return;
-    }
-
-    const email =
-        emailInput.value.trim();
-
-    const password =
-        passwordInput.value;
-
-    if (
-        !email ||
-        !password
-    ) {
-
-        showLoginSaveMessage(
-            "Enter both email and password."
-        );
-
-        return;
-    }
-
-    /*
-        Never store the password.
-    */
-
-    let saved = [];
-
-    try {
-
-        saved =
-            JSON.parse(
-                localStorage.getItem(
-                    "noviSavedEmails"
-                ) || "[]"
-            );
-
-        if (!Array.isArray(saved)) {
-            saved = [];
-        }
-
-    } catch {
-        saved = [];
-    }
-
-    if (!saved.includes(email)) {
-
-        saved.push(email);
-
-        localStorage.setItem(
-            "noviSavedEmails",
-            JSON.stringify(saved)
-        );
-    }
-
-    emailInput.value = "";
-    passwordInput.value = "";
-
-    showLoginSaveMessage(
-        "Email saved. Password was not stored."
-    );
-
-    renderSavedLogins();
-}
-
-
-function showLoginSaveMessage(text) {
-
-    const message =
-        document.getElementById(
-            "loginSaveMessage"
-        );
-
-    if (!message) {
-        return;
-    }
-
-    message.textContent =
-        text;
-
-    setTimeout(() => {
-
-        if (
-            document.body.contains(
-                message
-            )
-        ) {
-            message.textContent = "";
-        }
-
-    }, 3000);
-}
-
-
-/* =========================================================
-   SAVED LOGINS
-========================================================= */
-
-function getSavedEmails() {
-
-    try {
-
-        const saved =
-            JSON.parse(
-                localStorage.getItem(
-                    "noviSavedEmails"
-                ) || "[]"
-            );
-
-        return Array.isArray(saved)
-            ? saved
-            : [];
-
-    } catch {
-        return [];
-    }
-}
-
-
-function renderSavedLogins() {
-
-    const container =
-        document.getElementById(
-            "savedLogins"
-        );
-
-    if (!container) {
-        return;
-    }
-
-    const saved =
-        getSavedEmails();
-
-    if (!saved.length) {
-
-        container.innerHTML =
-            `<div class="muted">
-                No saved emails yet.
-            </div>`;
-
-        return;
-    }
-
-    container.innerHTML =
-        saved.map(
-            (email, index) => {
-
-                return `
-                    <div class="saved-card">
-
-                        <div class="saved-info">
-
-                            <strong>
-                                ${escapeHTML(email)}
-                            </strong>
-
-                            <small>
-                                Email reminder
-                            </small>
-
-                        </div>
-
-                        <div class="saved-actions">
-
-                            <button
-                                id="emailCopyButton-${index}"
-                                class="mini-btn"
-                                onclick="copyEmail(${index})">
-                                Copy
-                            </button>
-
-                            <button
-                                class="mini-btn"
-                                onclick="deleteEmail(${index})">
-                                Delete
-                            </button>
-
-                        </div>
-
-                    </div>
-                `;
-            }
-        ).join("");
-}
-
-
-/* =========================================================
-   COPY EMAIL
-========================================================= */
-
-async function copyEmail(index) {
-
-    const saved =
-        getSavedEmails();
-
-    const email =
-        saved[index];
-
-    if (!email) {
-        return;
-    }
-
-    const button =
-        document.getElementById(
-            `emailCopyButton-${index}`
-        );
-
-    try {
-
-        await navigator.clipboard.writeText(
-            email
-        );
-
-        if (button) {
-
-            button.textContent =
-                "✓ Copied";
-
-            button.classList.add(
-                "copied"
-            );
-
-            setTimeout(() => {
-
-                if (
-                    document.body.contains(
-                        button
-                    )
-                ) {
-
-                    button.textContent =
-                        "Copy";
-
-                    button.classList.remove(
-                        "copied"
-                    );
-                }
-
-            }, 1500);
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Copy failed:",
-            error
-        );
-
-        if (button) {
-            button.textContent =
-                "Copy failed";
-        }
-    }
-}
-
-
-/* =========================================================
-   DELETE EMAIL
-========================================================= */
-
-function deleteEmail(index) {
-
-    const saved =
-        getSavedEmails();
-
-    saved.splice(index, 1);
-
-    localStorage.setItem(
-        "noviSavedEmails",
-        JSON.stringify(saved)
-    );
-
-    renderSavedLogins();
-}
-
-
-/* =========================================================
-   SAVED KEYS
-========================================================= */
-
-function getSavedKeys() {
-
-    try {
-
-        const saved =
-            JSON.parse(
-                localStorage.getItem(
-                    "noviSavedKeys"
-                ) || "[]"
-            );
-
-        return Array.isArray(saved)
-            ? saved
-            : [];
-
-    } catch {
-        return [];
-    }
-}
-
-
-function saveCurrentKey() {
-
-    if (
-        !sessionToken ||
-        !currentKey
-    ) {
-        return;
-    }
-
-    const saved =
-        getSavedKeys();
-
-    if (
-        !saved.includes(
-            currentKey
-        )
-    ) {
-
-        saved.push(
-            currentKey
-        );
-
-        localStorage.setItem(
-            "noviSavedKeys",
-            JSON.stringify(saved)
-        );
-    }
-
-    renderSavedKeys();
-}
-
-
-function renderSavedKeys() {
-
-    const container =
-        document.getElementById(
-            "savedKeys"
-        );
-
-    if (!container) {
-        return;
-    }
-
-    const saved =
-        getSavedKeys();
-
-    if (!saved.length) {
-
-        container.innerHTML =
-            `<div class="muted">
-                No saved keys yet.
-            </div>`;
-
-        return;
-    }
-
-    container.innerHTML =
-        saved.map(
-            (key, index) => {
-
-                return `
-                    <div class="saved-card">
-
-                        <div class="saved-info">
-
-                            <strong>
-                                ${escapeHTML(key)}
-                            </strong>
-
-                            <small>
-                                Saved key
-                            </small>
-
-                        </div>
-
-                        <div class="saved-actions">
-
-                            <button
-                                id="keyCopyButton-${index}"
-                                class="mini-btn"
-                                onclick="copyKey(${index})">
-                                Copy
-                            </button>
-
-                            <button
-                                class="mini-btn"
-                                onclick="deleteKey(${index})">
-                                Delete
-                            </button>
-
-                        </div>
-
-                    </div>
-                `;
-            }
-        ).join("");
-}
-
-
-/* =========================================================
-   COPY KEY
-========================================================= */
-
-async function copyKey(index) {
-
-    const saved =
-        getSavedKeys();
-
-    const key =
-        saved[index];
-
-    if (!key) {
-        return;
-    }
-
-    const button =
-        document.getElementById(
-            `keyCopyButton-${index}`
-        );
-
-    try {
-
-        await navigator.clipboard.writeText(
-            key
-        );
-
-        if (button) {
-
-            button.textContent =
-                "✓ Copied";
-
-            button.classList.add(
-                "copied"
-            );
-
-            setTimeout(() => {
-
-                if (
-                    document.body.contains(
-                        button
-                    )
-                ) {
-
-                    button.textContent =
-                        "Copy";
-
-                    button.classList.remove(
-                        "copied"
-                    );
-                }
-
-            }, 1500);
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Copy failed:",
-            error
-        );
-
-        if (button) {
-            button.textContent =
-                "Copy failed";
-        }
-    }
-}
-
-
-/* =========================================================
-   DELETE KEY
-========================================================= */
-
-function deleteKey(index) {
-
-    const saved =
-        getSavedKeys();
-
-    saved.splice(index, 1);
-
-    localStorage.setItem(
-        "noviSavedKeys",
-        JSON.stringify(saved)
-    );
-
-    renderSavedKeys();
-}
-
-
-/* =========================================================
-   ENTER KEY
-========================================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        const keyInput =
-            document.getElementById(
-                "keyInput"
-            );
-
-        if (keyInput) {
-
-            keyInput.addEventListener(
-                "keydown",
-                (event) => {
-
-                    if (
-                        event.key === "Enter"
-                    ) {
-
-                        event.preventDefault();
-
-                        unlock();
-                    }
-                }
-            );
-        }
-
-        const dashboard =
-            document.getElementById(
-                "dashboardPage"
-            );
-
-        if (dashboard) {
-
-            dashboard.setAttribute(
-                "aria-hidden",
-                "true"
-            );
-        }
-    }
-);
-
-
-/* =========================================================
-   INITIALIZE
-========================================================= */
-
-async function initialize() {
-
-    getDeviceId();
-
-    renderSavedKeys();
-    renderSavedLogins();
-
-    /*
-        sessionStorage may contain an old token,
-        so ALWAYS validate it with the server.
-    */
-
-    if (!sessionToken) {
-
-        openMainPage();
-
-        return;
-    }
-
-    const valid =
-        await verifyCurrentSession();
-
-    if (!valid) {
+      if (!sessionToken) {
 
         clearSession();
 
-        openMainPage();
-
         return;
+      }
+
+
+      generateButton.disabled = true;
+
+      generateButton.textContent =
+        "Generating...";
+
+      clearDashboardMessage();
+
+
+      try {
+
+        const response =
+          await authenticatedFetch(
+            "/api/stock/generate",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                "Accept":
+                  "application/json"
+              },
+
+              body: JSON.stringify({})
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            result.message ||
+            "Unable to generate inventory."
+          );
+        }
+
+
+        if (
+          result.success !== true
+        ) {
+
+          throw new Error(
+            result.message ||
+            "Unable to generate inventory."
+          );
+        }
+
+
+        const item =
+          result.item;
+
+
+        if (!item) {
+
+          inventoryResult.innerHTML =
+            "No inventory is currently available.";
+
+        } else {
+
+          renderInventoryItem(item);
+        }
+
+
+        if (
+          typeof result.remaining ===
+          "number"
+        ) {
+
+          stockCount.textContent =
+            result.remaining;
+        } else {
+
+          await loadStock();
+        }
+
+
+        showDashboardMessage(
+          "Inventory generated successfully.",
+          "success"
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "Generate error:",
+          error
+        );
+
+
+        if (
+          error.message ===
+          "Your session has expired."
+        ) {
+
+          return;
+        }
+
+
+        showDashboardMessage(
+          error.message ||
+          "Something went wrong."
+        );
+
+      } finally {
+
+        generateButton.disabled = false;
+
+        generateButton.textContent =
+          "Generate Item";
+      }
     }
 
-    unlocked = true;
 
-    openDashboard();
+    /* =========================
+       RENDER ITEM
+    ========================= */
 
-    await loadStock();
-}
+    function renderInventoryItem(
+      item
+    ) {
+
+      if (
+        typeof item !== "object" ||
+        item === null
+      ) {
+
+        inventoryResult.textContent =
+          String(item);
+
+        return;
+      }
 
 
-/* =========================================================
-   START
-========================================================= */
+      const entries =
+        Object.entries(item);
 
-initialize();
 
-</script>
+      if (!entries.length) {
+
+        inventoryResult.textContent =
+          "The generated item is empty.";
+
+        return;
+      }
+
+
+      const fields =
+        entries.map(
+          ([key, value]) => {
+
+            let displayValue = value;
+
+            if (
+              typeof value ===
+              "object"
+            ) {
+
+              try {
+
+                displayValue =
+                  JSON.stringify(
+                    value
+                  );
+
+              } catch {
+
+                displayValue =
+                  String(value);
+              }
+            }
+
+
+            return `
+              <div class="item-field">
+                <span>${escapeHtml(key)}</span>
+                <strong>${escapeHtml(String(displayValue))}</strong>
+              </div>
+            `;
+          }
+        )
+        .join("");
+
+
+      inventoryResult.innerHTML = `
+        <div class="item-box">
+          <div class="item-row">
+            ${fields}
+          </div>
+        </div>
+      `;
+    }
+
+
+    /* =========================
+       ESCAPE HTML
+    ========================= */
+
+    function escapeHtml(
+      value
+    ) {
+
+      return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+
+    /* =========================
+       LOGOUT
+    ========================= */
+
+    async function logout() {
+
+      try {
+
+        if (sessionToken) {
+
+          await fetch(
+            API_URL + "/api/logout",
+            {
+              method: "POST",
+
+              headers: {
+                "x-novi-session":
+                  sessionToken
+              },
+
+              cache: "no-store"
+            }
+          );
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Logout error:",
+          error
+        );
+
+      } finally {
+
+        clearSession();
+
+        keyInput.value = "";
+
+        clearVerifyMessage();
+
+        inventoryResult.textContent =
+          'Click "Generate Item" to retrieve inventory.';
+
+        clearDashboardMessage();
+      }
+    }
+
+
+    /* =========================
+       VERIFY EXISTING SESSION
+    ========================= */
+
+    async function verifyCurrentSession() {
+
+      if (!sessionToken) {
+
+        showLogin();
+
+        return;
+      }
+
+
+      try {
+
+        const response =
+          await fetch(
+            API_URL + "/api/stock",
+            {
+              method: "GET",
+
+              headers: {
+                "x-novi-session":
+                  sessionToken,
+
+                "Accept":
+                  "application/json"
+              },
+
+              cache: "no-store"
+            }
+          );
+
+
+        if (
+          response.status === 401 ||
+          response.status === 403
+        ) {
+
+          clearSession();
+
+          return;
+        }
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            "Session verification failed."
+          );
+        }
+
+
+        const result =
+          await response.json();
+
+
+        stockCount.textContent =
+          typeof result.count === "number"
+            ? result.count
+            : "0";
+
+
+        unlocked = true;
+
+        showDashboard();
+
+
+      } catch (error) {
+
+        console.error(
+          "Session check failed:",
+          error
+        );
+
+        clearSession();
+      }
+    }
+
+
+    /* =========================
+       EVENTS
+    ========================= */
+
+    unlockButton.addEventListener(
+      "click",
+      unlock
+    );
+
+
+    keyInput.addEventListener(
+      "keydown",
+      function(event) {
+
+        if (
+          event.key === "Enter"
+        ) {
+
+          unlock();
+        }
+      }
+    );
+
+
+    logoutButton.addEventListener(
+      "click",
+      logout
+    );
+
+
+    generateButton.addEventListener(
+      "click",
+      generateInventory
+    );
+
+
+    /* =========================
+       START
+    ========================= */
+
+    getDeviceId();
+
+    verifyCurrentSession();
+
+  </script>
 
 </body>
 </html>
