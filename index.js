@@ -1,6 +1,18 @@
+// =========================================================
+// START NOVI WEBSITE / API SERVER
+// =========================================================
+
 require("./server.js");
 
+// =========================================================
+// LOAD ENVIRONMENT VARIABLES
+// =========================================================
+
 require("dotenv").config();
+
+// =========================================================
+// DISCORD
+// =========================================================
 
 const {
     Client,
@@ -10,6 +22,10 @@ const {
 const crypto = require("crypto");
 const axios = require("axios");
 
+// =========================================================
+// DISCORD CLIENT
+// =========================================================
+
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -18,28 +34,36 @@ const client = new Client({
     ]
 });
 
+// =========================================================
+// ALLOWED ROLES
+// =========================================================
+
 const ALLOWED_ROLE_IDS = [
     "1529705570209366167",
     "1378500563456626719"
 ];
 
+// =========================================================
+// NOVI WEBSITE / API
+// =========================================================
+
 const SERVER_URL = "https://novi-1.onrender.com";
 
-/* =========================================================
-   READY
-========================================================= */
+// =========================================================
+// BOT READY
+// =========================================================
 
 client.once("ready", () => {
-    console.log("==============================");
+    console.log("================================");
     console.log("NOVI DISCORD BOT IS ONLINE");
     console.log(`Logged in as: ${client.user.tag}`);
     console.log(`Novi server: ${SERVER_URL}`);
-    console.log("==============================");
+    console.log("================================");
 });
 
-/* =========================================================
-   GENERATE KEY
-========================================================= */
+// =========================================================
+// GENERATE NOVI KEY
+// =========================================================
 
 function generateKey() {
     const part1 = crypto.randomBytes(2).toString("hex").toUpperCase();
@@ -50,9 +74,9 @@ function generateKey() {
     return `NOVI-${part1}-${part2}-${part3}-${part4}`;
 }
 
-/* =========================================================
-   PERMISSIONS
-========================================================= */
+// =========================================================
+// CHECK PERMISSION
+// =========================================================
 
 function hasPermission(message) {
     if (!message.member) {
@@ -64,15 +88,18 @@ function hasPermission(message) {
     );
 }
 
-/* =========================================================
-   COMMANDS
-========================================================= */
+// =========================================================
+// COMMAND HANDLER
+// =========================================================
 
 client.on("messageCreate", async (message) => {
+
+    // Ignore bots
+    if (message.author.bot) {
+        return;
+    }
+
     try {
-        if (message.author.bot) {
-            return;
-        }
 
         const content = message.content.trim();
 
@@ -81,13 +108,14 @@ client.on("messageCreate", async (message) => {
         }
 
         const args = content.split(/\s+/);
-        const command = args[0]?.toLowerCase();
+        const command = args[0].toLowerCase();
 
-        /* =====================================================
-           !GEN
-        ===================================================== */
+        // =====================================================
+        // !GEN
+        // =====================================================
 
         if (command === "!gen") {
+
             if (!message.member) {
                 return message.reply(
                     "This command can only be used in a server."
@@ -118,10 +146,11 @@ client.on("messageCreate", async (message) => {
 
             const key = generateKey();
 
+            console.log(
+                `Generating key: ${key} | Duration: ${duration}`
+            );
+
             try {
-                console.log(
-                    `Generating key ${key} | ${duration}`
-                );
 
                 const response = await axios.post(
                     `${SERVER_URL}/api/keys`,
@@ -138,20 +167,22 @@ client.on("messageCreate", async (message) => {
                     !response.data ||
                     !response.data.success
                 ) {
+
                     console.error(
-                        "Server rejected key:",
+                        "Novi server rejected key:",
                         response.data
                     );
 
                     return message.reply(
                         `The server rejected the key.\n${
-                            response.data?.message || "Unknown error."
+                            response.data?.message ||
+                            "Unknown server error."
                         }`
                     );
                 }
 
                 console.log(
-                    `Key saved successfully: ${key}`
+                    `Key successfully saved: ${key}`
                 );
 
                 return message.reply(
@@ -161,8 +192,9 @@ client.on("messageCreate", async (message) => {
                 );
 
             } catch (error) {
+
                 console.error(
-                    "Could not connect to Novi:",
+                    "Novi API connection error:",
                     error.response?.data ||
                     error.message
                 );
@@ -173,11 +205,12 @@ client.on("messageCreate", async (message) => {
             }
         }
 
-        /* =====================================================
-           !ADD
-        ===================================================== */
+        // =====================================================
+        // !ADD
+        // =====================================================
 
         if (command === "!add") {
+
             if (!message.member) {
                 return message.reply(
                     "This command can only be used in a server."
@@ -192,9 +225,9 @@ client.on("messageCreate", async (message) => {
 
             let items = [];
 
-            /* =================================================
-               COMMAND ITEMS
-            ================================================= */
+            // =================================================
+            // ITEMS WRITTEN AFTER !ADD
+            // =================================================
 
             const commandItems = args
                 .slice(1)
@@ -203,11 +236,12 @@ client.on("messageCreate", async (message) => {
 
             items.push(...commandItems);
 
-            /* =================================================
-               TXT ATTACHMENT
-            ================================================= */
+            // =================================================
+            // TXT FILE
+            // =================================================
 
             if (message.attachments.size > 0) {
+
                 const attachment =
                     message.attachments.first();
 
@@ -221,6 +255,7 @@ client.on("messageCreate", async (message) => {
                 }
 
                 try {
+
                     const fileResponse =
                         await axios.get(
                             attachment.url,
@@ -241,8 +276,9 @@ client.on("messageCreate", async (message) => {
                     items.push(...fileItems);
 
                 } catch (error) {
+
                     console.error(
-                        "Could not read stock file:",
+                        "Could not read TXT file:",
                         error.message
                     );
 
@@ -252,11 +288,12 @@ client.on("messageCreate", async (message) => {
                 }
             }
 
-            /* =================================================
-               NOTHING TO ADD
-            ================================================= */
+            // =================================================
+            // NOTHING PROVIDED
+            // =================================================
 
             if (items.length === 0) {
+
                 return message.reply(
                     "Nothing to add.\n\n" +
                     "Use:\n" +
@@ -266,9 +303,9 @@ client.on("messageCreate", async (message) => {
                 );
             }
 
-            /* =================================================
-               REMOVE DUPLICATES
-            ================================================= */
+            // =================================================
+            // REMOVE DUPLICATES FROM COMMAND
+            // =================================================
 
             items = [...new Set(items)];
 
@@ -276,12 +313,14 @@ client.on("messageCreate", async (message) => {
             let duplicates = 0;
             let failed = 0;
 
-            /* =================================================
-               SEND ITEMS TO NOVI
-            ================================================= */
+            // =================================================
+            // ADD EACH ITEM TO NOVI
+            // =================================================
 
             for (const item of items) {
+
                 try {
+
                     const response =
                         await axios.post(
                             `${SERVER_URL}/api/stock/add`,
@@ -297,6 +336,7 @@ client.on("messageCreate", async (message) => {
                         response.data &&
                         response.data.success
                     ) {
+
                         added += Number(
                             response.data.added || 0
                         );
@@ -304,28 +344,32 @@ client.on("messageCreate", async (message) => {
                         duplicates += Number(
                             response.data.duplicates || 0
                         );
+
                     } else {
+
                         failed++;
                     }
 
                 } catch (error) {
-                    if (
-                        error.response?.status === 409
-                    ) {
-                        duplicates++;
-                    } else {
-                        failed++;
-                    }
+
+                    console.error(
+                        `Failed to add stock item: ${item}`,
+                        error.response?.data ||
+                        error.message
+                    );
+
+                    failed++;
                 }
             }
 
-            /* =================================================
-               GET TOTAL STOCK
-            ================================================= */
+            // =================================================
+            // GET CURRENT STOCK COUNT
+            // =================================================
 
             let totalStock = "Unknown";
 
             try {
+
                 const stockResponse =
                     await axios.get(
                         `${SERVER_URL}/api/stock`,
@@ -339,20 +383,22 @@ client.on("messageCreate", async (message) => {
                     typeof stockResponse.data.count ===
                         "number"
                 ) {
+
                     totalStock =
                         stockResponse.data.count;
                 }
 
             } catch (error) {
+
                 console.error(
                     "Could not get stock count:",
                     error.message
                 );
             }
 
-            /* =================================================
-               RESPONSE
-            ================================================= */
+            // =================================================
+            // SEND RESULT
+            // =================================================
 
             let reply =
                 `Stock Added Successfully\n\n` +
@@ -368,8 +414,9 @@ client.on("messageCreate", async (message) => {
         }
 
     } catch (error) {
+
         console.error(
-            "Command error:",
+            "Discord command error:",
             error
         );
 
@@ -379,11 +426,12 @@ client.on("messageCreate", async (message) => {
     }
 });
 
-/* =========================================================
-   DISCORD TOKEN
-========================================================= */
+// =========================================================
+// DISCORD TOKEN CHECK
+// =========================================================
 
 if (!process.env.DISCORD_TOKEN) {
+
     console.error(
         "DISCORD_TOKEN is missing from Render Environment Variables."
     );
@@ -391,19 +439,24 @@ if (!process.env.DISCORD_TOKEN) {
     process.exit(1);
 }
 
-/* =========================================================
-   LOGIN
-========================================================= */
+// =========================================================
+// LOGIN
+// =========================================================
 
 console.log("Connecting to Discord...");
 
 client.login(process.env.DISCORD_TOKEN)
+
     .then(() => {
+
         console.log(
             "Discord login successful."
         );
+
     })
+
     .catch((error) => {
+
         console.error(
             "Discord login failed:",
             error.message
