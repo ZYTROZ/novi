@@ -1,2920 +1,2234 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novi</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Novi</title>
 
-```
 <style>
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
+:root {
+    --purple: #8b5cf6;
+    --purple-bright: #a78bfa;
+    --purple-light: #c4b5fd;
+    --purple-dark: #6d28d9;
+
+    --bg: #050509;
+    --panel: #0b0a11;
+    --panel-2: #100d18;
+
+    --border: rgba(255,255,255,.07);
+    --border-purple: rgba(139,92,246,.2);
+
+    --text: #f5f3f7;
+    --muted: #85808e;
+    --muted-2: #5f5a67;
+
+    --green: #4ade80;
+    --red: #ef4444;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    overflow-x: hidden;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.container {
+    width: min(1180px, calc(100% - 40px));
+    margin: auto;
+}
+
+/* =========================================================
+   BACKGROUND
+========================================================= */
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -5;
+    pointer-events: none;
+
+    background-image:
+        linear-gradient(
+            rgba(255,255,255,.018) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,.018) 1px,
+            transparent 1px
+        );
+
+    background-size: 55px 55px;
+
+    mask-image: linear-gradient(
+        to bottom,
+        black,
+        transparent 90%
+    );
+}
+
+body::after {
+    content: "";
+    position: fixed;
+    width: 650px;
+    height: 650px;
+    top: -250px;
+    left: -230px;
+    border-radius: 50%;
+    background: rgba(139,92,246,.09);
+    filter: blur(130px);
+    z-index: -4;
+    pointer-events: none;
+}
+
+/* =========================================================
+   SLIDER
+========================================================= */
+
+.app {
+    width: 100%;
+    overflow: hidden;
+}
+
+.slider {
+    width: 200%;
+    display: flex;
+    transition: transform .7s cubic-bezier(.77,0,.18,1);
+}
+
+.page {
+    width: 50%;
+    min-height: 100vh;
+    flex-shrink: 0;
+}
+
+body.dashboard-open .slider {
+    transform: translateX(-50%);
+}
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+.main-page {
+    position: relative;
+    background:
+        radial-gradient(
+            circle at 80% 15%,
+            rgba(109,40,217,.10),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 45% 80%,
+            rgba(139,92,246,.055),
+            transparent 35%
+        ),
+        var(--bg);
+}
+
+nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+
+    width: 100%;
+
+    background: rgba(5,5,9,.72);
+    border-bottom: 1px solid rgba(255,255,255,.055);
+
+    backdrop-filter: blur(22px);
+}
+
+.nav-inner {
+    height: 76px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    font-weight: 900;
+    letter-spacing: -.5px;
+}
+
+.logo-mark {
+    width: 40px;
+    height: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 13px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #c4b5fd,
+            #8b5cf6 45%,
+            #4c1d95
+        );
+
+    color: white;
+
+    font-size: 18px;
+
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,.1),
+        0 12px 40px rgba(109,40,217,.32);
+}
+
+.logo-text {
+    font-size: 22px;
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-btn {
+    height: 40px;
+
+    padding: 0 16px;
+
+    border-radius: 11px;
+
+    border: 1px solid var(--border);
+
+    background: rgba(255,255,255,.035);
+
+    color: #d5d1dc;
+
+    font-size: 13px;
+    font-weight: 700;
+
+    transition: .25s ease;
+}
+
+.nav-btn:hover {
+    border-color: var(--border-purple);
+    background: rgba(139,92,246,.08);
+    color: white;
+}
+
+.nav-btn.primary {
+    background: var(--purple);
+    border-color: var(--purple);
+    color: white;
+
+    box-shadow:
+        0 10px 30px rgba(139,92,246,.2);
+}
+
+.nav-btn.primary:hover {
+    background: #7c3aed;
+    transform: translateY(-1px);
+}
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.hero {
+    position: relative;
+
+    min-height: 680px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 90px 0 100px;
+
+    overflow: hidden;
+}
+
+.hero::before {
+    content: "";
+
+    position: absolute;
+
+    width: 700px;
+    height: 700px;
+
+    right: -250px;
+    top: -170px;
+
+    border-radius: 50%;
+
+    background: rgba(139,92,246,.07);
+
+    filter: blur(100px);
+
+    pointer-events: none;
+}
+
+.hero-grid {
+    position: relative;
+
+    display: grid;
+
+    grid-template-columns:
+        1.05fr
+        .95fr;
+
+    gap: 70px;
+
+    align-items: center;
+}
+
+.hero-left {
+    position: relative;
+    z-index: 2;
+}
+
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+
+    padding: 8px 13px;
+
+    margin-bottom: 28px;
+
+    border-radius: 999px;
+
+    border: 1px solid rgba(139,92,246,.18);
+
+    background: rgba(139,92,246,.055);
+
+    color: #b8a6eb;
+
+    font-size: 10px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
+}
+
+.dot {
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: var(--green);
+
+    box-shadow:
+        0 0 0 4px rgba(74,222,128,.08),
+        0 0 14px rgba(74,222,128,.5);
+
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%,100% {
+        opacity: 1;
     }
 
-    :root {
-        --purple: #8b5cf6;
-        --purple-bright: #a78bfa;
-        --purple-light: #c4b5fd;
-        --purple-dark: #6d28d9;
-        --bg: #050509;
-        --panel: rgba(17, 14, 28, .72);
-        --border: rgba(139, 92, 246, .18);
-        --border-bright: rgba(139, 92, 246, .42);
-        --text: #ffffff;
-        --muted: #918ca3;
+    50% {
+        opacity: .45;
+    }
+}
+
+.hero h1 {
+    font-size:
+        clamp(65px, 8vw, 112px);
+
+    line-height: .88;
+
+    letter-spacing: -7px;
+
+    font-weight: 950;
+}
+
+.hero h1 .line-one {
+    display: block;
+    color: #f7f5f9;
+}
+
+.hero h1 .line-two {
+    display: block;
+
+    margin-top: 12px;
+
+    background:
+        linear-gradient(
+            100deg,
+            #fff 0%,
+            #ddd6fe 25%,
+            #a78bfa 52%,
+            #8b5cf6 72%,
+            #5b21b6 100%
+        );
+
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+
+    filter:
+        drop-shadow(
+            0 18px 45px
+            rgba(139,92,246,.2)
+        );
+}
+
+.hero-description {
+    max-width: 560px;
+
+    margin-top: 30px;
+
+    color: #817b89;
+
+    font-size: 15px;
+
+    line-height: 1.85;
+}
+
+.hero-description strong {
+    color: #ddd8e4;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 12px;
+
+    margin-top: 32px;
+}
+
+.hero-button {
+    height: 48px;
+
+    padding: 0 20px;
+
+    border-radius: 13px;
+
+    border: 1px solid var(--border);
+
+    background: rgba(255,255,255,.035);
+
+    color: #ddd9e4;
+
+    font-size: 13px;
+    font-weight: 800;
+
+    transition: .25s ease;
+}
+
+.hero-button:hover {
+    transform: translateY(-2px);
+    border-color: rgba(139,92,246,.25);
+}
+
+.hero-button.primary {
+    background: var(--purple);
+    color: white;
+    border-color: var(--purple);
+
+    box-shadow:
+        0 15px 40px rgba(109,40,217,.25);
+}
+
+.hero-button.primary:hover {
+    background: #7c3aed;
+}
+
+/* =========================================================
+   HERO PREVIEW
+========================================================= */
+
+.hero-preview {
+    position: relative;
+
+    min-height: 455px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-glow {
+    position: absolute;
+
+    width: 350px;
+    height: 350px;
+
+    border-radius: 50%;
+
+    background: rgba(139,92,246,.13);
+
+    filter: blur(70px);
+}
+
+.preview-card {
+    position: relative;
+
+    width: min(470px, 100%);
+
+    padding: 20px;
+
+    border-radius: 24px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(20,17,29,.95),
+            rgba(8,7,13,.94)
+        );
+
+    border: 1px solid rgba(255,255,255,.075);
+
+    box-shadow:
+        0 50px 100px rgba(0,0,0,.45),
+        0 0 80px rgba(109,40,217,.09);
+
+    transform:
+        perspective(1000px)
+        rotateY(-7deg)
+        rotateX(3deg);
+
+    animation:
+        previewFloat 5s ease-in-out infinite;
+}
+
+@keyframes previewFloat {
+    0%,100% {
+        transform:
+            perspective(1000px)
+            rotateY(-7deg)
+            rotateX(3deg)
+            translateY(0);
     }
 
-    html,
-    body {
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-
-        font-family:
-            Inter,
-            ui-sans-serif,
-            system-ui,
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            sans-serif;
-
-        background: var(--bg);
-        color: var(--text);
+    50% {
+        transform:
+            perspective(1000px)
+            rotateY(-7deg)
+            rotateX(3deg)
+            translateY(-12px);
     }
+}
 
-    body {
-        position: relative;
-    }
+.preview-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 
-    button,
-    input {
-        font: inherit;
-    }
+    padding-bottom: 17px;
 
-    button {
-        cursor: pointer;
-    }
+    border-bottom: 1px solid rgba(255,255,255,.055);
+}
 
-    button:disabled {
-        cursor: not-allowed;
-    }
+.preview-title {
+    font-size: 12px;
+    font-weight: 900;
+}
 
-    body::before {
-        content: "";
+.preview-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
 
-        position: fixed;
-        inset: 0;
+    color: #77717f;
 
-        pointer-events: none;
-
-        background-image:
-            linear-gradient(
-                rgba(255,255,255,.014) 1px,
-                transparent 1px
-            ),
-            linear-gradient(
-                90deg,
-                rgba(255,255,255,.014) 1px,
-                transparent 1px
-            );
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
 
-        background-size: 74px 74px;
+.preview-status span {
+    width: 6px;
+    height: 6px;
 
-        mask-image:
-            linear-gradient(
-                to bottom,
-                black,
-                transparent 90%
-            );
-
-        opacity: .35;
-    }
-
-    body::after {
-        content: "";
-
-        position: fixed;
-
-        width: 760px;
-        height: 760px;
-
-        left: 50%;
-        top: -350px;
-
-        transform: translateX(-50%);
-
-        background:
-            radial-gradient(
-                circle,
-                rgba(139,92,246,.20),
-                rgba(109,40,217,.07) 40%,
-                transparent 72%
-            );
-
-        filter: blur(30px);
-        pointer-events: none;
-    }
-
-    .app {
-        width: 100%;
-        height: 100vh;
-        overflow: hidden;
-    }
-
-    .slider {
-        display: flex;
-        width: 200%;
-        height: 100%;
-
-        transition:
-            transform .75s cubic-bezier(.76,0,.24,1);
-    }
-
-    .page {
-        width: 50%;
-        height: 100vh;
-
-        flex-shrink: 0;
-
-        overflow-y: auto;
-        overflow-x: hidden;
-
-        scroll-behavior: smooth;
-
-        scrollbar-width: thin;
-        scrollbar-color: #282333 transparent;
-    }
-
-    .page::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .page::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .page::-webkit-scrollbar-thumb {
-        background: #282333;
-        border-radius: 20px;
-    }
-
-    body.dashboard-open .slider {
-        transform: translateX(-50%);
-    }
-
-    .container {
-        width: min(1180px, calc(100% - 40px));
-        margin: auto;
-    }
-
-    .purple {
-        color: var(--purple-bright);
-    }
-
-    .muted {
-        color: var(--muted);
-    }
-
-    /* =================================================
-       BUTTONS
-    ================================================= */
-
-    .btn {
-        border: 0;
-        border-radius: 12px;
-        padding: 13px 19px;
-        font-weight: 800;
-
-        transition:
-            transform .25s ease,
-            box-shadow .25s ease,
-            border-color .25s ease,
-            background .25s ease,
-            opacity .25s ease;
-    }
-
-    .btn:hover {
-        transform: translateY(-2px);
-    }
-
-    .btn:active {
-        transform: translateY(0);
-    }
-
-    .btn:disabled {
-        opacity: .65;
-        transform: none;
-    }
-
-    .btn-primary {
-        color: white;
-
-        background:
-            linear-gradient(
-                135deg,
-                var(--purple),
-                var(--purple-dark)
-            );
-
-        border:
-            1px solid
-            rgba(167,139,250,.30);
-
-        box-shadow:
-            0 12px 35px
-            rgba(109,40,217,.28);
-    }
-
-    .btn-primary:hover {
-        box-shadow:
-            0 18px 48px
-            rgba(109,40,217,.43);
-    }
-
-    .btn-secondary {
-        color: white;
+    border-radius: 50%;
 
-        background:
-            rgba(255,255,255,.035);
+    background: var(--green);
+}
 
-        border:
-            1px solid
-            rgba(255,255,255,.09);
+.preview-main {
+    padding: 22px 0;
+}
 
-        backdrop-filter:
-            blur(12px);
-    }
+.preview-label {
+    color: #686270;
 
-    .btn-secondary:hover {
-        border-color:
-            var(--border-bright);
+    font-size: 9px;
+    font-weight: 900;
 
-        background:
-            rgba(139,92,246,.08);
-    }
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
 
-    /* =================================================
-       NAV
-    ================================================= */
+.preview-number {
+    margin-top: 7px;
 
-    nav {
-        position: sticky;
-        top: 0;
-        z-index: 100;
+    font-size: 42px;
+    font-weight: 950;
 
-        height: 76px;
+    letter-spacing: -2px;
+}
 
-        display: flex;
-        align-items: center;
+.preview-line {
+    width: 100%;
+    height: 5px;
 
-        background:
-            rgba(5,5,9,.64);
+    margin-top: 17px;
 
-        border-bottom:
-            1px solid
-            rgba(255,255,255,.05);
+    border-radius: 999px;
 
-        backdrop-filter:
-            blur(22px);
-    }
+    background: rgba(255,255,255,.045);
 
-    .nav-inner {
-        width:
-            min(1180px, calc(100% - 40px));
+    overflow: hidden;
+}
 
-        margin: auto;
+.preview-line span {
+    display: block;
 
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
+    width: 74%;
+    height: 100%;
 
-    .logo {
-        display: flex;
-        align-items: center;
-        gap: 10px;
+    border-radius: inherit;
 
-        font-size: 21px;
-        font-weight: 950;
+    background:
+        linear-gradient(
+            90deg,
+            #6d28d9,
+            #a78bfa
+        );
+}
 
-        letter-spacing: -1px;
-    }
-
-    .logo-mark {
-        position: relative;
-
-        width: 38px;
-        height: 38px;
-
-        display: grid;
-        place-items: center;
-
-        border-radius: 12px;
-
-        overflow: hidden;
-
-        background:
-            linear-gradient(
-                135deg,
-                var(--purple),
-                var(--purple-dark)
-            );
-
-        box-shadow:
-            0 8px 28px
-            rgba(109,40,217,.38);
-
-        font-size: 15px;
-        font-weight: 950;
-    }
-
-    .logo-mark::after {
-        content: "";
-
-        position: absolute;
-
-        width: 90px;
-        height: 20px;
-
-        left: -90px;
-        top: 0;
-
-        transform: rotate(-35deg);
-
-        background:
-            rgba(255,255,255,.18);
-
-        filter: blur(8px);
-
-        animation:
-            logoShine 4s ease-in-out infinite;
-    }
-
-    @keyframes logoShine {
-        0%,
-        35% {
-            left: -90px;
-        }
-
-        70%,
-        100% {
-            left: 100px;
-        }
-    }
-
-    .logo-text {
-        display: flex;
-        align-items: center;
-
-        gap: 0;
-
-        letter-spacing:
-            -1.1px;
-    }
-
-    .logo-text .logo-no {
-        color:
-            #ffffff;
-    }
-
-    .logo-text .logo-vi {
-        color:
-            var(--purple-bright);
-    }
-
-    .nav-buttons {
-        display: flex;
-        gap: 9px;
-    }
-
-    /* =================================================
-       HOME
-    ================================================= */
-
-    .main-page {
-        position: relative;
-
-        background:
-            radial-gradient(
-                circle at 50% 0%,
-                rgba(139,92,246,.15),
-                transparent 37%
-            ),
-            radial-gradient(
-                circle at 0% 45%,
-                rgba(109,40,217,.055),
-                transparent 24%
-            ),
-            radial-gradient(
-                circle at 100% 60%,
-                rgba(139,92,246,.045),
-                transparent 24%
-            ),
-            #050509;
+.preview-grid {
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 10px;
+
+    margin-top: 22px;
+}
+
+.preview-box {
+    padding: 17px;
+
+    border-radius: 15px;
+
+    background: rgba(255,255,255,.025);
+
+    border: 1px solid rgba(255,255,255,.045);
+}
+
+.preview-box small {
+    display: block;
+
+    color: #625d69;
+
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.preview-box strong {
+    display: block;
+
+    margin-top: 7px;
+
+    font-size: 17px;
+}
+
+.preview-button {
+    width: 100%;
+
+    height: 43px;
+
+    margin-top: 10px;
+
+    border: 0;
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #8b5cf6,
+            #6d28d9
+        );
+
+    color: white;
+
+    font-size: 11px;
+    font-weight: 900;
+}
+
+/* =========================================================
+   MINI STATS
+========================================================= */
+
+.hero-stats {
+    display: flex;
+    gap: 35px;
+
+    margin-top: 48px;
+}
+
+.stat {
+    position: relative;
+}
+
+.stat:not(:last-child)::after {
+    content: "";
+
+    position: absolute;
+
+    right: -18px;
+    top: 3px;
+
+    width: 1px;
+    height: 32px;
+
+    background: rgba(255,255,255,.08);
+}
+
+.stat strong {
+    display: block;
+
+    font-size: 17px;
+}
+
+.stat span {
+    display: block;
+
+    margin-top: 4px;
+
+    color: #625d69;
+
+    font-size: 9px;
+    font-weight: 800;
+
+    text-transform: uppercase;
+    letter-spacing: .7px;
+}
+
+/* =========================================================
+   ACCESS
+========================================================= */
+
+.access-section {
+    position: relative;
+
+    padding: 110px 0 130px;
+}
+
+.access-layout {
+    display: grid;
+
+    grid-template-columns:
+        .65fr
+        1.35fr;
+
+    gap: 60px;
+
+    align-items: center;
+}
+
+.access-title .kicker {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    color: var(--purple-bright);
+
+    font-size: 10px;
+    font-weight: 900;
+
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.access-title .kicker::before {
+    content: "";
+
+    width: 25px;
+    height: 1px;
+
+    background: var(--purple);
+}
+
+.access-title h2 {
+    margin-top: 14px;
+
+    font-size:
+        clamp(42px, 5vw, 65px);
+
+    line-height: .95;
+
+    letter-spacing: -4px;
+}
+
+.access-title h2 span {
+    color: var(--purple-bright);
+}
+
+.access-title p {
+    max-width: 350px;
+
+    margin-top: 17px;
+
+    color: #6e6877;
+
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.access-box {
+    position: relative;
+
+    min-height: 300px;
+
+    padding: 32px;
+
+    border-radius: 25px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(21,17,32,.96),
+            rgba(8,7,13,.94)
+        );
+
+    border: 1px solid rgba(139,92,246,.16);
+
+    box-shadow:
+        0 40px 100px rgba(0,0,0,.35),
+        inset 0 1px 0 rgba(255,255,255,.035);
+
+    overflow: hidden;
+}
+
+.access-box::before {
+    content: "";
+
+    position: absolute;
+
+    width: 300px;
+    height: 300px;
+
+    top: -180px;
+    right: -100px;
+
+    border-radius: 50%;
+
+    background: rgba(139,92,246,.12);
+
+    filter: blur(60px);
+
+    pointer-events: none;
+}
+
+.access-top {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 28px;
+}
+
+.access-top h3 {
+    font-size: 18px;
+}
+
+.access-lock {
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 11px;
+
+    background: rgba(139,92,246,.09);
+
+    border: 1px solid rgba(139,92,246,.16);
+
+    color: var(--purple-bright);
+}
+
+.input-label {
+    display: block;
+
+    margin-bottom: 9px;
+
+    color: #6e6877;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.input {
+    width: 100%;
+
+    height: 53px;
+
+    padding: 0 16px;
+
+    border-radius: 13px;
+
+    border: 1px solid rgba(255,255,255,.07);
+
+    outline: none;
+
+    background: rgba(0,0,0,.25);
+
+    color: white;
+
+    font-size: 13px;
+
+    transition: .25s ease;
+}
+
+.input::placeholder {
+    color: #4e4956;
+}
+
+.input:focus {
+    border-color: rgba(139,92,246,.5);
+
+    box-shadow:
+        0 0 0 3px rgba(139,92,246,.08);
+}
+
+.btn {
+    border: 0;
+
+    border-radius: 13px;
+
+    font-weight: 800;
+
+    transition: .25s ease;
+}
+
+.btn-primary {
+    width: 100%;
+
+    height: 53px;
+
+    margin-top: 12px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #8b5cf6,
+            #6d28d9
+        );
+
+    color: white;
+
+    box-shadow:
+        0 15px 35px rgba(109,40,217,.18);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 20px 45px rgba(109,40,217,.28);
+}
+
+.message {
+    min-height: 20px;
+
+    margin-top: 10px;
+
+    font-size: 11px;
+    text-align: center;
+}
+
+/* =========================================================
+   WHY NOVI
+========================================================= */
+
+.section {
+    padding: 115px 0;
+}
+
+.section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+
+    gap: 30px;
+
+    margin-bottom: 45px;
+}
+
+.section-kicker {
+    color: var(--purple-bright);
+
+    font-size: 10px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.section-heading h2 {
+    max-width: 650px;
+
+    margin-top: 12px;
+
+    font-size:
+        clamp(43px, 6vw, 72px);
+
+    line-height: .92;
+
+    letter-spacing: -5px;
+}
+
+.section-heading p {
+    max-width: 300px;
+
+    color: #625d69;
+
+    font-size: 12px;
+
+    line-height: 1.7;
+}
+
+.features {
+    display: grid;
+
+    grid-template-columns:
+        1.4fr
+        .8fr
+        .8fr;
+
+    gap: 13px;
+}
+
+.feature {
+    position: relative;
+
+    min-height: 315px;
+
+    padding: 30px;
+
+    border-radius: 23px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.04),
+            rgba(255,255,255,.012)
+        );
+
+    border: 1px solid rgba(255,255,255,.06);
+
+    overflow: hidden;
+
+    transition:
+        transform .3s ease,
+        border-color .3s ease;
+}
+
+.feature:hover {
+    transform: translateY(-6px);
+
+    border-color:
+        rgba(139,92,246,.2);
+}
+
+.feature:first-child {
+    background:
+        radial-gradient(
+            circle at 100% 0%,
+            rgba(139,92,246,.13),
+            transparent 45%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(139,92,246,.08),
+            rgba(255,255,255,.012)
+        );
+
+    border-color:
+        rgba(139,92,246,.15);
+}
+
+.feature-number {
+    color: #625b72;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    letter-spacing: 1.5px;
+}
+
+.feature-icon {
+    width: 55px;
+    height: 55px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-top: 55px;
+
+    border-radius: 16px;
+
+    background: rgba(139,92,246,.08);
+
+    border: 1px solid rgba(139,92,246,.14);
+
+    color: var(--purple-bright);
+
+    font-size: 20px;
+}
+
+.feature h3 {
+    margin-top: 18px;
+
+    font-size: 20px;
+}
+
+.feature p {
+    max-width: 350px;
+
+    margin-top: 10px;
+
+    color: #686270;
+
+    font-size: 12px;
+
+    line-height: 1.8;
+}
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.home-footer {
+    padding: 35px 0 45px;
+
+    border-top:
+        1px solid rgba(255,255,255,.05);
+
+    color: #4e4956;
+
+    font-size: 10px;
+}
+
+.footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.footer-brand {
+    color: #77717f;
+
+    font-weight: 900;
+}
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+.dashboard-page {
+    min-height: 100vh;
+
+    background:
+        radial-gradient(
+            circle at 80% 0%,
+            rgba(139,92,246,.08),
+            transparent 35%
+        ),
+        #06050a;
+}
+
+.dashboard-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+
+    background: rgba(6,5,10,.8);
+
+    border-bottom:
+        1px solid rgba(255,255,255,.06);
+
+    backdrop-filter: blur(22px);
+}
+
+.dashboard-nav {
+    height: 76px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dashboard-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dashboard-title h1 {
+    font-size: 16px;
+}
+
+.dashboard-title p {
+    margin-top: 3px;
+
+    color: #625d69;
+
+    font-size: 9px;
+}
+
+.dashboard-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    color: #6c6873;
+
+    font-size: 9px;
+    font-weight: 800;
+
+    text-transform: uppercase;
+}
+
+.dashboard-status span {
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: var(--green);
+}
+
+.dashboard-main {
+    padding: 70px 0 100px;
+}
+
+.dashboard-grid {
+    display: grid;
+
+    grid-template-columns:
+        1.2fr
+        .8fr;
+
+    gap: 15px;
+}
+
+.panel {
+    position: relative;
+
+    padding: 25px;
+
+    border-radius: 20px;
+
+    background:
+        rgba(12,10,17,.88);
+
+    border: 1px solid rgba(255,255,255,.06);
+
+    box-shadow:
+        0 25px 70px rgba(0,0,0,.22);
+}
+
+.panel.full {
+    grid-column: 1 / -1;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 22px;
+}
+
+.panel-header h2 {
+    font-size: 15px;
+}
+
+.panel-header span {
+    color: #625d69;
+
+    font-size: 9px;
+    font-weight: 800;
+
+    text-transform: uppercase;
+}
+
+.stock-card {
+    padding: 25px;
+
+    border-radius: 17px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(139,92,246,.09),
+            rgba(255,255,255,.015)
+        );
+
+    border:
+        1px solid rgba(139,92,246,.13);
+}
+
+.stock-label {
+    color: #6b6572;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stock-number {
+    margin-top: 8px;
+
+    font-size: 55px;
+    font-weight: 950;
+
+    letter-spacing: -3px;
+}
+
+.stock-status {
+    margin-top: 5px;
+
+    color: #77717f;
+
+    font-size: 11px;
+}
+
+.generate-btn {
+    width: 100%;
+
+    height: 50px;
+
+    margin-top: 18px;
+
+    border: 0;
+    border-radius: 13px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #8b5cf6,
+            #6d28d9
+        );
+
+    color: white;
+
+    font-size: 12px;
+    font-weight: 900;
+
+    transition: .25s ease;
+}
+
+.generate-btn:hover {
+    transform: translateY(-2px);
+}
+
+.generated {
+    margin-top: 15px;
+
+    padding: 15px;
+
+    min-height: 52px;
+
+    border-radius: 13px;
+
+    background: rgba(0,0,0,.25);
+
+    border: 1px solid rgba(255,255,255,.05);
+
+    color: #aaa4b1;
+
+    font-size: 11px;
+
+    word-break: break-word;
+}
+
+.save-form {
+    display: grid;
+
+    gap: 10px;
+}
+
+.save-form .btn {
+    height: 48px;
+
+    background:
+        rgba(139,92,246,.1);
+
+    border:
+        1px solid rgba(139,92,246,.2);
+
+    color: #c4b5fd;
+}
+
+.save-form .btn:hover {
+    background: rgba(139,92,246,.16);
+}
+
+.saved-list {
+    display: grid;
+    gap: 9px;
+}
+
+.saved-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 12px;
+
+    padding: 13px;
+
+    border-radius: 12px;
+
+    background: rgba(255,255,255,.025);
+
+    border: 1px solid rgba(255,255,255,.045);
+}
+
+.saved-info {
+    min-width: 0;
+}
+
+.saved-info strong {
+    display: block;
+
+    color: #ddd8e3;
+
+    font-size: 11px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.saved-info small {
+    display: block;
+
+    margin-top: 4px;
+
+    color: #5e5966;
+
+    font-size: 9px;
+}
+
+.saved-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.small-btn {
+    height: 30px;
+
+    padding: 0 9px;
+
+    border-radius: 8px;
+
+    border: 1px solid rgba(255,255,255,.06);
+
+    background: rgba(255,255,255,.035);
+
+    color: #8d8794;
+
+    font-size: 9px;
+}
+
+.small-btn:hover {
+    color: white;
+
+    border-color:
+        rgba(139,92,246,.2);
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 950px) {
+
+    .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 55px;
     }
 
     .hero {
-        position: relative;
-
-        min-height:
-            560px;
-
-        display:
-            flex;
-
-        align-items:
-            center;
-
-        justify-content:
-            center;
-
-        padding:
-            70px 0 45px;
-
-        text-align:
-            center;
-
-        isolation:
-            isolate;
+        padding-top: 70px;
     }
 
-    .hero::before {
-        content: "";
-
-        position:
-            absolute;
-
-        width:
-            900px;
-
-        height:
-            540px;
-
-        left:
-            50%;
-
-        top:
-            20px;
-
-        transform:
-            translateX(-50%);
-
-        background:
-            radial-gradient(
-                ellipse,
-                rgba(139,92,246,.11),
-                transparent 68%
-            );
-
-        filter:
-            blur(40px);
-
-        pointer-events:
-            none;
-
-        z-index:
-            -2;
+    .hero-preview {
+        min-height: 400px;
     }
 
-    .hero::after {
-        content: "";
-
-        position:
-            absolute;
-
-        width:
-            680px;
-
-        height:
-            1px;
-
-        left:
-            50%;
-
-        bottom:
-            25px;
-
-        transform:
-            translateX(-50%);
-
-        background:
-            linear-gradient(
-                90deg,
-                transparent,
-                rgba(139,92,246,.18),
-                transparent
-            );
-
-        pointer-events:
-            none;
-
-        z-index:
-            -1;
+    .preview-card {
+        transform: none;
     }
 
-    .hero-content {
-        position:
-            relative;
-
-        z-index:
-            3;
-
-        width:
-            100%;
-
-        max-width:
-            950px;
-    }
-
-    .hero-orb {
-        position:
-            absolute;
-
-        border-radius:
-            50%;
-
-        pointer-events:
-            none;
-
-        z-index:
-            -1;
-    }
-
-    .hero-orb.one {
-        width:
-            9px;
-
-        height:
-            9px;
-
-        left:
-            19%;
-
-        top:
-            29%;
-
-        background:
-            var(--purple-bright);
-
-        box-shadow:
-            0 0 25px
-            rgba(167,139,250,.8);
-
-        animation:
-            floatOne 4.5s ease-in-out infinite;
-    }
-
-    .hero-orb.two {
-        width:
-            6px;
-
-        height:
-            6px;
-
-        right:
-            19%;
-
-        top:
-            35%;
-
-        background:
-            var(--purple);
-
-        box-shadow:
-            0 0 18px
-            rgba(139,92,246,.85);
-
-        animation:
-            floatTwo 5.2s ease-in-out infinite;
-    }
-
-    .hero-orb.three {
-        width:
-            4px;
-
-        height:
-            4px;
-
-        left:
-            25%;
-
-        bottom:
-            25%;
-
-        background:
-            var(--purple-light);
-
-        box-shadow:
-            0 0 15px
-            rgba(196,181,253,.8);
-
-        animation:
-            floatThree 4.8s ease-in-out infinite;
-    }
-
-    @keyframes floatOne {
-        0%,
-        100% {
-            transform:
-                translateY(0);
+    @keyframes previewFloat {
+        0%,100% {
+            transform: translateY(0);
         }
 
         50% {
-            transform:
-                translateY(-17px);
+            transform: translateY(-10px);
         }
     }
 
-    @keyframes floatTwo {
-        0%,
-        100% {
-            transform:
-                translateY(0)
-                scale(1);
-        }
-
-        50% {
-            transform:
-                translateY(14px)
-                scale(1.18);
-        }
-    }
-
-    @keyframes floatThree {
-        0%,
-        100% {
-            transform:
-                translate(0,0);
-        }
-
-        50% {
-            transform:
-                translate(10px,-10px);
-        }
-    }
-
-    .hero-badge {
-        display:
-            inline-flex;
-
-        align-items:
-            center;
-
-        gap:
-            9px;
-
-        padding:
-            9px 15px;
-
-        margin-bottom:
-            27px;
-
-        border-radius:
-            999px;
-
-        border:
-            1px solid
-            rgba(139,92,246,.20);
-
-        background:
-            rgba(139,92,246,.045);
-
-        color:
-            #aaa4b9;
-
-        font-size:
-            12px;
-
-        font-weight:
-            800;
-
-        backdrop-filter:
-            blur(14px);
-
-        box-shadow:
-            0 15px 45px
-            rgba(0,0,0,.12);
-    }
-
-    .hero-badge .dot {
-        width:
-            7px;
-
-        height:
-            7px;
-
-        border-radius:
-            50%;
-
-        background:
-            var(--purple-bright);
-
-        box-shadow:
-            0 0 15px
-            rgba(167,139,250,.95);
-
-        animation:
-            dotPulse 2s ease-in-out infinite;
-    }
-
-    @keyframes dotPulse {
-        0%,
-        100% {
-            opacity:
-                .65;
-
-            transform:
-                scale(.88);
-        }
-
-        50% {
-            opacity:
-                1;
-
-            transform:
-                scale(1.18);
-        }
-    }
-
-    .hero h1 {
-        font-size:
-            clamp(64px, 10vw, 128px);
-
-        line-height:
-            .84;
-
-        letter-spacing:
-            -8px;
-
-        font-weight:
-            950;
-
-        text-shadow:
-            0 28px 75px
-            rgba(0,0,0,.40);
-
-        animation:
-            heroIn .8s
-            cubic-bezier(.2,.8,.2,1);
-    }
-
-    .hero h1 .welcome {
-        display:
-            block;
-
-        color:
-            #ffffff;
-    }
-
-    .hero h1 .brand {
-        display:
-            block;
-
-        margin-top:
-            11px;
-
-        background:
-            linear-gradient(
-                135deg,
-                #ffffff 0%,
-                #ede9fe 26%,
-                #c4b5fd 48%,
-                #a78bfa 70%,
-                #7c3aed 100%
-            );
-
-        -webkit-background-clip:
-            text;
-
-        background-clip:
-            text;
-
-        color:
-            transparent;
-
-        filter:
-            drop-shadow(
-                0 0 35px
-                rgba(139,92,246,.24)
-            );
-    }
-
-    @keyframes heroIn {
-        from {
-            opacity:
-                0;
-
-            transform:
-                translateY(16px)
-                scale(.985);
-        }
-
-        to {
-            opacity:
-                1;
-
-            transform:
-                translateY(0)
-                scale(1);
-        }
-    }
-
-    .hero-description {
-        max-width:
-            650px;
-
-        margin:
-            30px auto 0;
-
-        color:
-            #817b8f;
-
-        font-size:
-            15px;
-
-        line-height:
-            1.85;
-
-        animation:
-            heroTextIn .9s
-            .1s both
-            cubic-bezier(.2,.8,.2,1);
-    }
-
-    .hero-description strong {
-        color:
-            #afa8ba;
-
-        font-weight:
-            700;
-    }
-
-    @keyframes heroTextIn {
-        from {
-            opacity:
-                0;
-
-            transform:
-                translateY(12px);
-        }
-
-        to {
-            opacity:
-                1;
-
-            transform:
-                translateY(0);
-        }
-    }
-
-    /* =================================================
-       ACCESS
-    ================================================= */
-
-    .access-section {
-        padding:
-            20px 0 105px;
-    }
-
-    .access-heading {
-        text-align:
-            center;
-
-        margin-bottom:
-            24px;
-    }
-
-    .access-heading-kicker {
-        color:
-            var(--purple-bright);
-
-        font-size:
-            10px;
-
-        font-weight:
-            900;
-
-        text-transform:
-            uppercase;
-
-        letter-spacing:
-            2px;
-
-        margin-bottom:
-            9px;
-    }
-
-    .access-heading h2 {
-        font-size:
-            clamp(32px,5vw,44px);
-
-        letter-spacing:
-            -2px;
-    }
-
-    .access-heading p {
-        margin-top:
-            8px;
-
-        color:
-            #716b79;
-
-        font-size:
-            13px;
-    }
-
-    .access-box {
-        position:
-            relative;
-
-        max-width:
-            700px;
-
-        margin:
-            0 auto;
-
-        min-height:
-            310px;
-
-        display:
-            flex;
-
-        flex-direction:
-            column;
-
-        justify-content:
-            center;
-
-        padding:
-            42px;
-
-        overflow:
-            hidden;
-
-        border:
-            1px solid
-            rgba(139,92,246,.20);
-
-        border-radius:
-            26px;
-
-        background:
-            linear-gradient(
-                135deg,
-                rgba(18,14,31,.92),
-                rgba(9,8,16,.84)
-            );
-
-        box-shadow:
-            0 40px 110px
-            rgba(0,0,0,.36),
-            inset 0 1px 0
-            rgba(255,255,255,.035);
-
-        backdrop-filter:
-            blur(26px);
-    }
-
-    .access-box::before {
-        content: "";
-
-        position:
-            absolute;
-
-        width:
-            280px;
-
-        height:
-            280px;
-
-        left:
-            -150px;
-
-        top:
-            -170px;
-
-        border-radius:
-            50%;
-
-        background:
-            rgba(139,92,246,.13);
-
-        filter:
-            blur(52px);
-
-        pointer-events:
-            none;
-    }
-
-    .access-box::after {
-        content: "";
-
-        position:
-            absolute;
-
-        width:
-            240px;
-
-        height:
-            240px;
-
-        right:
-            -135px;
-
-        bottom:
-            -145px;
-
-        border-radius:
-            50%;
-
-        background:
-            rgba(109,40,217,.11);
-
-        filter:
-            blur(52px);
-
-        pointer-events:
-            none;
-    }
-
-    .access-box > * {
-        position:
-            relative;
-
-        z-index:
-            2;
-    }
-
-    .access-box h3 {
-        font-size:
-            28px;
-
-        margin-bottom:
-            8px;
-
-        text-align:
-            center;
-    }
-
-    .access-box > p {
-        color:
-            #777180;
-
-        font-size:
-            13px;
-
-        margin-bottom:
-            23px;
-
-        text-align:
-            center;
-    }
-
-    .input {
-        width:
-            100%;
-
-        padding:
-            15px 16px;
-
-        margin-bottom:
-            11px;
-
-        border-radius:
-            13px;
-
-        border:
-            1px solid
-            rgba(255,255,255,.08);
-
-        outline:
-            none;
-
-        background:
-            rgba(0,0,0,.27);
-
-        color:
-            white;
-
-        transition:
-            border-color .25s ease,
-            box-shadow .25s ease,
-            background .25s ease;
-    }
-
-    .input::placeholder {
-        color:
-            #5f5a67;
-    }
-
-    .input:focus {
-        border-color:
-            rgba(139,92,246,.55);
-
-        background:
-            rgba(139,92,246,.035);
-
-        box-shadow:
-            0 0 0 4px
-            rgba(139,92,246,.07),
-            0 12px 35px
-            rgba(0,0,0,.15);
-    }
-
-    .access-box .btn {
-        width:
-            100%;
-    }
-
-    .message {
-        min-height:
-            20px;
-
-        margin-top:
-            11px;
-
-        text-align:
-            center;
-
-        color:
-            #918b9d;
-
-        font-size:
-            12px;
-    }
-
-    /* =================================================
-       WHY NOVI
-    ================================================= */
-
-    .section {
-        padding:
-            95px 0;
-    }
-
-    .section-title {
-        text-align:
-            center;
-
-        margin-bottom:
-            44px;
-    }
-
-    .section-kicker {
-        color:
-            var(--purple-bright);
-
-        font-size:
-            11px;
-
-        font-weight:
-            900;
-
-        text-transform:
-            uppercase;
-
-        letter-spacing:
-            2px;
-
-        margin-bottom:
-            11px;
-    }
-
-    .section-title h2 {
-        font-size:
-            clamp(42px,6vw,60px);
-
-        letter-spacing:
-            -3px;
-    }
-
-    .section-title p {
-        margin-top:
-            10px;
-
-        color:
-            #777180;
-
-        font-size:
-            14px;
+    .access-layout {
+        grid-template-columns: 1fr;
+        gap: 35px;
     }
 
     .features {
-        display:
-            grid;
-
-        grid-template-columns:
-            repeat(3,1fr);
-
-        gap:
-            18px;
+        grid-template-columns: 1fr;
     }
 
     .feature {
-        position:
-            relative;
-
-        min-height:
-            265px;
-
-        padding:
-            31px;
-
-        overflow:
-            hidden;
-
-        border:
-            1px solid
-            rgba(255,255,255,.065);
-
-        border-radius:
-            23px;
-
-        background:
-            linear-gradient(
-                145deg,
-                rgba(255,255,255,.035),
-                rgba(255,255,255,.012)
-            );
-
-        transition:
-            transform .35s ease,
-            border-color .35s ease,
-            background .35s ease,
-            box-shadow .35s ease;
-
-        backdrop-filter:
-            blur(18px);
-    }
-
-    .feature::before {
-        content: "";
-
-        position:
-            absolute;
-
-        width:
-            220px;
-
-        height:
-            220px;
-
-        right:
-            -110px;
-
-        top:
-            -130px;
-
-        border-radius:
-            50%;
-
-        background:
-            rgba(139,92,246,.08);
-
-        filter:
-            blur(45px);
-
-        pointer-events:
-            none;
-    }
-
-    .feature::after {
-        content: "";
-
-        position:
-            absolute;
-
-        width:
-            165px;
-
-        height:
-            165px;
-
-        right:
-            -90px;
-
-        bottom:
-            -95px;
-
-        border-radius:
-            50%;
-
-        background:
-            rgba(109,40,217,.11);
-
-        filter:
-            blur(38px);
-
-        pointer-events:
-            none;
-    }
-
-    .feature:hover {
-        transform:
-            translateY(-9px);
-
-        border-color:
-            var(--border-bright);
-
-        background:
-            rgba(139,92,246,.05);
-
-        box-shadow:
-            0 30px 75px
-            rgba(0,0,0,.24);
-    }
-
-    .feature-number {
-        color:
-            rgba(167,139,250,.52);
-
-        font-size:
-            10px;
-
-        font-weight:
-            900;
-
-        letter-spacing:
-            1.4px;
-
-        margin-bottom:
-            25px;
-    }
-
-    .feature-icon {
-        width:
-            49px;
-
-        height:
-            49px;
-
-        display:
-            grid;
-
-        place-items:
-            center;
-
-        margin-bottom:
-            18px;
-
-        border-radius:
-            15px;
-
-        color:
-            #c4b5fd;
-
-        background:
-            rgba(139,92,246,.1);
-
-        border:
-            1px solid
-            rgba(139,92,246,.17);
-
-        font-size:
-            18px;
-
-        box-shadow:
-            0 14px 32px
-            rgba(109,40,217,.12);
-    }
-
-    .feature h3 {
-        font-size:
-            18px;
-
-        margin-bottom:
-            9px;
-    }
-
-    .feature p {
-        color:
-            #777180;
-
-        line-height:
-            1.7;
-
-        font-size:
-            13px;
-    }
-
-    /* =================================================
-       DASHBOARD
-    ================================================= */
-
-    .dashboard-page {
-        background:
-            radial-gradient(
-                circle at top right,
-                rgba(139,92,246,.11),
-                transparent 35%
-            ),
-            #050509;
-    }
-
-    .dashboard-wrap {
-        min-height:
-            100vh;
-
-        padding-bottom:
-            60px;
-    }
-
-    .dashboard-header {
-        padding:
-            55px 0 30px;
-    }
-
-    .dashboard-header-row {
-        display:
-            flex;
-
-        align-items:
-            flex-end;
-
-        justify-content:
-            space-between;
-
-        gap:
-            20px;
-    }
-
-    .dashboard-header h1 {
-        font-size:
-            clamp(38px,6vw,65px);
-
-        letter-spacing:
-            -4px;
-
-        line-height:
-            .95;
-    }
-
-    .dashboard-header p {
-        color:
-            #777180;
-
-        margin-top:
-            10px;
-
-        font-size:
-            14px;
-    }
-
-    .dashboard-actions {
-        display:
-            flex;
-
-        gap:
-            9px;
-
-        flex-wrap:
-            wrap;
+        min-height: 260px;
     }
 
     .dashboard-grid {
-        display:
-            grid;
-
-        grid-template-columns:
-            repeat(2,minmax(0,1fr));
-
-        gap:
-            16px;
-    }
-
-    .panel {
-        padding:
-            24px;
-
-        border:
-            1px solid
-            rgba(255,255,255,.065);
-
-        border-radius:
-            20px;
-
-        background:
-            rgba(14,11,23,.72);
-
-        backdrop-filter:
-            blur(20px);
-
-        box-shadow:
-            0 25px 70px
-            rgba(0,0,0,.15);
+        grid-template-columns: 1fr;
     }
 
     .panel.full {
-        grid-column:
-            1 / -1;
+        grid-column: auto;
+    }
+}
+
+@media (max-width: 650px) {
+
+    .container {
+        width: min(100% - 28px, 1180px);
     }
 
-    .panel-head {
-        display:
-            flex;
-
-        align-items:
-            center;
-
-        justify-content:
-            space-between;
-
-        gap:
-            15px;
-
-        margin-bottom:
-            19px;
+    .nav-inner {
+        height: 68px;
     }
 
-    .panel-head h2 {
-        font-size:
-            18px;
+    .nav-actions .nav-btn:first-child {
+        display: none;
     }
 
-    /* =================================================
-       GENERATE
-    ================================================= */
-
-    .stock-number {
-        font-size:
-            52px;
-
-        font-weight:
-            950;
-
-        color:
-            var(--purple-bright);
-
-        letter-spacing:
-            -3px;
-
-        line-height:
-            1;
-
-        text-shadow:
-            0 0 30px
-            rgba(139,92,246,.28);
-    }
-
-    .stock-status {
-        display:
-            inline-flex;
-
-        align-items:
-            center;
-
-        gap:
-            7px;
-
-        color:
-            #777180;
-
-        font-size:
-            12px;
-    }
-
-    .stock-status::before {
-        content: "";
-
-        width:
-            6px;
-
-        height:
-            6px;
-
-        border-radius:
-            50%;
-
-        background:
-            #8b5cf6;
-
-        box-shadow:
-            0 0 10px
-            rgba(139,92,246,.7);
-    }
-
-    .stock-box {
-        position:
-            relative;
-
-        display:
-            flex;
-
-        align-items:
-            center;
-
-        justify-content:
-            space-between;
-
-        gap:
-            30px;
-
-        min-height:
-            190px;
+    .hero {
+        min-height: auto;
 
         padding:
-            28px;
-
-        overflow:
-            hidden;
-
-        border:
-            1px solid
-            rgba(139,92,246,.14);
-
-        border-radius:
-            19px;
-
-        background:
-            linear-gradient(
-                135deg,
-                rgba(139,92,246,.075),
-                rgba(0,0,0,.24) 55%,
-                rgba(139,92,246,.025)
-            );
+            70px 0 80px;
     }
 
-    .stock-box::before,
-    .stock-box::after {
-        content: "";
-
-        position:
-            absolute;
-
-        border-radius:
-            50%;
-
-        pointer-events:
-            none;
-
-        filter:
-            blur(50px);
+    .hero h1 {
+        font-size: 65px;
+        letter-spacing: -5px;
     }
 
-    .stock-box::before {
-        width:
-            280px;
-
-        height:
-            280px;
-
-        left:
-            -150px;
-
-        top:
-            -170px;
-
-        background:
-            rgba(139,92,246,.13);
+    .hero-description {
+        font-size: 13px;
     }
 
-    .stock-box::after {
-        width:
-            230px;
-
-        height:
-            230px;
-
-        right:
-            -130px;
-
-        bottom:
-            -160px;
-
-        background:
-            rgba(109,40,217,.13);
+    .hero-actions {
+        flex-direction: column;
     }
 
-    .stock-info {
-        position:
-            relative;
-
-        z-index:
-            2;
+    .hero-button {
+        width: 100%;
     }
 
-    .stock-box h3 {
-        margin-top:
-            8px;
-
-        margin-bottom:
-            6px;
-
-        font-size:
-            16px;
+    .hero-stats {
+        gap: 25px;
     }
 
-    .stock-box p {
-        color:
-            #686371;
-
-        font-size:
-            12px;
-
-        line-height:
-            1.6;
+    .stat:not(:last-child)::after {
+        right: -13px;
     }
 
-    .generate-wrap {
-        position:
-            relative;
-
-        z-index:
-            3;
-
-        flex-shrink:
-            0;
+    .preview-card {
+        width: 100%;
     }
 
-    .generate-wrap::before {
-        content: "";
-
-        position:
-            absolute;
-
-        inset:
-            -12px;
-
-        border-radius:
-            18px;
-
-        background:
-            rgba(139,92,246,.18);
-
-        filter:
-            blur(22px);
-
-        opacity:
-            .5;
-
-        transition:
-            opacity .3s ease,
-            transform .3s ease;
+    .preview-number {
+        font-size: 38px;
     }
 
-    .generate-wrap:hover::before {
-        opacity:
-            .95;
-
-        transform:
-            scale(1.08);
+    .access-box {
+        padding: 22px;
     }
 
-    .generate-button {
-        position:
-            relative;
-
-        min-width:
-            170px;
-
-        min-height:
-            60px;
-
-        display:
-            inline-flex;
-
-        align-items:
-            center;
-
-        justify-content:
-            center;
-
-        gap:
-            10px;
-
-        border:
-            1px solid
-            rgba(196,181,253,.35);
-
-        border-radius:
-            15px;
-
-        color:
-            white;
-
-        font-size:
-            14px;
-
-        font-weight:
-            900;
-
-        background:
-            linear-gradient(
-                135deg,
-                #8b5cf6,
-                #6d28d9
-            );
-
-        box-shadow:
-            0 15px 40px
-            rgba(109,40,217,.35);
-
-        transition:
-            transform .25s ease,
-            box-shadow .25s ease,
-            filter .25s ease;
+    .section {
+        padding: 80px 0;
     }
 
-    .generate-button:hover {
-        transform:
-            translateY(-3px)
-            scale(1.02);
-
-        box-shadow:
-            0 20px 55px
-            rgba(109,40,217,.5);
-
-        filter:
-            brightness(1.08);
+    .section-heading {
+        display: block;
     }
 
-    .generate-button:active {
-        transform:
-            translateY(0)
-            scale(.98);
+    .section-heading p {
+        margin-top: 20px;
     }
 
-    .generate-button:disabled {
-        opacity:
-            .75;
-
-        filter:
-            saturate(.7);
+    .section-heading h2 {
+        font-size: 45px;
     }
 
-    .generate-icon {
-        width:
-            25px;
-
-        height:
-            25px;
-
-        display:
-            grid;
-
-        place-items:
-            center;
-
-        border-radius:
-            8px;
-
-        background:
-            rgba(255,255,255,.13);
-
-        border:
-            1px solid
-            rgba(255,255,255,.12);
+    .dashboard-main {
+        padding-top: 40px;
     }
 
-    .generate-button.loading
-    .generate-icon {
-        animation:
-            generateSpin .8s linear infinite;
+    .dashboard-nav {
+        height: 68px;
     }
-
-    @keyframes generateSpin {
-        from {
-            transform:
-                rotate(0deg);
-        }
-
-        to {
-            transform:
-                rotate(360deg);
-        }
-    }
-
-    .generated {
-        display:
-            none;
-
-        position:
-            relative;
-
-        margin-top:
-            15px;
-
-        padding:
-            21px;
-
-        overflow:
-            hidden;
-
-        border:
-            1px solid
-            rgba(139,92,246,.32);
-
-        border-radius:
-            17px;
-
-        background:
-            linear-gradient(
-                135deg,
-                rgba(139,92,246,.09),
-                rgba(0,0,0,.2)
-            );
-
-        animation:
-            generatedIn .4s
-            cubic-bezier(.2,.8,.2,1);
-    }
-
-    @keyframes generatedIn {
-        from {
-            opacity:
-                0;
-
-            transform:
-                translateY(12px)
-                scale(.98);
-        }
-
-        to {
-            opacity:
-                1;
-
-            transform:
-                translateY(0)
-                scale(1);
-        }
-    }
-
-    .generated-top {
-        position:
-            relative;
-
-        display:
-            flex;
-
-        align-items:
-            center;
-
-        margin-bottom:
-            12px;
-    }
-
-    .generated-title {
-        display:
-            flex;
-
-        align-items:
-            center;
-
-        gap:
-            8px;
-
-        color:
-            var(--purple-bright);
-
-        font-size:
-            10px;
-
-        text-transform:
-            uppercase;
-
-        letter-spacing:
-            1.5px;
-
-        font-weight:
-            900;
-    }
-
-    .generated-title::before {
-        content:
-            "✓";
-
-        width:
-            20px;
-
-        height:
-            20px;
-
-        display:
-            grid;
-
-        place-items:
-            center;
-
-        border-radius:
-            7px;
-
-        background:
-            rgba(139,92,246,.15);
-
-        border:
-            1px solid
-            rgba(139,92,246,.2);
-    }
-
-    .generated-item {
-        position:
-            relative;
-
-        padding:
-            15px;
-
-        border:
-            1px solid
-            rgba(255,255,255,.065);
-
-        border-radius:
-            12px;
-
-        background:
-            rgba(0,0,0,.25);
-
-        font-size:
-            15px;
-
-        font-weight:
-            800;
-
-        line-height:
-            1.5;
-
-        word-break:
-            break-word;
-
-        color:
-            #f4f0ff;
-    }
-
-    .generated .message {
-        position:
-            relative;
-
-        margin-top:
-            8px;
-
-        text-align:
-            left;
-
-        color:
-            #777180;
-
-        font-size:
-            11px;
-    }
-
-    /* =================================================
-       SAVED
-    ================================================= */
-
-    .login-grid {
-        display:
-            grid;
-
-        grid-template-columns:
-            1fr 1fr;
-
-        gap:
-            10px;
-    }
-
-    .saved-grid {
-        display:
-            grid;
-
-        gap:
-            9px;
-    }
-
-    .saved-card {
-        display:
-            flex;
-
-        align-items:
-            center;
-
-        justify-content:
-            space-between;
-
-        gap:
-            15px;
-
-        padding:
-            13px;
-
-        border:
-            1px solid
-            rgba(255,255,255,.055);
-
-        border-radius:
-            13px;
-
-        background:
-            rgba(0,0,0,.2);
-
-        transition:
-            border-color .2s ease,
-            background .2s ease,
-            transform .2s ease;
-    }
-
-    .saved-card:hover {
-        transform:
-            translateY(-1px);
-
-        border-color:
-            rgba(139,92,246,.2);
-
-        background:
-            rgba(139,92,246,.035);
-    }
-
-    .saved-info {
-        min-width:
-            0;
-    }
-
-    .saved-info strong {
-        display:
-            block;
-
-        overflow:
-            hidden;
-
-        text-overflow:
-            ellipsis;
-
-        white-space:
-            nowrap;
-
-        font-size:
-            13px;
-    }
-
-    .saved-info small {
-        color:
-            #625e6b;
-
-        font-size:
-            11px;
-    }
-
-    .saved-actions {
-        display:
-            flex;
-
-        gap:
-            6px;
-
-        flex-wrap:
-            wrap;
-    }
-
-    .mini-btn {
-        border:
-            1px solid
-            rgba(255,255,255,.08);
-
-        background:
-            rgba(255,255,255,.035);
-
-        color:
-            #ddd8e5;
-
-        border-radius:
-            8px;
-
-        padding:
-            7px 10px;
-
-        font-size:
-            11px;
-
-        font-weight:
-            700;
-
-        transition:
-            .2s;
-    }
-
-    .mini-btn:hover {
-        border-color:
-            rgba(139,92,246,.4);
-
-        background:
-            rgba(139,92,246,.08);
-
-        transform:
-            translateY(-1px);
-    }
-
-    .mini-btn.copied {
-        color:
-            #ffffff;
-
-        border-color:
-            rgba(139,92,246,.5);
-
-        background:
-            linear-gradient(
-                135deg,
-                rgba(139,92,246,.25),
-                rgba(109,40,217,.18)
-            );
-
-        box-shadow:
-            0 5px 20px
-            rgba(109,40,217,.18);
-    }
-
-    /* =================================================
-       RESPONSIVE
-    ================================================= */
-
-    @media (max-width: 900px) {
-
-        .features {
-            grid-template-columns:
-                1fr;
-        }
-
-        .dashboard-grid {
-            grid-template-columns:
-                1fr;
-        }
-
-        .panel.full {
-            grid-column:
-                auto;
-        }
-
-    }
-
-    @media (max-width: 600px) {
-
-        .container,
-        .nav-inner {
-            width:
-                calc(100% - 24px);
-        }
-
-        nav {
-            height:
-                68px;
-        }
-
-        .nav-buttons .btn-secondary {
-            display:
-                none;
-        }
-
-        .hero {
-            min-height:
-                515px;
-
-            padding-top:
-                55px;
-        }
-
-        .hero h1 {
-            font-size:
-                61px;
-
-            letter-spacing:
-                -5px;
-        }
-
-        .hero-description {
-            font-size:
-                14px;
-        }
-
-        .access-section {
-            padding:
-                5px 0 70px;
-        }
-
-        .access-box {
-            min-height:
-                auto;
-
-            padding:
-                28px;
-        }
-
-        .section {
-            padding:
-                70px 0;
-        }
-
-        .section-title h2 {
-            font-size:
-                42px;
-        }
-
-        .login-grid {
-            grid-template-columns:
-                1fr;
-        }
-
-        .dashboard-header-row {
-            align-items:
-                flex-start;
-
-            flex-direction:
-                column;
-        }
-
-        .stock-box {
-            align-items:
-                stretch;
-
-            flex-direction:
-                column;
-
-            gap:
-                25px;
-        }
-
-        .generate-wrap,
-        .generate-button {
-            width:
-                100%;
-        }
-
-        .saved-card {
-            align-items:
-                flex-start;
-
-            flex-direction:
-                column;
-        }
-
-        .saved-actions {
-            width:
-                100%;
-        }
-
-        .saved-actions .mini-btn {
-            flex:
-                1;
-        }
-
-    }
-
+}
 </style>
-```
-
 </head>
 
 <body>
 
 <div class="app">
 
-```
 <div class="slider">
 
-    <!-- =================================================
-         HOME PAGE
-    ================================================= -->
+<!-- =========================================================
+     HOME PAGE
+========================================================= -->
 
-    <section class="page main-page">
+<main class="page main-page">
 
-        <nav>
+<nav>
+    <div class="container nav-inner">
 
-            <div class="nav-inner">
+        <a href="#" class="logo">
+            <div class="logo-mark">N</div>
+            <span class="logo-text">Novi</span>
+        </a>
 
-                <div class="logo">
+        <div class="nav-actions">
+            <button
+                class="nav-btn"
+                onclick="scrollToAccess()">
+                Access
+            </button>
 
-                    <div class="logo-mark">
-                        N
+            <button
+                class="nav-btn primary"
+                onclick="openDashboard()">
+                Dashboard
+            </button>
+        </div>
+
+    </div>
+</nav>
+
+
+<!-- HERO -->
+
+<section class="hero">
+
+    <div class="container hero-grid">
+
+        <div class="hero-left">
+
+            <div class="hero-badge">
+                <span class="dot"></span>
+                System online
+            </div>
+
+            <h1>
+                <span class="line-one">
+                    Welcome to
+                </span>
+
+                <span class="line-two">
+                    Novi.
+                </span>
+            </h1>
+
+            <p class="hero-description">
+                <strong>Everything you need.</strong>
+                One clean platform built to keep your
+                experience fast, simple and organized.
+            </p>
+
+            <div class="hero-actions">
+
+                <button
+                    class="hero-button primary"
+                    onclick="scrollToAccess()">
+                    Get Started →
+                </button>
+
+                <button
+                    class="hero-button"
+                    onclick="openDashboard()">
+                    Open Dashboard
+                </button>
+
+            </div>
+
+            <div class="hero-stats">
+
+                <div class="stat">
+                    <strong>01</strong>
+                    <span>Key Access</span>
+                </div>
+
+                <div class="stat">
+                    <strong>Fast</strong>
+                    <span>Experience</span>
+                </div>
+
+                <div class="stat">
+                    <strong>24/7</strong>
+                    <span>Available</span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- DASHBOARD PREVIEW -->
+
+        <div class="hero-preview">
+
+            <div class="preview-glow"></div>
+
+            <div class="preview-card">
+
+                <div class="preview-top">
+
+                    <div class="preview-title">
+                        Novi Dashboard
                     </div>
 
-                    <div class="logo-text">
-                        <span class="logo-no">NO</span><span class="logo-vi">VI</span>
+                    <div class="preview-status">
+                        <span></span>
+                        Connected
                     </div>
 
                 </div>
 
-                <div class="nav-buttons">
+                <div class="preview-main">
+
+                    <div class="preview-label">
+                        Available Stock
+                    </div>
+
+                    <div class="preview-number">
+                        128
+                    </div>
+
+                    <div class="preview-line">
+                        <span></span>
+                    </div>
+
+                    <div class="preview-grid">
+
+                        <div class="preview-box">
+                            <small>Status</small>
+                            <strong>Ready</strong>
+                        </div>
+
+                        <div class="preview-box">
+                            <small>Access</small>
+                            <strong>Active</strong>
+                        </div>
+
+                    </div>
 
                     <button
-                        class="btn btn-secondary"
+                        class="preview-button"
                         onclick="scrollToAccess()">
-                        Access
-                    </button>
-
-                    <button
-                        class="btn btn-primary"
-                        onclick="openDashboard()">
-                        Dashboard
+                        UNLOCK NOVI
                     </button>
 
                 </div>
 
             </div>
 
-        </nav>
+        </div>
+
+    </div>
+
+</section>
 
 
-        <!-- =================================================
-             HOME HERO
-        ================================================= -->
+<!-- ACCESS -->
 
-        <div class="hero">
+<section
+    id="access"
+    class="access-section">
 
-            <div class="hero-orb one"></div>
-            <div class="hero-orb two"></div>
-            <div class="hero-orb three"></div>
+    <div class="container access-layout">
 
-            <div class="hero-content container">
+        <div class="access-title">
 
-                <div class="hero-badge">
+            <div class="kicker">
+                Secure Access
+            </div>
 
-                    <span class="dot"></span>
+            <h2>
+                Enter your
+                <span>key.</span>
+            </h2>
 
-                    Novi is online
+            <p>
+                Use your Novi access key to unlock your
+                private dashboard and available features.
+            </p>
 
+        </div>
+
+
+        <div class="access-box">
+
+            <div class="access-top">
+
+                <h3>
+                    Unlock Novi
+                </h3>
+
+                <div class="access-lock">
+                    ◆
                 </div>
 
-                <h1>
+            </div>
 
-                    <span class="welcome">
-                        Welcome to
-                    </span>
+            <label
+                class="input-label"
+                for="keyInput">
+                Access Key
+            </label>
 
-                    <span class="brand">
-                        Novi
-                    </span>
+            <input
+                id="keyInput"
+                class="input"
+                type="text"
+                placeholder="NOVI-XXXX-XXXX-XXXX-XXXX"
+                autocomplete="off"
+            >
 
-                </h1>
+            <button
+                class="btn btn-primary"
+                onclick="unlock()">
+                Unlock Dashboard
+            </button>
 
-                <p class="hero-description">
+            <div
+                id="unlockMessage"
+                class="message">
+            </div>
 
-                    <strong>
-                        A clean, fast and simple platform
-                    </strong>
-                    designed to keep everything you need
-                    in one place.
+        </div>
 
+    </div>
+
+</section>
+
+
+<!-- WHY NOVI -->
+
+<section class="section">
+
+    <div class="container">
+
+        <div class="section-heading">
+
+            <div>
+                <div class="section-kicker">
+                    Why Novi
+                </div>
+
+                <h2>
+                    Built different.
+                </h2>
+            </div>
+
+            <p>
+                No unnecessary clutter.
+                Just a clean interface designed
+                around the things you actually use.
+            </p>
+
+        </div>
+
+
+        <div class="features">
+
+            <div class="feature">
+
+                <div class="feature-number">
+                    01 / ACCESS
+                </div>
+
+                <div class="feature-icon">
+                    ◈
+                </div>
+
+                <h3>
+                    One Key. One Dashboard.
+                </h3>
+
+                <p>
+                    Your Novi access key gives you a direct
+                    path into your private dashboard without
+                    unnecessary steps.
+                </p>
+
+            </div>
+
+
+            <div class="feature">
+
+                <div class="feature-number">
+                    02 / SPEED
+                </div>
+
+                <div class="feature-icon">
+                    ⚡
+                </div>
+
+                <h3>
+                    Fast
+                </h3>
+
+                <p>
+                    Lightweight design and smooth
+                    interactions keep everything quick.
+                </p>
+
+            </div>
+
+
+            <div class="feature">
+
+                <div class="feature-number">
+                    03 / CONTROL
+                </div>
+
+                <div class="feature-icon">
+                    ◇
+                </div>
+
+                <h3>
+                    Organized
+                </h3>
+
+                <p>
+                    Keep your available inventory and
+                    saved information in one place.
                 </p>
 
             </div>
 
         </div>
 
+    </div>
 
-        <!-- =================================================
-             ACCESS
-        ================================================= -->
-
-        <section
-            id="access"
-            class="access-section">
-
-            <div class="container">
-
-                <div class="access-heading">
-
-                    <div class="access-heading-kicker">
-                        Member Access
-                    </div>
-
-                    <h2>
-                        Enter your
-                        <span class="purple">
-                            key
-                        </span>
-                    </h2>
-
-                    <p>
-                        Use your Novi access key to continue.
-                    </p>
-
-                </div>
+</section>
 
 
-                <div class="access-box">
+<footer class="home-footer">
 
-                    <h3>
-                        Unlock Novi
-                    </h3>
+    <div class="container footer-inner">
 
-                    <p>
-                        Enter the access key provided to you.
-                    </p>
+        <div class="footer-brand">
+            NOVI
+        </div>
 
-                    <input
-                        id="keyInput"
-                        class="input"
-                        type="text"
-                        placeholder="NOVI-XXXX-XXXX-XXXX-XXXX"
-                        autocomplete="off"
-                    >
+        <div>
+            © 2026 Novi
+        </div>
 
-                    <button
-                        class="btn btn-primary"
-                        onclick="unlock()">
-                        Unlock Dashboard
-                    </button>
+    </div>
 
-                    <div
-                        id="unlockMessage"
-                        class="message">
-                    </div>
+</footer>
 
-                </div>
+</main>
 
+
+<!-- =========================================================
+     DASHBOARD PAGE
+========================================================= -->
+
+<main class="page dashboard-page">
+
+<header class="dashboard-header">
+
+    <div class="container dashboard-nav">
+
+        <div class="dashboard-title">
+
+            <div class="logo-mark">
+                N
             </div>
 
-        </section>
-
-
-        <!-- =================================================
-             WHY NOVI
-        ================================================= -->
-
-        <section class="section">
-
-            <div class="container">
-
-                <div class="section-title">
-
-                    <div class="section-kicker">
-                        The Novi Difference
-                    </div>
-
-                    <h2>
-                        Built to feel simple.
-                    </h2>
-
-                    <p>
-                        Everything you need without
-                        unnecessary clutter.
-                    </p>
-
-                </div>
-
-
-                <div class="features">
-
-                    <div class="feature">
-
-                        <div class="feature-number">
-                            01 / ACCESS
-                        </div>
-
-                        <div class="feature-icon">
-                            ◈
-                        </div>
-
-                        <h3>
-                            Simple Access
-                        </h3>
-
-                        <p>
-                            Enter your key once and access
-                            your Novi dashboard without
-                            unnecessary steps.
-                        </p>
-
-                    </div>
-
-
-                    <div class="feature">
-
-                        <div class="feature-number">
-                            02 / SPEED
-                        </div>
-
-                        <div class="feature-icon">
-                            ⚡
-                        </div>
-
-                        <h3>
-                            Built Fast
-                        </h3>
-
-                        <p>
-                            A lightweight interface designed
-                            to keep navigation quick,
-                            smooth and responsive.
-                        </p>
-
-                    </div>
-
-
-                    <div class="feature">
-
-                        <div class="feature-number">
-                            03 / CONTROL
-                        </div>
-
-                        <div class="feature-icon">
-                            ◇
-                        </div>
-
-                        <h3>
-                            One Dashboard
-                        </h3>
-
-                        <p>
-                            Keep your available inventory,
-                            saved keys and information
-                            organized in one place.
-                        </p>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-    </section>
-
-
-    <!-- =================================================
-         DASHBOARD
-    ================================================= -->
-
-    <section class="page dashboard-page">
-
-        <div class="dashboard-wrap">
-
-            <div class="container">
-
-                <div class="dashboard-header">
-
-                    <div class="dashboard-header-row">
-
-                        <div>
-
-                            <div class="hero-badge">
-
-                                <span class="dot"></span>
-
-                                Access granted
-
-                            </div>
-
-                            <h1>
-                                Novi
-                                <span class="purple">
-                                    Dashboard
-                                </span>
-                            </h1>
-
-                            <p>
-                                Manage your saved information
-                                and available inventory.
-                            </p>
-
-                        </div>
-
-
-                        <div class="dashboard-actions">
-
-                            <button
-                                class="btn btn-secondary"
-                                onclick="openMainPage()">
-                                ← Home
-                            </button>
-
-                            <button
-                                class="btn btn-primary"
-                                onclick="logout()">
-                                Log Out
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="dashboard-grid">
-
-                    <!-- =================================================
-                         EPICGAMES
-                    ================================================= -->
-
-                    <div class="panel full">
-
-                        <div class="panel-head">
-
-                            <h2>
-                                EpicGames
-                            </h2>
-
-                            <span
-                                id="stockStatus"
-                                class="stock-status">
-                                Checking stock...
-                            </span>
-
-                        </div>
-
-
-                        <div class="stock-box">
-
-                            <div class="stock-info">
-
-                                <div
-                                    id="stockCount"
-                                    class="stock-number">
-                                    —
-                                </div>
-
-                                <h3>
-                                    Stock Available
-                                </h3>
-
-                                <p>
-                                    Available inventory items
-                                    ready to generate.
-                                </p>
-
-                            </div>
-
-
-                            <div class="generate-wrap">
-
-                                <button
-                                    id="generateButton"
-                                    class="generate-button"
-                                    onclick="generateInventory()">
-
-                                    <span
-                                        id="generateIcon"
-                                        class="generate-icon">
-                                        ✦
-                                    </span>
-
-                                    <span
-                                        id="generateText">
-                                        Generate
-                                    </span>
-
-                                </button>
-
-                            </div>
-
-                        </div>
-
-
-                        <div
-                            id="generatedBox"
-                            class="generated">
-
-                            <div class="generated-top">
-
-                                <div class="generated-title">
-                                    Generated Successfully
-                                </div>
-
-                            </div>
-
-                            <div
-                                id="generatedItem"
-                                class="generated-item">
-                            </div>
-
-                            <div
-                                id="generatedMessage"
-                                class="message">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- =================================================
-                         SAVE LOGIN
-                    ================================================= -->
-
-                    <div class="panel">
-
-                        <div class="panel-head">
-
-                            <h2>
-                                Save Login
-                            </h2>
-
-                        </div>
-
-
-                        <div class="login-grid">
-
-                            <input
-                                id="emailInput"
-                                class="input"
-                                type="email"
-                                placeholder="Email"
-                                autocomplete="off"
-                            >
-
-                            <input
-                                id="passwordInput"
-                                class="input"
-                                type="password"
-                                placeholder="Password"
-                                autocomplete="off"
-                            >
-
-                        </div>
-
-
-                        <button
-                            class="btn btn-primary"
-                            onclick="saveEmailPassword()"
-                            style="width:100%;">
-                            Save Login
-                        </button>
-
-                    </div>
-
-
-                    <!-- =================================================
-                         SAVED LOGINS
-                    ================================================= -->
-
-                    <div class="panel">
-
-                        <div class="panel-head">
-
-                            <h2>
-                                Saved Logins
-                            </h2>
-
-                        </div>
-
-                        <div
-                            id="savedLogins"
-                            class="saved-grid">
-                        </div>
-
-                    </div>
-
-
-                    <!-- =================================================
-                         SAVED KEYS
-                    ================================================= -->
-
-                    <div class="panel full">
-
-                        <div class="panel-head">
-
-                            <h2>
-                                Saved Keys
-                            </h2>
-
-                            <button
-                                class="mini-btn"
-                                onclick="saveCurrentKey()">
-                                Save Current Key
-                            </button>
-
-                        </div>
-
-                        <div
-                            id="savedKeys"
-                            class="saved-grid">
-                        </div>
-
-                    </div>
-
-                </div>
-
+            <div>
+                <h1>Novi Dashboard</h1>
+
+                <p>
+                    Secure workspace
+                </p>
             </div>
 
         </div>
 
-    </section>
+        <div class="nav-actions">
+
+            <div class="dashboard-status">
+                <span></span>
+                Access granted
+            </div>
+
+            <button
+                class="nav-btn"
+                onclick="openMainPage()">
+                Home
+            </button>
+
+            <button
+                class="nav-btn"
+                onclick="logout()">
+                Log Out
+            </button>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<div class="container dashboard-main">
+
+<div class="dashboard-grid">
+
+
+<!-- INVENTORY -->
+
+<section class="panel full">
+
+    <div class="panel-header">
+
+        <h2>
+            EpicGames Inventory
+        </h2>
+
+        <span>
+            Inventory System
+        </span>
+
+    </div>
+
+    <div class="stock-card">
+
+        <div class="stock-label">
+            Available Stock
+        </div>
+
+        <div
+            id="stockCount"
+            class="stock-number">
+            —
+        </div>
+
+        <div
+            id="stockStatus"
+            class="stock-status">
+            Checking inventory...
+        </div>
+
+        <button
+            id="generateButton"
+            class="generate-btn"
+            onclick="generateInventory()">
+            Generate Inventory
+        </button>
+
+        <div
+            id="generatedResult"
+            class="generated">
+            Your generated inventory will appear here.
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- SAVE LOGIN -->
+
+<section class="panel">
+
+    <div class="panel-header">
+
+        <h2>
+            Save Login
+        </h2>
+
+        <span>
+            Local
+        </span>
+
+    </div>
+
+    <div class="save-form">
+
+        <input
+            id="loginEmail"
+            class="input"
+            type="text"
+            placeholder="Email">
+
+        <input
+            id="loginPassword"
+            class="input"
+            type="password"
+            placeholder="Password">
+
+        <button
+            class="btn"
+            onclick="saveEmailPassword()">
+            Save Login
+        </button>
+
+    </div>
+
+</section>
+
+
+<!-- SAVED LOGINS -->
+
+<section class="panel">
+
+    <div class="panel-header">
+
+        <h2>
+            Saved Logins
+        </h2>
+
+        <span>
+            Saved
+        </span>
+
+    </div>
+
+    <div
+        id="savedLogins"
+        class="saved-list">
+    </div>
+
+</section>
+
+
+<!-- SAVED KEYS -->
+
+<section class="panel full">
+
+    <div class="panel-header">
+
+        <h2>
+            Saved Keys
+        </h2>
+
+        <span>
+            Access
+        </span>
+
+    </div>
+
+    <div
+        id="savedKeys"
+        class="saved-list">
+    </div>
+
+</section>
+
 
 </div>
-```
+</div>
+
+</main>
 
 </div>
+</div>
+
 
 <script>
 
-const API_URL =
-    window.location.origin;
+/* =========================================================
+   CONFIG
+========================================================= */
 
+const API_URL = window.location.origin;
+
+
+/* =========================================================
+   STATE
+========================================================= */
 
 let currentKey =
-    localStorage.getItem(
-        "noviCurrentKey"
-    ) || "";
+    localStorage.getItem("noviCurrentKey") || "";
 
 let currentDeviceId =
-    localStorage.getItem(
-        "noviDeviceId"
-    ) || "";
+    localStorage.getItem("noviDeviceId") || "";
 
 let unlocked =
-    false;
+    localStorage.getItem("noviUnlocked") === "true";
 
 
 /* =========================================================
@@ -2927,20 +2241,16 @@ function getDeviceId() {
 
         if (
             window.crypto &&
-            typeof crypto.randomUUID ===
-                "function"
+            crypto.randomUUID
         ) {
-
-            currentDeviceId =
-                crypto.randomUUID();
-
+            currentDeviceId = crypto.randomUUID();
         } else {
-
             currentDeviceId =
-                Date.now().toString(36) +
+                "device-" +
                 Math.random()
                     .toString(36)
-                    .substring(2);
+                    .slice(2) +
+                Date.now();
         }
 
         localStorage.setItem(
@@ -2959,30 +2269,31 @@ function getDeviceId() {
 
 function escapeHTML(value) {
 
-    const div =
-        document.createElement(
-            "div"
-        );
-
-    div.textContent =
-        String(value ?? "");
-
-    return div.innerHTML;
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 
 /* =========================================================
-   DASHBOARD
+   PAGE NAVIGATION
 ========================================================= */
 
 function openDashboard() {
 
-    if (
-        !unlocked ||
-        !currentKey
-    ) {
+    if (!unlocked || !currentKey) {
 
         scrollToAccess();
+
+        const input =
+            document.getElementById("keyInput");
+
+        if (input) {
+            setTimeout(() => input.focus(), 500);
+        }
 
         return;
     }
@@ -2990,6 +2301,13 @@ function openDashboard() {
     document.body.classList.add(
         "dashboard-open"
     );
+
+    window.scrollTo({
+        top: 0,
+        behavior: "instant"
+    });
+
+    loadStock();
 }
 
 
@@ -2998,32 +2316,40 @@ function openMainPage() {
     document.body.classList.remove(
         "dashboard-open"
     );
+
+    window.scrollTo({
+        top: 0,
+        behavior: "instant"
+    });
 }
 
 
 function scrollToAccess() {
 
-    const access =
-        document.getElementById(
-            "access"
-        );
+    document.body.classList.remove(
+        "dashboard-open"
+    );
 
-    if (!access) {
-        return;
-    }
+    setTimeout(() => {
 
-    access.scrollIntoView({
-        behavior:
-            "smooth",
+        const access =
+            document.getElementById("access");
 
-        block:
-            "center"
-    });
+        if (access) {
+
+            access.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
+
+        }
+
+    }, 100);
 }
 
 
 /* =========================================================
-   VERIFY CURRENT SESSION
+   VERIFY SESSION
 ========================================================= */
 
 async function verifyCurrentSession() {
@@ -3038,79 +2364,60 @@ async function verifyCurrentSession() {
             await fetch(
                 `${API_URL}/api/verify`,
                 {
-                    method:
-                        "POST",
+                    method: "POST",
 
                     headers: {
                         "Content-Type":
                             "application/json"
                     },
 
-                    body:
-                        JSON.stringify({
-                            key:
-                                currentKey,
-
-                            deviceId:
-                                getDeviceId()
-                        })
+                    body: JSON.stringify({
+                        key: currentKey,
+                        deviceId: getDeviceId()
+                    })
                 }
             );
 
-        const result =
+        if (!response.ok) {
+            throw new Error("Verification failed");
+        }
+
+        const data =
             await response.json();
 
-        if (
-            !response.ok ||
-            !(result.success ||
-              result.valid)
-        ) {
+        if (data.valid) {
 
-            currentKey =
-                "";
-
-            unlocked =
-                false;
-
-            localStorage.removeItem(
-                "noviCurrentKey"
-            );
-
-            localStorage.removeItem(
-                "noviUnlocked"
-            );
-
-            return false;
-        }
-
-        if (
-            result.key &&
-            result.key.key
-        ) {
-
-            currentKey =
-                result.key.key;
+            unlocked = true;
 
             localStorage.setItem(
-                "noviCurrentKey",
-                currentKey
+                "noviUnlocked",
+                "true"
             );
+
+            return true;
         }
-
-        unlocked =
-            true;
-
-        return true;
 
     } catch (error) {
 
         console.error(
-            "Session verification failed:",
+            "Session verification error:",
             error
         );
-
-        return false;
     }
+
+    unlocked = false;
+
+    currentKey = "";
+
+    localStorage.removeItem(
+        "noviCurrentKey"
+    );
+
+    localStorage.removeItem(
+        "noviUnlocked"
+    );
+
+    return false;
 }
 
 
@@ -3121,14 +2428,10 @@ async function verifyCurrentSession() {
 async function unlock() {
 
     const input =
-        document.getElementById(
-            "keyInput"
-        );
+        document.getElementById("keyInput");
 
     const message =
-        document.getElementById(
-            "unlockMessage"
-        );
+        document.getElementById("unlockMessage");
 
     const key =
         input.value.trim();
@@ -3136,13 +2439,19 @@ async function unlock() {
     if (!key) {
 
         message.textContent =
-            "Enter your key.";
+            "Enter your access key.";
+
+        message.style.color =
+            "#ef4444";
 
         return;
     }
 
     message.textContent =
-        "Checking key...";
+        "Checking access...";
+
+    message.style.color =
+        "#a78bfa";
 
     try {
 
@@ -3150,84 +2459,74 @@ async function unlock() {
             await fetch(
                 `${API_URL}/api/verify`,
                 {
-                    method:
-                        "POST",
+                    method: "POST",
 
                     headers: {
                         "Content-Type":
                             "application/json"
                     },
 
-                    body:
-                        JSON.stringify({
-                            key:
-                                key,
-
-                            deviceId:
-                                getDeviceId()
-                        })
+                    body: JSON.stringify({
+                        key: key,
+                        deviceId: getDeviceId()
+                    })
                 }
             );
 
-        const result =
+        const data =
             await response.json();
 
         if (
-            !response.ok ||
-            !(result.success ||
-              result.valid)
+            response.ok &&
+            data.valid
         ) {
+
+            currentKey = key;
+            unlocked = true;
+
+            localStorage.setItem(
+                "noviCurrentKey",
+                key
+            );
+
+            localStorage.setItem(
+                "noviUnlocked",
+                "true"
+            );
 
             message.textContent =
-                result.message ||
-                "Invalid key.";
+                "Access granted.";
 
-            return;
-        }
+            message.style.color =
+                "#4ade80";
 
-        if (
-            result.key &&
-            result.key.key
-        ) {
+            saveCurrentKey();
 
-            currentKey =
-                result.key.key;
+            setTimeout(() => {
+
+                openDashboard();
+
+            }, 450);
 
         } else {
 
-            currentKey =
-                key.trim();
+            message.textContent =
+                data.message ||
+                "Invalid access key.";
+
+            message.style.color =
+                "#ef4444";
         }
-
-        unlocked =
-            true;
-
-        localStorage.setItem(
-            "noviCurrentKey",
-            currentKey
-        );
-
-        localStorage.setItem(
-            "noviUnlocked",
-            "true"
-        );
-
-        message.textContent =
-            "";
-
-        renderSavedKeys();
-        renderSavedLogins();
-
-        openDashboard();
-
-        loadStock();
 
     } catch (error) {
 
         console.error(error);
 
         message.textContent =
-            "Unable to connect to the server.";
+            "Unable to connect to Novi.";
+
+        message.style.color =
+            "#ef4444";
     }
 }
 
@@ -3238,11 +2537,8 @@ async function unlock() {
 
 function logout() {
 
-    currentKey =
-        "";
-
-    unlocked =
-        false;
+    currentKey = "";
+    unlocked = false;
 
     localStorage.removeItem(
         "noviCurrentKey"
@@ -3252,93 +2548,97 @@ function logout() {
         "noviUnlocked"
     );
 
-    document.body.classList.remove(
-        "dashboard-open"
-    );
+    openMainPage();
 
-    const keyInput =
-        document.getElementById(
-            "keyInput"
-        );
+    const input =
+        document.getElementById("keyInput");
 
-    if (keyInput) {
-        keyInput.value = "";
+    if (input) {
+        input.value = "";
     }
 
     const message =
-        document.getElementById(
-            "unlockMessage"
-        );
+        document.getElementById("unlockMessage");
 
     if (message) {
-
-        message.textContent =
-            "Logged out.";
+        message.textContent = "";
     }
 }
 
 
 /* =========================================================
-   LOAD STOCK
+   STOCK
 ========================================================= */
 
 async function loadStock() {
 
     const count =
-        document.getElementById(
-            "stockCount"
-        );
+        document.getElementById("stockCount");
 
     const status =
-        document.getElementById(
-            "stockStatus"
-        );
+        document.getElementById("stockStatus");
+
+    if (!count || !status) {
+        return;
+    }
+
+    count.textContent = "—";
+
+    status.textContent =
+        "Checking inventory...";
 
     try {
 
         const response =
             await fetch(
-                `${API_URL}/api/stock`,
-                {
-                    cache:
-                        "no-store"
-                }
+                `${API_URL}/api/stock`
             );
 
-        const result =
-            await response.json();
-
-        if (
-            !response.ok ||
-            !result.success
-        ) {
-
-            count.textContent =
-                "0";
-
-            status.textContent =
-                "Unable to load stock.";
-
-            return;
+        if (!response.ok) {
+            throw new Error("Stock request failed");
         }
 
-        count.textContent =
-            result.count;
+        const data =
+            await response.json();
 
-        status.textContent =
-            result.count > 0
-                ? "Stock available"
-                : "Out of stock";
+        const stock =
+            data.stock ??
+            data.count ??
+            data.available ??
+            0;
+
+        count.textContent =
+            stock;
+
+        if (Number(stock) > 0) {
+
+            status.textContent =
+                "Inventory available.";
+
+            status.style.color =
+                "#4ade80";
+
+        } else {
+
+            status.textContent =
+                "Currently out of stock.";
+
+            status.style.color =
+                "#ef4444";
+        }
 
     } catch (error) {
 
         console.error(error);
 
         count.textContent =
-            "0";
+            "—";
 
         status.textContent =
-            "Server unavailable.";
+            "Unable to load stock.";
+
+        status.style.color =
+            "#ef4444";
     }
 }
 
@@ -3352,8 +2652,10 @@ async function generateInventory() {
     if (!currentKey) {
 
         showGeneratedMessage(
-            "Please unlock your dashboard first."
+            "You need to unlock Novi first."
         );
+
+        openMainPage();
 
         return;
     }
@@ -3363,22 +2665,11 @@ async function generateInventory() {
 
     if (!valid) {
 
-        document.body.classList.remove(
-            "dashboard-open"
+        showGeneratedMessage(
+            "Your session has expired."
         );
 
-        const message =
-            document.getElementById(
-                "unlockMessage"
-            );
-
-        if (message) {
-
-            message.textContent =
-                "Your key is no longer valid. Please unlock again.";
-        }
-
-        scrollToAccess();
+        openMainPage();
 
         return;
     }
@@ -3388,44 +2679,13 @@ async function generateInventory() {
             "generateButton"
         );
 
-    const buttonText =
-        document.getElementById(
-            "generateText"
-        );
+    if (button) {
 
-    const generatedBox =
-        document.getElementById(
-            "generatedBox"
-        );
+        button.disabled = true;
 
-    const generatedItem =
-        document.getElementById(
-            "generatedItem"
-        );
-
-    const generatedMessage =
-        document.getElementById(
-            "generatedMessage"
-        );
-
-    button.disabled =
-        true;
-
-    button.classList.add(
-        "loading"
-    );
-
-    buttonText.textContent =
-        "Generating...";
-
-    generatedBox.style.display =
-        "block";
-
-    generatedItem.textContent =
-        "";
-
-    generatedMessage.textContent =
-        "Generating your item...";
+        button.textContent =
+            "Generating...";
+    }
 
     try {
 
@@ -3433,243 +2693,144 @@ async function generateInventory() {
             await fetch(
                 `${API_URL}/api/stock/generate`,
                 {
-                    method:
-                        "POST",
+                    method: "POST",
 
                     headers: {
                         "Content-Type":
                             "application/json"
                     },
 
-                    body:
-                        JSON.stringify({
-                            key:
-                                currentKey,
-
-                            deviceId:
-                                getDeviceId()
-                        })
+                    body: JSON.stringify({
+                        key: currentKey,
+                        deviceId: getDeviceId()
+                    })
                 }
             );
 
-        const result =
+        const data =
             await response.json();
 
-        if (
-            !response.ok ||
-            !result.success
-        ) {
+        if (!response.ok) {
 
-            generatedItem.textContent =
-                "";
-
-            generatedMessage.textContent =
-                result.message ||
-                "Unable to generate item.";
-
-            return;
+            throw new Error(
+                data.message ||
+                "Generation failed."
+            );
         }
 
-        let displayItem =
-            result.item;
+        const result =
+            data.account ||
+            data.login ||
+            data.result ||
+            data.item ||
+            data.message;
 
-        if (
-            typeof displayItem ===
-            "object" &&
-            displayItem !== null
-        ) {
+        showGeneratedMessage(
+            result || "Generated successfully."
+        );
 
-            if (
-                displayItem.name !==
-                undefined
-            ) {
-
-                displayItem =
-                    displayItem.name;
-
-            } else if (
-                displayItem.code !==
-                undefined
-            ) {
-
-                displayItem =
-                    displayItem.code;
-
-            } else if (
-                displayItem.item !==
-                undefined
-            ) {
-
-                displayItem =
-                    displayItem.item;
-
-            } else {
-
-                displayItem =
-                    JSON.stringify(
-                        displayItem
-                    );
-            }
-        }
-
-        generatedItem.textContent =
-            String(displayItem);
-
-        generatedMessage.textContent =
-            "Your item has been generated successfully.";
-
-        if (
-            typeof result.remaining ===
-            "number"
-        ) {
-
-            document.getElementById(
-                "stockCount"
-            ).textContent =
-                result.remaining;
-
-            document.getElementById(
-                "stockStatus"
-            ).textContent =
-                result.remaining > 0
-                    ? "Stock available"
-                    : "Out of stock";
-        }
+        loadStock();
 
     } catch (error) {
 
         console.error(error);
 
-        generatedItem.textContent =
-            "";
-
-        generatedMessage.textContent =
-            "Unable to connect to the server.";
+        showGeneratedMessage(
+            error.message ||
+            "Unable to generate inventory."
+        );
 
     } finally {
 
-        button.disabled =
-            false;
+        if (button) {
 
-        button.classList.remove(
-            "loading"
-        );
+            button.disabled = false;
 
-        buttonText.textContent =
-            "Generate";
+            button.textContent =
+                "Generate Inventory";
+        }
     }
 }
 
 
-/* =========================================================
-   GENERATED MESSAGE
-========================================================= */
+function showGeneratedMessage(message) {
 
-function showGeneratedMessage(text) {
-
-    const box =
+    const result =
         document.getElementById(
-            "generatedBox"
+            "generatedResult"
         );
 
-    const item =
-        document.getElementById(
-            "generatedItem"
-        );
-
-    const message =
-        document.getElementById(
-            "generatedMessage"
-        );
-
-    if (!box) {
+    if (!result) {
         return;
     }
 
-    box.style.display =
-        "block";
-
-    if (item) {
-        item.textContent =
-            "";
-    }
-
-    if (message) {
-        message.textContent =
-            text;
-    }
-}
-
-
-/* =========================================================
-   SAVE LOGIN
-========================================================= */
-
-function saveEmailPassword() {
-
-    if (!unlocked) {
-        return;
-    }
-
-    const email =
-        document.getElementById(
-            "emailInput"
-        ).value.trim();
-
-    const password =
-        document.getElementById(
-            "passwordInput"
-        ).value;
-
-    if (
-        !email ||
-        !password
-    ) {
-
-        alert(
-            "Enter both email and password."
-        );
-
-        return;
-    }
-
-    const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedAccounts"
-            ) || "[]"
-        );
-
-    saved.push({
-        email:
-            email,
-
-        password:
-            password
-    });
-
-    localStorage.setItem(
-        "noviSavedAccounts",
-        JSON.stringify(saved)
-    );
-
-    document.getElementById(
-        "emailInput"
-    ).value =
-        "";
-
-    document.getElementById(
-        "passwordInput"
-    ).value =
-        "";
-
-    renderSavedLogins();
+    result.textContent =
+        message;
 }
 
 
 /* =========================================================
    SAVED LOGINS
 ========================================================= */
+
+function getSavedLogins() {
+
+    try {
+
+        return JSON.parse(
+            localStorage.getItem(
+                "noviSavedAccounts"
+            ) || "[]"
+        );
+
+    } catch {
+
+        return [];
+    }
+}
+
+
+function saveEmailPassword() {
+
+    const email =
+        document.getElementById(
+            "loginEmail"
+        ).value.trim();
+
+    const password =
+        document.getElementById(
+            "loginPassword"
+        ).value;
+
+    if (!email || !password) {
+        return;
+    }
+
+    const accounts =
+        getSavedLogins();
+
+    accounts.unshift({
+        email,
+        password,
+        createdAt: Date.now()
+    });
+
+    localStorage.setItem(
+        "noviSavedAccounts",
+        JSON.stringify(accounts.slice(0, 20))
+    );
+
+    document.getElementById(
+        "loginEmail"
+    ).value = "";
+
+    document.getElementById(
+        "loginPassword"
+    ).value = "";
+
+    renderSavedLogins();
+}
+
 
 function renderSavedLogins() {
 
@@ -3682,184 +2843,102 @@ function renderSavedLogins() {
         return;
     }
 
-    const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedAccounts"
-            ) || "[]"
-        );
+    const accounts =
+        getSavedLogins();
 
-    if (!saved.length) {
+    if (!accounts.length) {
 
-        container.innerHTML =
-            `<div class="muted">
-                No saved logins yet.
-            </div>`;
+        container.innerHTML = `
+            <div class="saved-item">
+                <div class="saved-info">
+                    <strong>No saved logins</strong>
+                    <small>Your saved items will appear here.</small>
+                </div>
+            </div>
+        `;
 
         return;
     }
 
     container.innerHTML =
-        saved.map(
-            (account, index) => {
+        accounts.map(
+            (account, index) => `
+                <div class="saved-item">
 
-                const masked =
-                    "•".repeat(
-                        Math.min(
-                            account.password.length,
-                            12
-                        )
-                    );
+                    <div class="saved-info">
 
-                return `
-                    <div class="saved-card">
+                        <strong>
+                            ${escapeHTML(account.email)}
+                        </strong>
 
-                        <div class="saved-info">
-                            <strong>
-                                ${escapeHTML(
-                                    account.email
-                                )}
-                            </strong>
-
-                            <small>
-                                ${masked}
-                            </small>
-                        </div>
-
-                        <div class="saved-actions">
-
-                            <button
-                                id="loginCopyButton-${index}"
-                                class="mini-btn"
-                                onclick="copyLogin(${index})">
-                                Copy
-                            </button>
-
-                            <button
-                                class="mini-btn"
-                                onclick="deleteLogin(${index})">
-                                Delete
-                            </button>
-
-                        </div>
+                        <small>
+                            Saved login
+                        </small>
 
                     </div>
-                `;
-            }
+
+                    <div class="saved-actions">
+
+                        <button
+                            class="small-btn"
+                            onclick="copyLogin(${index})">
+                            Copy
+                        </button>
+
+                        <button
+                            class="small-btn"
+                            onclick="deleteLogin(${index})">
+                            Delete
+                        </button>
+
+                    </div>
+
+                </div>
+            `
         ).join("");
 }
 
 
-/* =========================================================
-   COPY LOGIN
-========================================================= */
-
 async function copyLogin(index) {
 
-    const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedAccounts"
-            ) || "[]"
-        );
+    const accounts =
+        getSavedLogins();
 
     const account =
-        saved[index];
+        accounts[index];
 
     if (!account) {
         return;
     }
 
-    const button =
-        document.getElementById(
-            `loginCopyButton-${index}`
-        );
+    const value =
+        `${account.email}:${account.password}`;
 
     try {
 
         await navigator.clipboard.writeText(
-            `${account.email}:${account.password}`
+            value
         );
 
-        if (button) {
-
-            button.textContent =
-                "✓ Copied";
-
-            button.classList.add(
-                "copied"
-            );
-
-            setTimeout(() => {
-
-                if (
-                    document.body.contains(
-                        button
-                    )
-                ) {
-
-                    button.textContent =
-                        "Copy";
-
-                    button.classList.remove(
-                        "copied"
-                    );
-                }
-
-            }, 1500);
-        }
-
-    } catch (error) {
+    } catch {
 
         console.error(
-            "Copy failed:",
-            error
+            "Unable to copy login."
         );
-
-        if (button) {
-
-            button.textContent =
-                "Copy failed";
-
-            setTimeout(() => {
-
-                if (
-                    document.body.contains(
-                        button
-                    )
-                ) {
-
-                    button.textContent =
-                        "Copy";
-                }
-
-            }, 1500);
-        }
     }
 }
 
 
-/* =========================================================
-   DELETE LOGIN
-========================================================= */
-
 function deleteLogin(index) {
 
-    const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedAccounts"
-            ) || "[]"
-        );
+    const accounts =
+        getSavedLogins();
 
-    saved.splice(
-        index,
-        1
-    );
+    accounts.splice(index, 1);
 
     localStorage.setItem(
         "noviSavedAccounts",
-        JSON.stringify(saved)
+        JSON.stringify(accounts)
     );
 
     renderSavedLogins();
@@ -3867,8 +2946,25 @@ function deleteLogin(index) {
 
 
 /* =========================================================
-   SAVE CURRENT KEY
+   SAVED KEYS
 ========================================================= */
+
+function getSavedKeys() {
+
+    try {
+
+        return JSON.parse(
+            localStorage.getItem(
+                "noviSavedKeys"
+            ) || "[]"
+        );
+
+    } catch {
+
+        return [];
+    }
+}
+
 
 function saveCurrentKey() {
 
@@ -3876,36 +2972,24 @@ function saveCurrentKey() {
         return;
     }
 
-    const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedKeys"
-            ) || "[]"
-        );
+    const keys =
+        getSavedKeys();
 
-    if (
-        !saved.includes(
-            currentKey
-        )
-    ) {
+    if (!keys.includes(currentKey)) {
 
-        saved.push(
-            currentKey
-        );
+        keys.unshift(currentKey);
 
         localStorage.setItem(
             "noviSavedKeys",
-            JSON.stringify(saved)
+            JSON.stringify(
+                keys.slice(0, 20)
+            )
         );
     }
 
     renderSavedKeys();
 }
 
-
-/* =========================================================
-   SAVED KEYS
-========================================================= */
 
 function renderSavedKeys() {
 
@@ -3918,90 +3002,73 @@ function renderSavedKeys() {
         return;
     }
 
-    const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedKeys"
-            ) || "[]"
-        );
+    const keys =
+        getSavedKeys();
 
-    if (!saved.length) {
+    if (!keys.length) {
 
-        container.innerHTML =
-            `<div class="muted">
-                No saved keys yet.
-            </div>`;
+        container.innerHTML = `
+            <div class="saved-item">
+                <div class="saved-info">
+                    <strong>No saved keys</strong>
+                    <small>Unlocked keys will appear here.</small>
+                </div>
+            </div>
+        `;
 
         return;
     }
 
     container.innerHTML =
-        saved.map(
-            (key, index) => {
+        keys.map(
+            (key, index) => `
+                <div class="saved-item">
 
-                return `
-                    <div class="saved-card">
+                    <div class="saved-info">
 
-                        <div class="saved-info">
+                        <strong>
+                            ${escapeHTML(key)}
+                        </strong>
 
-                            <strong>
-                                ${escapeHTML(key)}
-                            </strong>
-
-                            <small>
-                                Saved key
-                            </small>
-
-                        </div>
-
-                        <div class="saved-actions">
-
-                            <button
-                                id="keyCopyButton-${index}"
-                                class="mini-btn"
-                                onclick="copyKey(${index})">
-                                Copy
-                            </button>
-
-                            <button
-                                class="mini-btn"
-                                onclick="deleteKey(${index})">
-                                Delete
-                            </button>
-
-                        </div>
+                        <small>
+                            Novi access key
+                        </small>
 
                     </div>
-                `;
-            }
+
+                    <div class="saved-actions">
+
+                        <button
+                            class="small-btn"
+                            onclick="copyKey(${index})">
+                            Copy
+                        </button>
+
+                        <button
+                            class="small-btn"
+                            onclick="deleteKey(${index})">
+                            Delete
+                        </button>
+
+                    </div>
+
+                </div>
+            `
         ).join("");
 }
 
 
-/* =========================================================
-   COPY KEY
-========================================================= */
-
 async function copyKey(index) {
 
-    const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedKeys"
-            ) || "[]"
-        );
+    const keys =
+        getSavedKeys();
 
     const key =
-        saved[index];
+        keys[index];
 
     if (!key) {
         return;
     }
-
-    const button =
-        document.getElementById(
-            `keyCopyButton-${index}`
-        );
 
     try {
 
@@ -4009,85 +3076,25 @@ async function copyKey(index) {
             key
         );
 
-        if (button) {
-
-            button.textContent =
-                "✓ Copied";
-
-            button.classList.add(
-                "copied"
-            );
-
-            setTimeout(() => {
-
-                if (
-                    document.body.contains(
-                        button
-                    )
-                ) {
-
-                    button.textContent =
-                        "Copy";
-
-                    button.classList.remove(
-                        "copied"
-                    );
-                }
-
-            }, 1500);
-        }
-
-    } catch (error) {
+    } catch {
 
         console.error(
-            "Copy failed:",
-            error
+            "Unable to copy key."
         );
-
-        if (button) {
-
-            button.textContent =
-                "Copy failed";
-
-            setTimeout(() => {
-
-                if (
-                    document.body.contains(
-                        button
-                    )
-                ) {
-
-                    button.textContent =
-                        "Copy";
-                }
-
-            }, 1500);
-        }
     }
 }
 
 
-/* =========================================================
-   DELETE KEY
-========================================================= */
-
 function deleteKey(index) {
 
-    const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedKeys"
-            ) || "[]"
-        );
+    const keys =
+        getSavedKeys();
 
-    saved.splice(
-        index,
-        1
-    );
+    keys.splice(index, 1);
 
     localStorage.setItem(
         "noviSavedKeys",
-        JSON.stringify(saved)
+        JSON.stringify(keys)
     );
 
     renderSavedKeys();
@@ -4102,47 +3109,52 @@ async function initialize() {
 
     getDeviceId();
 
+    renderSavedLogins();
     renderSavedKeys();
 
-    renderSavedLogins();
+    if (currentKey) {
 
-    const savedKey =
-        localStorage.getItem(
-            "noviCurrentKey"
-        );
+        const valid =
+            await verifyCurrentSession();
 
-    if (!savedKey) {
+        if (valid) {
 
-        unlocked =
-            false;
+            openDashboard();
 
-        return;
-    }
+            loadStock();
 
-    currentKey =
-        savedKey;
+        } else {
 
-    const valid =
-        await verifyCurrentSession();
-
-    if (valid) {
-
-        localStorage.setItem(
-            "noviUnlocked",
-            "true"
-        );
-
-        openDashboard();
-
-        loadStock();
-
-    } else {
-
-        document.body.classList.remove(
-            "dashboard-open"
-        );
+            openMainPage();
+        }
     }
 }
+
+
+/* =========================================================
+   ENTER KEY SUPPORT
+========================================================= */
+
+document.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (
+            event.key === "Enter" &&
+            document.activeElement &&
+            document.activeElement.id ===
+            "keyInput"
+        ) {
+            unlock();
+        }
+
+    }
+);
+
+
+/* =========================================================
+   START
+========================================================= */
 
 initialize();
 
