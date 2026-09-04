@@ -18,7 +18,6 @@ const SESSION_DURATION = 30 * 60 * 1000;
 
 const sessions = new Map();
 
-
 /* =========================================================
    BASIC SETUP
 ========================================================= */
@@ -40,25 +39,27 @@ app.use(express.json({
   limit: "1mb"
 }));
 
-
 /* =========================================================
    FILE HELPERS
 ========================================================= */
 
 function ensureFile(file, defaultValue) {
-  if (!fs.existsSync(file)) {
-    fs.writeFileSync(
-      file,
-      JSON.stringify(defaultValue, null, 2),
-      "utf8"
-    );
+  try {
+    if (!fs.existsSync(file)) {
+      fs.writeFileSync(
+        file,
+        JSON.stringify(defaultValue, null, 2),
+        "utf8"
+      );
+    }
+  } catch (error) {
+    console.error("FAILED TO CREATE FILE:", file);
+    console.error(error);
   }
 }
 
-
 ensureFile(KEY_FILE, []);
 ensureFile(STOCK_FILE, []);
-
 
 function readJSON(file, fallback) {
   try {
@@ -70,20 +71,29 @@ function readJSON(file, fallback) {
 
     return JSON.parse(raw);
   } catch (error) {
-    console.error("Failed to read:", file, error);
+    console.error("FAILED TO READ JSON:", file);
+    console.error(error);
+
     return fallback;
   }
 }
 
-
 function writeJSON(file, data) {
-  fs.writeFileSync(
-    file,
-    JSON.stringify(data, null, 2),
-    "utf8"
-  );
-}
+  try {
+    fs.writeFileSync(
+      file,
+      JSON.stringify(data, null, 2),
+      "utf8"
+    );
 
+    return true;
+  } catch (error) {
+    console.error("FAILED TO WRITE JSON:", file);
+    console.error(error);
+
+    return false;
+  }
+}
 
 /* =========================================================
    KEY HELPERS
@@ -96,21 +106,19 @@ function normalizeKey(value) {
     .replace(/\s+/g, "");
 }
 
-
 function normalizeDeviceId(value) {
   return String(value || "").trim();
 }
 
-
 function generateKey() {
   const part = () =>
-    crypto.randomBytes(3)
+    crypto
+      .randomBytes(3)
       .toString("hex")
       .toUpperCase();
 
   return `NOVI-${part()}-${part()}-${part()}`;
 }
-
 
 function safeEqual(a, b) {
   try {
@@ -130,7 +138,6 @@ function safeEqual(a, b) {
   }
 }
 
-
 /* =========================================================
    KEY DURATIONS
 ========================================================= */
@@ -144,12 +151,13 @@ const DURATIONS = {
   "lifetime": null
 };
 
-
 function calculateExpiration(duration) {
-  if (!Object.prototype.hasOwnProperty.call(
-    DURATIONS,
-    duration
-  )) {
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      DURATIONS,
+      duration
+    )
+  ) {
     return null;
   }
 
@@ -162,7 +170,6 @@ function calculateExpiration(duration) {
   return Date.now() + length;
 }
 
-
 /* =========================================================
    KEY STORAGE
 ========================================================= */
@@ -171,23 +178,20 @@ function readKeys() {
   const data = readJSON(KEY_FILE, []);
 
   if (!Array.isArray(data)) {
+    console.error("keys.json is not an array. Using empty key list.");
     return [];
   }
 
   return data;
 }
 
-
 function saveKeys(keys) {
-  writeJSON(KEY_FILE, keys);
+  return writeJSON(KEY_FILE, keys);
 }
 
-
 function createKeyRecord(duration) {
-  const key = generateKey();
-
   return {
-    key,
+    key: generateKey(),
     duration,
     createdAt: Date.now(),
     expiresAt: calculateExpiration(duration),
@@ -196,7 +200,6 @@ function createKeyRecord(duration) {
   };
 }
 
-
 /* =========================================================
    VERIFY KEY
 ========================================================= */
@@ -204,6 +207,10 @@ function createKeyRecord(duration) {
 function verifyKey(rawKey, rawDeviceId) {
   const key = normalizeKey(rawKey);
   const deviceId = normalizeDeviceId(rawDeviceId);
+
+  console.log("VERIFY KEY START");
+  console.log("Key supplied:", Boolean(key));
+  console.log("Device ID supplied:", Boolean(deviceId));
 
   if (!key) {
     return {
@@ -222,6 +229,8 @@ function verifyKey(rawKey, rawDeviceId) {
   }
 
   const keys = readKeys();
+
+  console.log("Keys loaded:", keys.length);
 
   let found = null;
   let foundIndex = -1;
@@ -242,6 +251,8 @@ function verifyKey(rawKey, rawDeviceId) {
   }
 
   if (!found) {
+    console.log("VERIFY RESULT: INVALID KEY");
+
     return {
       success: false,
       valid: false,
@@ -249,10 +260,9 @@ function verifyKey(rawKey, rawDeviceId) {
     };
   }
 
-
-  /* -------------------------------------------------------
-     Support old string-only keys
-  ------------------------------------------------------- */
+  /*
+     Convert old string-only keys into objects.
+  */
 
   if (typeof found === "string") {
     found = {
@@ -267,16 +277,17 @@ function verifyKey(rawKey, rawDeviceId) {
     keys[foundIndex] = found;
   }
 
-
-  /* -------------------------------------------------------
-     Check expiration
-  ------------------------------------------------------- */
+  /*
+     Check expiration.
+  */
 
   if (
     found.expiresAt !== null &&
     found.expiresAt !== undefined &&
     Number(found.expiresAt) <= Date.now()
   ) {
+    console.log("VERIFY RESULT: EXPIRED");
+
     return {
       success: false,
       valid: false,
@@ -284,33 +295,51 @@ function verifyKey(rawKey, rawDeviceId) {
     };
   }
 
-
-  /* -------------------------------------------------------
-     Bind key to first device
-  ------------------------------------------------------- */
+  /*
+     Bind key to first device.
+  */
 
   if (!found.deviceId) {
+    console.log("First activation. Binding device.");
+
     found.deviceId = deviceId;
     found.activatedAt = Date.now();
 
     keys[foundIndex] = found;
 
-    saveKeys(keys);
+    const saved = saveKeys(keys);
 
+    if (!saved) {
+      console.error("KEY SAVE FAILED");
+
+      return {
+        success: false,
+        valid: false,
+        message: "Could not save key activation."
+      };
+    }
+
+    console.log("Key successfully saved.");
   } else {
+    if (
+      !safeEqual(
+        normalizeDeviceId(found.deviceId),
+        deviceId
+      )
+    ) {
+      console.log("VERIFY RESULT: WRONG DEVICE");
 
-    if (!safeEqual(
-      normalizeDeviceId(found.deviceId),
-      deviceId
-    )) {
       return {
         success: false,
         valid: false,
         message: "This key is already bound to another device."
       };
     }
+
+    console.log("Existing device accepted.");
   }
 
+  console.log("VERIFY RESULT: VALID");
 
   return {
     success: true,
@@ -318,7 +347,6 @@ function verifyKey(rawKey, rawDeviceId) {
     key: found
   };
 }
-
 
 /* =========================================================
    SESSIONS
@@ -343,7 +371,6 @@ function createSession(key, deviceId) {
   };
 }
 
-
 function getSession(token) {
   if (!token) {
     return null;
@@ -362,7 +389,6 @@ function getSession(token) {
 
   return session;
 }
-
 
 /* =========================================================
    AUTH MIDDLEWARE
@@ -387,7 +413,6 @@ function requireSession(req, res, next) {
   next();
 }
 
-
 function requireAdmin(req, res, next) {
   if (!ADMIN_SECRET) {
     return res.status(503).json({
@@ -399,10 +424,12 @@ function requireAdmin(req, res, next) {
   const supplied =
     req.headers["x-novi-admin-secret"];
 
-  if (!safeEqual(
-    supplied || "",
-    ADMIN_SECRET
-  )) {
+  if (
+    !safeEqual(
+      supplied || "",
+      ADMIN_SECRET
+    )
+  ) {
     return res.status(403).json({
       success: false,
       message: "Admin access denied."
@@ -411,7 +438,6 @@ function requireAdmin(req, res, next) {
 
   next();
 }
-
 
 /* =========================================================
    STOCK
@@ -426,11 +452,9 @@ function readStock() {
     : [];
 }
 
-
 function saveStock(stock) {
-  writeJSON(STOCK_FILE, stock);
+  return writeJSON(STOCK_FILE, stock);
 }
-
 
 /* =========================================================
    HEALTH
@@ -444,7 +468,6 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-
 /* =========================================================
    API ROOT
 ========================================================= */
@@ -456,30 +479,51 @@ app.get("/api", (req, res) => {
   });
 });
 
-
 /* =========================================================
    VERIFY KEY
 ========================================================= */
 
 app.post("/api/verify", (req, res) => {
+  console.log("=================================");
+  console.log("VERIFY REQUEST RECEIVED");
+  console.log("=================================");
+
+  console.log("Request body:", {
+    hasKey: Boolean(req.body?.key),
+    hasDeviceId: Boolean(req.body?.deviceId)
+  });
+
   try {
-    const {
-      key,
-      deviceId
-    } = req.body || {};
+    const key = req.body?.key;
+    const deviceId = req.body?.deviceId;
+
+    console.log("VERIFY: checking key");
 
     const result =
-      verifyKey(key, deviceId);
+      verifyKey(
+        key,
+        deviceId
+      );
+
+    console.log("VERIFY RESULT:", {
+      success: result.success,
+      valid: result.valid,
+      message: result.message || null
+    });
 
     if (!result.success) {
       return res.status(401).json(result);
     }
+
+    console.log("VERIFY: creating session");
 
     const session =
       createSession(
         key,
         deviceId
       );
+
+    console.log("VERIFY: session created");
 
     return res.json({
       success: true,
@@ -501,20 +545,17 @@ app.post("/api/verify", (req, res) => {
     });
 
   } catch (error) {
-
-    console.error(
-      "VERIFY ERROR:",
-      error
-    );
+    console.error("========== VERIFY CRASH ==========");
+    console.error(error);
+    console.error("==================================");
 
     return res.status(500).json({
       success: false,
       valid: false,
-      message: "Server error while verifying key."
+      message: "Internal server error."
     });
   }
 });
-
 
 /* =========================================================
    LOGOUT
@@ -536,7 +577,6 @@ app.post(
   }
 );
 
-
 /* =========================================================
    STOCK COUNT
 ========================================================= */
@@ -556,7 +596,6 @@ app.get(
   }
 );
 
-
 /* =========================================================
    GENERATE STOCK ITEM
 ========================================================= */
@@ -567,7 +606,6 @@ app.post(
   (req, res) => {
 
     try {
-
       const stock =
         readStock();
 
@@ -581,7 +619,15 @@ app.post(
       const item =
         stock.shift();
 
-      saveStock(stock);
+      const saved =
+        saveStock(stock);
+
+      if (!saved) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to save inventory."
+        });
+      }
 
       return res.json({
         success: true,
@@ -590,7 +636,6 @@ app.post(
       });
 
     } catch (error) {
-
       console.error(
         "STOCK GENERATE ERROR:",
         error
@@ -604,7 +649,6 @@ app.post(
   }
 );
 
-
 /* =========================================================
    ADMIN: CREATE KEY
 ========================================================= */
@@ -614,40 +658,60 @@ app.post(
   requireAdmin,
   (req, res) => {
 
-    const duration =
-      String(
-        req.body?.duration || "lifetime"
-      ).trim();
+    try {
+      const duration =
+        String(
+          req.body?.duration || "lifetime"
+        ).trim();
 
-    if (
-      !Object.prototype.hasOwnProperty.call(
-        DURATIONS,
-        duration
-      )
-    ) {
-      return res.status(400).json({
+      if (
+        !Object.prototype.hasOwnProperty.call(
+          DURATIONS,
+          duration
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid duration."
+        });
+      }
+
+      const keys =
+        readKeys();
+
+      const record =
+        createKeyRecord(duration);
+
+      keys.push(record);
+
+      const saved =
+        saveKeys(keys);
+
+      if (!saved) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to save key."
+        });
+      }
+
+      res.json({
+        success: true,
+        key: record
+      });
+
+    } catch (error) {
+      console.error(
+        "CREATE KEY ERROR:",
+        error
+      );
+
+      res.status(500).json({
         success: false,
-        message: "Invalid duration."
+        message: "Failed to create key."
       });
     }
-
-    const keys =
-      readKeys();
-
-    const record =
-      createKeyRecord(duration);
-
-    keys.push(record);
-
-    saveKeys(keys);
-
-    res.json({
-      success: true,
-      key: record
-    });
   }
 );
-
 
 /* =========================================================
    ADMIN: ADD STOCK
@@ -658,33 +722,53 @@ app.post(
   requireAdmin,
   (req, res) => {
 
-    const item =
-      req.body?.item;
+    try {
+      const item =
+        req.body?.item;
 
-    if (
-      item === undefined ||
-      item === null
-    ) {
-      return res.status(400).json({
+      if (
+        item === undefined ||
+        item === null
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing inventory item."
+        });
+      }
+
+      const stock =
+        readStock();
+
+      stock.push(item);
+
+      const saved =
+        saveStock(stock);
+
+      if (!saved) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to save inventory."
+        });
+      }
+
+      res.json({
+        success: true,
+        count: stock.length
+      });
+
+    } catch (error) {
+      console.error(
+        "ADD STOCK ERROR:",
+        error
+      );
+
+      res.status(500).json({
         success: false,
-        message: "Missing inventory item."
+        message: "Failed to add inventory."
       });
     }
-
-    const stock =
-      readStock();
-
-    stock.push(item);
-
-    saveStock(stock);
-
-    res.json({
-      success: true,
-      count: stock.length
-    });
   }
 );
-
 
 /* =========================================================
    STATIC WEBSITE
@@ -718,7 +802,6 @@ if (fs.existsSync(PUBLIC_DIR)) {
   });
 }
 
-
 /* =========================================================
    UNKNOWN API ROUTES
 ========================================================= */
@@ -733,7 +816,6 @@ app.use(
     });
   }
 );
-
 
 /* =========================================================
    ERROR HANDLER
@@ -753,7 +835,6 @@ app.use(
     });
   }
 );
-
 
 /* =========================================================
    START SERVER
