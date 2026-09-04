@@ -1,30 +1,18 @@
+```js
 require("dotenv").config();
 
 const express = require("express");
-const {
-    Client,
-    GatewayIntentBits
-} = require("discord.js");
-
+const { Client, GatewayIntentBits } = require("discord.js");
 const crypto = require("crypto");
 const axios = require("axios");
 
-/* =========================================================
-   CONFIG
-========================================================= */
-
 const SERVER_URL = "https://novi-1.onrender.com";
-
-const PORT = process.env.PORT || 10000;
+const PORT = Number(process.env.PORT) || 10000;
 
 const ALLOWED_ROLE_IDS = [
     "1529705570209366167",
     "1378500563456626719"
 ];
-
-/* =========================================================
-   RENDER WEB SERVER
-========================================================= */
 
 const app = express();
 
@@ -33,29 +21,16 @@ app.get("/", (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-    res.status(200).json({
+    res.json({
         success: true,
         status: "online",
         service: "Novi Discord Bot"
     });
 });
 
-const webServer = app.listen(
-    PORT,
-    "0.0.0.0",
-    () => {
-        console.log(
-            `Novi web server listening on 0.0.0.0:${PORT}`
-        );
-    }
-);
-
-webServer.keepAliveTimeout = 120000;
-webServer.headersTimeout = 120000;
-
-/* =========================================================
-   DISCORD CLIENT
-========================================================= */
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Novi web server listening on port ${PORT}`);
+});
 
 const client = new Client({
     intents: [
@@ -65,86 +40,49 @@ const client = new Client({
     ]
 });
 
-/* =========================================================
-   DISCORD READY
-========================================================= */
-
-client.once("ready", () => {
-    console.log("---------------------------------");
-    console.log("NOVI DISCORD BOT IS ONLINE");
-    console.log(`Logged in as: ${client.user.tag}`);
-    console.log(`Novi server: ${SERVER_URL}`);
-    console.log("---------------------------------");
-});
-
-/* =========================================================
-   DISCORD ERRORS
-========================================================= */
-
-client.on("error", (error) => {
-    console.error("Discord client error:", error);
-});
-
-/* =========================================================
-   KEY GENERATOR
-========================================================= */
-
 function generateKey() {
-    const part1 = crypto
-        .randomBytes(2)
-        .toString("hex")
-        .toUpperCase();
+    const parts = [];
 
-    const part2 = crypto
-        .randomBytes(2)
-        .toString("hex")
-        .toUpperCase();
+    for (let i = 0; i < 4; i++) {
+        parts.push(
+            crypto
+                .randomBytes(2)
+                .toString("hex")
+                .toUpperCase()
+        );
+    }
 
-    const part3 = crypto
-        .randomBytes(2)
-        .toString("hex")
-        .toUpperCase();
-
-    const part4 = crypto
-        .randomBytes(2)
-        .toString("hex")
-        .toUpperCase();
-
-    return `NOVI-${part1}-${part2}-${part3}-${part4}`;
+    return `NOVI-${parts.join("-")}`;
 }
-
-/* =========================================================
-   PERMISSION CHECK
-========================================================= */
 
 function hasPermission(message) {
     if (!message.member) {
         return false;
     }
 
-    return ALLOWED_ROLE_IDS.some((roleId) => {
-        return message.member.roles.cache.has(roleId);
-    });
+    return ALLOWED_ROLE_IDS.some((roleId) =>
+        message.member.roles.cache.has(roleId)
+    );
 }
 
-/* =========================================================
-   MESSAGE COMMANDS
-========================================================= */
+client.once("ready", () => {
+    console.log("==============================");
+    console.log("NOVI DISCORD BOT IS ONLINE");
+    console.log(`Logged in as: ${client.user.tag}`);
+    console.log(`Novi server: ${SERVER_URL}`);
+    console.log("==============================");
+});
+
+client.on("error", (error) => {
+    console.error("Discord client error:", error);
+});
 
 client.on("messageCreate", async (message) => {
+    if (message.author.bot) {
+        return;
+    }
+
     try {
-        /* -------------------------------------------------
-           IGNORE BOTS
-        ------------------------------------------------- */
-
-        if (message.author.bot) {
-            return;
-        }
-
-        /* -------------------------------------------------
-           MESSAGE CONTENT
-        ------------------------------------------------- */
-
         const content = message.content.trim();
 
         if (!content) {
@@ -155,12 +93,8 @@ client.on("messageCreate", async (message) => {
         const command = args[0].toLowerCase();
 
         console.log(
-            `COMMAND: ${command} | USER: ${message.author.tag}`
+            `Command: ${command} | User: ${message.author.tag}`
         );
-
-        /* =================================================
-           !GEN
-        ================================================= */
 
         if (command === "!gen") {
             if (!message.member) {
@@ -175,9 +109,7 @@ client.on("messageCreate", async (message) => {
                 );
             }
 
-            const duration = args[1]
-                ? args[1].toLowerCase()
-                : "";
+            const duration = (args[1] || "").toLowerCase();
 
             const allowedDurations = [
                 "1d",
@@ -196,9 +128,7 @@ client.on("messageCreate", async (message) => {
             const key = generateKey();
 
             try {
-                console.log(
-                    `Sending key to Novi server: ${key}`
-                );
+                console.log("Sending key to Novi server...");
 
                 const response = await axios.post(
                     `${SERVER_URL}/api/keys`,
@@ -250,10 +180,6 @@ client.on("messageCreate", async (message) => {
             }
         }
 
-        /* =================================================
-           !ADD
-        ================================================= */
-
         if (command === "!add") {
             if (!message.member) {
                 return message.reply(
@@ -269,10 +195,6 @@ client.on("messageCreate", async (message) => {
 
             let items = [];
 
-            /* -------------------------------------------------
-               COMMAND ITEMS
-            ------------------------------------------------- */
-
             const commandItems = args
                 .slice(1)
                 .map((item) => item.trim())
@@ -280,18 +202,12 @@ client.on("messageCreate", async (message) => {
 
             items.push(...commandItems);
 
-            /* -------------------------------------------------
-               TXT FILE
-            ------------------------------------------------- */
-
             if (message.attachments.size > 0) {
                 const attachment =
                     message.attachments.first();
 
                 const filename =
-                    attachment.name
-                        ? attachment.name.toLowerCase()
-                        : "";
+                    (attachment.name || "").toLowerCase();
 
                 if (!filename.endsWith(".txt")) {
                     return message.reply(
@@ -335,9 +251,7 @@ client.on("messageCreate", async (message) => {
                 }
             }
 
-            /* -------------------------------------------------
-               NOTHING TO ADD
-            ------------------------------------------------- */
+            items = [...new Set(items)];
 
             if (items.length === 0) {
                 return message.reply(
@@ -347,19 +261,9 @@ client.on("messageCreate", async (message) => {
                 );
             }
 
-            /* -------------------------------------------------
-               REMOVE DUPLICATES
-            ------------------------------------------------- */
-
-            items = [...new Set(items)];
-
             let added = 0;
             let duplicates = 0;
             let failed = 0;
-
-            /* -------------------------------------------------
-               SEND ITEMS TO NOVI
-            ------------------------------------------------- */
 
             for (const item of items) {
                 try {
@@ -399,10 +303,6 @@ client.on("messageCreate", async (message) => {
                 }
             }
 
-            /* -------------------------------------------------
-               GET TOTAL STOCK
-            ------------------------------------------------- */
-
             let totalStock = "Unknown";
 
             try {
@@ -429,18 +329,6 @@ client.on("messageCreate", async (message) => {
                 );
             }
 
-            /* -------------------------------------------------
-               RESULT LOG
-            ------------------------------------------------- */
-
-            console.log(
-                `Stock result | Added: ${added} | Duplicates: ${duplicates} | Failed: ${failed}`
-            );
-
-            /* -------------------------------------------------
-               RESPONSE
-            ------------------------------------------------- */
-
             let reply =
                 `Stock Added Successfully\n\n` +
                 `Added: ${added}\n` +
@@ -448,8 +336,7 @@ client.on("messageCreate", async (message) => {
                 `Total stock: ${totalStock}`;
 
             if (failed > 0) {
-                reply +=
-                    `\nFailed: ${failed}`;
+                reply += `\nFailed: ${failed}`;
             }
 
             return message.reply(reply);
@@ -473,27 +360,25 @@ client.on("messageCreate", async (message) => {
     }
 });
 
-/* =========================================================
-   UNHANDLED ERRORS
-========================================================= */
+process.on(
+    "unhandledRejection",
+    (error) => {
+        console.error(
+            "Unhandled promise rejection:",
+            error
+        );
+    }
+);
 
-process.on("unhandledRejection", (error) => {
-    console.error(
-        "Unhandled promise rejection:",
-        error
-    );
-});
-
-process.on("uncaughtException", (error) => {
-    console.error(
-        "Uncaught exception:",
-        error
-    );
-});
-
-/* =========================================================
-   TOKEN CHECK
-========================================================= */
+process.on(
+    "uncaughtException",
+    (error) => {
+        console.error(
+            "Uncaught exception:",
+            error
+        );
+    }
+);
 
 if (!process.env.DISCORD_TOKEN) {
     console.error(
@@ -503,13 +388,10 @@ if (!process.env.DISCORD_TOKEN) {
     process.exit(1);
 }
 
-/* =========================================================
-   LOGIN
-========================================================= */
-
 console.log("Connecting to Discord...");
 
-client.login(process.env.DISCORD_TOKEN)
+client
+    .login(process.env.DISCORD_TOKEN)
     .then(() => {
         console.log(
             "Discord login successful."
