@@ -20,19 +20,30 @@ const STOCK_FILE = path.join(__dirname, "epicgames-stock.json");
 ========================================================= */
 
 app.use(cors());
-app.use(express.json());
+
+app.use(
+    express.json({
+        limit: "1mb"
+    })
+);
 
 /* =========================================================
    FILE HELPERS
 ========================================================= */
 
 function ensureFile(file, defaultValue) {
-    if (!fs.existsSync(file)) {
-        fs.writeFileSync(
-            file,
-            JSON.stringify(defaultValue, null, 2),
-            "utf8"
-        );
+    try {
+        if (!fs.existsSync(file)) {
+            fs.writeFileSync(
+                file,
+                JSON.stringify(defaultValue, null, 2),
+                "utf8"
+            );
+
+            console.log(`Created file: ${file}`);
+        }
+    } catch (error) {
+        console.error(`Could not create ${file}:`, error);
     }
 }
 
@@ -42,76 +53,201 @@ function readJSON(file, fallback) {
             return fallback;
         }
 
-        const data = fs.readFileSync(file, "utf8");
+        const data = fs.readFileSync(
+            file,
+            "utf8"
+        );
 
         if (!data.trim()) {
             return fallback;
         }
 
         return JSON.parse(data);
+
     } catch (error) {
-        console.error(`Failed reading ${file}:`, error);
+        console.error(
+            `Failed reading ${file}:`,
+            error
+        );
+
         return fallback;
     }
 }
 
 function writeJSON(file, data) {
-    fs.writeFileSync(
-        file,
-        JSON.stringify(data, null, 2),
-        "utf8"
-    );
+    try {
+        fs.writeFileSync(
+            file,
+            JSON.stringify(data, null, 2),
+            "utf8"
+        );
+
+        return true;
+
+    } catch (error) {
+        console.error(
+            `Failed writing ${file}:`,
+            error
+        );
+
+        return false;
+    }
 }
 
+/* =========================================================
+   KEY / STOCK STORAGE
+========================================================= */
+
 function readKeys() {
-    return readJSON(KEY_FILE, []);
+    const keys = readJSON(
+        KEY_FILE,
+        []
+    );
+
+    return Array.isArray(keys)
+        ? keys
+        : [];
 }
 
 function writeKeys(keys) {
-    writeJSON(KEY_FILE, keys);
+    return writeJSON(
+        KEY_FILE,
+        keys
+    );
 }
 
 function readStock() {
-    const stock = readJSON(STOCK_FILE, []);
+    const stock = readJSON(
+        STOCK_FILE,
+        []
+    );
 
-    return Array.isArray(stock) ? stock : [];
+    return Array.isArray(stock)
+        ? stock
+        : [];
 }
 
 function writeStock(stock) {
-    writeJSON(STOCK_FILE, stock);
+    return writeJSON(
+        STOCK_FILE,
+        stock
+    );
 }
 
 /* =========================================================
-   CREATE FILES IF MISSING
+   CREATE FILES
 ========================================================= */
 
-ensureFile(KEY_FILE, []);
-ensureFile(STOCK_FILE, []);
+ensureFile(
+    KEY_FILE,
+    []
+);
+
+ensureFile(
+    STOCK_FILE,
+    []
+);
 
 /* =========================================================
-   KEY HELPERS
+   DURATIONS
 ========================================================= */
 
 const DURATIONS = {
     "1d": 1 * 24 * 60 * 60 * 1000,
+    "3d": 3 * 24 * 60 * 60 * 1000,
     "1week": 7 * 24 * 60 * 60 * 1000,
     "1month": 30 * 24 * 60 * 60 * 1000,
     "1year": 365 * 24 * 60 * 60 * 1000,
     "lifetime": null
 };
 
+/* =========================================================
+   DURATION NORMALIZER
+========================================================= */
+
+function normalizeDuration(duration) {
+
+    if (!duration) {
+        return null;
+    }
+
+    const value =
+        String(duration)
+            .trim()
+            .toLowerCase();
+
+    const aliases = {
+
+        /* 1 DAY */
+
+        "1d": "1d",
+        "1day": "1d",
+        "1-day": "1d",
+        "day": "1d",
+
+        /* 3 DAYS */
+
+        "3d": "3d",
+        "3day": "3d",
+        "3days": "3d",
+        "3-day": "3d",
+        "3-days": "3d",
+
+        /* 1 WEEK */
+
+        "1week": "1week",
+        "1-week": "1week",
+        "1w": "1week",
+        "week": "1week",
+
+        /* 1 MONTH */
+
+        "1month": "1month",
+        "1-month": "1month",
+        "1mo": "1month",
+        "month": "1month",
+
+        /* 1 YEAR */
+
+        "1year": "1year",
+        "1-year": "1year",
+        "1y": "1year",
+        "year": "1year",
+
+        /* LIFETIME */
+
+        "lifetime": "lifetime",
+        "life": "lifetime",
+        "forever": "lifetime"
+    };
+
+    return aliases[value] || null;
+}
+
+/* =========================================================
+   KEY GENERATOR
+========================================================= */
+
 function generateKey() {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    const chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     let key = "NOVI-";
 
     for (let i = 0; i < 4; i++) {
+
         let section = "";
 
         for (let j = 0; j < 4; j++) {
-            section += chars[
-                Math.floor(Math.random() * chars.length)
-            ];
+
+            section +=
+                chars[
+                    Math.floor(
+                        Math.random() *
+                        chars.length
+                    )
+                ];
         }
 
         key += section;
@@ -124,25 +260,54 @@ function generateKey() {
     return key;
 }
 
-function createKey(duration) {
-    const keys = readKeys();
+/* =========================================================
+   CREATE KEY
+========================================================= */
 
-    if (!DURATIONS.hasOwnProperty(duration)) {
-        throw new Error("Invalid duration.");
+function createKey(duration) {
+
+    const normalized =
+        normalizeDuration(duration);
+
+    if (!normalized) {
+        throw new Error(
+            "Invalid duration. Use 1d, 3d, 1week, 1month, 1year, or lifetime."
+        );
     }
 
-    const key = generateKey();
+    const keys =
+        readKeys();
 
-    const createdAt = Date.now();
+    let key;
+
+    /*
+     * Make sure we don't accidentally generate
+     * a duplicate key.
+     */
+
+    do {
+        key = generateKey();
+
+    } while (
+        keys.some(
+            item => item.key === key
+        )
+    );
+
+    const createdAt =
+        Date.now();
+
+    const durationLength =
+        DURATIONS[normalized];
 
     const expiresAt =
-        DURATIONS[duration] === null
+        durationLength === null
             ? null
-            : createdAt + DURATIONS[duration];
+            : createdAt + durationLength;
 
     const newKey = {
         key,
-        duration,
+        duration: normalized,
         createdAt,
         expiresAt,
         deviceId: null,
@@ -151,55 +316,103 @@ function createKey(duration) {
 
     keys.push(newKey);
 
-    writeKeys(keys);
+    const saved =
+        writeKeys(keys);
+
+    if (!saved) {
+        throw new Error(
+            "The key could not be saved to the server."
+        );
+    }
 
     return newKey;
 }
 
+/* =========================================================
+   VERIFY KEY
+========================================================= */
+
 function verifyKey(key, deviceId) {
+
     if (!key || !deviceId) {
+
         return {
             valid: false,
-            message: "Key and device are required."
+            message:
+                "Key and device are required."
         };
     }
 
-    const keys = readKeys();
+    const cleanKey =
+        String(key).trim();
 
-    const index = keys.findIndex(
-        item => item.key === key
-    );
+    const cleanDeviceId =
+        String(deviceId).trim();
+
+    const keys =
+        readKeys();
+
+    const index =
+        keys.findIndex(
+            item =>
+                item &&
+                item.key === cleanKey
+        );
 
     if (index === -1) {
+
         return {
             valid: false,
             message: "Invalid key."
         };
     }
 
-    const currentKey = keys[index];
+    const currentKey =
+        keys[index];
 
-    /* Expiration */
+    /* =====================================================
+       EXPIRATION
+    ===================================================== */
 
     if (
         currentKey.expiresAt !== null &&
+        typeof currentKey.expiresAt === "number" &&
         Date.now() > currentKey.expiresAt
     ) {
+
         return {
             valid: false,
-            message: "This key has expired."
+            message:
+                "This key has expired."
         };
     }
 
-    /* Device binding */
+    /* =====================================================
+       FIRST DEVICE ACTIVATION
+    ===================================================== */
 
     if (!currentKey.deviceId) {
-        currentKey.deviceId = deviceId;
-        currentKey.activatedAt = Date.now();
 
-        keys[index] = currentKey;
+        currentKey.deviceId =
+            cleanDeviceId;
 
-        writeKeys(keys);
+        currentKey.activatedAt =
+            Date.now();
+
+        keys[index] =
+            currentKey;
+
+        const saved =
+            writeKeys(keys);
+
+        if (!saved) {
+
+            return {
+                valid: false,
+                message:
+                    "Could not activate the key."
+            };
+        }
 
         return {
             valid: true,
@@ -207,10 +420,19 @@ function verifyKey(key, deviceId) {
         };
     }
 
-    if (currentKey.deviceId !== deviceId) {
+    /* =====================================================
+       DEVICE CHECK
+    ===================================================== */
+
+    if (
+        currentKey.deviceId !==
+        cleanDeviceId
+    ) {
+
         return {
             valid: false,
-            message: "This key is already activated on another device."
+            message:
+                "This key is already activated on another device."
         };
     }
 
@@ -221,259 +443,522 @@ function verifyKey(key, deviceId) {
 }
 
 /* =========================================================
-   KEY API
+   CREATE KEY API
 ========================================================= */
 
-app.post("/api/keys", (req, res) => {
-    try {
-        const { duration } = req.body;
+app.post(
+    "/api/keys",
+    (req, res) => {
 
-        const newKey = createKey(duration);
+        try {
 
-        res.json({
-            success: true,
-            key: newKey
-        });
+            const duration =
+                req.body?.duration;
 
-    } catch (error) {
-        console.error("Create key error:", error);
+            if (!duration) {
 
-        res.status(400).json({
-            success: false,
-            message: error.message
-        });
-    }
-});
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Duration is required."
+                });
+            }
 
-/* =========================================================
-   VERIFY
-========================================================= */
+            const newKey =
+                createKey(duration);
 
-app.post("/api/verify", (req, res) => {
-    try {
-        const { key, deviceId } = req.body;
+            /*
+             * IMPORTANT:
+             *
+             * `key` is returned as a STRING
+             * so frontend code can use:
+             *
+             * result.key
+             *
+             * without needing result.key.key
+             */
 
-        const result = verifyKey(key, deviceId);
+            return res.json({
 
-        if (!result.valid) {
-            return res.status(403).json({
+                success: true,
+
+                key: newKey.key,
+
+                duration:
+                    newKey.duration,
+
+                createdAt:
+                    newKey.createdAt,
+
+                expiresAt:
+                    newKey.expiresAt,
+
+                /*
+                 * Full key information is also
+                 * available here if needed.
+                 */
+
+                keyData: newKey
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Create key error:",
+                error
+            );
+
+            return res.status(500).json({
+
                 success: false,
-                valid: false,
-                message: result.message
+
+                message:
+                    error.message ||
+                    "The key could not be saved to the Novi server."
             });
         }
-
-        res.json({
-            success: true,
-            valid: true,
-            key: result.key
-        });
-
-    } catch (error) {
-        console.error("Verify error:", error);
-
-        res.status(500).json({
-            success: false,
-            valid: false,
-            message: "Verification failed."
-        });
     }
-});
+);
+
+/* =========================================================
+   VERIFY API
+========================================================= */
+
+app.post(
+    "/api/verify",
+    (req, res) => {
+
+        try {
+
+            const {
+                key,
+                deviceId
+            } = req.body || {};
+
+            const result =
+                verifyKey(
+                    key,
+                    deviceId
+                );
+
+            if (!result.valid) {
+
+                return res.status(403).json({
+
+                    success: false,
+
+                    valid: false,
+
+                    message:
+                        result.message
+                });
+            }
+
+            return res.json({
+
+                success: true,
+
+                valid: true,
+
+                key: result.key
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Verify error:",
+                error
+            );
+
+            return res.status(500).json({
+
+                success: false,
+
+                valid: false,
+
+                message:
+                    "Verification failed."
+            });
+        }
+    }
+);
 
 /* =========================================================
    STOCK COUNT
 ========================================================= */
 
-app.get("/api/stock", (req, res) => {
-    try {
-        const stock = readStock();
+app.get(
+    "/api/stock",
+    (req, res) => {
 
-        res.set("Cache-Control", "no-store");
+        try {
 
-        res.json({
-            success: true,
-            count: stock.length
-        });
+            const stock =
+                readStock();
 
-    } catch (error) {
-        console.error("Stock error:", error);
+            res.set(
+                "Cache-Control",
+                "no-store"
+            );
 
-        res.status(500).json({
-            success: false,
-            message: "Failed to load stock."
-        });
+            return res.json({
+
+                success: true,
+
+                count:
+                    stock.length
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Stock error:",
+                error
+            );
+
+            return res.status(500).json({
+
+                success: false,
+
+                message:
+                    "Failed to load stock."
+            });
+        }
     }
-});
+);
 
 /* =========================================================
    ADD STOCK
 ========================================================= */
 
-app.post("/api/stock/add", (req, res) => {
-    try {
-        const { item } = req.body;
+app.post(
+    "/api/stock/add",
+    (req, res) => {
 
-        if (
-            item === undefined ||
-            item === null ||
-            item === ""
-        ) {
-            return res.status(400).json({
+        try {
+
+            const item =
+                req.body?.item;
+
+            if (
+                item === undefined ||
+                item === null ||
+                item === ""
+            ) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    message:
+                        "Stock item is required."
+                });
+            }
+
+            const stock =
+                readStock();
+
+            stock.push(item);
+
+            const saved =
+                writeStock(stock);
+
+            if (!saved) {
+
+                return res.status(500).json({
+
+                    success: false,
+
+                    message:
+                        "Failed to save stock."
+                });
+            }
+
+            return res.json({
+
+                success: true,
+
+                count:
+                    stock.length
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Add stock error:",
+                error
+            );
+
+            return res.status(500).json({
+
                 success: false,
-                message: "Stock item is required."
+
+                message:
+                    "Failed to add stock."
             });
         }
-
-        const stock = readStock();
-
-        stock.push(item);
-
-        writeStock(stock);
-
-        res.json({
-            success: true,
-            count: stock.length
-        });
-
-    } catch (error) {
-        console.error("Add stock error:", error);
-
-        res.status(500).json({
-            success: false,
-            message: "Failed to add stock."
-        });
     }
-});
+);
 
 /* =========================================================
    GENERATE ONE STOCK ITEM
-   ITEM IS REMOVED PERMANENTLY
 ========================================================= */
 
-app.post("/api/stock/generate", (req, res) => {
-    try {
-        const { key, deviceId } = req.body;
+app.post(
+    "/api/stock/generate",
+    (req, res) => {
 
-        /* Verify key/device first */
+        try {
 
-        const verification = verifyKey(
-            key,
-            deviceId
-        );
+            const {
+                key,
+                deviceId
+            } = req.body || {};
 
-        if (!verification.valid) {
-            return res.status(403).json({
+            /* =================================================
+               VERIFY KEY
+            ================================================= */
+
+            const verification =
+                verifyKey(
+                    key,
+                    deviceId
+                );
+
+            if (!verification.valid) {
+
+                return res.status(403).json({
+
+                    success: false,
+
+                    message:
+                        verification.message
+                });
+            }
+
+            /* =================================================
+               READ STOCK
+            ================================================= */
+
+            const stock =
+                readStock();
+
+            if (stock.length === 0) {
+
+                return res.status(404).json({
+
+                    success: false,
+
+                    message:
+                        "No stock available."
+                });
+            }
+
+            /* =================================================
+               REMOVE EXACTLY ONE ITEM
+            ================================================= */
+
+            const generatedItem =
+                stock.shift();
+
+            const saved =
+                writeStock(stock);
+
+            if (!saved) {
+
+                return res.status(500).json({
+
+                    success: false,
+
+                    message:
+                        "Failed to update stock."
+                });
+            }
+
+            /* =================================================
+               RETURN ITEM
+            ================================================= */
+
+            res.set(
+                "Cache-Control",
+                "no-store"
+            );
+
+            return res.json({
+
+                success: true,
+
+                item:
+                    generatedItem,
+
+                remaining:
+                    stock.length
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Generate stock error:",
+                error
+            );
+
+            return res.status(500).json({
+
                 success: false,
-                message: verification.message
+
+                message:
+                    "Failed to generate stock."
             });
         }
-
-        /* Read current stock */
-
-        const stock = readStock();
-
-        if (stock.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No stock available."
-            });
-        }
-
-        /*
-         * Remove exactly ONE item.
-         *
-         * shift() removes it from the array,
-         * then writeStock() saves the new array.
-         */
-
-        const generatedItem = stock.shift();
-
-        writeStock(stock);
-
-        /*
-         * Return ONLY the generated inventory item.
-         * We do not return the remaining stock.
-         */
-
-        res.set("Cache-Control", "no-store");
-
-        return res.json({
-            success: true,
-            item: generatedItem,
-            remaining: stock.length
-        });
-
-    } catch (error) {
-        console.error("Generate stock error:", error);
-
-        res.status(500).json({
-            success: false,
-            message: "Failed to generate stock."
-        });
     }
-});
+);
 
 /* =========================================================
-   HEALTH
+   HEALTH CHECK
 ========================================================= */
 
-app.get("/api/health", (req, res) => {
-    res.json({
-        success: true,
-        status: "online"
-    });
-});
+app.get(
+    "/api/health",
+    (req, res) => {
+
+        return res.json({
+
+            success: true,
+
+            status: "online",
+
+            service: "Novi"
+        });
+    }
+);
+
+/* =========================================================
+   API INFO
+========================================================= */
+
+app.get(
+    "/api",
+    (req, res) => {
+
+        return res.json({
+
+            success: true,
+
+            name: "Novi API",
+
+            endpoints: [
+
+                "POST /api/keys",
+
+                "POST /api/verify",
+
+                "GET /api/stock",
+
+                "POST /api/stock/add",
+
+                "POST /api/stock/generate",
+
+                "GET /api/health"
+            ]
+        });
+    }
+);
 
 /* =========================================================
    STATIC WEBSITE
 ========================================================= */
 
 app.use(
-    express.static(PUBLIC_DIR, {
-        index: "index.html",
-        etag: false,
-        maxAge: 0
-    })
+    express.static(
+        PUBLIC_DIR,
+        {
+            index: "index.html",
+            etag: false,
+            maxAge: 0
+        }
+    )
 );
 
 /* =========================================================
-   HOME
+   HOME PAGE
 ========================================================= */
 
-app.get("/", (req, res) => {
-    res.sendFile(
-        path.join(PUBLIC_DIR, "index.html")
-    );
-});
+app.get(
+    "/",
+    (req, res) => {
+
+        return res.sendFile(
+            path.join(
+                PUBLIC_DIR,
+                "index.html"
+            )
+        );
+    }
+);
 
 /* =========================================================
    API 404
 ========================================================= */
 
-app.use("/api", (req, res) => {
-    res.status(404).json({
-        success: false,
-        message: "API endpoint not found."
-    });
-});
+app.use(
+    "/api",
+    (req, res) => {
+
+        return res.status(404).json({
+
+            success: false,
+
+            message:
+                "API endpoint not found."
+        });
+    }
+);
 
 /* =========================================================
-   ERROR HANDLER
+   GENERAL ERROR HANDLER
 ========================================================= */
 
-app.use((error, req, res, next) => {
-    console.error(error);
+app.use(
+    (error, req, res, next) => {
 
-    res.status(500).json({
-        success: false,
-        message: "Internal server error."
-    });
-});
+        console.error(
+            "Server error:",
+            error
+        );
+
+        return res.status(500).json({
+
+            success: false,
+
+            message:
+                "Internal server error."
+        });
+    }
+);
 
 /* =========================================================
-   START
+   START SERVER
 ========================================================= */
 
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Novi server running on port ${PORT}`);
-});
+app.listen(
+    PORT,
+    "0.0.0.0",
+    () => {
+
+        console.log(
+            `Novi server running on port ${PORT}`
+        );
+
+        console.log(
+            `Public directory: ${PUBLIC_DIR}`
+        );
+
+        console.log(
+            `Key file: ${KEY_FILE}`
+        );
+
+        console.log(
+            `Stock file: ${STOCK_FILE}`
+        );
+    }
+);
