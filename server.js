@@ -186,22 +186,27 @@ function readKeys() {
             ) {
                 return {
                     key: normalizeKey(item.key),
+
                     duration:
                         normalizeDuration(item.duration) ||
                         "lifetime",
+
                     createdAt:
                         typeof item.createdAt === "number"
                             ? item.createdAt
                             : Date.now(),
+
                     expiresAt:
                         item.expiresAt === null ||
                         typeof item.expiresAt === "number"
                             ? item.expiresAt
                             : null,
+
                     deviceId:
                         item.deviceId
                             ? normalizeDeviceId(item.deviceId)
                             : null,
+
                     activatedAt:
                         typeof item.activatedAt === "number"
                             ? item.activatedAt
@@ -275,7 +280,8 @@ function saveKey(suppliedKey, duration) {
     );
 
     console.log(
-        "TOTAL KEYS: " + keys.length
+        "TOTAL KEYS: " +
+        keys.length
     );
 
     return newKey;
@@ -313,7 +319,8 @@ function verifyKey(suppliedKey, deviceId) {
     const keys = readKeys();
 
     console.log(
-        "Stored keys: " + keys.length
+        "Stored keys: " +
+        keys.length
     );
 
     const index = keys.findIndex(
@@ -323,7 +330,8 @@ function verifyKey(suppliedKey, deviceId) {
 
     if (index === -1) {
         console.log(
-            "KEY NOT FOUND: " + cleanKey
+            "KEY NOT FOUND: " +
+            cleanKey
         );
 
         return {
@@ -344,7 +352,8 @@ function verifyKey(suppliedKey, deviceId) {
         Date.now() >= currentKey.expiresAt
     ) {
         console.log(
-            "KEY EXPIRED: " + cleanKey
+            "KEY EXPIRED: " +
+            cleanKey
         );
 
         return {
@@ -371,7 +380,8 @@ function verifyKey(suppliedKey, deviceId) {
         }
 
         console.log(
-            "KEY ACTIVATED: " + cleanKey
+            "KEY ACTIVATED: " +
+            cleanKey
         );
 
         return {
@@ -389,7 +399,8 @@ function verifyKey(suppliedKey, deviceId) {
         cleanDeviceId
     ) {
         console.log(
-            "KEY VERIFIED: " + cleanKey
+            "KEY VERIFIED: " +
+            cleanKey
         );
 
         return {
@@ -415,16 +426,22 @@ function verifyKey(suppliedKey, deviceId) {
 }
 
 /* =========================================================
-   DISCORD BOT - CREATE KEY
+   CREATE KEY
 ========================================================= */
 
 app.post("/api/keys", (req, res) => {
     try {
-        const key = req.body && req.body.key;
-        const duration =
-            req.body && req.body.duration;
+        const key =
+            req.body &&
+            req.body.key;
 
-        console.log("NEW KEY REQUEST");
+        const duration =
+            req.body &&
+            req.body.duration;
+
+        console.log(
+            "NEW KEY REQUEST"
+        );
 
         if (!key) {
             return res.status(400).json({
@@ -468,16 +485,18 @@ app.post("/api/keys", (req, res) => {
 });
 
 /* =========================================================
-   WEBSITE - VERIFY KEY
+   VERIFY KEY
 ========================================================= */
 
 app.post("/api/verify", (req, res) => {
     try {
         const key =
-            req.body && req.body.key;
+            req.body &&
+            req.body.key;
 
         const deviceId =
-            req.body && req.body.deviceId;
+            req.body &&
+            req.body.deviceId;
 
         const result = verifyKey(
             key,
@@ -656,7 +675,8 @@ app.post(
     (req, res) => {
         try {
             const key =
-                req.body && req.body.key;
+                req.body &&
+                req.body.key;
 
             const deviceId =
                 req.body &&
@@ -731,34 +751,41 @@ app.post(
    HEALTH CHECK
 ========================================================= */
 
-app.get("/api/health", (req, res) => {
-    return res.json({
-        success: true,
-        status: "online",
-        service: "Novi"
-    });
-});
+app.get(
+    "/api/health",
+    (req, res) => {
+        return res.json({
+            success: true,
+            status: "online",
+            service: "Novi"
+        });
+    }
+);
 
 /* =========================================================
    API INFO
 ========================================================= */
 
-app.get("/api", (req, res) => {
-    return res.json({
-        success: true,
-        name: "Novi API",
-        keyCount: readKeys().length,
-        stockCount: readStock().length,
-        endpoints: [
-            "POST /api/keys",
-            "POST /api/verify",
-            "GET /api/stock",
-            "POST /api/stock/add",
-            "POST /api/stock/generate",
-            "GET /api/health"
-        ]
-    });
-});
+app.get(
+    "/api",
+    (req, res) => {
+        return res.json({
+            success: true,
+            name: "Novi API",
+            keyCount: readKeys().length,
+            stockCount: readStock().length,
+
+            endpoints: [
+                "POST /api/keys",
+                "POST /api/verify",
+                "GET /api/stock",
+                "POST /api/stock/add",
+                "POST /api/stock/generate",
+                "GET /api/health"
+            ]
+        });
+    }
+);
 
 /* =========================================================
    WEBSITE
@@ -775,14 +802,17 @@ app.use(
     )
 );
 
-app.get("/", (req, res) => {
-    return res.sendFile(
-        path.join(
-            PUBLIC_DIR,
-            "index.html"
-        )
-    );
-});
+app.get(
+    "/",
+    (req, res) => {
+        return res.sendFile(
+            path.join(
+                PUBLIC_DIR,
+                "index.html"
+            )
+        );
+    }
+);
 
 /* =========================================================
    API 404
@@ -835,7 +865,8 @@ app.listen(
         );
 
         console.log(
-            "Port: " + PORT
+            "Port: " +
+            PORT
         );
 
         console.log(
@@ -853,4 +884,3 @@ app.listen(
         );
     }
 );
-```
