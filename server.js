@@ -6,40 +6,37 @@ const crypto = require("crypto");
 
 const app = express();
 
-/* =========================================================
-   CONFIG
-========================================================= */
-
 const PORT = process.env.PORT || 10000;
-
 const PUBLIC_DIR = path.join(__dirname, "public");
+
 const KEY_FILE = path.join(__dirname, "keys.json");
 const STOCK_FILE = path.join(__dirname, "epicgames-stock.json");
 
-/*
-   SET THIS IN RENDER ENVIRONMENT VARIABLES.
-
-   Example:
-   NOVI_ADMIN_SECRET=put-a-long-random-secret-here
-*/
 const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET || "";
 
-if (!ADMIN_SECRET) {
-    console.warn(
-        "WARNING: NOVI_ADMIN_SECRET is not configured."
-    );
-}
+const SESSION_DURATION = 30 * 60 * 1000;
 
-/* =========================================================
+const sessions = new Map();
+
+/* =========================
    MIDDLEWARE
-========================================================= */
+========================= */
 
-app.use(cors());
+app.use(cors({
+    origin: true,
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: [
+        "Content-Type",
+        "x-novi-session",
+        "x-novi-admin-secret"
+    ]
+}));
+
 app.use(express.json({ limit: "1mb" }));
 
-/* =========================================================
+/* =========================
    FILE HELPERS
-========================================================= */
+========================= */
 
 function ensureFile(file, defaultValue) {
     try {
@@ -51,7 +48,7 @@ function ensureFile(file, defaultValue) {
             );
         }
     } catch (error) {
-        console.error("File creation error:", error);
+        console.error("File creation error:", error.message);
     }
 }
 
@@ -69,7 +66,7 @@ function readJSON(file, fallback) {
 
         return JSON.parse(data);
     } catch (error) {
-        console.error("JSON read error:", error);
+        console.error("JSON read error:", error.message);
         return fallback;
     }
 }
@@ -84,7 +81,7 @@ function writeJSON(file, data) {
 
         return true;
     } catch (error) {
-        console.error("JSON write error:", error);
+        console.error("JSON write error:", error.message);
         return false;
     }
 }
@@ -92,9 +89,32 @@ function writeJSON(file, data) {
 ensureFile(KEY_FILE, []);
 ensureFile(STOCK_FILE, []);
 
-/* =========================================================
-   SECURITY HELPERS
-========================================================= */
+/* =========================
+   NORMALIZATION
+========================= */
+
+function normalizeKey(key) {
+    if (key === undefined || key === null) {
+        return "";
+    }
+
+    return String(key)
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, "");
+}
+
+function normalizeDeviceId(deviceId) {
+    if (deviceId === undefined || deviceId === null) {
+        return "";
+    }
+
+    return String(deviceId).trim();
+}
+
+/* =========================
+   SAFE SECRET COMPARISON
+========================= */
 
 function safeEqual(a, b) {
     const first = Buffer.from(String(a || ""));
@@ -106,6 +126,10 @@ function safeEqual(a, b) {
 
     return crypto.timingSafeEqual(first, second);
 }
+
+/* =========================
+   ADMIN AUTH
+========================= */
 
 function requireAdmin(req, res, next) {
     if (!ADMIN_SECRET) {
@@ -128,32 +152,9 @@ function requireAdmin(req, res, next) {
     next();
 }
 
-/* =========================================================
-   KEY HELPERS
-========================================================= */
-
-function normalizeKey(key) {
-    if (key === undefined || key === null) {
-        return "";
-    }
-
-    return String(key)
-        .trim()
-        .toUpperCase()
-        .replace(/\s+/g, "");
-}
-
-function normalizeDeviceId(deviceId) {
-    if (deviceId === undefined || deviceId === null) {
-        return "";
-    }
-
-    return String(deviceId).trim();
-}
-
-/* =========================================================
+/* =========================
    DURATIONS
-========================================================= */
+========================= */
 
 const DURATIONS = {
     "1d": 24 * 60 * 60 * 1000,
@@ -184,19 +185,19 @@ function normalizeDuration(duration) {
         "3days": "3d",
 
         "1w": "1week",
+        "week": "1week",
         "1week": "1week",
         "1weeks": "1week",
-        "week": "1week",
 
         "1mo": "1month",
+        "month": "1month",
         "1month": "1month",
         "1months": "1month",
-        "month": "1month",
 
         "1y": "1year",
+        "year": "1year",
         "1year": "1year",
         "1years": "1year",
-        "year": "1year",
 
         "lifetime": "lifetime",
         "life": "lifetime",
@@ -206,9 +207,9 @@ function normalizeDuration(duration) {
     return aliases[value] || null;
 }
 
-/* =========================================================
-   READ KEYS
-========================================================= */
+/* =========================
+   KEYS
+========================= */
 
 function readKeys() {
     const data = readJSON(KEY_FILE, []);
@@ -274,13 +275,10 @@ function writeKeys(keys) {
     return writeJSON(KEY_FILE, keys);
 }
 
-/* =========================================================
-   SAVE KEY
-========================================================= */
-
 function saveKey(suppliedKey, duration) {
     const key = normalizeKey(suppliedKey);
-    const normalizedDuration = normalizeDuration(duration);
+    const normalizedDuration =
+        normalizeDuration(duration);
 
     if (!key) {
         throw new Error("Key is required.");
@@ -293,7 +291,8 @@ function saveKey(suppliedKey, duration) {
     const keys = readKeys();
 
     const exists = keys.some(
-        (item) => normalizeKey(item.key) === key
+        (item) =>
+            normalizeKey(item.key) === key
     );
 
     if (exists) {
@@ -301,7 +300,9 @@ function saveKey(suppliedKey, duration) {
     }
 
     const createdAt = Date.now();
-    const durationLength = DURATIONS[normalizedDuration];
+
+    const durationLength =
+        DURATIONS[normalizedDuration];
 
     const expiresAt =
         durationLength === null
@@ -326,13 +327,14 @@ function saveKey(suppliedKey, duration) {
     return newKey;
 }
 
-/* =========================================================
+/* =========================
    VERIFY KEY
-========================================================= */
+========================= */
 
 function verifyKey(suppliedKey, deviceId) {
     const cleanKey = normalizeKey(suppliedKey);
-    const cleanDeviceId = normalizeDeviceId(deviceId);
+    const cleanDeviceId =
+        normalizeDeviceId(deviceId);
 
     if (!cleanKey) {
         return {
@@ -364,8 +366,6 @@ function verifyKey(suppliedKey, deviceId) {
 
     const currentKey = keys[index];
 
-    /* EXPIRATION */
-
     if (
         currentKey.expiresAt !== null &&
         typeof currentKey.expiresAt === "number" &&
@@ -377,8 +377,7 @@ function verifyKey(suppliedKey, deviceId) {
         };
     }
 
-    /* FIRST ACTIVATION */
-
+    /* First activation */
     if (!currentKey.deviceId) {
         currentKey.deviceId = cleanDeviceId;
         currentKey.activatedAt = Date.now();
@@ -398,8 +397,7 @@ function verifyKey(suppliedKey, deviceId) {
         };
     }
 
-    /* SAME DEVICE */
-
+    /* Same device */
     if (
         normalizeDeviceId(currentKey.deviceId) ===
         cleanDeviceId
@@ -417,29 +415,21 @@ function verifyKey(suppliedKey, deviceId) {
     };
 }
 
-/* =========================================================
-   SESSION TOKENS
-========================================================= */
-
-/*
-   Sessions live only in server memory.
-
-   Restarting Render logs everyone out.
-   That is intentional and safer than trusting localStorage.
-*/
-
-const sessions = new Map();
-
-const SESSION_DURATION = 30 * 60 * 1000;
+/* =========================
+   SESSIONS
+========================= */
 
 function createSession(key, deviceId) {
-    const token = crypto.randomBytes(32).toString("hex");
+    const token =
+        crypto.randomBytes(32).toString("hex");
+
+    const now = Date.now();
 
     sessions.set(token, {
         key: normalizeKey(key),
         deviceId: normalizeDeviceId(deviceId),
-        createdAt: Date.now(),
-        expiresAt: Date.now() + SESSION_DURATION
+        createdAt: now,
+        expiresAt: now + SESSION_DURATION
     });
 
     return token;
@@ -484,16 +474,11 @@ function requireSession(req, res, next) {
         });
     }
 
-    /*
-       Re-check the key every time.
-       This means deleting/expiring a key invalidates
-       access even if a session token still exists.
-    */
-
-    const verification = verifyKey(
-        session.key,
-        session.deviceId
-    );
+    const verification =
+        verifyKey(
+            session.key,
+            session.deviceId
+        );
 
     if (!verification.valid) {
         destroySession(token);
@@ -511,10 +496,26 @@ function requireSession(req, res, next) {
     next();
 }
 
-/* =========================================================
+/* =========================
+   STOCK
+========================= */
+
+function readStock() {
+    const stock =
+        readJSON(STOCK_FILE, []);
+
+    return Array.isArray(stock)
+        ? stock
+        : [];
+}
+
+function writeStock(stock) {
+    return writeJSON(STOCK_FILE, stock);
+}
+
+/* =========================
    CREATE KEY
-   ADMIN ONLY
-========================================================= */
+========================= */
 
 app.post(
     "/api/keys",
@@ -522,12 +523,10 @@ app.post(
     (req, res) => {
         try {
             const key =
-                req.body &&
-                req.body.key;
+                req.body && req.body.key;
 
             const duration =
-                req.body &&
-                req.body.duration;
+                req.body && req.body.duration;
 
             if (!key) {
                 return res.status(400).json({
@@ -553,7 +552,6 @@ app.post(
                 createdAt: newKey.createdAt,
                 expiresAt: newKey.expiresAt
             });
-
         } catch (error) {
             console.error(
                 "Create key error:",
@@ -570,27 +568,22 @@ app.post(
     }
 );
 
-/* =========================================================
-   VERIFY / LOGIN
-========================================================= */
+/* =========================
+   VERIFY
+========================= */
 
 app.post(
     "/api/verify",
     (req, res) => {
         try {
             const key =
-                req.body &&
-                req.body.key;
+                req.body && req.body.key;
 
             const deviceId =
-                req.body &&
-                req.body.deviceId;
+                req.body && req.body.deviceId;
 
             const result =
-                verifyKey(
-                    key,
-                    deviceId
-                );
+                verifyKey(key, deviceId);
 
             if (!result.valid) {
                 return res.status(403).json({
@@ -613,14 +606,15 @@ app.post(
                 expiresAt:
                     Date.now() +
                     SESSION_DURATION,
+
                 key: {
                     duration:
                         result.key.duration,
+
                     expiresAt:
                         result.key.expiresAt
                 }
             });
-
         } catch (error) {
             console.error(
                 "Verification error:",
@@ -637,17 +631,15 @@ app.post(
     }
 );
 
-/* =========================================================
-   LOGOUT SESSION
-========================================================= */
+/* =========================
+   LOGOUT
+========================= */
 
 app.post(
     "/api/logout",
     requireSession,
     (req, res) => {
-        destroySession(
-            req.noviToken
-        );
+        destroySession(req.noviToken);
 
         return res.json({
             success: true
@@ -655,40 +647,16 @@ app.post(
     }
 );
 
-/* =========================================================
-   STOCK HELPERS
-========================================================= */
-
-function readStock() {
-    const stock =
-        readJSON(
-            STOCK_FILE,
-            []
-        );
-
-    return Array.isArray(stock)
-        ? stock
-        : [];
-}
-
-function writeStock(stock) {
-    return writeJSON(
-        STOCK_FILE,
-        stock
-    );
-}
-
-/* =========================================================
-   STOCK COUNT
-========================================================= */
+/* =========================
+   GET STOCK COUNT
+========================= */
 
 app.get(
     "/api/stock",
     requireSession,
     (req, res) => {
         try {
-            const stock =
-                readStock();
+            const stock = readStock();
 
             res.set(
                 "Cache-Control",
@@ -699,7 +667,6 @@ app.get(
                 success: true,
                 count: stock.length
             });
-
         } catch (error) {
             console.error(
                 "Stock error:",
@@ -715,10 +682,9 @@ app.get(
     }
 );
 
-/* =========================================================
+/* =========================
    ADD STOCK
-   ADMIN ONLY
-========================================================= */
+========================= */
 
 app.post(
     "/api/stock/add",
@@ -732,20 +698,14 @@ app.post(
                 req.body.item !== undefined &&
                 req.body.item !== null
             ) {
-                items.push(
-                    req.body.item
-                );
+                items.push(req.body.item);
             }
 
             if (
                 req.body &&
-                Array.isArray(
-                    req.body.items
-                )
+                Array.isArray(req.body.items)
             ) {
-                items.push(
-                    ...req.body.items
-                );
+                items.push(...req.body.items);
             }
 
             items = items
@@ -762,8 +722,7 @@ app.post(
                 });
             }
 
-            const stock =
-                readStock();
+            const stock = readStock();
 
             let added = 0;
             let duplicates = 0;
@@ -792,7 +751,6 @@ app.post(
                 duplicates,
                 count: stock.length
             });
-
         } catch (error) {
             console.error(
                 "Add stock error:",
@@ -808,18 +766,16 @@ app.post(
     }
 );
 
-/* =========================================================
+/* =========================
    GENERATE STOCK
-   SESSION REQUIRED
-========================================================= */
+========================= */
 
 app.post(
     "/api/stock/generate",
     requireSession,
     (req, res) => {
         try {
-            const stock =
-                readStock();
+            const stock = readStock();
 
             if (!stock.length) {
                 return res.status(404).json({
@@ -848,10 +804,8 @@ app.post(
             return res.json({
                 success: true,
                 item: generatedItem,
-                remaining:
-                    stock.length
+                remaining: stock.length
             });
-
         } catch (error) {
             console.error(
                 "Generate stock error:",
@@ -867,9 +821,9 @@ app.post(
     }
 );
 
-/* =========================================================
+/* =========================
    HEALTH
-========================================================= */
+========================= */
 
 app.get(
     "/api/health",
@@ -882,42 +836,30 @@ app.get(
     }
 );
 
-/* =========================================================
+/* =========================
    API INFO
-========================================================= */
+========================= */
 
 app.get(
     "/api",
     (req, res) => {
         return res.json({
             success: true,
-            name: "Novi API",
-            endpoints: [
-                "POST /api/verify",
-                "POST /api/logout",
-                "GET /api/stock",
-                "POST /api/stock/generate",
-                "POST /api/keys (admin)",
-                "POST /api/stock/add (admin)",
-                "GET /api/health"
-            ]
+            name: "Novi API"
         });
     }
 );
 
-/* =========================================================
-   WEBSITE
-========================================================= */
+/* =========================
+   STATIC WEBSITE
+========================= */
 
 app.use(
-    express.static(
-        PUBLIC_DIR,
-        {
-            index: "index.html",
-            etag: false,
-            maxAge: 0
-        }
-    )
+    express.static(PUBLIC_DIR, {
+        index: "index.html",
+        etag: false,
+        maxAge: 0
+    })
 );
 
 app.get(
@@ -932,9 +874,9 @@ app.get(
     }
 );
 
-/* =========================================================
-   API 404
-========================================================= */
+/* =========================
+   UNKNOWN API
+========================= */
 
 app.use(
     "/api",
@@ -947,15 +889,15 @@ app.use(
     }
 );
 
-/* =========================================================
+/* =========================
    ERROR HANDLER
-========================================================= */
+========================= */
 
 app.use(
     (error, req, res, next) => {
         console.error(
             "Server error:",
-            error
+            error.message
         );
 
         return res.status(500).json({
@@ -966,9 +908,9 @@ app.use(
     }
 );
 
-/* =========================================================
+/* =========================
    START
-========================================================= */
+========================= */
 
 app.listen(
     PORT,
@@ -998,9 +940,11 @@ app.listen(
 
         console.log(
             "Admin authentication: " +
-            (ADMIN_SECRET
-                ? "CONFIGURED"
-                : "NOT CONFIGURED")
+            (
+                ADMIN_SECRET
+                    ? "CONFIGURED"
+                    : "NOT CONFIGURED"
+            )
         );
 
         console.log(
