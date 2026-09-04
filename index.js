@@ -1,43 +1,14 @@
+require("./server.js");
+
 require("dotenv").config();
 
-const express = require("express");
-const { Client, GatewayIntentBits } = require("discord.js");
+const {
+    Client,
+    GatewayIntentBits
+} = require("discord.js");
+
 const crypto = require("crypto");
 const axios = require("axios");
-
-const SERVER_URL = "https://novi-1.onrender.com";
-const PORT = Number(process.env.PORT) || 10000;
-
-const ALLOWED_ROLE_IDS = [
-    "1529705570209366167",
-    "1378500563456626719"
-];
-
-/* ================================
-   RENDER WEB SERVER
-================================ */
-
-const app = express();
-
-app.get("/", function (req, res) {
-    res.status(200).send("Novi Discord Bot is online.");
-});
-
-app.get("/health", function (req, res) {
-    res.status(200).json({
-        success: true,
-        status: "online",
-        service: "Novi Discord Bot"
-    });
-});
-
-app.listen(PORT, "0.0.0.0", function () {
-    console.log("Novi web server listening on port " + PORT);
-});
-
-/* ================================
-   DISCORD CLIENT
-================================ */
 
 const client = new Client({
     intents: [
@@ -47,9 +18,28 @@ const client = new Client({
     ]
 });
 
-/* ================================
-   KEY GENERATOR
-================================ */
+const ALLOWED_ROLE_IDS = [
+    "1529705570209366167",
+    "1378500563456626719"
+];
+
+const SERVER_URL = "https://novi-1.onrender.com";
+
+/* =========================================================
+   READY
+========================================================= */
+
+client.once("ready", () => {
+    console.log("==============================");
+    console.log("NOVI DISCORD BOT IS ONLINE");
+    console.log(`Logged in as: ${client.user.tag}`);
+    console.log(`Novi server: ${SERVER_URL}`);
+    console.log("==============================");
+});
+
+/* =========================================================
+   GENERATE KEY
+========================================================= */
 
 function generateKey() {
     const part1 = crypto.randomBytes(2).toString("hex").toUpperCase();
@@ -57,53 +47,33 @@ function generateKey() {
     const part3 = crypto.randomBytes(2).toString("hex").toUpperCase();
     const part4 = crypto.randomBytes(2).toString("hex").toUpperCase();
 
-    return "NOVI-" + part1 + "-" + part2 + "-" + part3 + "-" + part4;
+    return `NOVI-${part1}-${part2}-${part3}-${part4}`;
 }
 
-/* ================================
-   PERMISSION
-================================ */
+/* =========================================================
+   PERMISSIONS
+========================================================= */
 
 function hasPermission(message) {
     if (!message.member) {
         return false;
     }
 
-    return ALLOWED_ROLE_IDS.some(function (roleId) {
-        return message.member.roles.cache.has(roleId);
-    });
+    return ALLOWED_ROLE_IDS.some(roleId =>
+        message.member.roles.cache.has(roleId)
+    );
 }
 
-/* ================================
-   DISCORD READY
-================================ */
-
-client.once("ready", function () {
-    console.log("==============================");
-    console.log("NOVI DISCORD BOT IS ONLINE");
-    console.log("Logged in as: " + client.user.tag);
-    console.log("Novi server: " + SERVER_URL);
-    console.log("==============================");
-});
-
-/* ================================
-   DISCORD ERROR
-================================ */
-
-client.on("error", function (error) {
-    console.error("Discord client error:", error);
-});
-
-/* ================================
+/* =========================================================
    COMMANDS
-================================ */
+========================================================= */
 
-client.on("messageCreate", async function (message) {
-    if (message.author.bot) {
-        return;
-    }
-
+client.on("messageCreate", async (message) => {
     try {
+        if (message.author.bot) {
+            return;
+        }
+
         const content = message.content.trim();
 
         if (!content) {
@@ -111,18 +81,11 @@ client.on("messageCreate", async function (message) {
         }
 
         const args = content.split(/\s+/);
-        const command = args[0].toLowerCase();
+        const command = args[0]?.toLowerCase();
 
-        console.log(
-            "Command: " +
-            command +
-            " | User: " +
-            message.author.tag
-        );
-
-        /* ================================
+        /* =====================================================
            !GEN
-        ================================ */
+        ===================================================== */
 
         if (command === "!gen") {
             if (!message.member) {
@@ -137,9 +100,7 @@ client.on("messageCreate", async function (message) {
                 );
             }
 
-            const duration = args[1]
-                ? args[1].toLowerCase()
-                : "";
+            const duration = args[1]?.toLowerCase();
 
             const allowedDurations = [
                 "1d",
@@ -158,10 +119,12 @@ client.on("messageCreate", async function (message) {
             const key = generateKey();
 
             try {
-                console.log("Sending key to Novi server.");
+                console.log(
+                    `Generating key ${key} | ${duration}`
+                );
 
                 const response = await axios.post(
-                    SERVER_URL + "/api/keys",
+                    `${SERVER_URL}/api/keys`,
                     {
                         key: key,
                         duration: duration
@@ -173,41 +136,35 @@ client.on("messageCreate", async function (message) {
 
                 if (
                     !response.data ||
-                    response.data.success !== true
+                    !response.data.success
                 ) {
                     console.error(
-                        "Novi server response:",
+                        "Server rejected key:",
                         response.data
                     );
 
                     return message.reply(
-                        "The Novi server rejected the key.\n" +
-                        (
-                            response.data &&
-                            response.data.message
-                                ? response.data.message
-                                : "Unknown server error."
-                        )
+                        `The server rejected the key.\n${
+                            response.data?.message || "Unknown error."
+                        }`
                     );
                 }
 
                 console.log(
-                    "Key saved successfully: " + key
+                    `Key saved successfully: ${key}`
                 );
 
                 return message.reply(
-                    "Novi Key Generated\n\n" +
-                    key +
-                    "\n\n" +
-                    "Duration: " +
-                    duration
+                    `Novi Key Generated\n\n` +
+                    `${key}\n\n` +
+                    `Duration: ${duration}`
                 );
+
             } catch (error) {
                 console.error(
-                    "Novi key request failed:",
-                    error.response
-                        ? error.response.data
-                        : error.message
+                    "Could not connect to Novi:",
+                    error.response?.data ||
+                    error.message
                 );
 
                 return message.reply(
@@ -216,9 +173,9 @@ client.on("messageCreate", async function (message) {
             }
         }
 
-        /* ================================
+        /* =====================================================
            !ADD
-        ================================ */
+        ===================================================== */
 
         if (command === "!add") {
             if (!message.member) {
@@ -235,27 +192,27 @@ client.on("messageCreate", async function (message) {
 
             let items = [];
 
-            /* COMMAND ITEMS */
+            /* =================================================
+               COMMAND ITEMS
+            ================================================= */
 
             const commandItems = args
                 .slice(1)
-                .map(function (item) {
-                    return item.trim();
-                })
-                .filter(function (item) {
-                    return item.length > 0;
-                });
+                .map(item => item.trim())
+                .filter(item => item.length > 0);
 
-            items.push.apply(items, commandItems);
+            items.push(...commandItems);
 
-            /* TXT FILE */
+            /* =================================================
+               TXT ATTACHMENT
+            ================================================= */
 
             if (message.attachments.size > 0) {
                 const attachment =
                     message.attachments.first();
 
                 const filename =
-                    (attachment.name || "").toLowerCase();
+                    attachment.name?.toLowerCase() || "";
 
                 if (!filename.endsWith(".txt")) {
                     return message.reply(
@@ -264,11 +221,6 @@ client.on("messageCreate", async function (message) {
                 }
 
                 try {
-                    console.log(
-                        "Reading stock file: " +
-                        attachment.name
-                    );
-
                     const fileResponse =
                         await axios.get(
                             attachment.url,
@@ -281,17 +233,13 @@ client.on("messageCreate", async function (message) {
                     const fileItems =
                         String(fileResponse.data)
                             .split(/\r?\n/)
-                            .map(function (line) {
-                                return line.trim();
-                            })
-                            .filter(function (line) {
-                                return line.length > 0;
-                            });
+                            .map(line => line.trim())
+                            .filter(
+                                line => line.length > 0
+                            );
 
-                    items.push.apply(
-                        items,
-                        fileItems
-                    );
+                    items.push(...fileItems);
+
                 } catch (error) {
                     console.error(
                         "Could not read stock file:",
@@ -304,34 +252,39 @@ client.on("messageCreate", async function (message) {
                 }
             }
 
-            /* NOTHING TO ADD */
+            /* =================================================
+               NOTHING TO ADD
+            ================================================= */
 
             if (items.length === 0) {
                 return message.reply(
                     "Nothing to add.\n\n" +
-                    "Use: !add CODE-123\n\n" +
-                    "Or attach a .txt file with one item per line and type !add."
+                    "Use:\n" +
+                    "!add CODE-123\n\n" +
+                    "Or attach a .txt file with one item per line and type:\n" +
+                    "!add"
                 );
             }
 
-            /* REMOVE DUPLICATES */
+            /* =================================================
+               REMOVE DUPLICATES
+            ================================================= */
 
-            items = Array.from(
-                new Set(items)
-            );
+            items = [...new Set(items)];
 
             let added = 0;
             let duplicates = 0;
             let failed = 0;
 
-            /* SEND TO NOVI */
+            /* =================================================
+               SEND ITEMS TO NOVI
+            ================================================= */
 
             for (const item of items) {
                 try {
                     const response =
                         await axios.post(
-                            SERVER_URL +
-                            "/api/stock/add",
+                            `${SERVER_URL}/api/stock/add`,
                             {
                                 item: item
                             },
@@ -342,7 +295,7 @@ client.on("messageCreate", async function (message) {
 
                     if (
                         response.data &&
-                        response.data.success === true
+                        response.data.success
                     ) {
                         added += Number(
                             response.data.added || 0
@@ -354,28 +307,28 @@ client.on("messageCreate", async function (message) {
                     } else {
                         failed++;
                     }
-                } catch (error) {
-                    console.error(
-                        "Failed to add item: " +
-                        item,
-                        error.response
-                            ? error.response.data
-                            : error.message
-                    );
 
-                    failed++;
+                } catch (error) {
+                    if (
+                        error.response?.status === 409
+                    ) {
+                        duplicates++;
+                    } else {
+                        failed++;
+                    }
                 }
             }
 
-            /* GET TOTAL STOCK */
+            /* =================================================
+               GET TOTAL STOCK
+            ================================================= */
 
             let totalStock = "Unknown";
 
             try {
                 const stockResponse =
                     await axios.get(
-                        SERVER_URL +
-                        "/api/stock",
+                        `${SERVER_URL}/api/stock`,
                         {
                             timeout: 10000
                         }
@@ -389,6 +342,7 @@ client.on("messageCreate", async function (message) {
                     totalStock =
                         stockResponse.data.count;
                 }
+
             } catch (error) {
                 console.error(
                     "Could not get stock count:",
@@ -396,73 +350,38 @@ client.on("messageCreate", async function (message) {
                 );
             }
 
-            /* RESULT */
+            /* =================================================
+               RESPONSE
+            ================================================= */
 
             let reply =
-                "Stock Added Successfully\n\n" +
-                "Added: " +
-                added +
-                "\n" +
-                "Duplicates: " +
-                duplicates +
-                "\n" +
-                "Total stock: " +
-                totalStock;
+                `Stock Added Successfully\n\n` +
+                `Added: ${added}\n` +
+                `Duplicates: ${duplicates}\n` +
+                `Total stock: ${totalStock}`;
 
             if (failed > 0) {
-                reply +=
-                    "\nFailed: " +
-                    failed;
+                reply += `\nFailed: ${failed}`;
             }
 
             return message.reply(reply);
         }
+
     } catch (error) {
         console.error(
             "Command error:",
             error
         );
 
-        try {
-            await message.reply(
-                "Something went wrong while processing that command."
-            );
-        } catch (replyError) {
-            console.error(
-                "Could not send error message:",
-                replyError.message
-            );
-        }
+        return message.reply(
+            "Something went wrong while processing that command."
+        );
     }
 });
 
-/* ================================
-   PROCESS ERRORS
-================================ */
-
-process.on(
-    "unhandledRejection",
-    function (error) {
-        console.error(
-            "Unhandled promise rejection:",
-            error
-        );
-    }
-);
-
-process.on(
-    "uncaughtException",
-    function (error) {
-        console.error(
-            "Uncaught exception:",
-            error
-        );
-    }
-);
-
-/* ================================
+/* =========================================================
    DISCORD TOKEN
-================================ */
+========================================================= */
 
 if (!process.env.DISCORD_TOKEN) {
     console.error(
@@ -472,20 +391,19 @@ if (!process.env.DISCORD_TOKEN) {
     process.exit(1);
 }
 
-/* ================================
+/* =========================================================
    LOGIN
-================================ */
+========================================================= */
 
 console.log("Connecting to Discord...");
 
-client
-    .login(process.env.DISCORD_TOKEN)
-    .then(function () {
+client.login(process.env.DISCORD_TOKEN)
+    .then(() => {
         console.log(
             "Discord login successful."
         );
     })
-    .catch(function (error) {
+    .catch((error) => {
         console.error(
             "Discord login failed:",
             error.message
