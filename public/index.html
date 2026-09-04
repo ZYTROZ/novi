@@ -2036,8 +2036,6 @@
 
             </nav>
 
-            <!-- HERO -->
-
             <div class="hero">
 
                 <div class="hero-orb one"></div>
@@ -2052,7 +2050,6 @@
                     </div>
 
                     <h1>
-
                         <span class="welcome">
                             Welcome to
                         </span>
@@ -2060,25 +2057,20 @@
                         <span class="brand">
                             Novi
                         </span>
-
                     </h1>
 
                     <p class="hero-description">
-
                         <strong>
                             A clean, fast and simple platform
                         </strong>
 
                         designed to keep everything you need
                         in one place.
-
                     </p>
 
                 </div>
 
             </div>
-
-            <!-- ACCESS -->
 
             <section
                 id="access"
@@ -2141,8 +2133,6 @@
                 </div>
 
             </section>
-
-            <!-- FEATURES -->
 
             <section class="section">
 
@@ -2304,8 +2294,6 @@
 
                     <div class="dashboard-grid">
 
-                        <!-- EPICGAMES -->
-
                         <div class="panel full">
 
                             <div class="panel-head">
@@ -2393,8 +2381,6 @@
 
                         </div>
 
-                        <!-- SAVE LOGIN -->
-
                         <div class="panel">
 
                             <div class="panel-head">
@@ -2439,8 +2425,6 @@
 
                         </div>
 
-                        <!-- SAVED LOGINS -->
-
                         <div class="panel">
 
                             <div class="panel-head">
@@ -2457,8 +2441,6 @@
                             </div>
 
                         </div>
-
-                        <!-- SAVED KEYS -->
 
                         <div class="panel full">
 
@@ -2499,38 +2481,19 @@
 "use strict";
 
 /* =========================================================
-   NOVI SECURE FRONTEND
+   NOVI FRONTEND
+   MATCHES THE PROVIDED SERVER.JS
 ========================================================= */
 
 const API_URL = window.location.origin;
 
-/*
-    IMPORTANT:
-
-    Authentication is NOT based on:
-        localStorage
-        unlocked = true
-        DOM manipulation
-        a saved "noviUnlocked" value
-
-    Authentication is based on:
-        server-issued sessionToken
-
-    The token is stored in sessionStorage so it disappears
-    when the browser tab/session is closed.
-*/
-
 let sessionToken =
-    sessionStorage.getItem(
-        "noviSessionToken"
-    ) || "";
+    sessionStorage.getItem("noviSessionToken") || "";
 
 let currentKey = "";
 
 let currentDeviceId =
-    localStorage.getItem(
-        "noviDeviceId"
-    ) || "";
+    localStorage.getItem("noviDeviceId") || "";
 
 let unlocked = false;
 
@@ -2541,46 +2504,42 @@ let unlocked = false;
 
 function getDeviceId() {
 
-    if (!currentDeviceId) {
-
-        if (
-            window.crypto &&
-            typeof window.crypto.randomUUID ===
-                "function"
-        ) {
-
-            currentDeviceId =
-                window.crypto.randomUUID();
-
-        } else {
-
-            currentDeviceId =
-                Date.now().toString(36) +
-                Math.random()
-                    .toString(36)
-                    .substring(2);
-        }
-
-        localStorage.setItem(
-            "noviDeviceId",
-            currentDeviceId
-        );
+    if (currentDeviceId) {
+        return currentDeviceId;
     }
+
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID === "function"
+    ) {
+        currentDeviceId =
+            window.crypto.randomUUID();
+    } else {
+        currentDeviceId =
+            Date.now().toString(36) +
+            "-" +
+            Math.random()
+                .toString(36)
+                .substring(2);
+    }
+
+    localStorage.setItem(
+        "noviDeviceId",
+        currentDeviceId
+    );
 
     return currentDeviceId;
 }
 
 
 /* =========================================================
-   ESCAPE HTML
+   HTML ESCAPING
 ========================================================= */
 
 function escapeHTML(value) {
 
     const div =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     div.textContent =
         String(value ?? "");
@@ -2590,30 +2549,31 @@ function escapeHTML(value) {
 
 
 /* =========================================================
-   SESSION STORAGE HELPERS
+   SESSION
 ========================================================= */
 
 function saveSessionToken(token) {
 
     if (!token) {
-        return;
+        return false;
     }
 
-    sessionToken = String(token);
+    sessionToken =
+        String(token);
 
     sessionStorage.setItem(
         "noviSessionToken",
         sessionToken
     );
+
+    return true;
 }
 
 
 function clearSession() {
 
     sessionToken = "";
-
     currentKey = "";
-
     unlocked = false;
 
     sessionStorage.removeItem(
@@ -2624,6 +2584,7 @@ function clearSession() {
 
 /* =========================================================
    AUTHENTICATED REQUEST
+   SERVER EXPECTS x-novi-session
 ========================================================= */
 
 async function authenticatedFetch(
@@ -2632,7 +2593,6 @@ async function authenticatedFetch(
 ) {
 
     if (!sessionToken) {
-
         throw new Error(
             "NO_SESSION"
         );
@@ -2640,8 +2600,7 @@ async function authenticatedFetch(
 
     const headers = {
         ...(options.headers || {}),
-        "x-novi-session":
-            sessionToken
+        "x-novi-session": sessionToken
     };
 
     const response =
@@ -2649,37 +2608,16 @@ async function authenticatedFetch(
             url,
             {
                 ...options,
-                headers
+                headers,
+                cache: "no-store"
             }
         );
-
-    /*
-        If the server says the session is
-        invalid/expired, immediately remove it.
-    */
 
     if (
         response.status === 401 ||
         response.status === 403
     ) {
-
         clearSession();
-
-        document.body.classList.remove(
-            "dashboard-open"
-        );
-
-        const dashboard =
-            document.getElementById(
-                "dashboardPage"
-            );
-
-        if (dashboard) {
-            dashboard.setAttribute(
-                "aria-hidden",
-                "true"
-            );
-        }
     }
 
     return response;
@@ -2687,24 +2625,18 @@ async function authenticatedFetch(
 
 
 /* =========================================================
-   DASHBOARD
+   OPEN DASHBOARD
 ========================================================= */
 
 function openDashboard() {
 
     /*
-        This is only a UI check.
-
-        REAL authorization happens on the server.
+        Never trust localStorage as authentication.
+        A session token must exist.
     */
 
-    if (
-        !sessionToken ||
-        !unlocked
-    ) {
-
+    if (!sessionToken || !unlocked) {
         scrollToAccess();
-
         return;
     }
 
@@ -2746,7 +2678,13 @@ function openMainPage() {
 }
 
 
+/* =========================================================
+   ACCESS SCROLL
+========================================================= */
+
 function scrollToAccess() {
+
+    openMainPage();
 
     const access =
         document.getElementById(
@@ -2756,12 +2694,6 @@ function scrollToAccess() {
     if (!access) {
         return;
     }
-
-    /*
-        Make sure we are on the home page first.
-    */
-
-    openMainPage();
 
     setTimeout(() => {
 
@@ -2775,47 +2707,35 @@ function scrollToAccess() {
 
 
 /* =========================================================
-   CHECK SERVER SESSION
+   SERVER SESSION CHECK
 ========================================================= */
 
 async function verifyCurrentSession() {
 
     if (!sessionToken) {
-
         unlocked = false;
-
         return false;
     }
 
     try {
 
-        /*
-            There is no client-side "session valid"
-            variable.
-
-            We ask the actual server.
-
-            /api/stock is protected by requireSession()
-            in server.js.
-
-            Therefore a successful response proves
-            that this browser currently has a valid
-            server session.
-        */
-
         const response =
             await authenticatedFetch(
                 `${API_URL}/api/stock`,
                 {
-                    method: "GET",
-                    cache: "no-store"
+                    method: "GET"
                 }
             );
 
-        if (!response.ok) {
-
+        if (
+            response.status === 401 ||
+            response.status === 403
+        ) {
             clearSession();
+            return false;
+        }
 
+        if (!response.ok) {
             return false;
         }
 
@@ -2824,11 +2744,9 @@ async function verifyCurrentSession() {
 
         if (
             !result ||
-            !result.success
+            result.success !== true
         ) {
-
             clearSession();
-
             return false;
         }
 
@@ -2839,14 +2757,9 @@ async function verifyCurrentSession() {
     } catch (error) {
 
         console.error(
-            "Session verification failed:",
+            "Session check failed:",
             error
         );
-
-        /*
-            Don't pretend the user is authenticated
-            when the server could not confirm it.
-        */
 
         unlocked = false;
 
@@ -2900,6 +2813,15 @@ async function unlock() {
 
     try {
 
+        /*
+            /api/verify expects:
+
+            {
+                key,
+                deviceId
+            }
+        */
+
         const response =
             await fetch(
                 `${API_URL}/api/verify`,
@@ -2908,12 +2830,15 @@ async function unlock() {
 
                     headers: {
                         "Content-Type":
+                            "application/json",
+
+                        "Accept":
                             "application/json"
                     },
 
                     body:
                         JSON.stringify({
-                            key,
+                            key: key,
                             deviceId:
                                 getDeviceId()
                         })
@@ -2922,59 +2847,74 @@ async function unlock() {
 
         let result = {};
 
-        try {
-            result =
-                await response.json();
-        } catch {
-            result = {};
+        const contentType =
+            response.headers.get(
+                "content-type"
+            ) || "";
+
+        if (
+            contentType.includes(
+                "application/json"
+            )
+        ) {
+
+            try {
+                result =
+                    await response.json();
+            } catch {
+                result = {};
+            }
         }
+
+        /*
+            Server returns:
+
+            {
+                success: true,
+                valid: true,
+                sessionToken: "...",
+                expiresAt: ...
+            }
+        */
 
         if (
             !response.ok ||
-            !result.success ||
-            !result.sessionToken
+            result.success !== true ||
+            result.valid !== true
         ) {
 
             clearSession();
 
             message.textContent =
                 result.message ||
-                "Invalid key.";
+                `Verification failed (${response.status}).`;
 
             return;
         }
 
-        /*
-            IMPORTANT:
+        if (!result.sessionToken) {
 
-            The server returned a session token.
+            clearSession();
 
-            This token is what grants access.
+            message.textContent =
+                "Server did not provide a session token.";
 
-            The key itself is NOT used to authorize
-            dashboard API requests anymore.
-        */
+            return;
+        }
 
         saveSessionToken(
             result.sessionToken
         );
-
-        /*
-            Keep the key only in memory.
-
-            It is useful for "Save Current Key",
-            but it is NOT our authentication state.
-        */
 
         currentKey =
             key;
 
         unlocked = true;
 
-        message.textContent = "";
+        message.textContent =
+            "Access granted.";
 
         renderSavedKeys();
-
         renderSavedLogins();
 
         openDashboard();
@@ -2984,14 +2924,29 @@ async function unlock() {
     } catch (error) {
 
         console.error(
-            "Unlock error:",
+            "Novi unlock error:",
             error
         );
 
         clearSession();
 
-        message.textContent =
-            "Unable to connect to the server.";
+        /*
+            This message is intentionally more accurate.
+        */
+
+        if (
+            error &&
+            error.name === "TypeError"
+        ) {
+
+            message.textContent =
+                "Could not connect to the Novi server.";
+
+        } else {
+
+            message.textContent =
+                "Connection failed. Please try again.";
+        }
 
     } finally {
 
@@ -3008,14 +2963,16 @@ async function unlock() {
 
 async function logout() {
 
-    const tokenBeforeLogout =
+    const token =
         sessionToken;
 
     /*
-        Tell the server to destroy the session.
+        Server supports:
+        POST /api/logout
+        x-novi-session
     */
 
-    if (tokenBeforeLogout) {
+    if (token) {
 
         try {
 
@@ -3026,7 +2983,10 @@ async function logout() {
 
                     headers: {
                         "x-novi-session":
-                            tokenBeforeLogout
+                            token,
+
+                        "Accept":
+                            "application/json"
                     }
                 }
             );
@@ -3042,21 +3002,7 @@ async function logout() {
 
     clearSession();
 
-    document.body.classList.remove(
-        "dashboard-open"
-    );
-
-    const dashboard =
-        document.getElementById(
-            "dashboardPage"
-        );
-
-    if (dashboard) {
-        dashboard.setAttribute(
-            "aria-hidden",
-            "true"
-        );
-    }
+    openMainPage();
 
     const keyInput =
         document.getElementById(
@@ -3073,14 +3019,9 @@ async function logout() {
         );
 
     if (message) {
-
         message.textContent =
             "Logged out.";
     }
-
-    /*
-        Clear dashboard data displayed on screen.
-    */
 
     const stockCount =
         document.getElementById(
@@ -3110,12 +3051,6 @@ async function logout() {
         generatedBox.style.display =
             "none";
     }
-
-    /*
-        Return to the access section.
-    */
-
-    scrollToAccess();
 }
 
 
@@ -3126,7 +3061,6 @@ async function logout() {
 async function loadStock() {
 
     if (!sessionToken) {
-
         return;
     }
 
@@ -3144,14 +3078,16 @@ async function loadStock() {
         return;
     }
 
+    status.textContent =
+        "Checking stock...";
+
     try {
 
         const response =
             await authenticatedFetch(
                 `${API_URL}/api/stock`,
                 {
-                    method: "GET",
-                    cache: "no-store"
+                    method: "GET"
                 }
             );
 
@@ -3165,40 +3101,48 @@ async function loadStock() {
         }
 
         if (
-            !response.ok ||
-            !result.success
+            response.status === 401 ||
+            response.status === 403
         ) {
 
-            /*
-                If this was an authentication
-                failure, authenticatedFetch()
-                already cleared the session.
-            */
+            showLoggedOutState();
 
-            if (
-                response.status === 401 ||
-                response.status === 403
-            ) {
+            return;
+        }
 
-                showLoggedOutState();
+        if (!response.ok) {
 
-                return;
-            }
-
-            count.textContent = "0";
+            count.textContent = "—";
 
             status.textContent =
                 result.message ||
+                `Server error (${response.status}).`;
+
+            return;
+        }
+
+        if (
+            result.success !== true
+        ) {
+
+            count.textContent = "—";
+
+            status.textContent =
                 "Unable to load stock.";
 
             return;
         }
 
+        const stockCount =
+            Number(result.count);
+
         count.textContent =
-            result.count;
+            Number.isFinite(stockCount)
+                ? stockCount
+                : "0";
 
         status.textContent =
-            result.count > 0
+            stockCount > 0
                 ? "Stock available"
                 : "Out of stock";
 
@@ -3218,28 +3162,14 @@ async function loadStock() {
 
 
 /* =========================================================
-   FORCE LOGOUT UI
+   FORCE LOGOUT
 ========================================================= */
 
 function showLoggedOutState() {
 
     clearSession();
 
-    document.body.classList.remove(
-        "dashboard-open"
-    );
-
-    const dashboard =
-        document.getElementById(
-            "dashboardPage"
-        );
-
-    if (dashboard) {
-        dashboard.setAttribute(
-            "aria-hidden",
-            "true"
-        );
-    }
+    openMainPage();
 
     const message =
         document.getElementById(
@@ -3247,7 +3177,6 @@ function showLoggedOutState() {
         );
 
     if (message) {
-
         message.textContent =
             "Your session expired. Please enter your key again.";
     }
@@ -3262,32 +3191,11 @@ function showLoggedOutState() {
 
 async function generateInventory() {
 
-    /*
-        The frontend check is only for UX.
-
-        The server is the actual security boundary.
-    */
-
     if (!sessionToken) {
 
         showGeneratedMessage(
             "Please unlock your dashboard first."
         );
-
-        return;
-    }
-
-    /*
-        Confirm that the server still accepts
-        our session before generating.
-    */
-
-    const valid =
-        await verifyCurrentSession();
-
-    if (!valid) {
-
-        showLoggedOutState();
 
         return;
     }
@@ -3350,12 +3258,12 @@ async function generateInventory() {
         /*
             IMPORTANT:
 
-            We do NOT send the access key here.
+            The key is NOT sent.
 
-            The server receives:
-                x-novi-session
+            The server authenticates this request
+            through:
 
-            and validates that session itself.
+            x-novi-session
         */
 
         const response =
@@ -3366,8 +3274,13 @@ async function generateInventory() {
 
                     headers: {
                         "Content-Type":
+                            "application/json",
+
+                        "Accept":
                             "application/json"
-                    }
+                    },
+
+                    body: JSON.stringify({})
                 }
             );
 
@@ -3381,31 +3294,32 @@ async function generateInventory() {
         }
 
         if (
-            !response.ok ||
-            !result.success
+            response.status === 401 ||
+            response.status === 403
         ) {
 
-            generatedItem.textContent =
-                "";
+            generatedMessage.textContent =
+                "Your session is no longer valid.";
 
-            /*
-                Session invalid.
-            */
+            setTimeout(() => {
+                showLoggedOutState();
+            }, 700);
 
-            if (
-                response.status === 401 ||
-                response.status === 403
-            ) {
+            return;
+        }
 
-                generatedMessage.textContent =
-                    "Your session is no longer valid.";
+        if (!response.ok) {
 
-                setTimeout(() => {
-                    showLoggedOutState();
-                }, 700);
+            generatedMessage.textContent =
+                result.message ||
+                `Unable to generate item (${response.status}).`;
 
-                return;
-            }
+            return;
+        }
+
+        if (
+            result.success !== true
+        ) {
 
             generatedMessage.textContent =
                 result.message ||
@@ -3418,30 +3332,26 @@ async function generateInventory() {
             result.item;
 
         if (
-            typeof displayItem ===
-            "object" &&
+            typeof displayItem === "object" &&
             displayItem !== null
         ) {
 
             if (
-                displayItem.name !==
-                undefined
+                displayItem.name !== undefined
             ) {
 
                 displayItem =
                     displayItem.name;
 
             } else if (
-                displayItem.code !==
-                undefined
+                displayItem.code !== undefined
             ) {
 
                 displayItem =
                     displayItem.code;
 
             } else if (
-                displayItem.item !==
-                undefined
+                displayItem.item !== undefined
             ) {
 
                 displayItem =
@@ -3457,14 +3367,13 @@ async function generateInventory() {
         }
 
         generatedItem.textContent =
-            String(displayItem);
+            String(displayItem ?? "");
 
         generatedMessage.textContent =
             "Your item has been generated successfully.";
 
         if (
-            typeof result.remaining ===
-            "number"
+            typeof result.remaining === "number"
         ) {
 
             const stockCount =
@@ -3478,13 +3387,11 @@ async function generateInventory() {
                 );
 
             if (stockCount) {
-
                 stockCount.textContent =
                     result.remaining;
             }
 
             if (stockStatus) {
-
                 stockStatus.textContent =
                     result.remaining > 0
                         ? "Stock available"
@@ -3503,7 +3410,7 @@ async function generateInventory() {
             "";
 
         generatedMessage.textContent =
-            "Unable to connect to the server.";
+            "Could not connect to the Novi server.";
 
     } finally {
 
@@ -3561,21 +3468,6 @@ function showGeneratedMessage(text) {
    SAVE LOGIN
 ========================================================= */
 
-/*
-    SECURITY CHANGE:
-
-    Do NOT store actual passwords in localStorage.
-
-    Anything stored in localStorage can be read by JavaScript
-    running on the site.
-
-    Instead, this feature saves only the email as a
-    non-sensitive reminder.
-
-    If these are real account credentials, do not store them
-    in browser storage.
-*/
-
 function saveEmailPassword() {
 
     if (!sessionToken) {
@@ -3623,16 +3515,27 @@ function saveEmailPassword() {
     }
 
     /*
-        Only save the email locally.
-        Never save the password.
+        Never store the password.
     */
 
-    const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedEmails"
-            ) || "[]"
-        );
+    let saved = [];
+
+    try {
+
+        saved =
+            JSON.parse(
+                localStorage.getItem(
+                    "noviSavedEmails"
+                ) || "[]"
+            );
+
+        if (!Array.isArray(saved)) {
+            saved = [];
+        }
+
+    } catch {
+        saved = [];
+    }
 
     if (!saved.includes(email)) {
 
@@ -3645,7 +3548,6 @@ function saveEmailPassword() {
     }
 
     emailInput.value = "";
-
     passwordInput.value = "";
 
     showLoginSaveMessage(
@@ -3667,7 +3569,8 @@ function showLoginSaveMessage(text) {
         return;
     }
 
-    message.textContent = text;
+    message.textContent =
+        text;
 
     setTimeout(() => {
 
@@ -3676,7 +3579,6 @@ function showLoginSaveMessage(text) {
                 message
             )
         ) {
-
             message.textContent = "";
         }
 
@@ -3687,6 +3589,27 @@ function showLoginSaveMessage(text) {
 /* =========================================================
    SAVED LOGINS
 ========================================================= */
+
+function getSavedEmails() {
+
+    try {
+
+        const saved =
+            JSON.parse(
+                localStorage.getItem(
+                    "noviSavedEmails"
+                ) || "[]"
+            );
+
+        return Array.isArray(saved)
+            ? saved
+            : [];
+
+    } catch {
+        return [];
+    }
+}
+
 
 function renderSavedLogins() {
 
@@ -3700,11 +3623,7 @@ function renderSavedLogins() {
     }
 
     const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedEmails"
-            ) || "[]"
-        );
+        getSavedEmails();
 
     if (!saved.length) {
 
@@ -3726,9 +3645,7 @@ function renderSavedLogins() {
                         <div class="saved-info">
 
                             <strong>
-                                ${escapeHTML(
-                                    email
-                                )}
+                                ${escapeHTML(email)}
                             </strong>
 
                             <small>
@@ -3768,11 +3685,7 @@ function renderSavedLogins() {
 async function copyEmail(index) {
 
     const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedEmails"
-            ) || "[]"
-        );
+        getSavedEmails();
 
     const email =
         saved[index];
@@ -3828,23 +3741,8 @@ async function copyEmail(index) {
         );
 
         if (button) {
-
             button.textContent =
                 "Copy failed";
-
-            setTimeout(() => {
-
-                if (
-                    document.body.contains(
-                        button
-                    )
-                ) {
-
-                    button.textContent =
-                        "Copy";
-                }
-
-            }, 1500);
         }
     }
 }
@@ -3857,11 +3755,7 @@ async function copyEmail(index) {
 function deleteEmail(index) {
 
     const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedEmails"
-            ) || "[]"
-        );
+        getSavedEmails();
 
     saved.splice(index, 1);
 
@@ -3875,15 +3769,31 @@ function deleteEmail(index) {
 
 
 /* =========================================================
-   SAVE CURRENT KEY
+   SAVED KEYS
 ========================================================= */
 
-function saveCurrentKey() {
+function getSavedKeys() {
 
-    /*
-        This feature is only available after
-        a real server session exists.
-    */
+    try {
+
+        const saved =
+            JSON.parse(
+                localStorage.getItem(
+                    "noviSavedKeys"
+                ) || "[]"
+            );
+
+        return Array.isArray(saved)
+            ? saved
+            : [];
+
+    } catch {
+        return [];
+    }
+}
+
+
+function saveCurrentKey() {
 
     if (
         !sessionToken ||
@@ -3893,11 +3803,7 @@ function saveCurrentKey() {
     }
 
     const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedKeys"
-            ) || "[]"
-        );
+        getSavedKeys();
 
     if (
         !saved.includes(
@@ -3919,10 +3825,6 @@ function saveCurrentKey() {
 }
 
 
-/* =========================================================
-   SAVED KEYS
-========================================================= */
-
 function renderSavedKeys() {
 
     const container =
@@ -3935,11 +3837,7 @@ function renderSavedKeys() {
     }
 
     const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedKeys"
-            ) || "[]"
-        );
+        getSavedKeys();
 
     if (!saved.length) {
 
@@ -4001,11 +3899,7 @@ function renderSavedKeys() {
 async function copyKey(index) {
 
     const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedKeys"
-            ) || "[]"
-        );
+        getSavedKeys();
 
     const key =
         saved[index];
@@ -4061,23 +3955,8 @@ async function copyKey(index) {
         );
 
         if (button) {
-
             button.textContent =
                 "Copy failed";
-
-            setTimeout(() => {
-
-                if (
-                    document.body.contains(
-                        button
-                    )
-                ) {
-
-                    button.textContent =
-                        "Copy";
-                }
-
-            }, 1500);
         }
     }
 }
@@ -4090,11 +3969,7 @@ async function copyKey(index) {
 function deleteKey(index) {
 
     const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "noviSavedKeys"
-            ) || "[]"
-        );
+        getSavedKeys();
 
     saved.splice(index, 1);
 
@@ -4108,6 +3983,53 @@ function deleteKey(index) {
 
 
 /* =========================================================
+   ENTER KEY
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        const keyInput =
+            document.getElementById(
+                "keyInput"
+            );
+
+        if (keyInput) {
+
+            keyInput.addEventListener(
+                "keydown",
+                (event) => {
+
+                    if (
+                        event.key === "Enter"
+                    ) {
+
+                        event.preventDefault();
+
+                        unlock();
+                    }
+                }
+            );
+        }
+
+        const dashboard =
+            document.getElementById(
+                "dashboardPage"
+            );
+
+        if (dashboard) {
+
+            dashboard.setAttribute(
+                "aria-hidden",
+                "true"
+            );
+        }
+    }
+);
+
+
+/* =========================================================
    INITIALIZE
 ========================================================= */
 
@@ -4116,28 +4038,19 @@ async function initialize() {
     getDeviceId();
 
     renderSavedKeys();
-
     renderSavedLogins();
 
     /*
-        NEVER trust localStorage for authentication.
-
-        The only thing we check is the server-issued
-        session token in sessionStorage.
+        sessionStorage may contain an old token,
+        so ALWAYS validate it with the server.
     */
 
     if (!sessionToken) {
-
-        unlocked = false;
 
         openMainPage();
 
         return;
     }
-
-    /*
-        Ask the server if this session is actually valid.
-    */
 
     const valid =
         await verifyCurrentSession();
@@ -4157,61 +4070,6 @@ async function initialize() {
 
     await loadStock();
 }
-
-
-/* =========================================================
-   ENTER KEY
-========================================================= */
-
-const keyInput =
-    document.getElementById(
-        "keyInput"
-    );
-
-if (keyInput) {
-
-    keyInput.addEventListener(
-        "keydown",
-        function(event) {
-
-            if (
-                event.key === "Enter"
-            ) {
-
-                event.preventDefault();
-
-                unlock();
-            }
-
-        }
-    );
-}
-
-
-/* =========================================================
-   PREVENT DASHBOARD FROM BEING USED BEFORE AUTH
-========================================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        const dashboard =
-            document.getElementById(
-                "dashboardPage"
-            );
-
-        if (dashboard) {
-
-            dashboard.setAttribute(
-                "aria-hidden",
-                sessionToken
-                    ? "false"
-                    : "true"
-            );
-        }
-    }
-);
 
 
 /* =========================================================
