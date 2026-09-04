@@ -82,55 +82,227 @@ function writeJSON(file, data) {
 }
 
 /* =========================================================
-   KEY FILE
+   KEY HELPERS
 ========================================================= */
 
-function readKeys() {
-    const keys = readJSON(KEY_FILE, []);
+function normalizeKey(key) {
+    if (key === undefined || key === null) {
+        return "";
+    }
 
-    return Array.isArray(keys) ? keys : [];
+    return String(key)
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, "");
+}
+
+/*
+ * Supports keys.json in multiple formats:
+ *
+ * [
+ *   {
+ *     "key": "NOVI-XXXX-XXXX-XXXX-XXXX"
+ *   }
+ * ]
+ *
+ * OR
+ *
+ * [
+ *   "NOVI-XXXX-XXXX-XXXX-XXXX"
+ * ]
+ */
+
+function readKeys() {
+    const data = readJSON(KEY_FILE, []);
+
+    if (!Array.isArray(data)) {
+        return [];
+    }
+
+    return data
+        .map(item => {
+            if (typeof item === "string") {
+                return {
+                    key: item,
+                    duration: "lifetime",
+                    createdAt: Date.now(),
+                    expiresAt: null,
+                    deviceId: null,
+                    activatedAt: null
+                };
+            }
+
+            if (
+                item &&
+                typeof item === "object" &&
+                item.key
+            ) {
+                return {
+                    key: item.key,
+                    duration:
+                        item.duration || "lifetime",
+                    createdAt:
+                        typeof item.createdAt === "number"
+                            ? item.createdAt
+                            : Date.now(),
+                    expiresAt:
+                        item.expiresAt === undefined
+                            ? null
+                            : item.expiresAt,
+                    deviceId:
+                        item.deviceId || null,
+                    activatedAt:
+                        item.activatedAt || null
+                };
+            }
+
+            return null;
+        })
+        .filter(Boolean);
 }
 
 function writeKeys(keys) {
-    return writeJSON(KEY_FILE, keys);
+    return writeJSON(
+        KEY_FILE,
+        keys
+    );
 }
 
 /* =========================================================
-   STOCK FILE
+   ENVIRONMENT KEYS
+========================================================= */
+
+/*
+ * You can optionally put keys in Render as:
+ *
+ * NOVI_KEYS=NOVI-AAAA-BBBB-CCCC-DDDD,NOVI-1111-2222-3333-4444
+ *
+ * These keys are treated as lifetime keys.
+ */
+
+function getEnvironmentKeys() {
+    const raw =
+        process.env.NOVI_KEYS || "";
+
+    if (!raw.trim()) {
+        return [];
+    }
+
+    return raw
+        .split(",")
+        .map(key => normalizeKey(key))
+        .filter(Boolean)
+        .map(key => ({
+            key,
+            duration: "lifetime",
+            createdAt: Date.now(),
+            expiresAt: null,
+            deviceId: null,
+            activatedAt: null
+        }));
+}
+
+/* =========================================================
+   ALL AVAILABLE KEYS
+========================================================= */
+
+function getAllKeys() {
+    const fileKeys = readKeys();
+    const environmentKeys = getEnvironmentKeys();
+
+    const combined = [
+        ...fileKeys,
+        ...environmentKeys
+    ];
+
+    const unique = [];
+
+    for (const item of combined) {
+        const normalized =
+            normalizeKey(item.key);
+
+        if (!normalized) {
+            continue;
+        }
+
+        const alreadyExists =
+            unique.some(
+                existing =>
+                    normalizeKey(existing.key) ===
+                    normalized
+            );
+
+        if (!alreadyExists) {
+            unique.push(item);
+        }
+    }
+
+    return unique;
+}
+
+/* =========================================================
+   STOCK
 ========================================================= */
 
 function readStock() {
-    const stock = readJSON(STOCK_FILE, []);
+    const stock =
+        readJSON(
+            STOCK_FILE,
+            []
+        );
 
-    return Array.isArray(stock) ? stock : [];
+    return Array.isArray(stock)
+        ? stock
+        : [];
 }
 
 function writeStock(stock) {
-    return writeJSON(STOCK_FILE, stock);
+    return writeJSON(
+        STOCK_FILE,
+        stock
+    );
 }
 
 /* =========================================================
-   CREATE REQUIRED FILES
+   CREATE FILES
 ========================================================= */
 
-ensureFile(KEY_FILE, []);
-ensureFile(STOCK_FILE, []);
+ensureFile(
+    KEY_FILE,
+    []
+);
+
+ensureFile(
+    STOCK_FILE,
+    []
+);
 
 /* =========================================================
-   KEY DURATIONS
+   DURATIONS
 ========================================================= */
 
 const DURATIONS = {
-    "1d": 1 * 24 * 60 * 60 * 1000,
-    "3d": 3 * 24 * 60 * 60 * 1000,
-    "1week": 7 * 24 * 60 * 60 * 1000,
-    "1month": 30 * 24 * 60 * 60 * 1000,
-    "1year": 365 * 24 * 60 * 60 * 1000,
-    "lifetime": null
+    "1d":
+        1 * 24 * 60 * 60 * 1000,
+
+    "3d":
+        3 * 24 * 60 * 60 * 1000,
+
+    "1week":
+        7 * 24 * 60 * 60 * 1000,
+
+    "1month":
+        30 * 24 * 60 * 60 * 1000,
+
+    "1year":
+        365 * 24 * 60 * 60 * 1000,
+
+    "lifetime":
+        null
 };
 
 /* =========================================================
-   NORMALIZE DURATION
+   DURATION NORMALIZATION
 ========================================================= */
 
 function normalizeDuration(duration) {
@@ -138,9 +310,10 @@ function normalizeDuration(duration) {
         return null;
     }
 
-    const value = String(duration)
-        .trim()
-        .toLowerCase();
+    const value =
+        String(duration)
+            .trim()
+            .toLowerCase();
 
     const aliases = {
         "1d": "1d",
@@ -178,21 +351,6 @@ function normalizeDuration(duration) {
 }
 
 /* =========================================================
-   NORMALIZE KEY
-========================================================= */
-
-function normalizeKey(key) {
-    if (!key) {
-        return "";
-    }
-
-    return String(key)
-        .trim()
-        .toUpperCase()
-        .replace(/\s+/g, "");
-}
-
-/* =========================================================
    GENERATE KEY
 ========================================================= */
 
@@ -209,7 +367,8 @@ function generateKey() {
             section +=
                 chars[
                     Math.floor(
-                        Math.random() * chars.length
+                        Math.random() *
+                        chars.length
                     )
                 ];
         }
@@ -238,21 +397,24 @@ function createKey(duration) {
         );
     }
 
-    const keys = readKeys();
+    const keys =
+        readKeys();
 
     let key;
 
     do {
-        key = generateKey();
+        key =
+            generateKey();
     } while (
         keys.some(
             item =>
-                normalizeKey(item?.key) ===
+                normalizeKey(item.key) ===
                 normalizeKey(key)
         )
     );
 
-    const createdAt = Date.now();
+    const createdAt =
+        Date.now();
 
     const durationLength =
         DURATIONS[normalized];
@@ -260,29 +422,33 @@ function createKey(duration) {
     const expiresAt =
         durationLength === null
             ? null
-            : createdAt + durationLength;
+            : createdAt +
+              durationLength;
 
     const newKey = {
-        key: key,
-        duration: normalized,
-        createdAt: createdAt,
-        expiresAt: expiresAt,
+        key,
+        duration:
+            normalized,
+        createdAt,
+        expiresAt,
         deviceId: null,
         activatedAt: null
     };
 
-    keys.push(newKey);
+    keys.push(
+        newKey
+    );
 
-    const saved = writeKeys(keys);
-
-    if (!saved) {
+    if (
+        !writeKeys(keys)
+    ) {
         throw new Error(
-            "The key could not be saved to the server."
+            "The key could not be saved."
         );
     }
 
     console.log(
-        `Created key: ${newKey.key} (${newKey.duration})`
+        `Created Novi key: ${key}`
     );
 
     return newKey;
@@ -292,88 +458,91 @@ function createKey(duration) {
    VERIFY KEY
 ========================================================= */
 
-function verifyKey(key, deviceId) {
-    if (!key) {
-        return {
-            valid: false,
-            message: "Key is required."
-        };
-    }
-
-    if (!deviceId) {
-        return {
-            valid: false,
-            message: "Device ID is required."
-        };
-    }
-
-    const cleanKey = normalizeKey(key);
+function verifyKey(
+    suppliedKey,
+    deviceId
+) {
+    const cleanKey =
+        normalizeKey(
+            suppliedKey
+        );
 
     const cleanDeviceId =
-        String(deviceId).trim();
+        String(
+            deviceId || ""
+        ).trim();
 
     if (!cleanKey) {
         return {
             valid: false,
-            message: "Key is required."
+            message:
+                "Key is required."
         };
     }
 
     if (!cleanDeviceId) {
         return {
             valid: false,
-            message: "Device ID is required."
+            message:
+                "Device ID is required."
         };
     }
 
-    const keys = readKeys();
+    const keys =
+        getAllKeys();
 
-    const index = keys.findIndex(item => {
-        if (!item || !item.key) {
-            return false;
-        }
+    console.log(
+        `Checking key: ${cleanKey}`
+    );
 
-        return (
-            normalizeKey(item.key) ===
-            cleanKey
+    console.log(
+        `Available keys: ${keys.length}`
+    );
+
+    const index =
+        keys.findIndex(
+            item =>
+                normalizeKey(
+                    item.key
+                ) === cleanKey
         );
-    });
-
-    /* -----------------------------------------------------
-       KEY DOES NOT EXIST
-    ----------------------------------------------------- */
 
     if (index === -1) {
         console.log(
-            `Invalid key attempt: ${cleanKey}`
+            `Key NOT FOUND: ${cleanKey}`
         );
 
         return {
             valid: false,
-            message: "Invalid key."
+            message:
+                "Invalid key."
         };
     }
 
-    const currentKey = keys[index];
+    const currentKey =
+        keys[index];
 
-    /* -----------------------------------------------------
+    /* =====================================================
        EXPIRATION
-    ----------------------------------------------------- */
+    ===================================================== */
 
     if (
         currentKey.expiresAt !== null &&
-        typeof currentKey.expiresAt === "number" &&
-        Date.now() > currentKey.expiresAt
+        typeof currentKey.expiresAt ===
+            "number" &&
+        Date.now() >
+            currentKey.expiresAt
     ) {
         return {
             valid: false,
-            message: "This key has expired."
+            message:
+                "This key has expired."
         };
     }
 
-    /* -----------------------------------------------------
-       FIRST DEVICE ACTIVATION
-    ----------------------------------------------------- */
+    /* =====================================================
+       DEVICE ACTIVATION
+    ===================================================== */
 
     if (!currentKey.deviceId) {
         currentKey.deviceId =
@@ -382,21 +551,32 @@ function verifyKey(key, deviceId) {
         currentKey.activatedAt =
             Date.now();
 
-        keys[index] = currentKey;
+        /*
+         * Only save file-based keys.
+         * Environment keys are read-only.
+         */
+        const fileKeys =
+            readKeys();
 
-        const saved =
-            writeKeys(keys);
+        const fileIndex =
+            fileKeys.findIndex(
+                item =>
+                    normalizeKey(
+                        item.key
+                    ) === cleanKey
+            );
 
-        if (!saved) {
-            return {
-                valid: false,
-                message:
-                    "Could not activate the key."
-            };
+        if (fileIndex !== -1) {
+            fileKeys[fileIndex] =
+                currentKey;
+
+            writeKeys(
+                fileKeys
+            );
         }
 
         console.log(
-            `Key activated: ${currentKey.key}`
+            `Key activated: ${cleanKey}`
         );
 
         return {
@@ -405,9 +585,9 @@ function verifyKey(key, deviceId) {
         };
     }
 
-    /* -----------------------------------------------------
+    /* =====================================================
        DEVICE CHECK
-    ----------------------------------------------------- */
+    ===================================================== */
 
     if (
         currentKey.deviceId !==
@@ -420,10 +600,6 @@ function verifyKey(key, deviceId) {
         };
     }
 
-    /* -----------------------------------------------------
-       VALID
-    ----------------------------------------------------- */
-
     return {
         valid: true,
         key: currentKey
@@ -434,124 +610,144 @@ function verifyKey(key, deviceId) {
    CREATE KEY API
 ========================================================= */
 
-app.post("/api/keys", (req, res) => {
-    try {
-        const duration =
-            req.body?.duration;
+app.post(
+    "/api/keys",
+    (req, res) => {
+        try {
+            const duration =
+                req.body?.duration;
 
-        if (!duration) {
-            return res.status(400).json({
+            if (!duration) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Duration is required."
+                });
+            }
+
+            const newKey =
+                createKey(
+                    duration
+                );
+
+            return res.json({
+                success: true,
+                key:
+                    newKey.key,
+                duration:
+                    newKey.duration,
+                createdAt:
+                    newKey.createdAt,
+                expiresAt:
+                    newKey.expiresAt,
+                keyData:
+                    newKey
+            });
+
+        } catch (error) {
+            console.error(
+                "Create key error:",
+                error
+            );
+
+            return res.status(500).json({
                 success: false,
                 message:
-                    "Duration is required."
+                    error.message ||
+                    "The key could not be saved."
             });
         }
-
-        const newKey =
-            createKey(duration);
-
-        return res.json({
-            success: true,
-            key: newKey.key,
-            duration: newKey.duration,
-            createdAt:
-                newKey.createdAt,
-            expiresAt:
-                newKey.expiresAt,
-            keyData: newKey
-        });
-    } catch (error) {
-        console.error(
-            "Create key error:",
-            error
-        );
-
-        return res.status(500).json({
-            success: false,
-            message:
-                error.message ||
-                "The key could not be saved."
-        });
     }
-});
+);
 
 /* =========================================================
    VERIFY API
 ========================================================= */
 
-app.post("/api/verify", (req, res) => {
-    try {
-        const {
-            key,
-            deviceId
-        } = req.body || {};
+app.post(
+    "/api/verify",
+    (req, res) => {
+        try {
+            const key =
+                req.body?.key;
 
-        const result =
-            verifyKey(
-                key,
-                deviceId
+            const deviceId =
+                req.body?.deviceId;
+
+            const result =
+                verifyKey(
+                    key,
+                    deviceId
+                );
+
+            if (!result.valid) {
+                return res.status(403).json({
+                    success: false,
+                    valid: false,
+                    message:
+                        result.message
+                });
+            }
+
+            return res.json({
+                success: true,
+                valid: true,
+                key:
+                    result.key
+            });
+
+        } catch (error) {
+            console.error(
+                "Verify error:",
+                error
             );
 
-        if (!result.valid) {
-            return res.status(403).json({
+            return res.status(500).json({
                 success: false,
                 valid: false,
                 message:
-                    result.message
+                    "Verification failed."
             });
         }
-
-        return res.json({
-            success: true,
-            valid: true,
-            key: result.key
-        });
-    } catch (error) {
-        console.error(
-            "Verify error:",
-            error
-        );
-
-        return res.status(500).json({
-            success: false,
-            valid: false,
-            message:
-                "Verification failed."
-        });
     }
-});
+);
 
 /* =========================================================
    STOCK COUNT
 ========================================================= */
 
-app.get("/api/stock", (req, res) => {
-    try {
-        const stock =
-            readStock();
+app.get(
+    "/api/stock",
+    (req, res) => {
+        try {
+            const stock =
+                readStock();
 
-        res.set(
-            "Cache-Control",
-            "no-store"
-        );
+            res.set(
+                "Cache-Control",
+                "no-store"
+            );
 
-        return res.json({
-            success: true,
-            count: stock.length
-        });
-    } catch (error) {
-        console.error(
-            "Stock error:",
-            error
-        );
+            return res.json({
+                success: true,
+                count:
+                    stock.length
+            });
 
-        return res.status(500).json({
-            success: false,
-            message:
-                "Failed to load stock."
-        });
+        } catch (error) {
+            console.error(
+                "Stock error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Failed to load stock."
+            });
+        }
     }
-});
+);
 
 /* =========================================================
    ADD STOCK
@@ -579,12 +775,13 @@ app.post(
             const stock =
                 readStock();
 
-            stock.push(item);
+            stock.push(
+                item
+            );
 
-            const saved =
-                writeStock(stock);
-
-            if (!saved) {
+            if (
+                !writeStock(stock)
+            ) {
                 return res.status(500).json({
                     success: false,
                     message:
@@ -597,6 +794,7 @@ app.post(
                 count:
                     stock.length
             });
+
         } catch (error) {
             console.error(
                 "Add stock error:",
@@ -613,17 +811,18 @@ app.post(
 );
 
 /* =========================================================
-   GENERATE STOCK ITEM
+   GENERATE STOCK
 ========================================================= */
 
 app.post(
     "/api/stock/generate",
     (req, res) => {
         try {
-            const {
-                key,
-                deviceId
-            } = req.body || {};
+            const key =
+                req.body?.key;
+
+            const deviceId =
+                req.body?.deviceId;
 
             const verification =
                 verifyKey(
@@ -631,7 +830,9 @@ app.post(
                     deviceId
                 );
 
-            if (!verification.valid) {
+            if (
+                !verification.valid
+            ) {
                 return res.status(403).json({
                     success: false,
                     message:
@@ -642,7 +843,9 @@ app.post(
             const stock =
                 readStock();
 
-            if (stock.length === 0) {
+            if (
+                stock.length === 0
+            ) {
                 return res.status(404).json({
                     success: false,
                     message:
@@ -650,17 +853,12 @@ app.post(
                 });
             }
 
-            /*
-             * Remove exactly one item
-             * from the stock.
-             */
             const generatedItem =
                 stock.shift();
 
-            const saved =
-                writeStock(stock);
-
-            if (!saved) {
+            if (
+                !writeStock(stock)
+            ) {
                 return res.status(500).json({
                     success: false,
                     message:
@@ -680,6 +878,7 @@ app.post(
                 remaining:
                     stock.length
             });
+
         } catch (error) {
             console.error(
                 "Generate stock error:",
@@ -696,7 +895,7 @@ app.post(
 );
 
 /* =========================================================
-   HEALTH CHECK
+   DEBUG / STATUS
 ========================================================= */
 
 app.get(
@@ -710,27 +909,30 @@ app.get(
     }
 );
 
-/* =========================================================
-   API INFO
-========================================================= */
+app.get(
+    "/api",
+    (req, res) => {
+        return res.json({
+            success: true,
+            name: "Novi API",
+            keyCount:
+                getAllKeys().length,
+            stockCount:
+                readStock().length,
+            endpoints: [
+                "POST /api/keys",
+                "POST /api/verify",
+                "GET /api/stock",
+                "POST /api/stock/add",
+                "POST /api/stock/generate",
+                "GET /api/health"
+            ]
+        });
+    }
+);
 
-app.get("/api", (req, res) => {
-    return res.json({
-        success: true,
-        name: "Novi API",
-        endpoints: [
-            "POST /api/keys",
-            "POST /api/verify",
-            "GET /api/stock",
-            "POST /api/stock/add",
-            "POST /api/stock/generate",
-            "GET /api/health"
-        ]
-    });
-});
-
 /* =========================================================
-   SERVE WEBSITE
+   WEBSITE
 ========================================================= */
 
 app.use(
@@ -744,18 +946,17 @@ app.use(
     )
 );
 
-/* =========================================================
-   HOME PAGE
-========================================================= */
-
-app.get("/", (req, res) => {
-    return res.sendFile(
-        path.join(
-            PUBLIC_DIR,
-            "index.html"
-        )
-    );
-});
+app.get(
+    "/",
+    (req, res) => {
+        return res.sendFile(
+            path.join(
+                PUBLIC_DIR,
+                "index.html"
+            )
+        );
+    }
+);
 
 /* =========================================================
    API 404
@@ -792,7 +993,7 @@ app.use(
 );
 
 /* =========================================================
-   START SERVER
+   START
 ========================================================= */
 
 app.listen(
@@ -800,19 +1001,35 @@ app.listen(
     "0.0.0.0",
     () => {
         console.log(
-            `Novi server running on port ${PORT}`
+            "================================="
         );
 
         console.log(
-            `Public directory: ${PUBLIC_DIR}`
+            `Novi running on port ${PORT}`
         );
 
         console.log(
-            `Key file: ${KEY_FILE}`
+            `Public: ${PUBLIC_DIR}`
         );
 
         console.log(
-            `Stock file: ${STOCK_FILE}`
+            `Keys: ${KEY_FILE}`
+        );
+
+        console.log(
+            `Stock: ${STOCK_FILE}`
+        );
+
+        console.log(
+            `Loaded keys: ${getAllKeys().length}`
+        );
+
+        console.log(
+            `Loaded stock: ${readStock().length}`
+        );
+
+        console.log(
+            "================================="
         );
     }
 );
