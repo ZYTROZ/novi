@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const app = express();
 
@@ -14,6 +15,20 @@ const PORT = process.env.PORT || 10000;
 const PUBLIC_DIR = path.join(__dirname, "public");
 const KEY_FILE = path.join(__dirname, "keys.json");
 const STOCK_FILE = path.join(__dirname, "epicgames-stock.json");
+
+/*
+   SET THIS IN RENDER ENVIRONMENT VARIABLES.
+
+   Example:
+   NOVI_ADMIN_SECRET=put-a-long-random-secret-here
+*/
+const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET || "";
+
+if (!ADMIN_SECRET) {
+    console.warn(
+        "WARNING: NOVI_ADMIN_SECRET is not configured."
+    );
+}
 
 /* =========================================================
    MIDDLEWARE
@@ -76,6 +91,42 @@ function writeJSON(file, data) {
 
 ensureFile(KEY_FILE, []);
 ensureFile(STOCK_FILE, []);
+
+/* =========================================================
+   SECURITY HELPERS
+========================================================= */
+
+function safeEqual(a, b) {
+    const first = Buffer.from(String(a || ""));
+    const second = Buffer.from(String(b || ""));
+
+    if (first.length !== second.length) {
+        return false;
+    }
+
+    return crypto.timingSafeEqual(first, second);
+}
+
+function requireAdmin(req, res, next) {
+    if (!ADMIN_SECRET) {
+        return res.status(503).json({
+            success: false,
+            message: "Admin authentication is not configured."
+        });
+    }
+
+    const suppliedSecret =
+        req.get("x-novi-admin-secret") || "";
+
+    if (!safeEqual(suppliedSecret, ADMIN_SECRET)) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized."
+        });
+    }
+
+    next();
+}
 
 /* =========================================================
    KEY HELPERS
@@ -258,10 +309,10 @@ function saveKey(suppliedKey, duration) {
             : createdAt + durationLength;
 
     const newKey = {
-        key: key,
+        key,
         duration: normalizedDuration,
-        createdAt: createdAt,
-        expiresAt: expiresAt,
+        createdAt,
+        expiresAt,
         deviceId: null,
         activatedAt: null
     };
@@ -271,18 +322,6 @@ function saveKey(suppliedKey, duration) {
     if (!writeKeys(keys)) {
         throw new Error("Could not save key.");
     }
-
-    console.log(
-        "KEY SAVED: " +
-        key +
-        " | " +
-        normalizedDuration
-    );
-
-    console.log(
-        "TOTAL KEYS: " +
-        keys.length
-    );
 
     return newKey;
 }
@@ -294,13 +333,6 @@ function saveKey(suppliedKey, duration) {
 function verifyKey(suppliedKey, deviceId) {
     const cleanKey = normalizeKey(suppliedKey);
     const cleanDeviceId = normalizeDeviceId(deviceId);
-
-    console.log(
-        "VERIFY REQUEST | KEY: " +
-        cleanKey +
-        " | DEVICE: " +
-        cleanDeviceId
-    );
 
     if (!cleanKey) {
         return {
@@ -318,22 +350,12 @@ function verifyKey(suppliedKey, deviceId) {
 
     const keys = readKeys();
 
-    console.log(
-        "Stored keys: " +
-        keys.length
-    );
-
     const index = keys.findIndex(
         (item) =>
             normalizeKey(item.key) === cleanKey
     );
 
     if (index === -1) {
-        console.log(
-            "KEY NOT FOUND: " +
-            cleanKey
-        );
-
         return {
             valid: false,
             message: "Invalid key."
@@ -342,29 +364,20 @@ function verifyKey(suppliedKey, deviceId) {
 
     const currentKey = keys[index];
 
-    /* =====================================================
-       EXPIRATION
-    ===================================================== */
+    /* EXPIRATION */
 
     if (
         currentKey.expiresAt !== null &&
         typeof currentKey.expiresAt === "number" &&
         Date.now() >= currentKey.expiresAt
     ) {
-        console.log(
-            "KEY EXPIRED: " +
-            cleanKey
-        );
-
         return {
             valid: false,
             message: "This key has expired."
         };
     }
 
-    /* =====================================================
-       FIRST ACTIVATION
-    ===================================================== */
+    /* FIRST ACTIVATION */
 
     if (!currentKey.deviceId) {
         currentKey.deviceId = cleanDeviceId;
@@ -379,44 +392,23 @@ function verifyKey(suppliedKey, deviceId) {
             };
         }
 
-        console.log(
-            "KEY ACTIVATED: " +
-            cleanKey
-        );
-
         return {
             valid: true,
             key: currentKey
         };
     }
 
-    /* =====================================================
-       SAME DEVICE
-    ===================================================== */
+    /* SAME DEVICE */
 
     if (
         normalizeDeviceId(currentKey.deviceId) ===
         cleanDeviceId
     ) {
-        console.log(
-            "KEY VERIFIED: " +
-            cleanKey
-        );
-
         return {
             valid: true,
             key: currentKey
         };
     }
-
-    /* =====================================================
-       DIFFERENT DEVICE
-    ===================================================== */
-
-    console.log(
-        "KEY USED ON DIFFERENT DEVICE: " +
-        cleanKey
-    );
 
     return {
         valid: false,
@@ -426,120 +418,253 @@ function verifyKey(suppliedKey, deviceId) {
 }
 
 /* =========================================================
-   CREATE KEY
+   SESSION TOKENS
 ========================================================= */
 
-app.post("/api/keys", (req, res) => {
-    try {
-        const key =
-            req.body &&
-            req.body.key;
+/*
+   Sessions live only in server memory.
 
-        const duration =
-            req.body &&
-            req.body.duration;
+   Restarting Render logs everyone out.
+   That is intentional and safer than trusting localStorage.
+*/
 
-        console.log(
-            "NEW KEY REQUEST"
-        );
+const sessions = new Map();
 
-        if (!key) {
-            return res.status(400).json({
-                success: false,
-                message: "Key is required."
-            });
-        }
+const SESSION_DURATION = 30 * 60 * 1000;
 
-        if (!duration) {
-            return res.status(400).json({
-                success: false,
-                message: "Duration is required."
-            });
-        }
+function createSession(key, deviceId) {
+    const token = crypto.randomBytes(32).toString("hex");
 
-        const newKey = saveKey(
-            key,
-            duration
-        );
+    sessions.set(token, {
+        key: normalizeKey(key),
+        deviceId: normalizeDeviceId(deviceId),
+        createdAt: Date.now(),
+        expiresAt: Date.now() + SESSION_DURATION
+    });
 
-        return res.json({
-            success: true,
-            key: newKey.key,
-            duration: newKey.duration,
-            createdAt: newKey.createdAt,
-            expiresAt: newKey.expiresAt
-        });
-    } catch (error) {
-        console.error(
-            "Create key error:",
-            error.message
-        );
+    return token;
+}
 
-        return res.status(500).json({
-            success: false,
-            message:
-                error.message ||
-                "Could not save key."
-        });
+function getSession(token) {
+    if (!token) {
+        return null;
     }
-});
 
-/* =========================================================
-   VERIFY KEY
-========================================================= */
+    const session = sessions.get(token);
 
-app.post("/api/verify", (req, res) => {
-    try {
-        const key =
-            req.body &&
-            req.body.key;
+    if (!session) {
+        return null;
+    }
 
-        const deviceId =
-            req.body &&
-            req.body.deviceId;
+    if (Date.now() >= session.expiresAt) {
+        sessions.delete(token);
+        return null;
+    }
 
-        const result = verifyKey(
-            key,
-            deviceId
-        );
+    return session;
+}
 
-        if (!result.valid) {
-            return res.status(403).json({
-                success: false,
-                valid: false,
-                message: result.message
-            });
-        }
+function destroySession(token) {
+    if (token) {
+        sessions.delete(token);
+    }
+}
 
-        return res.json({
-            success: true,
-            valid: true,
-            key: result.key
-        });
-    } catch (error) {
-        console.error(
-            "Verification error:",
-            error.message
-        );
+function requireSession(req, res, next) {
+    const token =
+        req.get("x-novi-session") || "";
 
-        return res.status(500).json({
+    const session = getSession(token);
+
+    if (!session) {
+        return res.status(401).json({
             success: false,
             valid: false,
-            message:
-                "Verification failed."
+            message: "Dashboard session expired."
         });
     }
-});
+
+    /*
+       Re-check the key every time.
+       This means deleting/expiring a key invalidates
+       access even if a session token still exists.
+    */
+
+    const verification = verifyKey(
+        session.key,
+        session.deviceId
+    );
+
+    if (!verification.valid) {
+        destroySession(token);
+
+        return res.status(403).json({
+            success: false,
+            valid: false,
+            message: verification.message
+        });
+    }
+
+    req.noviSession = session;
+    req.noviToken = token;
+
+    next();
+}
+
+/* =========================================================
+   CREATE KEY
+   ADMIN ONLY
+========================================================= */
+
+app.post(
+    "/api/keys",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const key =
+                req.body &&
+                req.body.key;
+
+            const duration =
+                req.body &&
+                req.body.duration;
+
+            if (!key) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Key is required."
+                });
+            }
+
+            if (!duration) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Duration is required."
+                });
+            }
+
+            const newKey =
+                saveKey(key, duration);
+
+            return res.json({
+                success: true,
+                key: newKey.key,
+                duration: newKey.duration,
+                createdAt: newKey.createdAt,
+                expiresAt: newKey.expiresAt
+            });
+
+        } catch (error) {
+            console.error(
+                "Create key error:",
+                error.message
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    error.message ||
+                    "Could not save key."
+            });
+        }
+    }
+);
+
+/* =========================================================
+   VERIFY / LOGIN
+========================================================= */
+
+app.post(
+    "/api/verify",
+    (req, res) => {
+        try {
+            const key =
+                req.body &&
+                req.body.key;
+
+            const deviceId =
+                req.body &&
+                req.body.deviceId;
+
+            const result =
+                verifyKey(
+                    key,
+                    deviceId
+                );
+
+            if (!result.valid) {
+                return res.status(403).json({
+                    success: false,
+                    valid: false,
+                    message: result.message
+                });
+            }
+
+            const sessionToken =
+                createSession(
+                    result.key.key,
+                    deviceId
+                );
+
+            return res.json({
+                success: true,
+                valid: true,
+                sessionToken,
+                expiresAt:
+                    Date.now() +
+                    SESSION_DURATION,
+                key: {
+                    duration:
+                        result.key.duration,
+                    expiresAt:
+                        result.key.expiresAt
+                }
+            });
+
+        } catch (error) {
+            console.error(
+                "Verification error:",
+                error.message
+            );
+
+            return res.status(500).json({
+                success: false,
+                valid: false,
+                message:
+                    "Verification failed."
+            });
+        }
+    }
+);
+
+/* =========================================================
+   LOGOUT SESSION
+========================================================= */
+
+app.post(
+    "/api/logout",
+    requireSession,
+    (req, res) => {
+        destroySession(
+            req.noviToken
+        );
+
+        return res.json({
+            success: true
+        });
+    }
+);
 
 /* =========================================================
    STOCK HELPERS
 ========================================================= */
 
 function readStock() {
-    const stock = readJSON(
-        STOCK_FILE,
-        []
-    );
+    const stock =
+        readJSON(
+            STOCK_FILE,
+            []
+        );
 
     return Array.isArray(stock)
         ? stock
@@ -557,153 +682,146 @@ function writeStock(stock) {
    STOCK COUNT
 ========================================================= */
 
-app.get("/api/stock", (req, res) => {
-    try {
-        const stock = readStock();
+app.get(
+    "/api/stock",
+    requireSession,
+    (req, res) => {
+        try {
+            const stock =
+                readStock();
 
-        res.set(
-            "Cache-Control",
-            "no-store"
-        );
-
-        return res.json({
-            success: true,
-            count: stock.length
-        });
-    } catch (error) {
-        console.error(
-            "Stock error:",
-            error.message
-        );
-
-        return res.status(500).json({
-            success: false,
-            message:
-                "Failed to load stock."
-        });
-    }
-});
-
-/* =========================================================
-   ADD STOCK
-========================================================= */
-
-app.post("/api/stock/add", (req, res) => {
-    try {
-        let items = [];
-
-        if (
-            req.body &&
-            req.body.item !== undefined &&
-            req.body.item !== null
-        ) {
-            items.push(req.body.item);
-        }
-
-        if (
-            req.body &&
-            Array.isArray(req.body.items)
-        ) {
-            items.push(
-                ...req.body.items
+            res.set(
+                "Cache-Control",
+                "no-store"
             );
-        }
 
-        items = items
-            .map((item) =>
-                String(item).trim()
-            )
-            .filter(Boolean);
-
-        if (items.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Stock item is required."
+            return res.json({
+                success: true,
+                count: stock.length
             });
-        }
 
-        const stock = readStock();
+        } catch (error) {
+            console.error(
+                "Stock error:",
+                error.message
+            );
 
-        let added = 0;
-        let duplicates = 0;
-
-        for (const item of items) {
-            if (stock.includes(item)) {
-                duplicates++;
-                continue;
-            }
-
-            stock.push(item);
-            added++;
-        }
-
-        if (!writeStock(stock)) {
             return res.status(500).json({
                 success: false,
                 message:
-                    "Failed to save stock."
+                    "Failed to load stock."
             });
         }
-
-        return res.json({
-            success: true,
-            added: added,
-            duplicates: duplicates,
-            count: stock.length
-        });
-    } catch (error) {
-        console.error(
-            "Add stock error:",
-            error.message
-        );
-
-        return res.status(500).json({
-            success: false,
-            message:
-                "Failed to add stock."
-        });
     }
-});
+);
+
+/* =========================================================
+   ADD STOCK
+   ADMIN ONLY
+========================================================= */
+
+app.post(
+    "/api/stock/add",
+    requireAdmin,
+    (req, res) => {
+        try {
+            let items = [];
+
+            if (
+                req.body &&
+                req.body.item !== undefined &&
+                req.body.item !== null
+            ) {
+                items.push(
+                    req.body.item
+                );
+            }
+
+            if (
+                req.body &&
+                Array.isArray(
+                    req.body.items
+                )
+            ) {
+                items.push(
+                    ...req.body.items
+                );
+            }
+
+            items = items
+                .map((item) =>
+                    String(item).trim()
+                )
+                .filter(Boolean);
+
+            if (!items.length) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Stock item is required."
+                });
+            }
+
+            const stock =
+                readStock();
+
+            let added = 0;
+            let duplicates = 0;
+
+            for (const item of items) {
+                if (stock.includes(item)) {
+                    duplicates++;
+                    continue;
+                }
+
+                stock.push(item);
+                added++;
+            }
+
+            if (!writeStock(stock)) {
+                return res.status(500).json({
+                    success: false,
+                    message:
+                        "Failed to save stock."
+                });
+            }
+
+            return res.json({
+                success: true,
+                added,
+                duplicates,
+                count: stock.length
+            });
+
+        } catch (error) {
+            console.error(
+                "Add stock error:",
+                error.message
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Failed to add stock."
+            });
+        }
+    }
+);
 
 /* =========================================================
    GENERATE STOCK
+   SESSION REQUIRED
 ========================================================= */
 
 app.post(
     "/api/stock/generate",
+    requireSession,
     (req, res) => {
         try {
-            const key =
-                req.body &&
-                req.body.key;
+            const stock =
+                readStock();
 
-            const deviceId =
-                req.body &&
-                req.body.deviceId;
-
-            console.log(
-                "GENERATE REQUEST"
-            );
-
-            const verification =
-                verifyKey(
-                    key,
-                    deviceId
-                );
-
-            if (!verification.valid) {
-                return res.status(403).json({
-                    success: false,
-                    valid: false,
-                    message:
-                        verification.message
-                });
-            }
-
-            const stock = readStock();
-
-            if (stock.length === 0) {
+            if (!stock.length) {
                 return res.status(404).json({
                     success: false,
                     message:
@@ -730,8 +848,10 @@ app.post(
             return res.json({
                 success: true,
                 item: generatedItem,
-                remaining: stock.length
+                remaining:
+                    stock.length
             });
+
         } catch (error) {
             console.error(
                 "Generate stock error:",
@@ -748,7 +868,7 @@ app.post(
 );
 
 /* =========================================================
-   HEALTH CHECK
+   HEALTH
 ========================================================= */
 
 app.get(
@@ -772,15 +892,13 @@ app.get(
         return res.json({
             success: true,
             name: "Novi API",
-            keyCount: readKeys().length,
-            stockCount: readStock().length,
-
             endpoints: [
-                "POST /api/keys",
                 "POST /api/verify",
+                "POST /api/logout",
                 "GET /api/stock",
-                "POST /api/stock/add",
                 "POST /api/stock/generate",
+                "POST /api/keys (admin)",
+                "POST /api/stock/add (admin)",
                 "GET /api/health"
             ]
         });
@@ -849,7 +967,7 @@ app.use(
 );
 
 /* =========================================================
-   START SERVER
+   START
 ========================================================= */
 
 app.listen(
@@ -865,8 +983,7 @@ app.listen(
         );
 
         console.log(
-            "Port: " +
-            PORT
+            "Port: " + PORT
         );
 
         console.log(
@@ -877,6 +994,13 @@ app.listen(
         console.log(
             "Stock loaded: " +
             readStock().length
+        );
+
+        console.log(
+            "Admin authentication: " +
+            (ADMIN_SECRET
+                ? "CONFIGURED"
+                : "NOT CONFIGURED")
         );
 
         console.log(
