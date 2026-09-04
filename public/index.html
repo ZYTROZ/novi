@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Novi</title>
 
     <style>
@@ -2120,9 +2121,11 @@
                             type="text"
                             placeholder="NOVI-XXXX-XXXX-XXXX-XXXX"
                             autocomplete="off"
+                            spellcheck="false"
                         >
 
                         <button
+                            id="unlockButton"
                             class="btn btn-primary"
                             onclick="unlock()">
                             Unlock Dashboard
@@ -2239,10 +2242,13 @@
         </section>
 
         <!-- =================================================
-             DASHBOARD
+             DASHBOARD PAGE
         ================================================= -->
 
-        <section class="page dashboard-page">
+        <section
+            class="page dashboard-page"
+            id="dashboardPage"
+            aria-hidden="true">
 
             <div class="dashboard-wrap">
 
@@ -2426,6 +2432,11 @@
                                 Save Login
                             </button>
 
+                            <div
+                                id="loginSaveMessage"
+                                class="message">
+                            </div>
+
                         </div>
 
                         <!-- SAVED LOGINS -->
@@ -2485,14 +2496,36 @@
 </div>
 
 <script>
+"use strict";
 
-const API_URL =
-    window.location.origin;
+/* =========================================================
+   NOVI SECURE FRONTEND
+========================================================= */
 
-let currentKey =
-    localStorage.getItem(
-        "noviCurrentKey"
+const API_URL = window.location.origin;
+
+/*
+    IMPORTANT:
+
+    Authentication is NOT based on:
+        localStorage
+        unlocked = true
+        DOM manipulation
+        a saved "noviUnlocked" value
+
+    Authentication is based on:
+        server-issued sessionToken
+
+    The token is stored in sessionStorage so it disappears
+    when the browser tab/session is closed.
+*/
+
+let sessionToken =
+    sessionStorage.getItem(
+        "noviSessionToken"
     ) || "";
+
+let currentKey = "";
 
 let currentDeviceId =
     localStorage.getItem(
@@ -2512,12 +2545,12 @@ function getDeviceId() {
 
         if (
             window.crypto &&
-            typeof crypto.randomUUID ===
+            typeof window.crypto.randomUUID ===
                 "function"
         ) {
 
             currentDeviceId =
-                crypto.randomUUID();
+                window.crypto.randomUUID();
 
         } else {
 
@@ -2557,19 +2590,134 @@ function escapeHTML(value) {
 
 
 /* =========================================================
+   SESSION STORAGE HELPERS
+========================================================= */
+
+function saveSessionToken(token) {
+
+    if (!token) {
+        return;
+    }
+
+    sessionToken = String(token);
+
+    sessionStorage.setItem(
+        "noviSessionToken",
+        sessionToken
+    );
+}
+
+
+function clearSession() {
+
+    sessionToken = "";
+
+    currentKey = "";
+
+    unlocked = false;
+
+    sessionStorage.removeItem(
+        "noviSessionToken"
+    );
+}
+
+
+/* =========================================================
+   AUTHENTICATED REQUEST
+========================================================= */
+
+async function authenticatedFetch(
+    url,
+    options = {}
+) {
+
+    if (!sessionToken) {
+
+        throw new Error(
+            "NO_SESSION"
+        );
+    }
+
+    const headers = {
+        ...(options.headers || {}),
+        "x-novi-session":
+            sessionToken
+    };
+
+    const response =
+        await fetch(
+            url,
+            {
+                ...options,
+                headers
+            }
+        );
+
+    /*
+        If the server says the session is
+        invalid/expired, immediately remove it.
+    */
+
+    if (
+        response.status === 401 ||
+        response.status === 403
+    ) {
+
+        clearSession();
+
+        document.body.classList.remove(
+            "dashboard-open"
+        );
+
+        const dashboard =
+            document.getElementById(
+                "dashboardPage"
+            );
+
+        if (dashboard) {
+            dashboard.setAttribute(
+                "aria-hidden",
+                "true"
+            );
+        }
+    }
+
+    return response;
+}
+
+
+/* =========================================================
    DASHBOARD
 ========================================================= */
 
 function openDashboard() {
 
+    /*
+        This is only a UI check.
+
+        REAL authorization happens on the server.
+    */
+
     if (
-        !unlocked ||
-        !currentKey
+        !sessionToken ||
+        !unlocked
     ) {
 
         scrollToAccess();
 
         return;
+    }
+
+    const dashboard =
+        document.getElementById(
+            "dashboardPage"
+        );
+
+    if (dashboard) {
+        dashboard.setAttribute(
+            "aria-hidden",
+            "false"
+        );
     }
 
     document.body.classList.add(
@@ -2583,6 +2731,18 @@ function openMainPage() {
     document.body.classList.remove(
         "dashboard-open"
     );
+
+    const dashboard =
+        document.getElementById(
+            "dashboardPage"
+        );
+
+    if (dashboard) {
+        dashboard.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+    }
 }
 
 
@@ -2597,80 +2757,79 @@ function scrollToAccess() {
         return;
     }
 
-    access.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-    });
+    /*
+        Make sure we are on the home page first.
+    */
+
+    openMainPage();
+
+    setTimeout(() => {
+
+        access.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+    }, 100);
 }
 
 
 /* =========================================================
-   VERIFY CURRENT SESSION
+   CHECK SERVER SESSION
 ========================================================= */
 
 async function verifyCurrentSession() {
 
-    if (!currentKey) {
+    if (!sessionToken) {
+
+        unlocked = false;
+
         return false;
     }
 
     try {
 
+        /*
+            There is no client-side "session valid"
+            variable.
+
+            We ask the actual server.
+
+            /api/stock is protected by requireSession()
+            in server.js.
+
+            Therefore a successful response proves
+            that this browser currently has a valid
+            server session.
+        */
+
         const response =
-            await fetch(
-                `${API_URL}/api/verify`,
+            await authenticatedFetch(
+                `${API_URL}/api/stock`,
                 {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify({
-                            key: currentKey,
-                            deviceId:
-                                getDeviceId()
-                        })
+                    method: "GET",
+                    cache: "no-store"
                 }
             );
+
+        if (!response.ok) {
+
+            clearSession();
+
+            return false;
+        }
 
         const result =
             await response.json();
 
         if (
-            !response.ok ||
-            !(result.success ||
-              result.valid)
+            !result ||
+            !result.success
         ) {
 
-            currentKey = "";
-            unlocked = false;
-
-            localStorage.removeItem(
-                "noviCurrentKey"
-            );
-
-            localStorage.removeItem(
-                "noviUnlocked"
-            );
+            clearSession();
 
             return false;
-        }
-
-        if (
-            result.key &&
-            result.key.key
-        ) {
-
-            currentKey =
-                result.key.key;
-
-            localStorage.setItem(
-                "noviCurrentKey",
-                currentKey
-            );
         }
 
         unlocked = true;
@@ -2683,6 +2842,13 @@ async function verifyCurrentSession() {
             "Session verification failed:",
             error
         );
+
+        /*
+            Don't pretend the user is authenticated
+            when the server could not confirm it.
+        */
+
+        unlocked = false;
 
         return false;
     }
@@ -2705,6 +2871,15 @@ async function unlock() {
             "unlockMessage"
         );
 
+    const button =
+        document.getElementById(
+            "unlockButton"
+        );
+
+    if (!input || !message) {
+        return;
+    }
+
     const key =
         input.value.trim();
 
@@ -2714,6 +2889,10 @@ async function unlock() {
             "Enter your key.";
 
         return;
+    }
+
+    if (button) {
+        button.disabled = true;
     }
 
     message.textContent =
@@ -2734,21 +2913,29 @@ async function unlock() {
 
                     body:
                         JSON.stringify({
-                            key: key,
+                            key,
                             deviceId:
                                 getDeviceId()
                         })
                 }
             );
 
-        const result =
-            await response.json();
+        let result = {};
+
+        try {
+            result =
+                await response.json();
+        } catch {
+            result = {};
+        }
 
         if (
             !response.ok ||
-            !(result.success ||
-              result.valid)
+            !result.success ||
+            !result.sessionToken
         ) {
+
+            clearSession();
 
             message.textContent =
                 result.message ||
@@ -2757,47 +2944,60 @@ async function unlock() {
             return;
         }
 
-        if (
-            result.key &&
-            result.key.key
-        ) {
+        /*
+            IMPORTANT:
 
-            currentKey =
-                result.key.key;
+            The server returned a session token.
 
-        } else {
+            This token is what grants access.
 
-            currentKey =
-                key.trim();
-        }
+            The key itself is NOT used to authorize
+            dashboard API requests anymore.
+        */
+
+        saveSessionToken(
+            result.sessionToken
+        );
+
+        /*
+            Keep the key only in memory.
+
+            It is useful for "Save Current Key",
+            but it is NOT our authentication state.
+        */
+
+        currentKey =
+            key;
 
         unlocked = true;
-
-        localStorage.setItem(
-            "noviCurrentKey",
-            currentKey
-        );
-
-        localStorage.setItem(
-            "noviUnlocked",
-            "true"
-        );
 
         message.textContent = "";
 
         renderSavedKeys();
+
         renderSavedLogins();
 
         openDashboard();
 
-        loadStock();
+        await loadStock();
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Unlock error:",
+            error
+        );
+
+        clearSession();
 
         message.textContent =
             "Unable to connect to the server.";
+
+    } finally {
+
+        if (button) {
+            button.disabled = false;
+        }
     }
 }
 
@@ -2806,22 +3006,57 @@ async function unlock() {
    LOGOUT
 ========================================================= */
 
-function logout() {
+async function logout() {
 
-    currentKey = "";
-    unlocked = false;
+    const tokenBeforeLogout =
+        sessionToken;
 
-    localStorage.removeItem(
-        "noviCurrentKey"
-    );
+    /*
+        Tell the server to destroy the session.
+    */
 
-    localStorage.removeItem(
-        "noviUnlocked"
-    );
+    if (tokenBeforeLogout) {
+
+        try {
+
+            await fetch(
+                `${API_URL}/api/logout`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "x-novi-session":
+                            tokenBeforeLogout
+                    }
+                }
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Logout request failed:",
+                error
+            );
+        }
+    }
+
+    clearSession();
 
     document.body.classList.remove(
         "dashboard-open"
     );
+
+    const dashboard =
+        document.getElementById(
+            "dashboardPage"
+        );
+
+    if (dashboard) {
+        dashboard.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+    }
 
     const keyInput =
         document.getElementById(
@@ -2838,9 +3073,49 @@ function logout() {
         );
 
     if (message) {
+
         message.textContent =
             "Logged out.";
     }
+
+    /*
+        Clear dashboard data displayed on screen.
+    */
+
+    const stockCount =
+        document.getElementById(
+            "stockCount"
+        );
+
+    if (stockCount) {
+        stockCount.textContent = "—";
+    }
+
+    const stockStatus =
+        document.getElementById(
+            "stockStatus"
+        );
+
+    if (stockStatus) {
+        stockStatus.textContent =
+            "Locked";
+    }
+
+    const generatedBox =
+        document.getElementById(
+            "generatedBox"
+        );
+
+    if (generatedBox) {
+        generatedBox.style.display =
+            "none";
+    }
+
+    /*
+        Return to the access section.
+    */
+
+    scrollToAccess();
 }
 
 
@@ -2849,6 +3124,11 @@ function logout() {
 ========================================================= */
 
 async function loadStock() {
+
+    if (!sessionToken) {
+
+        return;
+    }
 
     const count =
         document.getElementById(
@@ -2860,28 +3140,55 @@ async function loadStock() {
             "stockStatus"
         );
 
+    if (!count || !status) {
+        return;
+    }
+
     try {
 
         const response =
-            await fetch(
+            await authenticatedFetch(
                 `${API_URL}/api/stock`,
                 {
-                    cache:
-                        "no-store"
+                    method: "GET",
+                    cache: "no-store"
                 }
             );
 
-        const result =
-            await response.json();
+        let result = {};
+
+        try {
+            result =
+                await response.json();
+        } catch {
+            result = {};
+        }
 
         if (
             !response.ok ||
             !result.success
         ) {
 
+            /*
+                If this was an authentication
+                failure, authenticatedFetch()
+                already cleared the session.
+            */
+
+            if (
+                response.status === 401 ||
+                response.status === 403
+            ) {
+
+                showLoggedOutState();
+
+                return;
+            }
+
             count.textContent = "0";
 
             status.textContent =
+                result.message ||
                 "Unable to load stock.";
 
             return;
@@ -2897,13 +3204,55 @@ async function loadStock() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Stock load error:",
+            error
+        );
 
-        count.textContent = "0";
+        count.textContent = "—";
 
         status.textContent =
             "Server unavailable.";
     }
+}
+
+
+/* =========================================================
+   FORCE LOGOUT UI
+========================================================= */
+
+function showLoggedOutState() {
+
+    clearSession();
+
+    document.body.classList.remove(
+        "dashboard-open"
+    );
+
+    const dashboard =
+        document.getElementById(
+            "dashboardPage"
+        );
+
+    if (dashboard) {
+        dashboard.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+    }
+
+    const message =
+        document.getElementById(
+            "unlockMessage"
+        );
+
+    if (message) {
+
+        message.textContent =
+            "Your session expired. Please enter your key again.";
+    }
+
+    scrollToAccess();
 }
 
 
@@ -2913,7 +3262,13 @@ async function loadStock() {
 
 async function generateInventory() {
 
-    if (!currentKey) {
+    /*
+        The frontend check is only for UX.
+
+        The server is the actual security boundary.
+    */
+
+    if (!sessionToken) {
 
         showGeneratedMessage(
             "Please unlock your dashboard first."
@@ -2922,27 +3277,17 @@ async function generateInventory() {
         return;
     }
 
+    /*
+        Confirm that the server still accepts
+        our session before generating.
+    */
+
     const valid =
         await verifyCurrentSession();
 
     if (!valid) {
 
-        document.body.classList.remove(
-            "dashboard-open"
-        );
-
-        const message =
-            document.getElementById(
-                "unlockMessage"
-            );
-
-        if (message) {
-
-            message.textContent =
-                "Your key is no longer valid. Please unlock again.";
-        }
-
-        scrollToAccess();
+        showLoggedOutState();
 
         return;
     }
@@ -2972,6 +3317,16 @@ async function generateInventory() {
             "generatedMessage"
         );
 
+    if (
+        !button ||
+        !buttonText ||
+        !generatedBox ||
+        !generatedItem ||
+        !generatedMessage
+    ) {
+        return;
+    }
+
     button.disabled = true;
 
     button.classList.add(
@@ -2992,8 +3347,19 @@ async function generateInventory() {
 
     try {
 
+        /*
+            IMPORTANT:
+
+            We do NOT send the access key here.
+
+            The server receives:
+                x-novi-session
+
+            and validates that session itself.
+        */
+
         const response =
-            await fetch(
+            await authenticatedFetch(
                 `${API_URL}/api/stock/generate`,
                 {
                     method: "POST",
@@ -3001,21 +3367,18 @@ async function generateInventory() {
                     headers: {
                         "Content-Type":
                             "application/json"
-                    },
-
-                    body:
-                        JSON.stringify({
-                            key:
-                                currentKey,
-
-                            deviceId:
-                                getDeviceId()
-                        })
+                    }
                 }
             );
 
-        const result =
-            await response.json();
+        let result = {};
+
+        try {
+            result =
+                await response.json();
+        } catch {
+            result = {};
+        }
 
         if (
             !response.ok ||
@@ -3024,6 +3387,25 @@ async function generateInventory() {
 
             generatedItem.textContent =
                 "";
+
+            /*
+                Session invalid.
+            */
+
+            if (
+                response.status === 401 ||
+                response.status === 403
+            ) {
+
+                generatedMessage.textContent =
+                    "Your session is no longer valid.";
+
+                setTimeout(() => {
+                    showLoggedOutState();
+                }, 700);
+
+                return;
+            }
 
             generatedMessage.textContent =
                 result.message ||
@@ -3085,22 +3467,37 @@ async function generateInventory() {
             "number"
         ) {
 
-            document.getElementById(
-                "stockCount"
-            ).textContent =
-                result.remaining;
+            const stockCount =
+                document.getElementById(
+                    "stockCount"
+                );
 
-            document.getElementById(
-                "stockStatus"
-            ).textContent =
-                result.remaining > 0
-                    ? "Stock available"
-                    : "Out of stock";
+            const stockStatus =
+                document.getElementById(
+                    "stockStatus"
+                );
+
+            if (stockCount) {
+
+                stockCount.textContent =
+                    result.remaining;
+            }
+
+            if (stockStatus) {
+
+                stockStatus.textContent =
+                    result.remaining > 0
+                        ? "Stock available"
+                        : "Out of stock";
+            }
         }
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Generate error:",
+            error
+        );
 
         generatedItem.textContent =
             "";
@@ -3164,60 +3561,126 @@ function showGeneratedMessage(text) {
    SAVE LOGIN
 ========================================================= */
 
+/*
+    SECURITY CHANGE:
+
+    Do NOT store actual passwords in localStorage.
+
+    Anything stored in localStorage can be read by JavaScript
+    running on the site.
+
+    Instead, this feature saves only the email as a
+    non-sensitive reminder.
+
+    If these are real account credentials, do not store them
+    in browser storage.
+*/
+
 function saveEmailPassword() {
 
-    if (!unlocked) {
+    if (!sessionToken) {
+
+        showLoginSaveMessage(
+            "Please unlock your dashboard first."
+        );
+
+        return;
+    }
+
+    const emailInput =
+        document.getElementById(
+            "emailInput"
+        );
+
+    const passwordInput =
+        document.getElementById(
+            "passwordInput"
+        );
+
+    if (
+        !emailInput ||
+        !passwordInput
+    ) {
         return;
     }
 
     const email =
-        document.getElementById(
-            "emailInput"
-        ).value.trim();
+        emailInput.value.trim();
 
     const password =
-        document.getElementById(
-            "passwordInput"
-        ).value;
+        passwordInput.value;
 
     if (
         !email ||
         !password
     ) {
 
-        alert(
+        showLoginSaveMessage(
             "Enter both email and password."
         );
 
         return;
     }
 
+    /*
+        Only save the email locally.
+        Never save the password.
+    */
+
     const saved =
         JSON.parse(
             localStorage.getItem(
-                "noviSavedAccounts"
+                "noviSavedEmails"
             ) || "[]"
         );
 
-    saved.push({
-        email: email,
-        password: password
-    });
+    if (!saved.includes(email)) {
 
-    localStorage.setItem(
-        "noviSavedAccounts",
-        JSON.stringify(saved)
+        saved.push(email);
+
+        localStorage.setItem(
+            "noviSavedEmails",
+            JSON.stringify(saved)
+        );
+    }
+
+    emailInput.value = "";
+
+    passwordInput.value = "";
+
+    showLoginSaveMessage(
+        "Email saved. Password was not stored."
     );
 
-    document.getElementById(
-        "emailInput"
-    ).value = "";
-
-    document.getElementById(
-        "passwordInput"
-    ).value = "";
-
     renderSavedLogins();
+}
+
+
+function showLoginSaveMessage(text) {
+
+    const message =
+        document.getElementById(
+            "loginSaveMessage"
+        );
+
+    if (!message) {
+        return;
+    }
+
+    message.textContent = text;
+
+    setTimeout(() => {
+
+        if (
+            document.body.contains(
+                message
+            )
+        ) {
+
+            message.textContent = "";
+        }
+
+    }, 3000);
 }
 
 
@@ -3239,7 +3702,7 @@ function renderSavedLogins() {
     const saved =
         JSON.parse(
             localStorage.getItem(
-                "noviSavedAccounts"
+                "noviSavedEmails"
             ) || "[]"
         );
 
@@ -3247,7 +3710,7 @@ function renderSavedLogins() {
 
         container.innerHTML =
             `<div class="muted">
-                No saved logins yet.
+                No saved emails yet.
             </div>`;
 
         return;
@@ -3255,15 +3718,7 @@ function renderSavedLogins() {
 
     container.innerHTML =
         saved.map(
-            (account, index) => {
-
-                const masked =
-                    "•".repeat(
-                        Math.min(
-                            account.password.length,
-                            12
-                        )
-                    );
+            (email, index) => {
 
                 return `
                     <div class="saved-card">
@@ -3272,12 +3727,12 @@ function renderSavedLogins() {
 
                             <strong>
                                 ${escapeHTML(
-                                    account.email
+                                    email
                                 )}
                             </strong>
 
                             <small>
-                                ${masked}
+                                Email reminder
                             </small>
 
                         </div>
@@ -3285,15 +3740,15 @@ function renderSavedLogins() {
                         <div class="saved-actions">
 
                             <button
-                                id="loginCopyButton-${index}"
+                                id="emailCopyButton-${index}"
                                 class="mini-btn"
-                                onclick="copyLogin(${index})">
+                                onclick="copyEmail(${index})">
                                 Copy
                             </button>
 
                             <button
                                 class="mini-btn"
-                                onclick="deleteLogin(${index})">
+                                onclick="deleteEmail(${index})">
                                 Delete
                             </button>
 
@@ -3307,34 +3762,34 @@ function renderSavedLogins() {
 
 
 /* =========================================================
-   COPY LOGIN
+   COPY EMAIL
 ========================================================= */
 
-async function copyLogin(index) {
+async function copyEmail(index) {
 
     const saved =
         JSON.parse(
             localStorage.getItem(
-                "noviSavedAccounts"
+                "noviSavedEmails"
             ) || "[]"
         );
 
-    const account =
+    const email =
         saved[index];
 
-    if (!account) {
+    if (!email) {
         return;
     }
 
     const button =
         document.getElementById(
-            `loginCopyButton-${index}`
+            `emailCopyButton-${index}`
         );
 
     try {
 
         await navigator.clipboard.writeText(
-            `${account.email}:${account.password}`
+            email
         );
 
         if (button) {
@@ -3396,22 +3851,22 @@ async function copyLogin(index) {
 
 
 /* =========================================================
-   DELETE LOGIN
+   DELETE EMAIL
 ========================================================= */
 
-function deleteLogin(index) {
+function deleteEmail(index) {
 
     const saved =
         JSON.parse(
             localStorage.getItem(
-                "noviSavedAccounts"
+                "noviSavedEmails"
             ) || "[]"
         );
 
     saved.splice(index, 1);
 
     localStorage.setItem(
-        "noviSavedAccounts",
+        "noviSavedEmails",
         JSON.stringify(saved)
     );
 
@@ -3425,7 +3880,15 @@ function deleteLogin(index) {
 
 function saveCurrentKey() {
 
-    if (!currentKey) {
+    /*
+        This feature is only available after
+        a real server session exists.
+    */
+
+    if (
+        !sessionToken ||
+        !currentKey
+    ) {
         return;
     }
 
@@ -3656,41 +4119,43 @@ async function initialize() {
 
     renderSavedLogins();
 
-    const savedKey =
-        localStorage.getItem(
-            "noviCurrentKey"
-        );
+    /*
+        NEVER trust localStorage for authentication.
 
-    if (!savedKey) {
+        The only thing we check is the server-issued
+        session token in sessionStorage.
+    */
+
+    if (!sessionToken) {
 
         unlocked = false;
+
+        openMainPage();
 
         return;
     }
 
-    currentKey =
-        savedKey;
+    /*
+        Ask the server if this session is actually valid.
+    */
 
     const valid =
         await verifyCurrentSession();
 
-    if (valid) {
+    if (!valid) {
 
-        localStorage.setItem(
-            "noviUnlocked",
-            "true"
-        );
+        clearSession();
 
-        openDashboard();
+        openMainPage();
 
-        loadStock();
-
-    } else {
-
-        document.body.classList.remove(
-            "dashboard-open"
-        );
+        return;
     }
+
+    unlocked = true;
+
+    openDashboard();
+
+    await loadStock();
 }
 
 
@@ -3698,21 +4163,60 @@ async function initialize() {
    ENTER KEY
 ========================================================= */
 
-document
-    .getElementById("keyInput")
-    .addEventListener(
+const keyInput =
+    document.getElementById(
+        "keyInput"
+    );
+
+if (keyInput) {
+
+    keyInput.addEventListener(
         "keydown",
         function(event) {
 
             if (
                 event.key === "Enter"
             ) {
+
+                event.preventDefault();
+
                 unlock();
             }
 
         }
     );
+}
 
+
+/* =========================================================
+   PREVENT DASHBOARD FROM BEING USED BEFORE AUTH
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        const dashboard =
+            document.getElementById(
+                "dashboardPage"
+            );
+
+        if (dashboard) {
+
+            dashboard.setAttribute(
+                "aria-hidden",
+                sessionToken
+                    ? "false"
+                    : "true"
+            );
+        }
+    }
+);
+
+
+/* =========================================================
+   START
+========================================================= */
 
 initialize();
 
