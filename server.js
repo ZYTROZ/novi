@@ -178,7 +178,10 @@ function readKeys() {
   const data = readJSON(KEY_FILE, []);
 
   if (!Array.isArray(data)) {
-    console.error("keys.json is not an array. Using empty key list.");
+    console.error(
+      "keys.json is not an array. Using empty key list."
+    );
+
     return [];
   }
 
@@ -260,9 +263,9 @@ function verifyKey(rawKey, rawDeviceId) {
     };
   }
 
-  /*
-     Convert old string-only keys into objects.
-  */
+  /* -------------------------------------------------------
+     Convert old string-only keys
+  ------------------------------------------------------- */
 
   if (typeof found === "string") {
     found = {
@@ -277,9 +280,9 @@ function verifyKey(rawKey, rawDeviceId) {
     keys[foundIndex] = found;
   }
 
-  /*
-     Check expiration.
-  */
+  /* -------------------------------------------------------
+     Check expiration
+  ------------------------------------------------------- */
 
   if (
     found.expiresAt !== null &&
@@ -295,9 +298,9 @@ function verifyKey(rawKey, rawDeviceId) {
     };
   }
 
-  /*
-     Bind key to first device.
-  */
+  /* -------------------------------------------------------
+     Bind key to first device
+  ------------------------------------------------------- */
 
   if (!found.deviceId) {
     console.log("First activation. Binding device.");
@@ -332,7 +335,8 @@ function verifyKey(rawKey, rawDeviceId) {
       return {
         success: false,
         valid: false,
-        message: "This key is already bound to another device."
+        message:
+          "This key is already bound to another device."
       };
     }
 
@@ -415,6 +419,10 @@ function requireSession(req, res, next) {
 
 function requireAdmin(req, res, next) {
   if (!ADMIN_SECRET) {
+    console.error(
+      "ADMIN REQUEST REJECTED: NOVI_ADMIN_SECRET missing"
+    );
+
     return res.status(503).json({
       success: false,
       message: "Admin secret is not configured."
@@ -430,6 +438,10 @@ function requireAdmin(req, res, next) {
       ADMIN_SECRET
     )
   ) {
+    console.error(
+      "ADMIN REQUEST REJECTED: INVALID SECRET"
+    );
+
     return res.status(403).json({
       success: false,
       message: "Admin access denied."
@@ -465,6 +477,17 @@ app.get("/api/health", (req, res) => {
     success: true,
     status: "online",
     service: "Novi"
+  });
+});
+
+/* =========================================================
+   ADMIN STATUS
+========================================================= */
+
+app.get("/api/admin-status", (req, res) => {
+  res.json({
+    success: true,
+    adminConfigured: Boolean(ADMIN_SECRET)
   });
 });
 
@@ -528,26 +551,24 @@ app.post("/api/verify", (req, res) => {
     return res.json({
       success: true,
       valid: true,
-
-      sessionToken:
-        session.token,
-
-      expiresAt:
-        session.expiresAt,
-
+      sessionToken: session.token,
+      expiresAt: session.expiresAt,
       key: {
-        duration:
-          result.key.duration,
-
-        expiresAt:
-          result.key.expiresAt
+        duration: result.key.duration,
+        expiresAt: result.key.expiresAt
       }
     });
 
   } catch (error) {
-    console.error("========== VERIFY CRASH ==========");
+    console.error(
+      "========== VERIFY CRASH =========="
+    );
+
     console.error(error);
-    console.error("==================================");
+
+    console.error(
+      "=================================="
+    );
 
     return res.status(500).json({
       success: false,
@@ -612,7 +633,8 @@ app.post(
       if (stock.length === 0) {
         return res.status(404).json({
           success: false,
-          message: "No inventory is currently available."
+          message:
+            "No inventory is currently available."
         });
       }
 
@@ -625,7 +647,8 @@ app.post(
       if (!saved) {
         return res.status(500).json({
           success: false,
-          message: "Failed to save inventory."
+          message:
+            "Failed to save inventory."
         });
       }
 
@@ -643,7 +666,8 @@ app.post(
 
       return res.status(500).json({
         success: false,
-        message: "Failed to generate inventory."
+        message:
+          "Failed to generate inventory."
       });
     }
   }
@@ -658,11 +682,20 @@ app.post(
   requireAdmin,
   (req, res) => {
 
+    console.log("=================================");
+    console.log("CREATE KEY REQUEST RECEIVED");
+    console.log("=================================");
+
     try {
       const duration =
         String(
           req.body?.duration || "lifetime"
         ).trim();
+
+      console.log(
+        "Requested duration:",
+        duration
+      );
 
       if (
         !Object.prototype.hasOwnProperty.call(
@@ -679,6 +712,11 @@ app.post(
       const keys =
         readKeys();
 
+      console.log(
+        "Existing keys:",
+        keys.length
+      );
+
       const record =
         createKeyRecord(duration);
 
@@ -688,24 +726,47 @@ app.post(
         saveKeys(keys);
 
       if (!saved) {
+        console.error(
+          "CREATE KEY: FAILED TO SAVE keys.json"
+        );
+
         return res.status(500).json({
           success: false,
           message: "Failed to save key."
         });
       }
 
-      res.json({
+      console.log(
+        "CREATE KEY: SUCCESS"
+      );
+
+      /*
+         Only log the generated key itself because
+         this is already an authenticated admin request.
+      */
+
+      console.log(
+        "Generated key:",
+        record.key
+      );
+
+      return res.json({
         success: true,
         key: record
       });
 
     } catch (error) {
       console.error(
-        "CREATE KEY ERROR:",
-        error
+        "========== CREATE KEY CRASH =========="
       );
 
-      res.status(500).json({
+      console.error(error);
+
+      console.error(
+        "======================================"
+      );
+
+      return res.status(500).json({
         success: false,
         message: "Failed to create key."
       });
@@ -732,7 +793,8 @@ app.post(
       ) {
         return res.status(400).json({
           success: false,
-          message: "Missing inventory item."
+          message:
+            "Missing inventory item."
         });
       }
 
@@ -747,7 +809,8 @@ app.post(
       if (!saved) {
         return res.status(500).json({
           success: false,
-          message: "Failed to save inventory."
+          message:
+            "Failed to save inventory."
         });
       }
 
@@ -764,7 +827,8 @@ app.post(
 
       res.status(500).json({
         success: false,
-        message: "Failed to add inventory."
+        message:
+          "Failed to add inventory."
       });
     }
   }
@@ -812,7 +876,8 @@ app.use(
 
     res.status(404).json({
       success: false,
-      message: "API endpoint not found."
+      message:
+        "API endpoint not found."
     });
   }
 );
@@ -831,7 +896,8 @@ app.use(
 
     res.status(500).json({
       success: false,
-      message: "Internal server error."
+      message:
+        "Internal server error."
     });
   }
 );
@@ -846,15 +912,35 @@ app.listen(
   () => {
 
     console.log(
-      `Novi server running on port ${PORT}`
+      "=============================="
     );
 
     console.log(
-      `API health: /api/health`
+      "NOVI SERVER IS ONLINE"
     );
 
     console.log(
-      `API verify: POST /api/verify`
+      `Port: ${PORT}`
+    );
+
+    console.log(
+      `Keys loaded: ${readKeys().length}`
+    );
+
+    console.log(
+      `Stock loaded: ${readStock().length}`
+    );
+
+    console.log(
+      `Admin authentication: ${
+        ADMIN_SECRET
+          ? "CONFIGURED"
+          : "NOT CONFIGURED"
+      }`
+    );
+
+    console.log(
+      "=============================="
     );
   }
 );
