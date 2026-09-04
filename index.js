@@ -44,10 +44,16 @@ const ALLOWED_ROLE_IDS = [
 ];
 
 // =========================================================
-// NOVI WEBSITE / API
+// NOVI API
+// =========================================================
+//
+// The bot and website server run in the same Render service.
+// Using 127.0.0.1 makes the bot talk directly to the
+// server.js process instead of going through the public URL.
+//
 // =========================================================
 
-const SERVER_URL = "https://novi-1.onrender.com";
+const SERVER_URL = `http://127.0.0.1:${process.env.PORT || 10000}`;
 
 // =========================================================
 // BOT READY
@@ -57,7 +63,7 @@ client.once("ready", () => {
     console.log("================================");
     console.log("NOVI DISCORD BOT IS ONLINE");
     console.log(`Logged in as: ${client.user.tag}`);
-    console.log(`Novi server: ${SERVER_URL}`);
+    console.log(`Novi API: ${SERVER_URL}`);
     console.log("================================");
 });
 
@@ -66,10 +72,21 @@ client.once("ready", () => {
 // =========================================================
 
 function generateKey() {
-    const part1 = crypto.randomBytes(2).toString("hex").toUpperCase();
-    const part2 = crypto.randomBytes(2).toString("hex").toUpperCase();
-    const part3 = crypto.randomBytes(2).toString("hex").toUpperCase();
-    const part4 = crypto.randomBytes(2).toString("hex").toUpperCase();
+    const part1 = crypto.randomBytes(2)
+        .toString("hex")
+        .toUpperCase();
+
+    const part2 = crypto.randomBytes(2)
+        .toString("hex")
+        .toUpperCase();
+
+    const part3 = crypto.randomBytes(2)
+        .toString("hex")
+        .toUpperCase();
+
+    const part4 = crypto.randomBytes(2)
+        .toString("hex")
+        .toUpperCase();
 
     return `NOVI-${part1}-${part2}-${part3}-${part4}`;
 }
@@ -152,6 +169,10 @@ client.on("messageCreate", async (message) => {
 
             try {
 
+                // =================================================
+                // SAVE KEY DIRECTLY TO NOVI SERVER
+                // =================================================
+
                 const response = await axios.post(
                     `${SERVER_URL}/api/keys`,
                     {
@@ -159,9 +180,16 @@ client.on("messageCreate", async (message) => {
                         duration: duration
                     },
                     {
-                        timeout: 15000
+                        timeout: 15000,
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
                     }
                 );
+
+                // =================================================
+                // CHECK RESPONSE
+                // =================================================
 
                 if (
                     !response.data ||
@@ -180,6 +208,10 @@ client.on("messageCreate", async (message) => {
                         }`
                     );
                 }
+
+                // =================================================
+                // SUCCESS
+                // =================================================
 
                 console.log(
                     `Key successfully saved: ${key}`
@@ -304,7 +336,7 @@ client.on("messageCreate", async (message) => {
             }
 
             // =================================================
-            // REMOVE DUPLICATES FROM COMMAND
+            // REMOVE DUPLICATES
             // =================================================
 
             items = [...new Set(items)];
@@ -328,7 +360,10 @@ client.on("messageCreate", async (message) => {
                                 item: item
                             },
                             {
-                                timeout: 15000
+                                timeout: 15000,
+                                headers: {
+                                    "Content-Type": "application/json"
+                                }
                             }
                         );
 
