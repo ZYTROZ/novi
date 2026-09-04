@@ -18,937 +18,762 @@ const SESSION_DURATION = 30 * 60 * 1000;
 
 const sessions = new Map();
 
-/* =========================
-   MIDDLEWARE
-========================= */
+
+/* =========================================================
+   BASIC SETUP
+========================================================= */
+
+app.disable("x-powered-by");
 
 app.use(cors({
-    origin: true,
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: [
-        "Content-Type",
-        "x-novi-session",
-        "x-novi-admin-secret"
-    ]
+  origin: true,
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Accept",
+    "x-novi-session",
+    "x-novi-admin-secret"
+  ]
 }));
 
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({
+  limit: "1mb"
+}));
 
-/* =========================
+
+/* =========================================================
    FILE HELPERS
-========================= */
+========================================================= */
 
 function ensureFile(file, defaultValue) {
-    try {
-        if (!fs.existsSync(file)) {
-            fs.writeFileSync(
-                file,
-                JSON.stringify(defaultValue, null, 2),
-                "utf8"
-            );
-        }
-    } catch (error) {
-        console.error("File creation error:", error.message);
-    }
+  if (!fs.existsSync(file)) {
+    fs.writeFileSync(
+      file,
+      JSON.stringify(defaultValue, null, 2),
+      "utf8"
+    );
+  }
 }
 
-function readJSON(file, fallback) {
-    try {
-        if (!fs.existsSync(file)) {
-            return fallback;
-        }
-
-        const data = fs.readFileSync(file, "utf8");
-
-        if (!data.trim()) {
-            return fallback;
-        }
-
-        return JSON.parse(data);
-    } catch (error) {
-        console.error("JSON read error:", error.message);
-        return fallback;
-    }
-}
-
-function writeJSON(file, data) {
-    try {
-        fs.writeFileSync(
-            file,
-            JSON.stringify(data, null, 2),
-            "utf8"
-        );
-
-        return true;
-    } catch (error) {
-        console.error("JSON write error:", error.message);
-        return false;
-    }
-}
 
 ensureFile(KEY_FILE, []);
 ensureFile(STOCK_FILE, []);
 
-/* =========================
-   NORMALIZATION
-========================= */
 
-function normalizeKey(key) {
-    if (key === undefined || key === null) {
-        return "";
+function readJSON(file, fallback) {
+  try {
+    const raw = fs.readFileSync(file, "utf8");
+
+    if (!raw.trim()) {
+      return fallback;
     }
 
-    return String(key)
-        .trim()
-        .toUpperCase()
-        .replace(/\s+/g, "");
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error("Failed to read:", file, error);
+    return fallback;
+  }
 }
 
-function normalizeDeviceId(deviceId) {
-    if (deviceId === undefined || deviceId === null) {
-        return "";
-    }
 
-    return String(deviceId).trim();
+function writeJSON(file, data) {
+  fs.writeFileSync(
+    file,
+    JSON.stringify(data, null, 2),
+    "utf8"
+  );
 }
 
-/* =========================
-   SAFE SECRET COMPARISON
-========================= */
+
+/* =========================================================
+   KEY HELPERS
+========================================================= */
+
+function normalizeKey(value) {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
+}
+
+
+function normalizeDeviceId(value) {
+  return String(value || "").trim();
+}
+
+
+function generateKey() {
+  const part = () =>
+    crypto.randomBytes(3)
+      .toString("hex")
+      .toUpperCase();
+
+  return `NOVI-${part()}-${part()}-${part()}`;
+}
+
 
 function safeEqual(a, b) {
-    const first = Buffer.from(String(a || ""));
-    const second = Buffer.from(String(b || ""));
+  try {
+    const aBuffer = Buffer.from(String(a));
+    const bBuffer = Buffer.from(String(b));
 
-    if (first.length !== second.length) {
-        return false;
+    if (aBuffer.length !== bBuffer.length) {
+      return false;
     }
 
-    return crypto.timingSafeEqual(first, second);
+    return crypto.timingSafeEqual(
+      aBuffer,
+      bBuffer
+    );
+  } catch {
+    return false;
+  }
 }
 
-/* =========================
-   ADMIN AUTH
-========================= */
 
-function requireAdmin(req, res, next) {
-    if (!ADMIN_SECRET) {
-        return res.status(503).json({
-            success: false,
-            message: "Admin authentication is not configured."
-        });
-    }
-
-    const suppliedSecret =
-        req.get("x-novi-admin-secret") || "";
-
-    if (!safeEqual(suppliedSecret, ADMIN_SECRET)) {
-        return res.status(401).json({
-            success: false,
-            message: "Unauthorized."
-        });
-    }
-
-    next();
-}
-
-/* =========================
-   DURATIONS
-========================= */
+/* =========================================================
+   KEY DURATIONS
+========================================================= */
 
 const DURATIONS = {
-    "1d": 24 * 60 * 60 * 1000,
-    "3d": 3 * 24 * 60 * 60 * 1000,
-    "1week": 7 * 24 * 60 * 60 * 1000,
-    "1month": 30 * 24 * 60 * 60 * 1000,
-    "1year": 365 * 24 * 60 * 60 * 1000,
-    "lifetime": null
+  "1d": 24 * 60 * 60 * 1000,
+  "3d": 3 * 24 * 60 * 60 * 1000,
+  "1week": 7 * 24 * 60 * 60 * 1000,
+  "1month": 30 * 24 * 60 * 60 * 1000,
+  "1year": 365 * 24 * 60 * 60 * 1000,
+  "lifetime": null
 };
 
-function normalizeDuration(duration) {
-    if (!duration) {
-        return null;
-    }
 
-    const value = String(duration)
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "");
+function calculateExpiration(duration) {
+  if (!Object.prototype.hasOwnProperty.call(
+    DURATIONS,
+    duration
+  )) {
+    return null;
+  }
 
-    const aliases = {
-        "1d": "1d",
-        "1day": "1d",
-        "1days": "1d",
+  const length = DURATIONS[duration];
 
-        "3d": "3d",
-        "3day": "3d",
-        "3days": "3d",
+  if (length === null) {
+    return null;
+  }
 
-        "1w": "1week",
-        "week": "1week",
-        "1week": "1week",
-        "1weeks": "1week",
-
-        "1mo": "1month",
-        "month": "1month",
-        "1month": "1month",
-        "1months": "1month",
-
-        "1y": "1year",
-        "year": "1year",
-        "1year": "1year",
-        "1years": "1year",
-
-        "lifetime": "lifetime",
-        "life": "lifetime",
-        "forever": "lifetime"
-    };
-
-    return aliases[value] || null;
+  return Date.now() + length;
 }
 
-/* =========================
-   KEYS
-========================= */
+
+/* =========================================================
+   KEY STORAGE
+========================================================= */
 
 function readKeys() {
-    const data = readJSON(KEY_FILE, []);
+  const data = readJSON(KEY_FILE, []);
 
-    if (!Array.isArray(data)) {
-        return [];
-    }
+  if (!Array.isArray(data)) {
+    return [];
+  }
 
-    return data
-        .map((item) => {
-            if (typeof item === "string") {
-                return {
-                    key: normalizeKey(item),
-                    duration: "lifetime",
-                    createdAt: Date.now(),
-                    expiresAt: null,
-                    deviceId: null,
-                    activatedAt: null
-                };
-            }
-
-            if (
-                item &&
-                typeof item === "object" &&
-                item.key
-            ) {
-                return {
-                    key: normalizeKey(item.key),
-
-                    duration:
-                        normalizeDuration(item.duration) ||
-                        "lifetime",
-
-                    createdAt:
-                        typeof item.createdAt === "number"
-                            ? item.createdAt
-                            : Date.now(),
-
-                    expiresAt:
-                        item.expiresAt === null ||
-                        typeof item.expiresAt === "number"
-                            ? item.expiresAt
-                            : null,
-
-                    deviceId:
-                        item.deviceId
-                            ? normalizeDeviceId(item.deviceId)
-                            : null,
-
-                    activatedAt:
-                        typeof item.activatedAt === "number"
-                            ? item.activatedAt
-                            : null
-                };
-            }
-
-            return null;
-        })
-        .filter(Boolean);
+  return data;
 }
 
-function writeKeys(keys) {
-    return writeJSON(KEY_FILE, keys);
+
+function saveKeys(keys) {
+  writeJSON(KEY_FILE, keys);
 }
 
-function saveKey(suppliedKey, duration) {
-    const key = normalizeKey(suppliedKey);
-    const normalizedDuration =
-        normalizeDuration(duration);
 
-    if (!key) {
-        throw new Error("Key is required.");
-    }
+function createKeyRecord(duration) {
+  const key = generateKey();
 
-    if (!normalizedDuration) {
-        throw new Error("Invalid duration.");
-    }
-
-    const keys = readKeys();
-
-    const exists = keys.some(
-        (item) =>
-            normalizeKey(item.key) === key
-    );
-
-    if (exists) {
-        throw new Error("This key already exists.");
-    }
-
-    const createdAt = Date.now();
-
-    const durationLength =
-        DURATIONS[normalizedDuration];
-
-    const expiresAt =
-        durationLength === null
-            ? null
-            : createdAt + durationLength;
-
-    const newKey = {
-        key,
-        duration: normalizedDuration,
-        createdAt,
-        expiresAt,
-        deviceId: null,
-        activatedAt: null
-    };
-
-    keys.push(newKey);
-
-    if (!writeKeys(keys)) {
-        throw new Error("Could not save key.");
-    }
-
-    return newKey;
+  return {
+    key,
+    duration,
+    createdAt: Date.now(),
+    expiresAt: calculateExpiration(duration),
+    deviceId: null,
+    activatedAt: null
+  };
 }
 
-/* =========================
+
+/* =========================================================
    VERIFY KEY
-========================= */
+========================================================= */
 
-function verifyKey(suppliedKey, deviceId) {
-    const cleanKey = normalizeKey(suppliedKey);
-    const cleanDeviceId =
-        normalizeDeviceId(deviceId);
+function verifyKey(rawKey, rawDeviceId) {
+  const key = normalizeKey(rawKey);
+  const deviceId = normalizeDeviceId(rawDeviceId);
 
-    if (!cleanKey) {
-        return {
-            valid: false,
-            message: "Key is required."
-        };
-    }
-
-    if (!cleanDeviceId) {
-        return {
-            valid: false,
-            message: "Device ID is required."
-        };
-    }
-
-    const keys = readKeys();
-
-    const index = keys.findIndex(
-        (item) =>
-            normalizeKey(item.key) === cleanKey
-    );
-
-    if (index === -1) {
-        return {
-            valid: false,
-            message: "Invalid key."
-        };
-    }
-
-    const currentKey = keys[index];
-
-    if (
-        currentKey.expiresAt !== null &&
-        typeof currentKey.expiresAt === "number" &&
-        Date.now() >= currentKey.expiresAt
-    ) {
-        return {
-            valid: false,
-            message: "This key has expired."
-        };
-    }
-
-    /* First activation */
-    if (!currentKey.deviceId) {
-        currentKey.deviceId = cleanDeviceId;
-        currentKey.activatedAt = Date.now();
-
-        keys[index] = currentKey;
-
-        if (!writeKeys(keys)) {
-            return {
-                valid: false,
-                message: "Could not activate key."
-            };
-        }
-
-        return {
-            valid: true,
-            key: currentKey
-        };
-    }
-
-    /* Same device */
-    if (
-        normalizeDeviceId(currentKey.deviceId) ===
-        cleanDeviceId
-    ) {
-        return {
-            valid: true,
-            key: currentKey
-        };
-    }
-
+  if (!key) {
     return {
-        valid: false,
-        message:
-            "This key is already activated on another device."
+      success: false,
+      valid: false,
+      message: "Please enter a key."
     };
+  }
+
+  if (!deviceId) {
+    return {
+      success: false,
+      valid: false,
+      message: "Device ID is required."
+    };
+  }
+
+  const keys = readKeys();
+
+  let found = null;
+  let foundIndex = -1;
+
+  for (let i = 0; i < keys.length; i++) {
+    const record = keys[i];
+
+    const storedKey =
+      typeof record === "string"
+        ? normalizeKey(record)
+        : normalizeKey(record?.key);
+
+    if (safeEqual(storedKey, key)) {
+      found = record;
+      foundIndex = i;
+      break;
+    }
+  }
+
+  if (!found) {
+    return {
+      success: false,
+      valid: false,
+      message: "Invalid key."
+    };
+  }
+
+
+  /* -------------------------------------------------------
+     Support old string-only keys
+  ------------------------------------------------------- */
+
+  if (typeof found === "string") {
+    found = {
+      key: normalizeKey(found),
+      duration: "lifetime",
+      createdAt: Date.now(),
+      expiresAt: null,
+      deviceId: null,
+      activatedAt: null
+    };
+
+    keys[foundIndex] = found;
+  }
+
+
+  /* -------------------------------------------------------
+     Check expiration
+  ------------------------------------------------------- */
+
+  if (
+    found.expiresAt !== null &&
+    found.expiresAt !== undefined &&
+    Number(found.expiresAt) <= Date.now()
+  ) {
+    return {
+      success: false,
+      valid: false,
+      message: "This key has expired."
+    };
+  }
+
+
+  /* -------------------------------------------------------
+     Bind key to first device
+  ------------------------------------------------------- */
+
+  if (!found.deviceId) {
+    found.deviceId = deviceId;
+    found.activatedAt = Date.now();
+
+    keys[foundIndex] = found;
+
+    saveKeys(keys);
+
+  } else {
+
+    if (!safeEqual(
+      normalizeDeviceId(found.deviceId),
+      deviceId
+    )) {
+      return {
+        success: false,
+        valid: false,
+        message: "This key is already bound to another device."
+      };
+    }
+  }
+
+
+  return {
+    success: true,
+    valid: true,
+    key: found
+  };
 }
 
-/* =========================
+
+/* =========================================================
    SESSIONS
-========================= */
+========================================================= */
 
 function createSession(key, deviceId) {
-    const token =
-        crypto.randomBytes(32).toString("hex");
+  const token =
+    crypto.randomBytes(32).toString("hex");
 
-    const now = Date.now();
+  const expiresAt =
+    Date.now() + SESSION_DURATION;
 
-    sessions.set(token, {
-        key: normalizeKey(key),
-        deviceId: normalizeDeviceId(deviceId),
-        createdAt: now,
-        expiresAt: now + SESSION_DURATION
-    });
+  sessions.set(token, {
+    key: normalizeKey(key),
+    deviceId: normalizeDeviceId(deviceId),
+    expiresAt
+  });
 
-    return token;
+  return {
+    token,
+    expiresAt
+  };
 }
+
 
 function getSession(token) {
-    if (!token) {
-        return null;
-    }
+  if (!token) {
+    return null;
+  }
 
-    const session = sessions.get(token);
+  const session = sessions.get(token);
 
-    if (!session) {
-        return null;
-    }
+  if (!session) {
+    return null;
+  }
 
-    if (Date.now() >= session.expiresAt) {
-        sessions.delete(token);
-        return null;
-    }
+  if (session.expiresAt <= Date.now()) {
+    sessions.delete(token);
+    return null;
+  }
 
-    return session;
+  return session;
 }
 
-function destroySession(token) {
-    if (token) {
-        sessions.delete(token);
-    }
-}
+
+/* =========================================================
+   AUTH MIDDLEWARE
+========================================================= */
 
 function requireSession(req, res, next) {
-    const token =
-        req.get("x-novi-session") || "";
+  const token =
+    req.headers["x-novi-session"];
 
-    const session = getSession(token);
+  const session =
+    getSession(token);
 
-    if (!session) {
-        return res.status(401).json({
-            success: false,
-            valid: false,
-            message: "Dashboard session expired."
-        });
-    }
+  if (!session) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required."
+    });
+  }
 
-    const verification =
-        verifyKey(
-            session.key,
-            session.deviceId
-        );
+  req.noviSession = session;
 
-    if (!verification.valid) {
-        destroySession(token);
-
-        return res.status(403).json({
-            success: false,
-            valid: false,
-            message: verification.message
-        });
-    }
-
-    req.noviSession = session;
-    req.noviToken = token;
-
-    next();
+  next();
 }
 
-/* =========================
+
+function requireAdmin(req, res, next) {
+  if (!ADMIN_SECRET) {
+    return res.status(503).json({
+      success: false,
+      message: "Admin secret is not configured."
+    });
+  }
+
+  const supplied =
+    req.headers["x-novi-admin-secret"];
+
+  if (!safeEqual(
+    supplied || "",
+    ADMIN_SECRET
+  )) {
+    return res.status(403).json({
+      success: false,
+      message: "Admin access denied."
+    });
+  }
+
+  next();
+}
+
+
+/* =========================================================
    STOCK
-========================= */
+========================================================= */
 
 function readStock() {
-    const stock =
-        readJSON(STOCK_FILE, []);
+  const data =
+    readJSON(STOCK_FILE, []);
 
-    return Array.isArray(stock)
-        ? stock
-        : [];
+  return Array.isArray(data)
+    ? data
+    : [];
 }
 
-function writeStock(stock) {
-    return writeJSON(STOCK_FILE, stock);
+
+function saveStock(stock) {
+  writeJSON(STOCK_FILE, stock);
 }
 
-/* =========================
-   CREATE KEY
-========================= */
 
-app.post(
-    "/api/keys",
-    requireAdmin,
-    (req, res) => {
-        try {
-            const key =
-                req.body && req.body.key;
-
-            const duration =
-                req.body && req.body.duration;
-
-            if (!key) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Key is required."
-                });
-            }
-
-            if (!duration) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Duration is required."
-                });
-            }
-
-            const newKey =
-                saveKey(key, duration);
-
-            return res.json({
-                success: true,
-                key: newKey.key,
-                duration: newKey.duration,
-                createdAt: newKey.createdAt,
-                expiresAt: newKey.expiresAt
-            });
-        } catch (error) {
-            console.error(
-                "Create key error:",
-                error.message
-            );
-
-            return res.status(500).json({
-                success: false,
-                message:
-                    error.message ||
-                    "Could not save key."
-            });
-        }
-    }
-);
-
-/* =========================
-   VERIFY
-========================= */
-
-app.post(
-    "/api/verify",
-    (req, res) => {
-        try {
-            const key =
-                req.body && req.body.key;
-
-            const deviceId =
-                req.body && req.body.deviceId;
-
-            const result =
-                verifyKey(key, deviceId);
-
-            if (!result.valid) {
-                return res.status(403).json({
-                    success: false,
-                    valid: false,
-                    message: result.message
-                });
-            }
-
-            const sessionToken =
-                createSession(
-                    result.key.key,
-                    deviceId
-                );
-
-            return res.json({
-                success: true,
-                valid: true,
-                sessionToken,
-                expiresAt:
-                    Date.now() +
-                    SESSION_DURATION,
-
-                key: {
-                    duration:
-                        result.key.duration,
-
-                    expiresAt:
-                        result.key.expiresAt
-                }
-            });
-        } catch (error) {
-            console.error(
-                "Verification error:",
-                error.message
-            );
-
-            return res.status(500).json({
-                success: false,
-                valid: false,
-                message:
-                    "Verification failed."
-            });
-        }
-    }
-);
-
-/* =========================
-   LOGOUT
-========================= */
-
-app.post(
-    "/api/logout",
-    requireSession,
-    (req, res) => {
-        destroySession(req.noviToken);
-
-        return res.json({
-            success: true
-        });
-    }
-);
-
-/* =========================
-   GET STOCK COUNT
-========================= */
-
-app.get(
-    "/api/stock",
-    requireSession,
-    (req, res) => {
-        try {
-            const stock = readStock();
-
-            res.set(
-                "Cache-Control",
-                "no-store"
-            );
-
-            return res.json({
-                success: true,
-                count: stock.length
-            });
-        } catch (error) {
-            console.error(
-                "Stock error:",
-                error.message
-            );
-
-            return res.status(500).json({
-                success: false,
-                message:
-                    "Failed to load stock."
-            });
-        }
-    }
-);
-
-/* =========================
-   ADD STOCK
-========================= */
-
-app.post(
-    "/api/stock/add",
-    requireAdmin,
-    (req, res) => {
-        try {
-            let items = [];
-
-            if (
-                req.body &&
-                req.body.item !== undefined &&
-                req.body.item !== null
-            ) {
-                items.push(req.body.item);
-            }
-
-            if (
-                req.body &&
-                Array.isArray(req.body.items)
-            ) {
-                items.push(...req.body.items);
-            }
-
-            items = items
-                .map((item) =>
-                    String(item).trim()
-                )
-                .filter(Boolean);
-
-            if (!items.length) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Stock item is required."
-                });
-            }
-
-            const stock = readStock();
-
-            let added = 0;
-            let duplicates = 0;
-
-            for (const item of items) {
-                if (stock.includes(item)) {
-                    duplicates++;
-                    continue;
-                }
-
-                stock.push(item);
-                added++;
-            }
-
-            if (!writeStock(stock)) {
-                return res.status(500).json({
-                    success: false,
-                    message:
-                        "Failed to save stock."
-                });
-            }
-
-            return res.json({
-                success: true,
-                added,
-                duplicates,
-                count: stock.length
-            });
-        } catch (error) {
-            console.error(
-                "Add stock error:",
-                error.message
-            );
-
-            return res.status(500).json({
-                success: false,
-                message:
-                    "Failed to add stock."
-            });
-        }
-    }
-);
-
-/* =========================
-   GENERATE STOCK
-========================= */
-
-app.post(
-    "/api/stock/generate",
-    requireSession,
-    (req, res) => {
-        try {
-            const stock = readStock();
-
-            if (!stock.length) {
-                return res.status(404).json({
-                    success: false,
-                    message:
-                        "No stock available."
-                });
-            }
-
-            const generatedItem =
-                stock.shift();
-
-            if (!writeStock(stock)) {
-                return res.status(500).json({
-                    success: false,
-                    message:
-                        "Failed to update stock."
-                });
-            }
-
-            res.set(
-                "Cache-Control",
-                "no-store"
-            );
-
-            return res.json({
-                success: true,
-                item: generatedItem,
-                remaining: stock.length
-            });
-        } catch (error) {
-            console.error(
-                "Generate stock error:",
-                error.message
-            );
-
-            return res.status(500).json({
-                success: false,
-                message:
-                    "Failed to generate stock."
-            });
-        }
-    }
-);
-
-/* =========================
+/* =========================================================
    HEALTH
-========================= */
+========================================================= */
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    success: true,
+    status: "online",
+    service: "Novi"
+  });
+});
+
+
+/* =========================================================
+   API ROOT
+========================================================= */
+
+app.get("/api", (req, res) => {
+  res.json({
+    success: true,
+    name: "Novi API"
+  });
+});
+
+
+/* =========================================================
+   VERIFY KEY
+========================================================= */
+
+app.post("/api/verify", (req, res) => {
+  try {
+    const {
+      key,
+      deviceId
+    } = req.body || {};
+
+    const result =
+      verifyKey(key, deviceId);
+
+    if (!result.success) {
+      return res.status(401).json(result);
+    }
+
+    const session =
+      createSession(
+        key,
+        deviceId
+      );
+
+    return res.json({
+      success: true,
+      valid: true,
+
+      sessionToken:
+        session.token,
+
+      expiresAt:
+        session.expiresAt,
+
+      key: {
+        duration:
+          result.key.duration,
+
+        expiresAt:
+          result.key.expiresAt
+      }
+    });
+
+  } catch (error) {
+
+    console.error(
+      "VERIFY ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      valid: false,
+      message: "Server error while verifying key."
+    });
+  }
+});
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+app.post(
+  "/api/logout",
+  requireSession,
+  (req, res) => {
+
+    const token =
+      req.headers["x-novi-session"];
+
+    sessions.delete(token);
+
+    res.json({
+      success: true
+    });
+  }
+);
+
+
+/* =========================================================
+   STOCK COUNT
+========================================================= */
 
 app.get(
-    "/api/health",
-    (req, res) => {
-        return res.json({
-            success: true,
-            status: "online",
-            service: "Novi"
-        });
-    }
+  "/api/stock",
+  requireSession,
+  (req, res) => {
+
+    const stock =
+      readStock();
+
+    res.json({
+      success: true,
+      count: stock.length
+    });
+  }
 );
 
-/* =========================
-   API INFO
-========================= */
 
-app.get(
-    "/api",
-    (req, res) => {
-        return res.json({
-            success: true,
-            name: "Novi API"
-        });
-    }
-);
+/* =========================================================
+   GENERATE STOCK ITEM
+========================================================= */
 
-/* =========================
-   STATIC WEBSITE
-========================= */
+app.post(
+  "/api/stock/generate",
+  requireSession,
+  (req, res) => {
 
-app.use(
-    express.static(PUBLIC_DIR, {
-        index: "index.html",
-        etag: false,
-        maxAge: 0
-    })
-);
+    try {
 
-app.get(
-    "/",
-    (req, res) => {
-        return res.sendFile(
-            path.join(
-                PUBLIC_DIR,
-                "index.html"
-            )
-        );
-    }
-);
+      const stock =
+        readStock();
 
-/* =========================
-   UNKNOWN API
-========================= */
-
-app.use(
-    "/api",
-    (req, res) => {
+      if (stock.length === 0) {
         return res.status(404).json({
-            success: false,
-            message:
-                "API endpoint not found."
+          success: false,
+          message: "No inventory is currently available."
         });
+      }
+
+      const item =
+        stock.shift();
+
+      saveStock(stock);
+
+      return res.json({
+        success: true,
+        item,
+        remaining: stock.length
+      });
+
+    } catch (error) {
+
+      console.error(
+        "STOCK GENERATE ERROR:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to generate inventory."
+      });
     }
+  }
 );
 
-/* =========================
-   ERROR HANDLER
-========================= */
+
+/* =========================================================
+   ADMIN: CREATE KEY
+========================================================= */
+
+app.post(
+  "/api/keys",
+  requireAdmin,
+  (req, res) => {
+
+    const duration =
+      String(
+        req.body?.duration || "lifetime"
+      ).trim();
+
+    if (
+      !Object.prototype.hasOwnProperty.call(
+        DURATIONS,
+        duration
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid duration."
+      });
+    }
+
+    const keys =
+      readKeys();
+
+    const record =
+      createKeyRecord(duration);
+
+    keys.push(record);
+
+    saveKeys(keys);
+
+    res.json({
+      success: true,
+      key: record
+    });
+  }
+);
+
+
+/* =========================================================
+   ADMIN: ADD STOCK
+========================================================= */
+
+app.post(
+  "/api/stock/add",
+  requireAdmin,
+  (req, res) => {
+
+    const item =
+      req.body?.item;
+
+    if (
+      item === undefined ||
+      item === null
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing inventory item."
+      });
+    }
+
+    const stock =
+      readStock();
+
+    stock.push(item);
+
+    saveStock(stock);
+
+    res.json({
+      success: true,
+      count: stock.length
+    });
+  }
+);
+
+
+/* =========================================================
+   STATIC WEBSITE
+========================================================= */
+
+if (fs.existsSync(PUBLIC_DIR)) {
+
+  app.use(
+    express.static(PUBLIC_DIR)
+  );
+
+  app.get("/", (req, res) => {
+
+    const indexFile =
+      path.join(
+        PUBLIC_DIR,
+        "index.html"
+      );
+
+    if (
+      fs.existsSync(indexFile)
+    ) {
+      return res.sendFile(
+        indexFile
+      );
+    }
+
+    res.status(404).send(
+      "Novi frontend not found."
+    );
+  });
+}
+
+
+/* =========================================================
+   UNKNOWN API ROUTES
+========================================================= */
 
 app.use(
-    (error, req, res, next) => {
-        console.error(
-            "Server error:",
-            error.message
-        );
+  "/api",
+  (req, res) => {
 
-        return res.status(500).json({
-            success: false,
-            message:
-                "Internal server error."
-        });
-    }
+    res.status(404).json({
+      success: false,
+      message: "API endpoint not found."
+    });
+  }
 );
 
-/* =========================
-   START
-========================= */
+
+/* =========================================================
+   ERROR HANDLER
+========================================================= */
+
+app.use(
+  (error, req, res, next) => {
+
+    console.error(
+      "SERVER ERROR:",
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error."
+    });
+  }
+);
+
+
+/* =========================================================
+   START SERVER
+========================================================= */
 
 app.listen(
-    PORT,
-    "0.0.0.0",
-    () => {
-        console.log(
-            "=============================="
-        );
+  PORT,
+  "0.0.0.0",
+  () => {
 
-        console.log(
-            "NOVI SERVER IS ONLINE"
-        );
+    console.log(
+      `Novi server running on port ${PORT}`
+    );
 
-        console.log(
-            "Port: " + PORT
-        );
+    console.log(
+      `API health: /api/health`
+    );
 
-        console.log(
-            "Keys loaded: " +
-            readKeys().length
-        );
-
-        console.log(
-            "Stock loaded: " +
-            readStock().length
-        );
-
-        console.log(
-            "Admin authentication: " +
-            (
-                ADMIN_SECRET
-                    ? "CONFIGURED"
-                    : "NOT CONFIGURED"
-            )
-        );
-
-        console.log(
-            "=============================="
-        );
-    }
+    console.log(
+      `API verify: POST /api/verify`
+    );
+  }
 );
