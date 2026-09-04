@@ -1,3 +1,4 @@
+```js
 require("dotenv").config();
 
 const {
@@ -36,8 +37,27 @@ const client = new Client({
 ========================================================= */
 
 client.once("ready", () => {
-    console.log(`Novi bot is online as ${client.user.tag}`);
+    console.log("=================================");
+    console.log("NOVI DISCORD BOT IS ONLINE");
+    console.log(`Logged in as: ${client.user.tag}`);
     console.log(`Novi server: ${SERVER_URL}`);
+    console.log("=================================");
+});
+
+/* =========================================================
+   ERROR HANDLING
+========================================================= */
+
+client.on("error", (error) => {
+    console.error("Discord client error:", error);
+});
+
+process.on("unhandledRejection", (error) => {
+    console.error("Unhandled promise rejection:", error);
+});
+
+process.on("uncaughtException", (error) => {
+    console.error("Uncaught exception:", error);
 });
 
 /* =========================================================
@@ -62,20 +82,28 @@ function hasPermission(message) {
         return false;
     }
 
-    return ALLOWED_ROLE_IDS.some((roleId) =>
-        message.member.roles.cache.has(roleId)
-    );
+    return ALLOWED_ROLE_IDS.some((roleId) => {
+        return message.member.roles.cache.has(roleId);
+    });
 }
 
 /* =========================================================
-   COMMANDS
+   COMMAND HANDLER
 ========================================================= */
 
 client.on("messageCreate", async (message) => {
     try {
+        /* -------------------------------------------------
+           IGNORE BOTS
+        ------------------------------------------------- */
+
         if (message.author.bot) {
             return;
         }
+
+        /* -------------------------------------------------
+           MESSAGE CONTENT
+        ------------------------------------------------- */
 
         const content = message.content.trim();
 
@@ -84,15 +112,15 @@ client.on("messageCreate", async (message) => {
         }
 
         const args = content.split(/\s+/);
-        const command = args[0]?.toLowerCase();
+        const command = args[0].toLowerCase();
 
         console.log(
             `COMMAND: ${command} | USER: ${message.author.tag}`
         );
 
-        /* =====================================================
+        /* =================================================
            !GEN
-        ===================================================== */
+        ================================================= */
 
         if (command === "!gen") {
             if (!message.member) {
@@ -107,7 +135,9 @@ client.on("messageCreate", async (message) => {
                 );
             }
 
-            const duration = args[1]?.toLowerCase();
+            const duration = args[1]
+                ? args[1].toLowerCase()
+                : "";
 
             const allowedDurations = [
                 "1d",
@@ -141,18 +171,19 @@ client.on("messageCreate", async (message) => {
                     }
                 );
 
+                console.log(
+                    "Novi server response:",
+                    response.data
+                );
+
                 if (
                     !response.data ||
-                    !response.data.success
+                    response.data.success !== true
                 ) {
-                    console.error(
-                        "Server response:",
-                        response.data
-                    );
-
                     return message.reply(
                         `❌ The server rejected the key.\n${
-                            response.data?.message || ""
+                            response.data?.message ||
+                            "Unknown server error."
                         }`
                     );
                 }
@@ -179,9 +210,9 @@ client.on("messageCreate", async (message) => {
             }
         }
 
-        /* =====================================================
+        /* =================================================
            !ADD
-        ===================================================== */
+        ================================================= */
 
         if (command === "!add") {
             if (!message.member) {
@@ -210,7 +241,7 @@ client.on("messageCreate", async (message) => {
             items.push(...commandItems);
 
             /* -------------------------------------------------
-               TXT FILE
+               TXT ATTACHMENT
             ------------------------------------------------- */
 
             if (message.attachments.size > 0) {
@@ -218,7 +249,9 @@ client.on("messageCreate", async (message) => {
                     message.attachments.first();
 
                 const filename =
-                    attachment.name?.toLowerCase() || "";
+                    attachment.name
+                        ? attachment.name.toLowerCase()
+                        : "";
 
                 if (!filename.endsWith(".txt")) {
                     return message.reply(
@@ -287,7 +320,7 @@ client.on("messageCreate", async (message) => {
             let failed = 0;
 
             /* -------------------------------------------------
-               SEND TO NOVI SERVER
+               SEND ITEMS TO NOVI
             ------------------------------------------------- */
 
             for (const item of items) {
@@ -305,7 +338,7 @@ client.on("messageCreate", async (message) => {
 
                     if (
                         response.data &&
-                        response.data.success
+                        response.data.success === true
                     ) {
                         added += Number(
                             response.data.added || 0
@@ -329,7 +362,7 @@ client.on("messageCreate", async (message) => {
             }
 
             /* -------------------------------------------------
-               GET TOTAL STOCK
+               GET STOCK COUNT
             ------------------------------------------------- */
 
             let totalStock = "Unknown";
@@ -358,12 +391,16 @@ client.on("messageCreate", async (message) => {
                 );
             }
 
+            /* -------------------------------------------------
+               LOG RESULT
+            ------------------------------------------------- */
+
             console.log(
                 `Stock result | Added: ${added} | Duplicates: ${duplicates} | Failed: ${failed}`
             );
 
             /* -------------------------------------------------
-               RESPONSE
+               SEND RESULT
             ------------------------------------------------- */
 
             let reply =
@@ -385,9 +422,16 @@ client.on("messageCreate", async (message) => {
             error
         );
 
-        return message.reply(
-            "❌ Something went wrong while processing that command."
-        );
+        try {
+            await message.reply(
+                "❌ Something went wrong while processing that command."
+            );
+        } catch (replyError) {
+            console.error(
+                "Could not send error message:",
+                replyError.message
+            );
+        }
     }
 });
 
@@ -397,7 +441,7 @@ client.on("messageCreate", async (message) => {
 
 if (!process.env.DISCORD_TOKEN) {
     console.error(
-        "DISCORD_TOKEN is missing from Render Environment Variables."
+        "❌ DISCORD_TOKEN is missing from Render Environment Variables."
     );
 
     process.exit(1);
@@ -406,6 +450,8 @@ if (!process.env.DISCORD_TOKEN) {
 /* =========================================================
    LOGIN
 ========================================================= */
+
+console.log("Connecting to Discord...");
 
 client.login(process.env.DISCORD_TOKEN)
     .then(() => {
