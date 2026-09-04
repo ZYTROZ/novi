@@ -1,3 +1,4 @@
+```js
 require("dotenv").config();
 
 const {
@@ -25,10 +26,6 @@ const ALLOWED_ROLE_IDS = [
     "1378500563456626719"
 ];
 
-/*
-   IMPORTANT:
-   This must point to your Render Novi server.
-*/
 const SERVER_URL = "https://novi-1.onrender.com";
 
 /* =========================================================
@@ -36,37 +33,46 @@ const SERVER_URL = "https://novi-1.onrender.com";
 ========================================================= */
 
 client.once("ready", () => {
-    console.log(
-        `✅ Novi bot is online as ${client.user.tag}`
-    );
-
-    console.log(
-        `🌐 Novi server: ${SERVER_URL}`
-    );
+    console.log("====================================");
+    console.log(`✅ Novi bot is online as ${client.user.tag}`);
+    console.log(`🌐 Novi server: ${SERVER_URL}`);
+    console.log("====================================");
 });
 
 /* =========================================================
-   GENERATE NOVI KEY
+   BOT ERROR HANDLING
+========================================================= */
+
+client.on("error", (error) => {
+    console.error("❌ Discord client error:", error);
+});
+
+process.on("unhandledRejection", (error) => {
+    console.error("❌ Unhandled promise rejection:", error);
+});
+
+process.on("uncaughtException", (error) => {
+    console.error("❌ Uncaught exception:", error);
+});
+
+/* =========================================================
+   GENERATE KEY
 ========================================================= */
 
 function generateKey() {
-    const part1 = crypto
-        .randomBytes(2)
+    const part1 = crypto.randomBytes(2)
         .toString("hex")
         .toUpperCase();
 
-    const part2 = crypto
-        .randomBytes(2)
+    const part2 = crypto.randomBytes(2)
         .toString("hex")
         .toUpperCase();
 
-    const part3 = crypto
-        .randomBytes(2)
+    const part3 = crypto.randomBytes(2)
         .toString("hex")
         .toUpperCase();
 
-    const part4 = crypto
-        .randomBytes(2)
+    const part4 = crypto.randomBytes(2)
         .toString("hex")
         .toUpperCase();
 
@@ -74,7 +80,7 @@ function generateKey() {
 }
 
 /* =========================================================
-   CHECK PERMISSION
+   PERMISSION CHECK
 ========================================================= */
 
 function hasPermission(message) {
@@ -82,7 +88,7 @@ function hasPermission(message) {
         return false;
     }
 
-    return ALLOWED_ROLE_IDS.some(roleId =>
+    return ALLOWED_ROLE_IDS.some((roleId) =>
         message.member.roles.cache.has(roleId)
     );
 }
@@ -92,235 +98,226 @@ function hasPermission(message) {
 ========================================================= */
 
 client.on("messageCreate", async (message) => {
-
-    if (message.author.bot) {
-        return;
-    }
-
-    const content = message.content.trim();
-
-    if (!content) {
-        return;
-    }
-
-    const args = content.split(/\s+/);
-
-    const command = args[0]?.toLowerCase();
-
-    /* =====================================================
-       !GEN
-    ===================================================== */
-
-    if (command === "!gen") {
-
-        if (!message.member) {
-            return message.reply(
-                "❌ This command can only be used in a server."
-            );
+    try {
+        if (message.author.bot) {
+            return;
         }
 
-        if (!hasPermission(message)) {
-            return message.reply(
-                "❌ You don't have permission to generate keys."
-            );
+        const content = message.content.trim();
+
+        if (!content) {
+            return;
         }
 
-        const duration =
-            args[1]?.toLowerCase();
+        const args = content.split(/\s+/);
+        const command = args[0]?.toLowerCase();
 
-        const allowedDurations = [
-            "1d",
-            "1week",
-            "1month",
-            "1year",
-            "lifetime"
-        ];
+        /* =====================================================
+           !GEN
+        ===================================================== */
 
-        if (!allowedDurations.includes(duration)) {
-            return message.reply(
-                "❌ Usage: `!gen 1d`, `!gen 1week`, `!gen 1month`, `!gen 1year`, or `!gen lifetime`"
-            );
-        }
+        if (command === "!gen") {
+            if (!message.member) {
+                return message.reply(
+                    "❌ This command can only be used in a server."
+                );
+            }
 
-        const key = generateKey();
+            if (!hasPermission(message)) {
+                return message.reply(
+                    "❌ You don't have permission to generate keys."
+                );
+            }
 
-        try {
+            const duration = args[1]?.toLowerCase();
+
+            const allowedDurations = [
+                "1d",
+                "1week",
+                "1month",
+                "1year",
+                "lifetime"
+            ];
+
+            if (!allowedDurations.includes(duration)) {
+                return message.reply(
+                    "❌ Usage: `!gen 1d`, `!gen 1week`, `!gen 1month`, `!gen 1year`, or `!gen lifetime`"
+                );
+            }
+
+            const key = generateKey();
 
             console.log(
-                `🔑 Sending key to Novi server: ${key}`
+                `🔑 Generating key: ${key}`
             );
 
-            const response = await axios.post(
-                `${SERVER_URL}/api/keys`,
-                {
-                    key: key,
-                    duration: duration
-                },
-                {
-                    timeout: 15000
-                }
-            );
+            try {
+                const response = await axios.post(
+                    `${SERVER_URL}/api/keys`,
+                    {
+                        key: key,
+                        duration: duration
+                    },
+                    {
+                        timeout: 15000,
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                );
 
-            if (
-                !response.data ||
-                !response.data.success
-            ) {
-                console.error(
-                    "Server response:",
+                console.log(
+                    "📡 Novi response:",
                     response.data
                 );
 
-                return message.reply(
-                    `❌ The server rejected the key.\n${
-                        response.data?.message || ""
-                    }`
-                );
-            }
-
-            console.log(
-                `✅ Saved key: ${key} (${duration})`
-            );
-
-            return message.reply(
-                `🔑 **Novi Key Generated**\n\n` +
-                `\`${key}\`\n\n` +
-                `⏱️ Duration: **${duration}**`
-            );
-
-        } catch (error) {
-
-            console.error(
-                "❌ Could not connect to Novi:",
-                error.response?.data ||
-                error.message
-            );
-
-            return message.reply(
-                "❌ Could not connect to the Novi server."
-            );
-        }
-    }
-
-    /* =====================================================
-       !ADD
-    ===================================================== */
-
-    if (command === "!add") {
-
-        if (!message.member) {
-            return message.reply(
-                "❌ This command can only be used in a server."
-            );
-        }
-
-        if (!hasPermission(message)) {
-            return message.reply(
-                "❌ You don't have permission to add stock."
-            );
-        }
-
-        let items = [];
-
-        /* =================================================
-           COMMAND ITEMS
-        ================================================= */
-
-        const commandItems = args
-            .slice(1)
-            .map(item => item.trim())
-            .filter(item => item.length > 0);
-
-        items.push(...commandItems);
-
-        /* =================================================
-           TXT ATTACHMENT
-        ================================================= */
-
-        if (message.attachments.size > 0) {
-
-            const attachment =
-                message.attachments.first();
-
-            const filename =
-                attachment.name?.toLowerCase() || "";
-
-            if (!filename.endsWith(".txt")) {
-                return message.reply(
-                    "❌ The attachment must be a `.txt` file."
-                );
-            }
-
-            try {
+                if (
+                    !response.data ||
+                    !response.data.success
+                ) {
+                    return message.reply(
+                        `❌ Novi rejected the key.\n${response.data?.message || "Unknown server error."}`
+                    );
+                }
 
                 console.log(
-                    `📥 Reading stock file: ${attachment.name}`
+                    `✅ Key saved successfully: ${key}`
                 );
 
-                const fileResponse =
-                    await axios.get(
-                        attachment.url,
-                        {
-                            responseType: "text",
-                            timeout: 15000
-                        }
-                    );
-
-                const fileItems =
-                    String(fileResponse.data)
-                        .split(/\r?\n/)
-                        .map(line => line.trim())
-                        .filter(line => line.length > 0);
-
-                items.push(...fileItems);
+                return message.reply(
+                    `🔑 **Novi Key Generated**\n\n` +
+                    `\`${key}\`\n\n` +
+                    `⏱️ Duration: **${duration}**`
+                );
 
             } catch (error) {
-
                 console.error(
-                    "❌ Could not read stock file:",
+                    "❌ !gen server error:",
+                    error.response?.data ||
                     error.message
                 );
 
                 return message.reply(
-                    "❌ I couldn't read that `.txt` file."
+                    "❌ Could not connect to the Novi server."
                 );
             }
         }
 
-        /* =================================================
-           NOTHING TO ADD
-        ================================================= */
+        /* =====================================================
+           !ADD
+        ===================================================== */
 
-        if (items.length === 0) {
+        if (command === "!add") {
+            if (!message.member) {
+                return message.reply(
+                    "❌ This command can only be used in a server."
+                );
+            }
 
-            return message.reply(
-                "❌ Nothing to add.\n\n" +
-                "Use:\n" +
-                "`!add CODE-123`\n\n" +
-                "Or attach a `.txt` file with one item per line and type:\n" +
-                "`!add`"
-            );
-        }
+            if (!hasPermission(message)) {
+                return message.reply(
+                    "❌ You don't have permission to add stock."
+                );
+            }
 
-        /* =================================================
-           REMOVE DUPLICATES
-        ================================================= */
+            let items = [];
 
-        items = [...new Set(items)];
+            /* =================================================
+               COMMAND ITEMS
+            ================================================= */
 
-        /* =================================================
-           ADD EACH ITEM
-        ================================================= */
+            const commandItems = args
+                .slice(1)
+                .map((item) => item.trim())
+                .filter(Boolean);
 
-        let added = 0;
-        let duplicates = 0;
-        let failed = 0;
+            items.push(...commandItems);
 
-        try {
+            /* =================================================
+               TXT FILE
+            ================================================= */
 
-            for (const item of items) {
+            if (message.attachments.size > 0) {
+                const attachment =
+                    message.attachments.first();
+
+                const filename =
+                    attachment.name?.toLowerCase() || "";
+
+                if (!filename.endsWith(".txt")) {
+                    return message.reply(
+                        "❌ The attachment must be a `.txt` file."
+                    );
+                }
 
                 try {
+                    console.log(
+                        `📥 Reading file: ${attachment.name}`
+                    );
 
+                    const fileResponse =
+                        await axios.get(
+                            attachment.url,
+                            {
+                                responseType: "text",
+                                timeout: 15000
+                            }
+                        );
+
+                    const fileItems =
+                        String(fileResponse.data)
+                            .split(/\r?\n/)
+                            .map((line) => line.trim())
+                            .filter(Boolean);
+
+                    items.push(...fileItems);
+
+                } catch (error) {
+                    console.error(
+                        "❌ File read error:",
+                        error.message
+                    );
+
+                    return message.reply(
+                        "❌ I couldn't read that `.txt` file."
+                    );
+                }
+            }
+
+            /* =================================================
+               NOTHING TO ADD
+            ================================================= */
+
+            if (items.length === 0) {
+                return message.reply(
+                    "❌ Nothing to add.\n\n" +
+                    "Use:\n" +
+                    "`!add CODE-123`\n\n" +
+                    "Or attach a `.txt` file with one item per line and type:\n" +
+                    "`!add`"
+                );
+            }
+
+            /* =================================================
+               REMOVE DUPLICATES FROM REQUEST
+            ================================================= */
+
+            items = [...new Set(items)];
+
+            console.log(
+                `📦 Adding ${items.length} stock item(s)...`
+            );
+
+            let added = 0;
+            let duplicates = 0;
+            let failed = 0;
+
+            /* =================================================
+               SEND ITEMS TO NOVI
+            ================================================= */
+
+            for (const item of items) {
+                try {
                     const response =
                         await axios.post(
                             `${SERVER_URL}/api/stock/add`,
@@ -328,7 +325,11 @@ client.on("messageCreate", async (message) => {
                                 item: item
                             },
                             {
-                                timeout: 15000
+                                timeout: 15000,
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                }
                             }
                         );
 
@@ -337,31 +338,36 @@ client.on("messageCreate", async (message) => {
                         response.data.success
                     ) {
                         added++;
+
+                        console.log(
+                            `✅ Added: ${item}`
+                        );
                     } else {
                         duplicates++;
+
+                        console.log(
+                            `🔁 Duplicate: ${item}`
+                        );
                     }
 
                 } catch (error) {
+                    console.error(
+                        `❌ Failed to add item: ${item}`,
+                        error.response?.data ||
+                        error.message
+                    );
 
-                    if (
-                        error.response?.status === 409
-                    ) {
-                        duplicates++;
-                    } else {
-                        failed++;
-                    }
-
+                    failed++;
                 }
             }
 
             /* =================================================
-               GET CURRENT STOCK COUNT
+               GET TOTAL STOCK
             ================================================= */
 
             let totalStock = "Unknown";
 
             try {
-
                 const stockResponse =
                     await axios.get(
                         `${SERVER_URL}/api/stock`,
@@ -372,23 +378,23 @@ client.on("messageCreate", async (message) => {
 
                 if (
                     stockResponse.data &&
-                    typeof stockResponse.data.count === "number"
+                    typeof stockResponse.data.count ===
+                        "number"
                 ) {
                     totalStock =
                         stockResponse.data.count;
                 }
 
             } catch (error) {
-
                 console.error(
-                    "Could not get stock count:",
+                    "❌ Could not get stock count:",
                     error.message
                 );
             }
 
-            console.log(
-                `✅ Added ${added} stock item(s).`
-            );
+            /* =================================================
+               RESULT
+            ================================================= */
 
             let reply =
                 `✅ **Stock Added Successfully!**\n\n` +
@@ -401,31 +407,36 @@ client.on("messageCreate", async (message) => {
                     `\n⚠️ Failed: **${failed}**`;
             }
 
+            console.log(
+                `📊 Stock result: Added=${added}, Duplicates=${duplicates}, Failed=${failed}`
+            );
+
             return message.reply(reply);
+        }
 
-        } catch (error) {
+    } catch (error) {
+        console.error(
+            "❌ Message handler error:",
+            error
+        );
 
-            console.error(
-                "❌ Stock server error:",
-                error.response?.data ||
-                error.message
+        try {
+            await message.reply(
+                "❌ Something went wrong while processing that command."
             );
-
-            return message.reply(
-                "❌ Could not connect to the Novi stock server."
-            );
+        } catch {
+            // Ignore Discord reply errors
         }
     }
 });
 
 /* =========================================================
-   DISCORD TOKEN CHECK
+   TOKEN CHECK
 ========================================================= */
 
 if (!process.env.DISCORD_TOKEN) {
-
     console.error(
-        "❌ DISCORD_TOKEN is missing from Render Environment Variables."
+        "❌ DISCORD_TOKEN is missing from Environment Variables."
     );
 
     process.exit(1);
@@ -435,6 +446,16 @@ if (!process.env.DISCORD_TOKEN) {
    LOGIN
 ========================================================= */
 
+console.log("🔄 Connecting to Discord...");
+
 client.login(
     process.env.DISCORD_TOKEN
-);
+).catch((error) => {
+    console.error(
+        "❌ Discord login failed:",
+        error
+    );
+
+    process.exit(1);
+});
+```
