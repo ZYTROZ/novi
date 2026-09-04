@@ -1,4 +1,3 @@
-```js
 require("dotenv").config();
 
 const {
@@ -9,6 +8,21 @@ const {
 const crypto = require("crypto");
 const axios = require("axios");
 
+/* =========================================================
+   CONFIG
+========================================================= */
+
+const SERVER_URL = "https://novi-1.onrender.com";
+
+const ALLOWED_ROLE_IDS = [
+    "1529705570209366167",
+    "1378500563456626719"
+];
+
+/* =========================================================
+   DISCORD CLIENT
+========================================================= */
+
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -18,63 +32,39 @@ const client = new Client({
 });
 
 /* =========================================================
-   CONFIG
-========================================================= */
-
-const ALLOWED_ROLE_IDS = [
-    "1529705570209366167",
-    "1378500563456626719"
-];
-
-const SERVER_URL = "https://novi-1.onrender.com";
-
-/* =========================================================
-   BOT READY
+   READY
 ========================================================= */
 
 client.once("ready", () => {
-    console.log("====================================");
-    console.log(`✅ Novi bot is online as ${client.user.tag}`);
-    console.log(`🌐 Novi server: ${SERVER_URL}`);
-    console.log("====================================");
+    console.log(`Novi bot is online as ${client.user.tag}`);
+    console.log(`Novi server: ${SERVER_URL}`);
 });
 
 /* =========================================================
-   BOT ERROR HANDLING
+   ERROR HANDLING
 ========================================================= */
 
 client.on("error", (error) => {
-    console.error("❌ Discord client error:", error);
+    console.error("Discord client error:", error);
 });
 
 process.on("unhandledRejection", (error) => {
-    console.error("❌ Unhandled promise rejection:", error);
+    console.error("Unhandled promise rejection:", error);
 });
 
 process.on("uncaughtException", (error) => {
-    console.error("❌ Uncaught exception:", error);
+    console.error("Uncaught exception:", error);
 });
 
 /* =========================================================
-   GENERATE KEY
+   KEY GENERATOR
 ========================================================= */
 
 function generateKey() {
-    const part1 = crypto.randomBytes(2)
-        .toString("hex")
-        .toUpperCase();
-
-    const part2 = crypto.randomBytes(2)
-        .toString("hex")
-        .toUpperCase();
-
-    const part3 = crypto.randomBytes(2)
-        .toString("hex")
-        .toUpperCase();
-
-    const part4 = crypto.randomBytes(2)
-        .toString("hex")
-        .toUpperCase();
+    const part1 = crypto.randomBytes(2).toString("hex").toUpperCase();
+    const part2 = crypto.randomBytes(2).toString("hex").toUpperCase();
+    const part3 = crypto.randomBytes(2).toString("hex").toUpperCase();
+    const part4 = crypto.randomBytes(2).toString("hex").toUpperCase();
 
     return `NOVI-${part1}-${part2}-${part3}-${part4}`;
 }
@@ -94,7 +84,7 @@ function hasPermission(message) {
 }
 
 /* =========================================================
-   MESSAGE HANDLER
+   COMMANDS
 ========================================================= */
 
 client.on("messageCreate", async (message) => {
@@ -111,6 +101,10 @@ client.on("messageCreate", async (message) => {
 
         const args = content.split(/\s+/);
         const command = args[0]?.toLowerCase();
+
+        console.log(
+            `COMMAND: ${command} | USER: ${message.author.tag}`
+        );
 
         /* =====================================================
            !GEN
@@ -147,11 +141,11 @@ client.on("messageCreate", async (message) => {
 
             const key = generateKey();
 
-            console.log(
-                `🔑 Generating key: ${key}`
-            );
-
             try {
+                console.log(
+                    `Sending key to Novi server: ${key}`
+                );
+
                 const response = await axios.post(
                     `${SERVER_URL}/api/keys`,
                     {
@@ -159,15 +153,12 @@ client.on("messageCreate", async (message) => {
                         duration: duration
                     },
                     {
-                        timeout: 15000,
-                        headers: {
-                            "Content-Type": "application/json"
-                        }
+                        timeout: 15000
                     }
                 );
 
                 console.log(
-                    "📡 Novi response:",
+                    "Novi response:",
                     response.data
                 );
 
@@ -176,12 +167,14 @@ client.on("messageCreate", async (message) => {
                     !response.data.success
                 ) {
                     return message.reply(
-                        `❌ Novi rejected the key.\n${response.data?.message || "Unknown server error."}`
+                        `❌ The server rejected the key.\n${
+                            response.data?.message || ""
+                        }`
                     );
                 }
 
                 console.log(
-                    `✅ Key saved successfully: ${key}`
+                    `Key saved successfully: ${key}`
                 );
 
                 return message.reply(
@@ -189,10 +182,9 @@ client.on("messageCreate", async (message) => {
                     `\`${key}\`\n\n` +
                     `⏱️ Duration: **${duration}**`
                 );
-
             } catch (error) {
                 console.error(
-                    "❌ !gen server error:",
+                    "Novi key request failed:",
                     error.response?.data ||
                     error.message
                 );
@@ -222,20 +214,20 @@ client.on("messageCreate", async (message) => {
 
             let items = [];
 
-            /* =================================================
-               COMMAND ITEMS
-            ================================================= */
+            /* -------------------------------------------------
+               ITEMS FROM COMMAND
+            ------------------------------------------------- */
 
             const commandItems = args
                 .slice(1)
                 .map((item) => item.trim())
-                .filter(Boolean);
+                .filter((item) => item.length > 0);
 
             items.push(...commandItems);
 
-            /* =================================================
-               TXT FILE
-            ================================================= */
+            /* -------------------------------------------------
+               ITEMS FROM TXT FILE
+            ------------------------------------------------- */
 
             if (message.attachments.size > 0) {
                 const attachment =
@@ -252,7 +244,7 @@ client.on("messageCreate", async (message) => {
 
                 try {
                     console.log(
-                        `📥 Reading file: ${attachment.name}`
+                        `Reading stock file: ${attachment.name}`
                     );
 
                     const fileResponse =
@@ -268,13 +260,15 @@ client.on("messageCreate", async (message) => {
                         String(fileResponse.data)
                             .split(/\r?\n/)
                             .map((line) => line.trim())
-                            .filter(Boolean);
+                            .filter(
+                                (line) =>
+                                    line.length > 0
+                            );
 
                     items.push(...fileItems);
-
                 } catch (error) {
                     console.error(
-                        "❌ File read error:",
+                        "Could not read stock file:",
                         error.message
                     );
 
@@ -284,9 +278,9 @@ client.on("messageCreate", async (message) => {
                 }
             }
 
-            /* =================================================
+            /* -------------------------------------------------
                NOTHING TO ADD
-            ================================================= */
+            ------------------------------------------------- */
 
             if (items.length === 0) {
                 return message.reply(
@@ -298,23 +292,19 @@ client.on("messageCreate", async (message) => {
                 );
             }
 
-            /* =================================================
+            /* -------------------------------------------------
                REMOVE DUPLICATES FROM REQUEST
-            ================================================= */
+            ------------------------------------------------- */
 
             items = [...new Set(items)];
-
-            console.log(
-                `📦 Adding ${items.length} stock item(s)...`
-            );
 
             let added = 0;
             let duplicates = 0;
             let failed = 0;
 
-            /* =================================================
+            /* -------------------------------------------------
                SEND ITEMS TO NOVI
-            ================================================= */
+            ------------------------------------------------- */
 
             for (const item of items) {
                 try {
@@ -325,11 +315,7 @@ client.on("messageCreate", async (message) => {
                                 item: item
                             },
                             {
-                                timeout: 15000,
-                                headers: {
-                                    "Content-Type":
-                                        "application/json"
-                                }
+                                timeout: 15000
                             }
                         );
 
@@ -337,22 +323,19 @@ client.on("messageCreate", async (message) => {
                         response.data &&
                         response.data.success
                     ) {
-                        added++;
+                        added += Number(
+                            response.data.added || 0
+                        );
 
-                        console.log(
-                            `✅ Added: ${item}`
+                        duplicates += Number(
+                            response.data.duplicates || 0
                         );
                     } else {
-                        duplicates++;
-
-                        console.log(
-                            `🔁 Duplicate: ${item}`
-                        );
+                        failed++;
                     }
-
                 } catch (error) {
                     console.error(
-                        `❌ Failed to add item: ${item}`,
+                        `Failed to add item: ${item}`,
                         error.response?.data ||
                         error.message
                     );
@@ -361,9 +344,9 @@ client.on("messageCreate", async (message) => {
                 }
             }
 
-            /* =================================================
+            /* -------------------------------------------------
                GET TOTAL STOCK
-            ================================================= */
+            ------------------------------------------------- */
 
             let totalStock = "Unknown";
 
@@ -384,17 +367,20 @@ client.on("messageCreate", async (message) => {
                     totalStock =
                         stockResponse.data.count;
                 }
-
             } catch (error) {
                 console.error(
-                    "❌ Could not get stock count:",
+                    "Could not get stock count:",
                     error.message
                 );
             }
 
-            /* =================================================
-               RESULT
-            ================================================= */
+            console.log(
+                `Stock result | Added: ${added} | Duplicates: ${duplicates} | Failed: ${failed}`
+            );
+
+            /* -------------------------------------------------
+               RESPONSE
+            ------------------------------------------------- */
 
             let reply =
                 `✅ **Stock Added Successfully!**\n\n` +
@@ -407,26 +393,17 @@ client.on("messageCreate", async (message) => {
                     `\n⚠️ Failed: **${failed}**`;
             }
 
-            console.log(
-                `📊 Stock result: Added=${added}, Duplicates=${duplicates}, Failed=${failed}`
-            );
-
             return message.reply(reply);
         }
-
     } catch (error) {
         console.error(
-            "❌ Message handler error:",
+            "Command error:",
             error
         );
 
-        try {
-            await message.reply(
-                "❌ Something went wrong while processing that command."
-            );
-        } catch {
-            // Ignore Discord reply errors
-        }
+        return message.reply(
+            "❌ Something went wrong while processing that command."
+        );
     }
 });
 
@@ -436,7 +413,7 @@ client.on("messageCreate", async (message) => {
 
 if (!process.env.DISCORD_TOKEN) {
     console.error(
-        "❌ DISCORD_TOKEN is missing from Environment Variables."
+        "DISCORD_TOKEN is missing from Render Environment Variables."
     );
 
     process.exit(1);
@@ -446,16 +423,16 @@ if (!process.env.DISCORD_TOKEN) {
    LOGIN
 ========================================================= */
 
-console.log("🔄 Connecting to Discord...");
+client.login(process.env.DISCORD_TOKEN)
+    .then(() => {
+        console.log("Discord login successful.");
+    })
+    .catch((error) => {
+        console.error(
+            "Discord login failed:",
+            error.message
+        );
 
-client.login(
-    process.env.DISCORD_TOKEN
-).catch((error) => {
-    console.error(
-        "❌ Discord login failed:",
-        error
-    );
-
-    process.exit(1);
-});
+        process.exit(1);
+    });
 ```
