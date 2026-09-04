@@ -1,4 +1,3 @@
-```js
 require("dotenv").config();
 
 const express = require("express");
@@ -14,23 +13,31 @@ const ALLOWED_ROLE_IDS = [
     "1378500563456626719"
 ];
 
+/* ================================
+   RENDER WEB SERVER
+================================ */
+
 const app = express();
 
-app.get("/", (req, res) => {
+app.get("/", function (req, res) {
     res.status(200).send("Novi Discord Bot is online.");
 });
 
-app.get("/health", (req, res) => {
-    res.json({
+app.get("/health", function (req, res) {
+    res.status(200).json({
         success: true,
         status: "online",
         service: "Novi Discord Bot"
     });
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Novi web server listening on port ${PORT}`);
+app.listen(PORT, "0.0.0.0", function () {
+    console.log("Novi web server listening on port " + PORT);
 });
+
+/* ================================
+   DISCORD CLIENT
+================================ */
 
 const client = new Client({
     intents: [
@@ -40,44 +47,58 @@ const client = new Client({
     ]
 });
 
+/* ================================
+   KEY GENERATOR
+================================ */
+
 function generateKey() {
-    const parts = [];
+    const part1 = crypto.randomBytes(2).toString("hex").toUpperCase();
+    const part2 = crypto.randomBytes(2).toString("hex").toUpperCase();
+    const part3 = crypto.randomBytes(2).toString("hex").toUpperCase();
+    const part4 = crypto.randomBytes(2).toString("hex").toUpperCase();
 
-    for (let i = 0; i < 4; i++) {
-        parts.push(
-            crypto
-                .randomBytes(2)
-                .toString("hex")
-                .toUpperCase()
-        );
-    }
-
-    return `NOVI-${parts.join("-")}`;
+    return "NOVI-" + part1 + "-" + part2 + "-" + part3 + "-" + part4;
 }
+
+/* ================================
+   PERMISSION
+================================ */
 
 function hasPermission(message) {
     if (!message.member) {
         return false;
     }
 
-    return ALLOWED_ROLE_IDS.some((roleId) =>
-        message.member.roles.cache.has(roleId)
-    );
+    return ALLOWED_ROLE_IDS.some(function (roleId) {
+        return message.member.roles.cache.has(roleId);
+    });
 }
 
-client.once("ready", () => {
+/* ================================
+   DISCORD READY
+================================ */
+
+client.once("ready", function () {
     console.log("==============================");
     console.log("NOVI DISCORD BOT IS ONLINE");
-    console.log(`Logged in as: ${client.user.tag}`);
-    console.log(`Novi server: ${SERVER_URL}`);
+    console.log("Logged in as: " + client.user.tag);
+    console.log("Novi server: " + SERVER_URL);
     console.log("==============================");
 });
 
-client.on("error", (error) => {
+/* ================================
+   DISCORD ERROR
+================================ */
+
+client.on("error", function (error) {
     console.error("Discord client error:", error);
 });
 
-client.on("messageCreate", async (message) => {
+/* ================================
+   COMMANDS
+================================ */
+
+client.on("messageCreate", async function (message) {
     if (message.author.bot) {
         return;
     }
@@ -93,8 +114,15 @@ client.on("messageCreate", async (message) => {
         const command = args[0].toLowerCase();
 
         console.log(
-            `Command: ${command} | User: ${message.author.tag}`
+            "Command: " +
+            command +
+            " | User: " +
+            message.author.tag
         );
+
+        /* ================================
+           !GEN
+        ================================ */
 
         if (command === "!gen") {
             if (!message.member) {
@@ -109,7 +137,9 @@ client.on("messageCreate", async (message) => {
                 );
             }
 
-            const duration = (args[1] || "").toLowerCase();
+            const duration = args[1]
+                ? args[1].toLowerCase()
+                : "";
 
             const allowedDurations = [
                 "1d",
@@ -128,10 +158,10 @@ client.on("messageCreate", async (message) => {
             const key = generateKey();
 
             try {
-                console.log("Sending key to Novi server...");
+                console.log("Sending key to Novi server.");
 
                 const response = await axios.post(
-                    `${SERVER_URL}/api/keys`,
+                    SERVER_URL + "/api/keys",
                     {
                         key: key,
                         duration: duration
@@ -151,27 +181,33 @@ client.on("messageCreate", async (message) => {
                     );
 
                     return message.reply(
-                        `The Novi server rejected the key.\n${
-                            response.data?.message ||
-                            "Unknown server error."
-                        }`
+                        "The Novi server rejected the key.\n" +
+                        (
+                            response.data &&
+                            response.data.message
+                                ? response.data.message
+                                : "Unknown server error."
+                        )
                     );
                 }
 
                 console.log(
-                    `Key saved successfully: ${key}`
+                    "Key saved successfully: " + key
                 );
 
                 return message.reply(
-                    `Novi Key Generated\n\n` +
-                    `${key}\n\n` +
-                    `Duration: ${duration}`
+                    "Novi Key Generated\n\n" +
+                    key +
+                    "\n\n" +
+                    "Duration: " +
+                    duration
                 );
             } catch (error) {
                 console.error(
                     "Novi key request failed:",
-                    error.response?.data ||
-                    error.message
+                    error.response
+                        ? error.response.data
+                        : error.message
                 );
 
                 return message.reply(
@@ -179,6 +215,10 @@ client.on("messageCreate", async (message) => {
                 );
             }
         }
+
+        /* ================================
+           !ADD
+        ================================ */
 
         if (command === "!add") {
             if (!message.member) {
@@ -195,12 +235,20 @@ client.on("messageCreate", async (message) => {
 
             let items = [];
 
+            /* COMMAND ITEMS */
+
             const commandItems = args
                 .slice(1)
-                .map((item) => item.trim())
-                .filter((item) => item.length > 0);
+                .map(function (item) {
+                    return item.trim();
+                })
+                .filter(function (item) {
+                    return item.length > 0;
+                });
 
-            items.push(...commandItems);
+            items.push.apply(items, commandItems);
+
+            /* TXT FILE */
 
             if (message.attachments.size > 0) {
                 const attachment =
@@ -217,7 +265,8 @@ client.on("messageCreate", async (message) => {
 
                 try {
                     console.log(
-                        `Reading stock file: ${attachment.name}`
+                        "Reading stock file: " +
+                        attachment.name
                     );
 
                     const fileResponse =
@@ -232,13 +281,17 @@ client.on("messageCreate", async (message) => {
                     const fileItems =
                         String(fileResponse.data)
                             .split(/\r?\n/)
-                            .map((line) => line.trim())
-                            .filter(
-                                (line) =>
-                                    line.length > 0
-                            );
+                            .map(function (line) {
+                                return line.trim();
+                            })
+                            .filter(function (line) {
+                                return line.length > 0;
+                            });
 
-                    items.push(...fileItems);
+                    items.push.apply(
+                        items,
+                        fileItems
+                    );
                 } catch (error) {
                     console.error(
                         "Could not read stock file:",
@@ -251,7 +304,7 @@ client.on("messageCreate", async (message) => {
                 }
             }
 
-            items = [...new Set(items)];
+            /* NOTHING TO ADD */
 
             if (items.length === 0) {
                 return message.reply(
@@ -261,15 +314,24 @@ client.on("messageCreate", async (message) => {
                 );
             }
 
+            /* REMOVE DUPLICATES */
+
+            items = Array.from(
+                new Set(items)
+            );
+
             let added = 0;
             let duplicates = 0;
             let failed = 0;
+
+            /* SEND TO NOVI */
 
             for (const item of items) {
                 try {
                     const response =
                         await axios.post(
-                            `${SERVER_URL}/api/stock/add`,
+                            SERVER_URL +
+                            "/api/stock/add",
                             {
                                 item: item
                             },
@@ -294,21 +356,26 @@ client.on("messageCreate", async (message) => {
                     }
                 } catch (error) {
                     console.error(
-                        `Failed to add item: ${item}`,
-                        error.response?.data ||
-                        error.message
+                        "Failed to add item: " +
+                        item,
+                        error.response
+                            ? error.response.data
+                            : error.message
                     );
 
                     failed++;
                 }
             }
 
+            /* GET TOTAL STOCK */
+
             let totalStock = "Unknown";
 
             try {
                 const stockResponse =
                     await axios.get(
-                        `${SERVER_URL}/api/stock`,
+                        SERVER_URL +
+                        "/api/stock",
                         {
                             timeout: 10000
                         }
@@ -329,14 +396,23 @@ client.on("messageCreate", async (message) => {
                 );
             }
 
+            /* RESULT */
+
             let reply =
-                `Stock Added Successfully\n\n` +
-                `Added: ${added}\n` +
-                `Duplicates: ${duplicates}\n` +
-                `Total stock: ${totalStock}`;
+                "Stock Added Successfully\n\n" +
+                "Added: " +
+                added +
+                "\n" +
+                "Duplicates: " +
+                duplicates +
+                "\n" +
+                "Total stock: " +
+                totalStock;
 
             if (failed > 0) {
-                reply += `\nFailed: ${failed}`;
+                reply +=
+                    "\nFailed: " +
+                    failed;
             }
 
             return message.reply(reply);
@@ -360,9 +436,13 @@ client.on("messageCreate", async (message) => {
     }
 });
 
+/* ================================
+   PROCESS ERRORS
+================================ */
+
 process.on(
     "unhandledRejection",
-    (error) => {
+    function (error) {
         console.error(
             "Unhandled promise rejection:",
             error
@@ -372,13 +452,17 @@ process.on(
 
 process.on(
     "uncaughtException",
-    (error) => {
+    function (error) {
         console.error(
             "Uncaught exception:",
             error
         );
     }
 );
+
+/* ================================
+   DISCORD TOKEN
+================================ */
 
 if (!process.env.DISCORD_TOKEN) {
     console.error(
@@ -388,16 +472,20 @@ if (!process.env.DISCORD_TOKEN) {
     process.exit(1);
 }
 
+/* ================================
+   LOGIN
+================================ */
+
 console.log("Connecting to Discord...");
 
 client
     .login(process.env.DISCORD_TOKEN)
-    .then(() => {
+    .then(function () {
         console.log(
             "Discord login successful."
         );
     })
-    .catch((error) => {
+    .catch(function (error) {
         console.error(
             "Discord login failed:",
             error.message
@@ -405,4 +493,3 @@ client
 
         process.exit(1);
     });
-```
