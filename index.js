@@ -1,3 +1,4 @@
+```js
 require("dotenv").config();
 
 const {
@@ -38,22 +39,6 @@ const client = new Client({
 client.once("ready", () => {
     console.log(`Novi bot is online as ${client.user.tag}`);
     console.log(`Novi server: ${SERVER_URL}`);
-});
-
-/* =========================================================
-   ERROR HANDLING
-========================================================= */
-
-client.on("error", (error) => {
-    console.error("Discord client error:", error);
-});
-
-process.on("unhandledRejection", (error) => {
-    console.error("Unhandled promise rejection:", error);
-});
-
-process.on("uncaughtException", (error) => {
-    console.error("Uncaught exception:", error);
 });
 
 /* =========================================================
@@ -157,15 +142,15 @@ client.on("messageCreate", async (message) => {
                     }
                 );
 
-                console.log(
-                    "Novi response:",
-                    response.data
-                );
-
                 if (
                     !response.data ||
                     !response.data.success
                 ) {
+                    console.error(
+                        "Server response:",
+                        response.data
+                    );
+
                     return message.reply(
                         `❌ The server rejected the key.\n${
                             response.data?.message || ""
@@ -215,7 +200,7 @@ client.on("messageCreate", async (message) => {
             let items = [];
 
             /* -------------------------------------------------
-               ITEMS FROM COMMAND
+               COMMAND ITEMS
             ------------------------------------------------- */
 
             const commandItems = args
@@ -226,7 +211,7 @@ client.on("messageCreate", async (message) => {
             items.push(...commandItems);
 
             /* -------------------------------------------------
-               ITEMS FROM TXT FILE
+               TXT FILE
             ------------------------------------------------- */
 
             if (message.attachments.size > 0) {
@@ -293,7 +278,7 @@ client.on("messageCreate", async (message) => {
             }
 
             /* -------------------------------------------------
-               REMOVE DUPLICATES FROM REQUEST
+               REMOVE DUPLICATES
             ------------------------------------------------- */
 
             items = [...new Set(items)];
@@ -303,7 +288,7 @@ client.on("messageCreate", async (message) => {
             let failed = 0;
 
             /* -------------------------------------------------
-               SEND ITEMS TO NOVI
+               SEND TO NOVI SERVER
             ------------------------------------------------- */
 
             for (const item of items) {
