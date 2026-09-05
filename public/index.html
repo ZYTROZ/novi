@@ -24,6 +24,7 @@
       --muted: #8f8f9d;
       --green: #4ade80;
       --red: #f87171;
+      --orange: #fbbf24;
     }
 
     body {
@@ -286,11 +287,13 @@
       font-size: 14px;
     }
 
-    /* Stats */
+    /* =========================
+       STATS
+    ========================= */
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 14px;
       margin-bottom: 18px;
     }
@@ -327,9 +330,37 @@
       font-size: 23px;
       font-weight: 800;
       letter-spacing: -.4px;
+      position: relative;
+      z-index: 1;
     }
 
-    /* Cards */
+    /* Expiration timer */
+
+    #keyExpiration {
+      color: var(--purple-light);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      font-size: 20px;
+    }
+
+    #keyExpiration.expiring {
+      color: var(--orange);
+    }
+
+    #keyExpiration.expired {
+      color: var(--red);
+    }
+
+    /* Live stock */
+
+    #stockCount {
+      font-variant-numeric: tabular-nums;
+      transition: opacity .15s ease;
+    }
+
+    /* =========================
+       CARDS
+    ========================= */
 
     .main-card {
       margin-top: 18px;
@@ -470,7 +501,9 @@
       font-size: 13px;
     }
 
-    /* Saved logins */
+    /* =========================
+       SAVED LOGINS
+    ========================= */
 
     .saved-login-list {
       display: grid;
@@ -531,7 +564,9 @@
       border-color: rgba(248,113,113,.2);
     }
 
-    /* Modal */
+    /* =========================
+       MODAL
+    ========================= */
 
     .modal-overlay {
       position: fixed;
@@ -618,7 +653,9 @@
       background: linear-gradient(135deg, #8b5cf6, #6d28d9);
     }
 
-    /* Loading */
+    /* =========================
+       LOADING
+    ========================= */
 
     .loading {
       display: inline-flex;
@@ -641,7 +678,15 @@
       }
     }
 
-    /* Responsive */
+    /* =========================
+       RESPONSIVE
+    ========================= */
+
+    @media (max-width: 900px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
 
     @media (max-width: 700px) {
       .login-card {
@@ -681,6 +726,14 @@
         text-align: left;
       }
 
+      .inventory-actions {
+        flex-wrap: wrap;
+      }
+
+      .action-btn {
+        flex: 1;
+      }
+
       .saved-login {
         align-items: flex-start;
         flex-direction: column;
@@ -704,6 +757,7 @@
   ========================== -->
 
   <section id="loginPage">
+
     <div class="login-wrapper">
 
       <div class="login-glow"></div>
@@ -711,22 +765,37 @@
       <div class="login-card">
 
         <div class="brand">
-          <div class="brand-logo">N</div>
-          <h1>Novi</h1>
-          <p>Enter your access key to continue</p>
+
+          <div class="brand-logo">
+            N
+          </div>
+
+          <h1>
+            Novi
+          </h1>
+
+          <p>
+            Enter your access key to continue
+          </p>
+
         </div>
 
-        <label class="input-label" for="keyInput">
+        <label
+          class="input-label"
+          for="keyInput"
+        >
           Access Key
         </label>
 
         <div class="input-wrap">
+
           <input
             id="keyInput"
             type="text"
             autocomplete="off"
             placeholder="Novi-XXXXXX-XXXXXX-XXXXXX"
           >
+
         </div>
 
         <button id="unlockButton">
@@ -736,7 +805,9 @@
         <div id="verifyResult"></div>
 
       </div>
+
     </div>
+
   </section>
 
 
@@ -751,8 +822,15 @@
       <header class="topbar">
 
         <div class="topbar-brand">
-          <div class="small-logo">N</div>
-          <span>Novi</span>
+
+          <div class="small-logo">
+            N
+          </div>
+
+          <span>
+            Novi
+          </span>
+
         </div>
 
         <button id="logoutButton">
@@ -763,42 +841,108 @@
 
 
       <div class="welcome">
-        <h1>Dashboard</h1>
-        <p>Manage your inventory and saved logins.</p>
+
+        <h1>
+          Dashboard
+        </h1>
+
+        <p>
+          Manage your inventory and saved logins.
+        </p>
+
       </div>
 
 
-      <!-- STATS -->
+      <!-- =========================
+           STATS
+      ========================== -->
 
       <div class="stats-grid">
 
         <div class="stat-card">
-          <div class="stat-label">Available Stock</div>
-          <div class="stat-value" id="stockCount">—</div>
+
+          <div class="stat-label">
+            Available Stock
+          </div>
+
+          <div
+            class="stat-value"
+            id="stockCount"
+          >
+            —
+          </div>
+
         </div>
 
-        <div class="stat-card">
-          <div class="stat-label">Key Duration</div>
-          <div class="stat-value" id="keyDuration">—</div>
-        </div>
 
         <div class="stat-card">
-          <div class="stat-label">Account Status</div>
-          <div class="stat-value" id="accountStatus">Active</div>
+
+          <div class="stat-label">
+            Key Duration
+          </div>
+
+          <div
+            class="stat-value"
+            id="keyDuration"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+          <div class="stat-label">
+            Time Remaining
+          </div>
+
+          <div
+            class="stat-value"
+            id="keyExpiration"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+          <div class="stat-label">
+            Account Status
+          </div>
+
+          <div
+            class="stat-value"
+            id="accountStatus"
+          >
+            Active
+          </div>
+
         </div>
 
       </div>
 
 
-      <!-- GENERATOR -->
+      <!-- =========================
+           GENERATOR
+      ========================== -->
 
       <div class="main-card">
 
         <div class="card-header">
 
           <div class="card-title">
-            <h2>Inventory</h2>
-            <p>Generate an account from the available stock.</p>
+
+            <h2>
+              Inventory
+            </h2>
+
+            <p>
+              Generate an account from the available stock.
+            </p>
+
           </div>
 
           <button id="generateButton">
@@ -807,34 +951,50 @@
 
         </div>
 
+
         <div id="inventoryResult">
+
           <div class="empty-state">
             No account generated yet.
           </div>
+
         </div>
+
 
         <div id="dashboardMessage"></div>
 
       </div>
 
 
-      <!-- SAVED LOGINS -->
+      <!-- =========================
+           SAVED LOGINS
+      ========================== -->
 
       <div class="main-card">
 
         <div class="card-header">
 
           <div class="card-title">
-            <h2>Saved Logins</h2>
-            <p>Logins saved to your Novi account.</p>
+
+            <h2>
+              Saved Logins
+            </h2>
+
+            <p>
+              Logins saved to your Novi account.
+            </p>
+
           </div>
 
         </div>
 
+
         <div id="savedLoginResult">
+
           <div class="empty-state">
             No saved logins.
           </div>
+
         </div>
 
       </div>
@@ -844,29 +1004,58 @@
   </section>
 
 
-  <!-- SAVE LOGIN MODAL -->
+  <!-- =========================
+       SAVE LOGIN MODAL
+  ========================== -->
 
-  <div class="modal-overlay" id="saveModal">
+  <div
+    class="modal-overlay"
+    id="saveModal"
+  >
 
     <div class="modal">
 
-      <h3>Save Login</h3>
+      <h3>
+        Save Login
+      </h3>
 
       <p>
         Save this generated login to your Novi account.
       </p>
 
-      <div class="modal-field">
-        <label>Email</label>
-        <input id="saveEmail" type="text" readonly>
-      </div>
 
       <div class="modal-field">
-        <label>Password</label>
-        <input id="savePassword" type="password" readonly>
+
+        <label>
+          Email
+        </label>
+
+        <input
+          id="saveEmail"
+          type="text"
+          readonly
+        >
+
       </div>
+
+
+      <div class="modal-field">
+
+        <label>
+          Password
+        </label>
+
+        <input
+          id="savePassword"
+          type="password"
+          readonly
+        >
+
+      </div>
+
 
       <div class="modal-buttons">
+
         <button id="cancelSaveButton">
           Cancel
         </button>
@@ -874,6 +1063,7 @@
         <button id="confirmSaveButton">
           Save Login
         </button>
+
       </div>
 
     </div>
@@ -884,44 +1074,147 @@
   <script>
     "use strict";
 
-    const API_URL = "https://novi-1.onrender.com";
 
-    const SESSION_KEY = "noviSessionToken";
-    const DEVICE_KEY = "noviDeviceId";
+    /* =========================
+       CONFIG
+    ========================== */
 
-    let currentSession = sessionStorage.getItem(SESSION_KEY) || "";
-    let currentGeneratedLogin = null;
+    const API_URL =
+      "https://novi-1.onrender.com";
+
+    const SESSION_KEY =
+      "noviSessionToken";
+
+    const DEVICE_KEY =
+      "noviDeviceId";
+
+    const EXPIRATION_KEY =
+      "noviKeyExpiration";
+
+    const DURATION_KEY =
+      "noviKeyDuration";
+
+
+    /* =========================
+       STATE
+    ========================== */
+
+    let currentSession =
+      sessionStorage.getItem(
+        SESSION_KEY
+      ) || "";
+
+    let currentGeneratedLogin =
+      null;
+
+    let expirationTimer =
+      null;
+
+    let stockRefreshTimer =
+      null;
+
+    let isGenerating =
+      false;
 
 
     /* =========================
        ELEMENTS
     ========================== */
 
-    const loginPage = document.getElementById("loginPage");
-    const dashboardPage = document.getElementById("dashboardPage");
+    const loginPage =
+      document.getElementById(
+        "loginPage"
+      );
 
-    const keyInput = document.getElementById("keyInput");
-    const unlockButton = document.getElementById("unlockButton");
-    const verifyResult = document.getElementById("verifyResult");
+    const dashboardPage =
+      document.getElementById(
+        "dashboardPage"
+      );
 
-    const logoutButton = document.getElementById("logoutButton");
+    const keyInput =
+      document.getElementById(
+        "keyInput"
+      );
 
-    const stockCount = document.getElementById("stockCount");
-    const keyDuration = document.getElementById("keyDuration");
-    const accountStatus = document.getElementById("accountStatus");
+    const unlockButton =
+      document.getElementById(
+        "unlockButton"
+      );
 
-    const generateButton = document.getElementById("generateButton");
-    const inventoryResult = document.getElementById("inventoryResult");
-    const dashboardMessage = document.getElementById("dashboardMessage");
+    const verifyResult =
+      document.getElementById(
+        "verifyResult"
+      );
 
-    const savedLoginResult = document.getElementById("savedLoginResult");
+    const logoutButton =
+      document.getElementById(
+        "logoutButton"
+      );
 
-    const saveModal = document.getElementById("saveModal");
-    const saveEmail = document.getElementById("saveEmail");
-    const savePassword = document.getElementById("savePassword");
+    const stockCount =
+      document.getElementById(
+        "stockCount"
+      );
 
-    const cancelSaveButton = document.getElementById("cancelSaveButton");
-    const confirmSaveButton = document.getElementById("confirmSaveButton");
+    const keyDuration =
+      document.getElementById(
+        "keyDuration"
+      );
+
+    const keyExpiration =
+      document.getElementById(
+        "keyExpiration"
+      );
+
+    const accountStatus =
+      document.getElementById(
+        "accountStatus"
+      );
+
+    const generateButton =
+      document.getElementById(
+        "generateButton"
+      );
+
+    const inventoryResult =
+      document.getElementById(
+        "inventoryResult"
+      );
+
+    const dashboardMessage =
+      document.getElementById(
+        "dashboardMessage"
+      );
+
+    const savedLoginResult =
+      document.getElementById(
+        "savedLoginResult"
+      );
+
+    const saveModal =
+      document.getElementById(
+        "saveModal"
+      );
+
+    const saveEmail =
+      document.getElementById(
+        "saveEmail"
+      );
+
+    const savePassword =
+      document.getElementById(
+        "savePassword"
+      );
+
+    const cancelSaveButton =
+      document.getElementById(
+        "cancelSaveButton"
+      );
+
+    const confirmSaveButton =
+      document.getElementById(
+        "confirmSaveButton"
+      );
 
 
     /* =========================
@@ -930,18 +1223,27 @@
 
     function getDeviceId() {
 
-      let deviceId = localStorage.getItem(DEVICE_KEY);
+      let deviceId =
+        localStorage.getItem(
+          DEVICE_KEY
+        );
 
       if (!deviceId) {
+
         deviceId =
           crypto.randomUUID
             ? crypto.randomUUID()
             : (
                 Date.now().toString(36) +
-                Math.random().toString(36).slice(2)
+                Math.random()
+                  .toString(36)
+                  .slice(2)
               );
 
-        localStorage.setItem(DEVICE_KEY, deviceId);
+        localStorage.setItem(
+          DEVICE_KEY,
+          deviceId
+        );
       }
 
       return deviceId;
@@ -952,21 +1254,34 @@
        API
     ========================== */
 
-    async function authenticatedFetch(url, options = {}) {
+    async function authenticatedFetch(
+      url,
+      options = {}
+    ) {
 
       if (!currentSession) {
-        throw new Error("Your session has expired.");
+
+        throw new Error(
+          "Your session has expired."
+        );
       }
 
       const headers = {
+
         ...(options.headers || {}),
-        "x-novi-session": currentSession
+
+        "x-novi-session":
+          currentSession
+
       };
 
-      return fetch(url, {
-        ...options,
-        headers
-      });
+      return fetch(
+        url,
+        {
+          ...options,
+          headers
+        }
+      );
     }
 
 
@@ -976,14 +1291,21 @@
 
     async function unlock() {
 
-      const key = keyInput.value.trim();
+      const key =
+        keyInput.value.trim();
 
       if (!key) {
-        showVerify("Please enter your access key.", false);
+
+        showVerify(
+          "Please enter your access key.",
+          false
+        );
+
         return;
       }
 
-      unlockButton.disabled = true;
+      unlockButton.disabled =
+        true;
 
       unlockButton.innerHTML = `
         <span class="loading">
@@ -992,24 +1314,50 @@
         </span>
       `;
 
-      showVerify("", true);
+      showVerify(
+        "",
+        true
+      );
+
 
       try {
 
-        const response = await fetch(`${API_URL}/api/verify`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            key,
-            deviceId: getDeviceId()
-          })
-        });
+        const response =
+          await fetch(
+            `${API_URL}/api/verify`,
+            {
+              method: "POST",
 
-        const result = await response.json().catch(() => ({}));
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
 
-        if (!response.ok || !result.success || !result.sessionToken) {
+              body:
+                JSON.stringify({
+                  key,
+
+                  deviceId:
+                    getDeviceId()
+                })
+            }
+          );
+
+
+        const result =
+          await response
+            .json()
+            .catch(
+              () => ({})
+            );
+
+
+        if (
+          !response.ok ||
+          !result.success ||
+          !result.sessionToken
+        ) {
+
           throw new Error(
             result.message ||
             result.error ||
@@ -1017,55 +1365,147 @@
           );
         }
 
-        currentSession = result.sessionToken;
+
+        currentSession =
+          result.sessionToken;
+
 
         sessionStorage.setItem(
           SESSION_KEY,
           currentSession
         );
 
+
+        /* =========================
+           SAVE KEY INFO
+        ========================== */
+
         const duration =
           result.key?.duration ||
           result.duration ||
           "Active";
 
-        keyDuration.textContent = formatDuration(duration);
 
-        accountStatus.textContent = "Active";
+        const expiresAt =
+          result.key?.keyExpiresAt ||
+          result.key?.expiresAt ||
+          result.expiresAt ||
+          null;
 
-        loginPage.style.display = "none";
-        dashboardPage.style.display = "block";
 
-        verifyResult.textContent = "";
+        keyDuration.textContent =
+          formatDuration(
+            duration
+          );
 
+
+        accountStatus.textContent =
+          "Active";
+
+
+        sessionStorage.setItem(
+          DURATION_KEY,
+          duration
+        );
+
+
+        if (expiresAt) {
+
+          sessionStorage.setItem(
+            EXPIRATION_KEY,
+            expiresAt
+          );
+
+        } else {
+
+          sessionStorage.removeItem(
+            EXPIRATION_KEY
+          );
+        }
+
+
+        /* =========================
+           START TIMER
+        ========================== */
+
+        startExpirationTimer(
+          expiresAt
+        );
+
+
+        /* =========================
+           SHOW DASHBOARD
+        ========================== */
+
+        loginPage.style.display =
+          "none";
+
+        dashboardPage.style.display =
+          "block";
+
+        verifyResult.textContent =
+          "";
+
+
+        /*
+          Start live stock updates.
+        */
         await loadStock();
+
+        startLiveStock();
+
         await loadSavedLogins();
+
 
       } catch (error) {
 
         showVerify(
-          error.message || "Unable to verify key.",
+          error.message ||
+          "Unable to verify key.",
           false
         );
 
-        currentSession = "";
-        sessionStorage.removeItem(SESSION_KEY);
+
+        currentSession =
+          "";
+
+
+        sessionStorage.removeItem(
+          SESSION_KEY
+        );
+
+        sessionStorage.removeItem(
+          EXPIRATION_KEY
+        );
+
+        sessionStorage.removeItem(
+          DURATION_KEY
+        );
+
 
       } finally {
 
-        unlockButton.disabled = false;
-        unlockButton.textContent = "Unlock Dashboard";
+        unlockButton.disabled =
+          false;
 
+        unlockButton.textContent =
+          "Unlock Dashboard";
       }
     }
 
 
-    function showVerify(message, success) {
+    function showVerify(
+      message,
+      success
+    ) {
 
-      verifyResult.textContent = message;
-      verifyResult.className = success
-        ? "success"
-        : "error";
+      verifyResult.textContent =
+        message;
+
+      verifyResult.className =
+        success
+          ? "success"
+          : "error";
     }
 
 
@@ -1073,17 +1513,330 @@
        FORMAT DURATION
     ========================== */
 
-    function formatDuration(duration) {
+    function formatDuration(
+      duration
+    ) {
 
-      const value = String(duration || "").toLowerCase();
+      const value =
+        String(
+          duration || ""
+        ).toLowerCase();
 
-      if (value === "1d") return "1 Day";
-      if (value === "3d") return "3 Days";
-      if (value === "1week") return "1 Week";
-      if (value === "1month") return "1 Month";
-      if (value === "lifetime") return "Lifetime";
 
-      return duration || "Active";
+      if (value === "1d")
+        return "1 Day";
+
+
+      if (value === "3d")
+        return "3 Days";
+
+
+      if (value === "1week")
+        return "1 Week";
+
+
+      if (value === "1month")
+        return "1 Month";
+
+
+      if (value === "lifetime")
+        return "Lifetime";
+
+
+      return duration ||
+        "Active";
+    }
+
+
+    /* =========================
+       EXPIRATION TIMER
+    ========================== */
+
+    function startExpirationTimer(
+      expiresAt
+    ) {
+
+      if (expirationTimer) {
+
+        clearInterval(
+          expirationTimer
+        );
+
+        expirationTimer =
+          null;
+      }
+
+
+      /*
+        Lifetime key.
+      */
+
+      if (!expiresAt) {
+
+        keyExpiration.textContent =
+          "Never Expires";
+
+        keyExpiration.classList.remove(
+          "expiring",
+          "expired"
+        );
+
+        return;
+      }
+
+
+      const expirationTime =
+        new Date(
+          expiresAt
+        ).getTime();
+
+
+      if (
+        !Number.isFinite(
+          expirationTime
+        )
+      ) {
+
+        keyExpiration.textContent =
+          "Unknown";
+
+        return;
+      }
+
+
+      sessionStorage.setItem(
+        EXPIRATION_KEY,
+        expiresAt
+      );
+
+
+      function updateTimer() {
+
+        const remaining =
+          expirationTime -
+          Date.now();
+
+
+        if (remaining <= 0) {
+
+          keyExpiration.textContent =
+            "Expired";
+
+
+          keyExpiration.classList.remove(
+            "expiring"
+          );
+
+
+          keyExpiration.classList.add(
+            "expired"
+          );
+
+
+          accountStatus.textContent =
+            "Expired";
+
+
+          if (expirationTimer) {
+
+            clearInterval(
+              expirationTimer
+            );
+
+            expirationTimer =
+              null;
+          }
+
+
+          setTimeout(
+            () => {
+
+              forceLogout(
+                "Your key has expired."
+              );
+
+            },
+            1000
+          );
+
+
+          return;
+        }
+
+
+        keyExpiration.textContent =
+          formatRemaining(
+            remaining
+          );
+
+
+        /*
+          Orange during final hour.
+        */
+
+        if (
+          remaining <=
+          60 * 60 * 1000
+        ) {
+
+          keyExpiration.classList.add(
+            "expiring"
+          );
+
+        } else {
+
+          keyExpiration.classList.remove(
+            "expiring"
+          );
+        }
+
+
+        keyExpiration.classList.remove(
+          "expired"
+        );
+      }
+
+
+      updateTimer();
+
+
+      expirationTimer =
+        setInterval(
+          updateTimer,
+          1000
+        );
+    }
+
+
+    function formatRemaining(
+      milliseconds
+    ) {
+
+      let totalSeconds =
+        Math.max(
+          0,
+          Math.floor(
+            milliseconds /
+            1000
+          )
+        );
+
+
+      const days =
+        Math.floor(
+          totalSeconds /
+          86400
+        );
+
+
+      totalSeconds %=
+        86400;
+
+
+      const hours =
+        Math.floor(
+          totalSeconds /
+          3600
+        );
+
+
+      totalSeconds %=
+        3600;
+
+
+      const minutes =
+        Math.floor(
+          totalSeconds /
+          60
+        );
+
+
+      const seconds =
+        totalSeconds %
+        60;
+
+
+      const hh =
+        String(hours)
+          .padStart(
+            2,
+            "0"
+          );
+
+
+      const mm =
+        String(minutes)
+          .padStart(
+            2,
+            "0"
+          );
+
+
+      const ss =
+        String(seconds)
+          .padStart(
+            2,
+            "0"
+          );
+
+
+      if (days > 0) {
+
+        return `${days}d ${hh}h ${mm}m`;
+      }
+
+
+      return `${hh}h ${mm}m ${ss}s`;
+    }
+
+
+    /* =========================
+       RESTORE TIMER
+    ========================== */
+
+    function restoreExpirationTimer() {
+
+      const duration =
+        sessionStorage.getItem(
+          DURATION_KEY
+        );
+
+
+      const expiresAt =
+        sessionStorage.getItem(
+          EXPIRATION_KEY
+        );
+
+
+      if (duration) {
+
+        keyDuration.textContent =
+          formatDuration(
+            duration
+          );
+      }
+
+
+      if (expiresAt) {
+
+        startExpirationTimer(
+          expiresAt
+        );
+
+      } else if (
+        String(duration)
+          .toLowerCase() ===
+        "lifetime"
+      ) {
+
+        keyExpiration.textContent =
+          "Never Expires";
+
+      } else {
+
+        keyExpiration.textContent =
+          "—";
+      }
     }
 
 
@@ -1100,14 +1853,28 @@
             `${API_URL}/api/stock`
           );
 
-        if (response.status === 401) {
-          return forceLogout();
+
+        if (
+          response.status ===
+          401
+        ) {
+
+          return forceLogout(
+            "Your key has expired or is no longer valid."
+          );
         }
 
+
         const result =
-          await response.json().catch(() => ({}));
+          await response
+            .json()
+            .catch(
+              () => ({})
+            );
+
 
         if (!response.ok) {
+
           throw new Error(
             result.message ||
             result.error ||
@@ -1115,19 +1882,118 @@
           );
         }
 
+
+        const count =
+          Number(
+            result.count ??
+            result.stockCount ??
+            0
+          );
+
+
+        /*
+          Update the live stock number.
+        */
+
         stockCount.textContent =
-          result.count ??
-          result.stockCount ??
-          0;
+          count;
+
+
+        /*
+          Don't change the button while
+          somebody is currently generating.
+        */
+
+        if (!isGenerating) {
+
+          if (count <= 0) {
+
+            generateButton.disabled =
+              true;
+
+            generateButton.textContent =
+              "Out of Stock";
+
+          } else {
+
+            generateButton.disabled =
+              false;
+
+            generateButton.textContent =
+              "Generate Account";
+          }
+        }
+
 
       } catch (error) {
 
-        stockCount.textContent = "—";
+        /*
+          Keep the current stock number
+          if one polling request fails.
+        */
 
-        dashboardMessage.textContent =
-          error.message || "Could not load stock.";
+        if (
+          stockCount.textContent ===
+          "—"
+        ) {
 
-        dashboardMessage.className = "dashboard-message error";
+          stockCount.textContent =
+            "—";
+        }
+
+      }
+    }
+
+
+    /* =========================
+       LIVE STOCK
+    ========================== */
+
+    function startLiveStock() {
+
+      stopLiveStock();
+
+
+      /*
+        Update immediately.
+      */
+
+      loadStock();
+
+
+      /*
+        Check the server every 2 seconds.
+      */
+
+      stockRefreshTimer =
+        setInterval(
+          () => {
+
+            if (
+              dashboardPage.style.display !==
+                "none" &&
+              currentSession
+            ) {
+
+              loadStock();
+            }
+
+          },
+          2000
+        );
+    }
+
+
+    function stopLiveStock() {
+
+      if (stockRefreshTimer) {
+
+        clearInterval(
+          stockRefreshTimer
+        );
+
+        stockRefreshTimer =
+          null;
       }
     }
 
@@ -1138,7 +2004,18 @@
 
     async function generateInventory() {
 
-      generateButton.disabled = true;
+      if (isGenerating) {
+        return;
+      }
+
+
+      isGenerating =
+        true;
+
+
+      generateButton.disabled =
+        true;
+
 
       generateButton.innerHTML = `
         <span class="loading">
@@ -1147,8 +2024,13 @@
         </span>
       `;
 
-      dashboardMessage.textContent = "";
-      dashboardMessage.className = "dashboard-message";
+
+      dashboardMessage.textContent =
+        "";
+
+      dashboardMessage.className =
+        "dashboard-message";
+
 
       try {
 
@@ -1157,20 +2039,39 @@
             `${API_URL}/api/stock/generate`,
             {
               method: "POST",
+
               headers: {
-                "Content-Type": "application/json"
+                "Content-Type":
+                  "application/json"
               }
             }
           );
 
-        if (response.status === 401) {
-          return forceLogout();
+
+        if (
+          response.status ===
+          401
+        ) {
+
+          return forceLogout(
+            "Your key has expired."
+          );
         }
 
-        const result =
-          await response.json().catch(() => ({}));
 
-        if (!response.ok || !result.success) {
+        const result =
+          await response
+            .json()
+            .catch(
+              () => ({})
+            );
+
+
+        if (
+          !response.ok ||
+          !result.success
+        ) {
+
           throw new Error(
             result.message ||
             result.error ||
@@ -1178,98 +2079,184 @@
           );
         }
 
+
         const item =
           result.item ||
           result.account ||
           result;
 
-        currentGeneratedLogin = normalizeLogin(item);
 
-        renderInventoryItem(currentGeneratedLogin);
+        currentGeneratedLogin =
+          normalizeLogin(
+            item
+          );
+
+
+        renderInventoryItem(
+          currentGeneratedLogin
+        );
+
+
+        /*
+          Immediately update the
+          stock count after generation.
+        */
 
         await loadStock();
+
 
       } catch (error) {
 
         dashboardMessage.textContent =
-          error.message || "Generation failed.";
+          error.message ||
+          "Generation failed.";
 
         dashboardMessage.className =
           "dashboard-message error";
 
+
       } finally {
 
-        generateButton.disabled = false;
-        generateButton.textContent = "Generate Account";
+        isGenerating =
+          false;
+
+
+        /*
+          Load stock one more time so
+          the button has the correct state.
+        */
+
+        await loadStock();
 
       }
     }
 
 
-    function normalizeLogin(item) {
+    function normalizeLogin(
+      item
+    ) {
 
       if (!item) {
+
         return {
           email: "",
           password: ""
         };
       }
 
+
       if (
         typeof item === "object" &&
-        ("email" in item || "password" in item)
+        (
+          "email" in item ||
+          "password" in item
+        )
       ) {
+
         return {
-          email: item.email || "",
-          password: item.password || ""
+
+          email:
+            item.email || "",
+
+          password:
+            item.password || ""
+
         };
       }
 
-      if (typeof item === "string") {
 
-        const separator = item.indexOf(":");
+      if (
+        typeof item ===
+        "string"
+      ) {
 
-        if (separator !== -1) {
+        const separator =
+          item.indexOf(":");
+
+
+        if (
+          separator !== -1
+        ) {
 
           return {
-            email: item.slice(0, separator),
-            password: item.slice(separator + 1)
-          };
 
+            email:
+              item.slice(
+                0,
+                separator
+              ),
+
+            password:
+              item.slice(
+                separator + 1
+              )
+
+          };
         }
 
+
         return {
-          email: item,
-          password: ""
+
+          email:
+            item,
+
+          password:
+            ""
+
         };
       }
 
+
       return {
+
         email: "",
         password: ""
+
       };
     }
 
 
-    function renderInventoryItem(item) {
+    function renderInventoryItem(
+      item
+    ) {
 
-      inventoryResult.innerHTML = "";
+      inventoryResult.innerHTML =
+        "";
+
 
       const wrapper =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
-      wrapper.className = "inventory-item";
+
+      wrapper.className =
+        "inventory-item";
+
 
       wrapper.innerHTML = `
-        <div class="inventory-row">
-          <span class="inventory-label">Email</span>
-          <span class="inventory-value"></span>
-        </div>
 
         <div class="inventory-row">
-          <span class="inventory-label">Password</span>
+
+          <span class="inventory-label">
+            Email
+          </span>
+
           <span class="inventory-value"></span>
+
         </div>
+
+
+        <div class="inventory-row">
+
+          <span class="inventory-label">
+            Password
+          </span>
+
+          <span class="inventory-value"></span>
+
+        </div>
+
 
         <div class="inventory-actions">
 
@@ -1280,12 +2267,14 @@
             Copy Email
           </button>
 
+
           <button
             class="action-btn"
             id="copyPasswordButton"
           >
             Copy Password
           </button>
+
 
           <button
             class="action-btn primary"
@@ -1297,34 +2286,76 @@
         </div>
       `;
 
+
       const values =
-        wrapper.querySelectorAll(".inventory-value");
+        wrapper.querySelectorAll(
+          ".inventory-value"
+        );
+
 
       values[0].textContent =
-        item.email || "—";
+        item.email ||
+        "—";
+
 
       values[1].textContent =
-        item.password || "—";
+        item.password ||
+        "—";
 
-      inventoryResult.appendChild(wrapper);
 
-      document
-        .getElementById("copyEmailButton")
-        .addEventListener("click", () => {
-          copyText(item.email, "Email copied.");
-        });
+      inventoryResult.appendChild(
+        wrapper
+      );
 
-      document
-        .getElementById("copyPasswordButton")
-        .addEventListener("click", () => {
-          copyText(item.password, "Password copied.");
-        });
 
       document
-        .getElementById("saveLoginButton")
-        .addEventListener("click", () => {
-          openSaveModal(item);
-        });
+        .getElementById(
+          "copyEmailButton"
+        )
+        .addEventListener(
+          "click",
+          () => {
+
+            copyText(
+              item.email,
+              "Email copied."
+            );
+
+          }
+        );
+
+
+      document
+        .getElementById(
+          "copyPasswordButton"
+        )
+        .addEventListener(
+          "click",
+          () => {
+
+            copyText(
+              item.password,
+              "Password copied."
+            );
+
+          }
+        );
+
+
+      document
+        .getElementById(
+          "saveLoginButton"
+        )
+        .addEventListener(
+          "click",
+          () => {
+
+            openSaveModal(
+              item
+            );
+
+          }
+        );
     }
 
 
@@ -1332,26 +2363,48 @@
        COPY
     ========================== */
 
-    async function copyText(text, message) {
+    async function copyText(
+      text,
+      message
+    ) {
 
-      if (!text) return;
+      if (!text)
+        return;
+
 
       try {
 
-        await navigator.clipboard.writeText(text);
+        await navigator
+          .clipboard
+          .writeText(
+            text
+          );
 
-        dashboardMessage.textContent = message;
+
+        dashboardMessage.textContent =
+          message;
+
+
         dashboardMessage.className =
           "dashboard-message success";
 
-        setTimeout(() => {
-          dashboardMessage.textContent = "";
-        }, 1800);
+
+        setTimeout(
+          () => {
+
+            dashboardMessage.textContent =
+              "";
+
+          },
+          1800
+        );
+
 
       } catch {
 
         dashboardMessage.textContent =
           "Copy failed. Please copy it manually.";
+
 
         dashboardMessage.className =
           "dashboard-message error";
@@ -1363,23 +2416,41 @@
        SAVE LOGIN MODAL
     ========================== */
 
-    function openSaveModal(item) {
+    function openSaveModal(
+      item
+    ) {
 
-      currentGeneratedLogin = item;
+      currentGeneratedLogin =
+        item;
 
-      saveEmail.value = item.email || "";
-      savePassword.value = item.password || "";
 
-      saveModal.style.display = "flex";
+      saveEmail.value =
+        item.email ||
+        "";
+
+
+      savePassword.value =
+        item.password ||
+        "";
+
+
+      saveModal.style.display =
+        "flex";
     }
 
 
     function closeSaveModal() {
 
-      saveModal.style.display = "none";
+      saveModal.style.display =
+        "none";
 
-      saveEmail.value = "";
-      savePassword.value = "";
+
+      saveEmail.value =
+        "";
+
+
+      savePassword.value =
+        "";
     }
 
 
@@ -1394,11 +2465,18 @@
         !currentGeneratedLogin.email ||
         !currentGeneratedLogin.password
       ) {
+
         return;
       }
 
-      confirmSaveButton.disabled = true;
-      confirmSaveButton.textContent = "Saving...";
+
+      confirmSaveButton.disabled =
+        true;
+
+
+      confirmSaveButton.textContent =
+        "Saving...";
+
 
       try {
 
@@ -1407,25 +2485,52 @@
             `${API_URL}/api/saved-logins`,
             {
               method: "POST",
+
               headers: {
-                "Content-Type": "application/json"
+                "Content-Type":
+                  "application/json"
               },
-              body: JSON.stringify({
-                email: currentGeneratedLogin.email,
-                password: currentGeneratedLogin.password
-              })
+
+              body:
+                JSON.stringify({
+
+                  email:
+                    currentGeneratedLogin.email,
+
+                  password:
+                    currentGeneratedLogin.password
+
+                })
             }
           );
 
-        if (response.status === 401) {
+
+        if (
+          response.status ===
+          401
+        ) {
+
           closeSaveModal();
-          return forceLogout();
+
+          return forceLogout(
+            "Your key has expired."
+          );
         }
 
-        const result =
-          await response.json().catch(() => ({}));
 
-        if (!response.ok || !result.success) {
+        const result =
+          await response
+            .json()
+            .catch(
+              () => ({})
+            );
+
+
+        if (
+          !response.ok ||
+          !result.success
+        ) {
+
           throw new Error(
             result.message ||
             result.error ||
@@ -1433,29 +2538,40 @@
           );
         }
 
+
         closeSaveModal();
+
 
         dashboardMessage.textContent =
           "Login saved successfully.";
 
+
         dashboardMessage.className =
           "dashboard-message success";
 
+
         await loadSavedLogins();
+
 
       } catch (error) {
 
         dashboardMessage.textContent =
-          error.message || "Could not save login.";
+          error.message ||
+          "Could not save login.";
+
 
         dashboardMessage.className =
           "dashboard-message error";
 
+
       } finally {
 
-        confirmSaveButton.disabled = false;
-        confirmSaveButton.textContent = "Save Login";
+        confirmSaveButton.disabled =
+          false;
 
+
+        confirmSaveButton.textContent =
+          "Save Login";
       }
     }
 
@@ -1473,14 +2589,28 @@
             `${API_URL}/api/saved-logins`
           );
 
-        if (response.status === 401) {
-          return forceLogout();
+
+        if (
+          response.status ===
+          401
+        ) {
+
+          return forceLogout(
+            "Your key has expired."
+          );
         }
 
+
         const result =
-          await response.json().catch(() => ({}));
+          await response
+            .json()
+            .catch(
+              () => ({})
+            );
+
 
         if (!response.ok) {
+
           throw new Error(
             result.message ||
             result.error ||
@@ -1488,115 +2618,222 @@
           );
         }
 
+
         const logins =
           result.logins ||
           result.savedLogins ||
           [];
 
-        renderSavedLogins(logins);
+
+        renderSavedLogins(
+          logins
+        );
+
 
       } catch (error) {
 
         savedLoginResult.innerHTML = `
+
           <div class="empty-state error">
+
             ${escapeHtml(
               error.message ||
               "Could not load saved logins."
             )}
+
           </div>
+
         `;
       }
     }
 
 
-    function renderSavedLogins(logins) {
+    function renderSavedLogins(
+      logins
+    ) {
 
-      if (!Array.isArray(logins) || logins.length === 0) {
+      if (
+        !Array.isArray(
+          logins
+        ) ||
+        logins.length === 0
+      ) {
 
         savedLoginResult.innerHTML = `
+
           <div class="empty-state">
             No saved logins.
           </div>
+
         `;
 
         return;
       }
 
+
       const list =
-        document.createElement("div");
-
-      list.className = "saved-login-list";
-
-      logins.forEach(login => {
-
-        const row =
-          document.createElement("div");
-
-        row.className = "saved-login";
-
-        const info =
-          document.createElement("div");
-
-        info.className = "saved-info";
-
-        const email =
-          document.createElement("div");
-
-        email.className = "saved-email";
-        email.textContent =
-          login.email || "Unknown";
-
-        const date =
-          document.createElement("div");
-
-        date.className = "saved-date";
-
-        date.textContent =
-          login.createdAt
-            ? `Saved ${formatDate(login.createdAt)}`
-            : "Saved login";
-
-        info.appendChild(email);
-        info.appendChild(date);
-
-        const actions =
-          document.createElement("div");
-
-        actions.className = "saved-actions";
-
-        const copy =
-          document.createElement("button");
-
-        copy.textContent = "Copy";
-
-        copy.addEventListener(
-          "click",
-          () => revealAndCopy(login.id)
+        document.createElement(
+          "div"
         );
 
-        const deleteButton =
-          document.createElement("button");
 
-        deleteButton.textContent = "Delete";
-        deleteButton.className = "delete-btn";
+      list.className =
+        "saved-login-list";
 
-        deleteButton.addEventListener(
-          "click",
-          () => deleteSavedLogin(login.id)
-        );
 
-        actions.appendChild(copy);
-        actions.appendChild(deleteButton);
+      logins.forEach(
+        login => {
 
-        row.appendChild(info);
-        row.appendChild(actions);
+          const row =
+            document.createElement(
+              "div"
+            );
 
-        list.appendChild(row);
 
-      });
+          row.className =
+            "saved-login";
 
-      savedLoginResult.innerHTML = "";
-      savedLoginResult.appendChild(list);
+
+          const info =
+            document.createElement(
+              "div"
+            );
+
+
+          info.className =
+            "saved-info";
+
+
+          const email =
+            document.createElement(
+              "div"
+            );
+
+
+          email.className =
+            "saved-email";
+
+
+          email.textContent =
+            login.email ||
+            "Unknown";
+
+
+          const date =
+            document.createElement(
+              "div"
+            );
+
+
+          date.className =
+            "saved-date";
+
+
+          date.textContent =
+            login.createdAt
+              ? `Saved ${formatDate(
+                  login.createdAt
+                )}`
+              : "Saved login";
+
+
+          info.appendChild(
+            email
+          );
+
+
+          info.appendChild(
+            date
+          );
+
+
+          const actions =
+            document.createElement(
+              "div"
+            );
+
+
+          actions.className =
+            "saved-actions";
+
+
+          const copy =
+            document.createElement(
+              "button"
+            );
+
+
+          copy.textContent =
+            "Copy";
+
+
+          copy.addEventListener(
+            "click",
+            () =>
+              revealAndCopy(
+                login.id
+              )
+          );
+
+
+          const deleteButton =
+            document.createElement(
+              "button"
+            );
+
+
+          deleteButton.textContent =
+            "Delete";
+
+
+          deleteButton.className =
+            "delete-btn";
+
+
+          deleteButton.addEventListener(
+            "click",
+            () =>
+              deleteSavedLogin(
+                login.id
+              )
+          );
+
+
+          actions.appendChild(
+            copy
+          );
+
+
+          actions.appendChild(
+            deleteButton
+          );
+
+
+          row.appendChild(
+            info
+          );
+
+
+          row.appendChild(
+            actions
+          );
+
+
+          list.appendChild(
+            row
+          );
+
+        }
+      );
+
+
+      savedLoginResult.innerHTML =
+        "";
+
+
+      savedLoginResult.appendChild(
+        list
+      );
     }
 
 
@@ -1604,25 +2841,48 @@
        REVEAL + COPY SAVED LOGIN
     ========================== */
 
-    async function revealAndCopy(id) {
+    async function revealAndCopy(
+      id
+    ) {
 
-      if (!id) return;
+      if (!id)
+        return;
+
 
       try {
 
         const response =
           await authenticatedFetch(
-            `${API_URL}/api/saved-logins/${encodeURIComponent(id)}`
+            `${API_URL}/api/saved-logins/${encodeURIComponent(
+              id
+            )}`
           );
 
-        if (response.status === 401) {
-          return forceLogout();
+
+        if (
+          response.status ===
+          401
+        ) {
+
+          return forceLogout(
+            "Your key has expired."
+          );
         }
 
-        const result =
-          await response.json().catch(() => ({}));
 
-        if (!response.ok || !result.success) {
+        const result =
+          await response
+            .json()
+            .catch(
+              () => ({})
+            );
+
+
+        if (
+          !response.ok ||
+          !result.success
+        ) {
+
           throw new Error(
             result.message ||
             result.error ||
@@ -1630,30 +2890,48 @@
           );
         }
 
+
         const login =
           result.login ||
           result;
 
+
         const text =
           `${login.email || ""}:${login.password || ""}`;
 
-        await navigator.clipboard.writeText(text);
+
+        await navigator
+          .clipboard
+          .writeText(
+            text
+          );
+
 
         dashboardMessage.textContent =
           "Saved login copied.";
 
+
         dashboardMessage.className =
           "dashboard-message success";
 
-        setTimeout(() => {
-          dashboardMessage.textContent = "";
-        }, 1800);
+
+        setTimeout(
+          () => {
+
+            dashboardMessage.textContent =
+              "";
+
+          },
+          1800
+        );
+
 
       } catch (error) {
 
         dashboardMessage.textContent =
           error.message ||
           "Could not copy saved login.";
+
 
         dashboardMessage.className =
           "dashboard-message error";
@@ -1665,28 +2943,52 @@
        DELETE SAVED LOGIN
     ========================== */
 
-    async function deleteSavedLogin(id) {
+    async function deleteSavedLogin(
+      id
+    ) {
 
-      if (!id) return;
+      if (!id)
+        return;
+
 
       try {
 
         const response =
           await authenticatedFetch(
-            `${API_URL}/api/saved-logins/${encodeURIComponent(id)}`,
+            `${API_URL}/api/saved-logins/${encodeURIComponent(
+              id
+            )}`,
             {
-              method: "DELETE"
+              method:
+                "DELETE"
             }
           );
 
-        if (response.status === 401) {
-          return forceLogout();
+
+        if (
+          response.status ===
+          401
+        ) {
+
+          return forceLogout(
+            "Your key has expired."
+          );
         }
 
-        const result =
-          await response.json().catch(() => ({}));
 
-        if (!response.ok || !result.success) {
+        const result =
+          await response
+            .json()
+            .catch(
+              () => ({})
+            );
+
+
+        if (
+          !response.ok ||
+          !result.success
+        ) {
+
           throw new Error(
             result.message ||
             result.error ||
@@ -1694,23 +2996,35 @@
           );
         }
 
+
         await loadSavedLogins();
+
 
         dashboardMessage.textContent =
           "Saved login deleted.";
 
+
         dashboardMessage.className =
           "dashboard-message success";
 
-        setTimeout(() => {
-          dashboardMessage.textContent = "";
-        }, 1800);
+
+        setTimeout(
+          () => {
+
+            dashboardMessage.textContent =
+              "";
+
+          },
+          1800
+        );
+
 
       } catch (error) {
 
         dashboardMessage.textContent =
           error.message ||
           "Could not delete saved login.";
+
 
         dashboardMessage.className =
           "dashboard-message error";
@@ -1731,7 +3045,8 @@
           await authenticatedFetch(
             `${API_URL}/api/logout`,
             {
-              method: "POST"
+              method:
+                "POST"
             }
           );
         }
@@ -1740,40 +3055,116 @@
         // Ignore logout request errors.
       }
 
+
       forceLogout();
     }
 
 
-    function forceLogout() {
+    function forceLogout(
+      message = ""
+    ) {
 
-      currentSession = "";
+      stopLiveStock();
 
-      sessionStorage.removeItem(SESSION_KEY);
 
-      dashboardPage.style.display = "none";
-      loginPage.style.display = "flex";
+      if (expirationTimer) {
 
-      keyInput.value = "";
+        clearInterval(
+          expirationTimer
+        );
 
-      verifyResult.textContent = "";
+        expirationTimer =
+          null;
+      }
+
+
+      currentSession =
+        "";
+
+
+      sessionStorage.removeItem(
+        SESSION_KEY
+      );
+
+
+      sessionStorage.removeItem(
+        EXPIRATION_KEY
+      );
+
+
+      sessionStorage.removeItem(
+        DURATION_KEY
+      );
+
+
+      dashboardPage.style.display =
+        "none";
+
+
+      loginPage.style.display =
+        "flex";
+
+
+      keyInput.value =
+        "";
+
+
+      verifyResult.textContent =
+        message;
+
+
+      verifyResult.className =
+        message
+          ? "error"
+          : "";
+
 
       inventoryResult.innerHTML = `
+
         <div class="empty-state">
           No account generated yet.
         </div>
+
       `;
 
+
       savedLoginResult.innerHTML = `
+
         <div class="empty-state">
           No saved logins.
         </div>
+
       `;
 
-      stockCount.textContent = "—";
-      keyDuration.textContent = "—";
-      accountStatus.textContent = "Active";
 
-      currentGeneratedLogin = null;
+      stockCount.textContent =
+        "—";
+
+
+      keyDuration.textContent =
+        "—";
+
+
+      keyExpiration.textContent =
+        "—";
+
+
+      keyExpiration.classList.remove(
+        "expiring",
+        "expired"
+      );
+
+
+      accountStatus.textContent =
+        "Active";
+
+
+      currentGeneratedLogin =
+        null;
+
+
+      isGenerating =
+        false;
     }
 
 
@@ -1784,8 +3175,17 @@
     async function verifyCurrentSession() {
 
       if (!currentSession) {
+
         return;
       }
+
+
+      /*
+        Restore the timer immediately.
+      */
+
+      restoreExpirationTimer();
+
 
       try {
 
@@ -1794,19 +3194,35 @@
             `${API_URL}/api/stock`
           );
 
+
         if (!response.ok) {
-          throw new Error("Session expired.");
+
+          throw new Error(
+            "Session expired."
+          );
         }
 
-        loginPage.style.display = "none";
-        dashboardPage.style.display = "block";
+
+        loginPage.style.display =
+          "none";
+
+
+        dashboardPage.style.display =
+          "block";
+
 
         await loadStock();
+
+        startLiveStock();
+
         await loadSavedLogins();
+
 
       } catch {
 
-        forceLogout();
+        forceLogout(
+          "Your key has expired or the session is no longer valid."
+        );
       }
     }
 
@@ -1815,32 +3231,59 @@
        HELPERS
     ========================== */
 
-    function formatDate(value) {
+    function formatDate(
+      value
+    ) {
 
       try {
 
-        return new Date(value).toLocaleString(
+        return new Date(
+          value
+        ).toLocaleString(
           undefined,
           {
-            dateStyle: "medium",
-            timeStyle: "short"
+            dateStyle:
+              "medium",
+
+            timeStyle:
+              "short"
           }
         );
 
       } catch {
+
         return "";
       }
     }
 
 
-    function escapeHtml(value) {
+    function escapeHtml(
+      value
+    ) {
 
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+      return String(
+        value
+      )
+        .replaceAll(
+          "&",
+          "&amp;"
+        )
+        .replaceAll(
+          "<",
+          "&lt;"
+        )
+        .replaceAll(
+          ">",
+          "&gt;"
+        )
+        .replaceAll(
+          '"',
+          "&quot;"
+        )
+        .replaceAll(
+          "'",
+          "&#039;"
+        );
     }
 
 
@@ -1853,45 +3296,57 @@
       unlock
     );
 
+
     keyInput.addEventListener(
       "keydown",
       event => {
 
-        if (event.key === "Enter") {
+        if (
+          event.key ===
+          "Enter"
+        ) {
+
           unlock();
         }
-
       }
     );
+
 
     generateButton.addEventListener(
       "click",
       generateInventory
     );
 
+
     logoutButton.addEventListener(
       "click",
       logout
     );
+
 
     cancelSaveButton.addEventListener(
       "click",
       closeSaveModal
     );
 
+
     confirmSaveButton.addEventListener(
       "click",
       saveCurrentLogin
     );
 
+
     saveModal.addEventListener(
       "click",
       event => {
 
-        if (event.target === saveModal) {
+        if (
+          event.target ===
+          saveModal
+        ) {
+
           closeSaveModal();
         }
-
       }
     );
 
