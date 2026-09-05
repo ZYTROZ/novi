@@ -7,27 +7,21 @@ const {
 } = require("discord.js");
 
 const axios = require("axios");
-const WebSocket = require("ws");
 
 /* =========================================================
    CONFIG
 ========================================================= */
 
 const PORT = process.env.PORT || 10000;
-
 const API_URL = `http://127.0.0.1:${PORT}`;
 
 const TOKEN = String(
     process.env.DISCORD_TOKEN || ""
-)
-    .trim()
-    .replace(/^["']|["']$/g, "");
+).trim();
 
 const ADMIN_SECRET = String(
     process.env.NOVI_ADMIN_SECRET || ""
-)
-    .trim()
-    .replace(/^["']|["']$/g, "");
+).trim();
 
 /* =========================================================
    STARTUP
@@ -44,11 +38,6 @@ console.log(
 );
 
 console.log(
-    "Token length:",
-    TOKEN.length
-);
-
-console.log(
     "NOVI_ADMIN_SECRET:",
     ADMIN_SECRET ? "FOUND" : "MISSING"
 );
@@ -62,18 +51,12 @@ console.log("========================================");
 console.log("");
 
 if (!TOKEN) {
-    console.error(
-        "ERROR: DISCORD_TOKEN is missing."
-    );
-
+    console.error("❌ DISCORD_TOKEN is missing.");
     process.exit(1);
 }
 
 if (!ADMIN_SECRET) {
-    console.error(
-        "ERROR: NOVI_ADMIN_SECRET is missing."
-    );
-
+    console.error("❌ NOVI_ADMIN_SECRET is missing.");
     process.exit(1);
 }
 
@@ -86,11 +69,7 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent
-    ],
-
-    ws: {
-        version: 10
-    }
+    ]
 });
 
 /* =========================================================
@@ -103,10 +82,11 @@ const ALLOWED_ROLE_IDS = [
 ];
 
 /* =========================================================
-   PERMISSION
+   PERMISSION CHECK
 ========================================================= */
 
 function hasPermission(message) {
+
     if (!message.member) {
         return false;
     }
@@ -122,6 +102,7 @@ function hasPermission(message) {
 ========================================================= */
 
 function adminHeaders() {
+
     return {
         "Content-Type": "application/json",
         "x-novi-admin-secret": ADMIN_SECRET
@@ -129,13 +110,14 @@ function adminHeaders() {
 }
 
 /* =========================================================
-   DISCORD EVENTS
+   READY
 ========================================================= */
 
 client.once("ready", () => {
+
     console.log("");
     console.log("========================================");
-    console.log("✅ DISCORD BOT IS ONLINE");
+    console.log("✅ NOVI BOT IS ONLINE");
     console.log("========================================");
 
     console.log(
@@ -157,60 +139,45 @@ client.once("ready", () => {
     console.log("");
 });
 
+/* =========================================================
+   DISCORD ERRORS
+========================================================= */
+
 client.on("error", error => {
-    console.error("");
-    console.error("========================================");
-    console.error("❌ DISCORD CLIENT ERROR");
-    console.error("========================================");
 
     console.error(
+        "❌ Discord client error:",
         error?.message || error
     );
-
-    console.error("========================================");
 });
 
 client.on("shardError", error => {
-    console.error("");
-    console.error("========================================");
-    console.error("❌ DISCORD GATEWAY ERROR");
-    console.error("========================================");
 
     console.error(
+        "❌ Discord gateway error:",
         error?.message || error
     );
-
-    console.error("========================================");
-});
-
-client.on("shardDisconnect", event => {
-    console.error("");
-    console.error("========================================");
-    console.error("⚠️ DISCORD DISCONNECTED");
-    console.error("========================================");
-
-    console.error(
-        "Close code:",
-        event?.code || "Unknown"
-    );
-
-    console.error(
-        "Reason:",
-        event?.reason || "Unknown"
-    );
-
-    console.error("========================================");
 });
 
 client.on("shardReconnecting", () => {
+
     console.log(
-        "🔄 Discord Gateway reconnecting..."
+        "🔄 Discord reconnecting..."
     );
 });
 
 client.on("shardResume", shardId => {
+
     console.log(
-        `✅ Discord Gateway resumed on shard ${shardId}.`
+        `✅ Discord resumed on shard ${shardId}.`
+    );
+});
+
+client.on("shardDisconnect", event => {
+
+    console.log(
+        "⚠️ Discord disconnected:",
+        event?.code || "Unknown"
     );
 });
 
@@ -233,7 +200,7 @@ client.on(
             }
 
             const content =
-                message.content.trim();
+                String(message.content || "").trim();
 
             if (!content) {
                 return;
@@ -261,9 +228,9 @@ client.on(
                 }
 
                 const duration =
-                    String(
-                        args[1] || ""
-                    ).toLowerCase();
+                    String(args[1] || "")
+                        .trim()
+                        .toLowerCase();
 
                 const allowedDurations = [
                     "1d",
@@ -280,74 +247,179 @@ client.on(
                 ) {
 
                     await message.reply(
-                        "❌ Usage: `!gen 1d`, `!gen 3d`, `!gen 1week`, `!gen 1month`, or `!gen lifetime`"
+                        "❌ Usage:\n" +
+                        "`!gen 1d`\n" +
+                        "`!gen 3d`\n" +
+                        "`!gen 1week`\n" +
+                        "`!gen 1month`\n" +
+                        "`!gen lifetime`"
                     );
 
                     return;
                 }
 
+                console.log("");
+                console.log(
+                    `[GEN] ${message.author.tag} requested ${duration}`
+                );
+
                 try {
 
-                    console.log(
-                        `[GEN] ${message.author.tag} -> ${duration}`
-                    );
+                    /*
+                     * IMPORTANT:
+                     * The bot talks directly to the Express
+                     * server running in the same Render service.
+                     */
 
                     const response =
-                        await axios.post(
-                            `${API_URL}/api/keys`,
-                            {
+                        await axios({
+                            method: "POST",
+
+                            url:
+                                `${API_URL}/api/keys`,
+
+                            data: {
                                 duration
                             },
-                            {
-                                timeout: 15000,
-                                headers:
-                                    adminHeaders()
-                            }
-                        );
+
+                            headers:
+                                adminHeaders(),
+
+                            timeout: 15000,
+
+                            validateStatus:
+                                () => true
+                        });
+
+                    console.log(
+                        "[GEN] HTTP status:",
+                        response.status
+                    );
+
+                    console.log(
+                        "[GEN] Response:",
+                        response.data
+                    );
+
+                    /* -----------------------------------------
+                       SERVER REJECTED REQUEST
+                    ----------------------------------------- */
 
                     if (
-                        !response.data?.success
+                        response.status < 200 ||
+                        response.status >= 300
+                    ) {
+
+                        const messageText =
+                            response.data?.message ||
+                            `Server returned HTTP ${response.status}.`;
+
+                        await message.reply(
+                            `❌ ${messageText}`
+                        );
+
+                        return;
+                    }
+
+                    /* -----------------------------------------
+                       SERVER RESPONSE
+                    ----------------------------------------- */
+
+                    if (
+                        !response.data ||
+                        response.data.success !== true
                     ) {
 
                         await message.reply(
-                            response.data?.message ||
-                            "❌ Failed to generate key."
+                            `❌ ${
+                                response.data?.message ||
+                                "The server did not generate a key."
+                            }`
                         );
 
                         return;
                     }
 
+                    /* -----------------------------------------
+                       GET KEY
+                    ----------------------------------------- */
+
                     const key =
-                        response.data.key;
+                        String(
+                            response.data.key || ""
+                        ).trim();
 
                     if (!key) {
 
+                        console.error(
+                            "[GEN] Server returned success but no key."
+                        );
+
                         await message.reply(
-                            "❌ Server did not return a key."
+                            "❌ The server generated the request but did not return a key."
                         );
 
                         return;
                     }
 
+                    /* -----------------------------------------
+                       SUCCESS
+                    ----------------------------------------- */
+
+                    console.log(
+                        `[GEN] SUCCESS -> ${key}`
+                    );
+
+                    const durationName =
+                        response.data.durationName ||
+                        response.data.duration ||
+                        duration;
+
                     await message.reply(
-                        `🔑 **Novi Key Generated**\n\n` +
+                        "🔑 **Novi Key Generated**\n\n" +
                         `\`${key}\`\n\n` +
-                        `**Duration:** ${
-                            response.data.durationName ||
-                            duration
-                        }`
+                        `⏱️ **Duration:** ${durationName}`
                     );
 
                 } catch (error) {
 
+                    console.error("");
                     console.error(
-                        "[GEN ERROR]",
-                        error.response?.data ||
-                        error.message
+                        "========================================"
+                    );
+                    console.error(
+                        "❌ !GEN ERROR"
+                    );
+                    console.error(
+                        "========================================"
+                    );
+
+                    console.error(
+                        "Message:",
+                        error?.message || error
+                    );
+
+                    console.error(
+                        "Code:",
+                        error?.code || "Unknown"
+                    );
+
+                    console.error(
+                        "Status:",
+                        error?.response?.status || "No response"
+                    );
+
+                    console.error(
+                        "Response:",
+                        error?.response?.data || "No response"
+                    );
+
+                    console.error(
+                        "========================================"
                     );
 
                     await message.reply(
-                        "❌ Could not connect to the Novi server."
+                        "❌ Something went wrong while generating the key. Check the Render logs."
                     );
                 }
 
@@ -371,9 +443,9 @@ client.on(
 
                 let items = [];
 
-                /* ---------------------------------------------
-                   ITEMS AFTER !ADD
-                --------------------------------------------- */
+                /* -----------------------------------------
+                   TEXT AFTER !ADD
+                ----------------------------------------- */
 
                 const typedItems =
                     args
@@ -389,9 +461,9 @@ client.on(
                     ...typedItems
                 );
 
-                /* ---------------------------------------------
-                   TXT FILE
-                --------------------------------------------- */
+                /* -----------------------------------------
+                   TXT ATTACHMENT
+                ----------------------------------------- */
 
                 if (
                     message.attachments.size > 0
@@ -424,6 +496,7 @@ client.on(
                                 {
                                     responseType:
                                         "text",
+
                                     timeout:
                                         15000
                                 }
@@ -431,7 +504,7 @@ client.on(
 
                         const fileItems =
                             String(
-                                response.data
+                                response.data || ""
                             )
                                 .split(/\r?\n/)
                                 .map(line =>
@@ -449,7 +522,7 @@ client.on(
 
                         console.error(
                             "[TXT ERROR]",
-                            error.message
+                            error?.message || error
                         );
 
                         await message.reply(
@@ -460,9 +533,9 @@ client.on(
                     }
                 }
 
-                /* ---------------------------------------------
-                   NOTHING TO ADD
-                --------------------------------------------- */
+                /* -----------------------------------------
+                   NOTHING PROVIDED
+                ----------------------------------------- */
 
                 if (
                     items.length === 0
@@ -476,9 +549,9 @@ client.on(
                     return;
                 }
 
-                /* ---------------------------------------------
+                /* -----------------------------------------
                    REMOVE DUPLICATES
-                --------------------------------------------- */
+                ----------------------------------------- */
 
                 items =
                     [...new Set(items)];
@@ -487,9 +560,9 @@ client.on(
                 let duplicates = 0;
                 let failed = 0;
 
-                /* ---------------------------------------------
+                /* -----------------------------------------
                    ADD ITEMS
-                --------------------------------------------- */
+                ----------------------------------------- */
 
                 for (
                     const item of items
@@ -498,20 +571,29 @@ client.on(
                     try {
 
                         const response =
-                            await axios.post(
-                                `${API_URL}/api/stock/add`,
-                                {
+                            await axios({
+                                method: "POST",
+
+                                url:
+                                    `${API_URL}/api/stock/add`,
+
+                                data: {
                                     item
                                 },
-                                {
-                                    timeout:
-                                        15000,
-                                    headers:
-                                        adminHeaders()
-                                }
-                            );
+
+                                headers:
+                                    adminHeaders(),
+
+                                timeout:
+                                    15000,
+
+                                validateStatus:
+                                    () => true
+                            });
 
                         if (
+                            response.status >= 200 &&
+                            response.status < 300 &&
                             response.data?.success
                         ) {
 
@@ -528,6 +610,12 @@ client.on(
                         } else {
 
                             failed++;
+
+                            console.error(
+                                "[ADD FAILED]",
+                                response.status,
+                                response.data
+                            );
                         }
 
                     } catch (error) {
@@ -536,15 +624,14 @@ client.on(
 
                         console.error(
                             "[ADD ERROR]",
-                            error.response?.data ||
-                            error.message
+                            error?.message || error
                         );
                     }
                 }
 
-                /* ---------------------------------------------
-                   TOTAL STOCK
-                --------------------------------------------- */
+                /* -----------------------------------------
+                   GET TOTAL STOCK
+                ----------------------------------------- */
 
                 let totalStock =
                     "Unknown";
@@ -552,15 +639,21 @@ client.on(
                 try {
 
                     const response =
-                        await axios.get(
-                            `${API_URL}/api/admin/stock`,
-                            {
-                                timeout:
-                                    10000,
-                                headers:
-                                    adminHeaders()
-                            }
-                        );
+                        await axios({
+                            method: "GET",
+
+                            url:
+                                `${API_URL}/api/admin/stock`,
+
+                            headers:
+                                adminHeaders(),
+
+                            timeout:
+                                10000,
+
+                            validateStatus:
+                                () => true
+                        });
 
                     if (
                         typeof response.data?.count ===
@@ -575,14 +668,13 @@ client.on(
 
                     console.error(
                         "[STOCK COUNT ERROR]",
-                        error.response?.data ||
-                        error.message
+                        error?.message || error
                     );
                 }
 
-                /* ---------------------------------------------
+                /* -----------------------------------------
                    RESULT
-                --------------------------------------------- */
+                ----------------------------------------- */
 
                 let result =
                     `📦 **Stock Updated**\n\n` +
@@ -642,349 +734,14 @@ process.on(
 );
 
 /* =========================================================
-   GATEWAY + TOKEN TEST
-========================================================= */
-
-async function testDiscordGateway() {
-
-    return new Promise(resolve => {
-
-        console.log("");
-        console.log("========================================");
-        console.log("TESTING DISCORD GATEWAY");
-        console.log("========================================");
-
-        const socket =
-            new WebSocket(
-                "wss://gateway.discord.gg/?v=10&encoding=json"
-            );
-
-        let finished = false;
-
-        let heartbeatTimer = null;
-
-        const timeout =
-            setTimeout(() => {
-
-                if (finished) {
-                    return;
-                }
-
-                finished = true;
-
-                if (heartbeatTimer) {
-                    clearInterval(
-                        heartbeatTimer
-                    );
-                }
-
-                console.error(
-                    "❌ DISCORD GATEWAY TEST TIMED OUT"
-                );
-
-                try {
-                    socket.close();
-                } catch {}
-
-                resolve(false);
-
-            }, 15000);
-
-        function finish(result) {
-
-            if (finished) {
-                return;
-            }
-
-            finished = true;
-
-            clearTimeout(timeout);
-
-            if (heartbeatTimer) {
-                clearInterval(
-                    heartbeatTimer
-                );
-            }
-
-            try {
-                socket.close();
-            } catch {}
-
-            resolve(result);
-        }
-
-        socket.on("open", () => {
-
-            console.log(
-                "✅ Discord Gateway connection opened."
-            );
-        });
-
-        socket.on("message", data => {
-
-            try {
-
-                const payload =
-                    JSON.parse(
-                        data.toString()
-                    );
-
-                /*
-                 * Opcode 10 = HELLO
-                 */
-
-                if (payload.op === 10) {
-
-                    console.log(
-                        "✅ Discord Gateway HELLO received."
-                    );
-
-                    const interval =
-                        payload.d?.heartbeat_interval;
-
-                    /*
-                     * Opcode 2 = IDENTIFY
-                     */
-
-                    socket.send(
-                        JSON.stringify({
-                            op: 2,
-
-                            d: {
-                                token: TOKEN,
-
-                                intents:
-                                    GatewayIntentBits.Guilds |
-                                    GatewayIntentBits.GuildMessages |
-                                    GatewayIntentBits.MessageContent,
-
-                                properties: {
-                                    os: "linux",
-                                    browser: "novi",
-                                    device: "novi"
-                                }
-                            }
-                        })
-                    );
-
-                    console.log(
-                        "Bot identification sent."
-                    );
-
-                    /*
-                     * Heartbeat
-                     */
-
-                    if (interval) {
-
-                        heartbeatTimer =
-                            setInterval(() => {
-
-                                if (
-                                    socket.readyState ===
-                                    WebSocket.OPEN
-                                ) {
-
-                                    socket.send(
-                                        JSON.stringify({
-                                            op: 1,
-                                            d: null
-                                        })
-                                    );
-                                }
-
-                            }, interval);
-                    }
-
-                    return;
-                }
-
-                /*
-                 * Opcode 0 = DISPATCH
-                 */
-
-                if (
-                    payload.op === 0 &&
-                    payload.t === "READY"
-                ) {
-
-                    console.log("");
-                    console.log(
-                        "========================================"
-                    );
-                    console.log(
-                        "✅ BOT TOKEN IS VALID"
-                    );
-                    console.log(
-                        "========================================"
-                    );
-
-                    console.log(
-                        "Bot ID:",
-                        payload.d?.user?.id ||
-                        "Unknown"
-                    );
-
-                    console.log(
-                        "Bot:",
-                        payload.d?.user?.username ||
-                        "Unknown"
-                    );
-
-                    console.log(
-                        "Guilds:",
-                        payload.d?.guilds?.length ??
-                        "Unknown"
-                    );
-
-                    console.log(
-                        "========================================"
-                    );
-
-                    finish(true);
-
-                    return;
-                }
-
-                /*
-                 * Opcode 9 = INVALID SESSION
-                 */
-
-                if (payload.op === 9) {
-
-                    console.error("");
-                    console.error(
-                        "========================================"
-                    );
-                    console.error(
-                        "❌ DISCORD REJECTED THE BOT SESSION"
-                    );
-                    console.error(
-                        "========================================"
-                    );
-
-                    console.error(
-                        "Discord returned an invalid session."
-                    );
-
-                    console.error(
-                        "The bot token or session configuration may be invalid."
-                    );
-
-                    console.error(
-                        "========================================"
-                    );
-
-                    finish(false);
-
-                    return;
-                }
-
-                /*
-                 * Authentication / gateway error
-                 */
-
-                if (
-                    payload.op === 0 &&
-                    payload.t === "RESUMED"
-                ) {
-
-                    console.log(
-                        "Discord session resumed."
-                    );
-                }
-
-            } catch (error) {
-
-                console.error(
-                    "Gateway message error:",
-                    error.message
-                );
-            }
-        });
-
-        socket.on("error", error => {
-
-            console.error("");
-            console.error(
-                "❌ DISCORD GATEWAY ERROR:"
-            );
-
-            console.error(
-                error?.message ||
-                error
-            );
-
-            finish(false);
-        });
-
-        socket.on("close", (code, reason) => {
-
-            if (!finished) {
-
-                console.error("");
-                console.error(
-                    "========================================"
-                );
-                console.error(
-                    "❌ DISCORD GATEWAY CLOSED"
-                );
-                console.error(
-                    "========================================"
-                );
-
-                console.error(
-                    "Close code:",
-                    code
-                );
-
-                console.error(
-                    "Reason:",
-                    reason?.toString() ||
-                    "None"
-                );
-
-                console.error(
-                    "========================================"
-                );
-
-                finish(false);
-            }
-        });
-    });
-}
-
-/* =========================================================
-   START DISCORD
+   START BOT
 ========================================================= */
 
 async function startDiscord() {
 
-    const gatewayWorks =
-        await testDiscordGateway();
-
-    if (!gatewayWorks) {
-
-        console.error("");
-        console.error(
-            "❌ Discord bot startup stopped because the Gateway/token test failed."
-        );
-
-        /*
-         * Keep the web server alive so Render
-         * can still serve Novi.
-         */
-
-        return;
-    }
-
     console.log("");
     console.log(
-        "Starting Discord.js..."
-    );
-
-    console.log(
-        "Connecting Discord.js to Discord..."
+        "Connecting Discord.js..."
     );
 
     try {
@@ -992,7 +749,7 @@ async function startDiscord() {
         await client.login(TOKEN);
 
         console.log(
-            "Discord.js login request completed."
+            "✅ Discord login successful."
         );
 
     } catch (error) {
@@ -1001,29 +758,28 @@ async function startDiscord() {
         console.error(
             "========================================"
         );
+
         console.error(
-            "❌ DISCORD.JS LOGIN FAILED"
+            "❌ DISCORD LOGIN FAILED"
         );
+
         console.error(
             "========================================"
         );
 
         console.error(
             "Name:",
-            error?.name ||
-            "Unknown"
+            error?.name || "Unknown"
         );
 
         console.error(
             "Code:",
-            error?.code ||
-            "Unknown"
+            error?.code || "Unknown"
         );
 
         console.error(
             "Message:",
-            error?.message ||
-            error
+            error?.message || error
         );
 
         console.error(
@@ -1031,5 +787,9 @@ async function startDiscord() {
         );
     }
 }
+
+/* =========================================================
+   RUN
+========================================================= */
 
 startDiscord();
