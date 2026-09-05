@@ -25,6 +25,7 @@
       --purple-light: #b79aff;
       --purple-dark: #6d28d9;
       --green: #22c55e;
+      --red: #ef4444;
     }
 
     * {
@@ -39,6 +40,7 @@
     body {
       min-height: 100vh;
       color: var(--text);
+
       font-family:
         Inter,
         ui-sans-serif,
@@ -106,9 +108,12 @@
       left: 50%;
       top: 55%;
       transform: translate(-50%, -50%);
+
       background: rgba(124,58,237,.025);
+
       filter: blur(130px);
       border-radius: 50%;
+
       pointer-events: none;
     }
 
@@ -125,24 +130,29 @@
       display: none !important;
     }
 
-    /* =========================
+    /* =====================================================
        LOGIN PAGE
-    ========================= */
+    ===================================================== */
 
     #loginPage {
       min-height: 100vh;
+
       display: flex;
       align-items: center;
       justify-content: center;
+
       padding: 40px 20px;
+
       position: relative;
     }
 
     .login-wrapper {
       width: 100%;
       max-width: 430px;
+
       position: relative;
       z-index: 2;
+
       animation: loginEnter .65s ease both;
     }
 
@@ -160,16 +170,25 @@
 
     .login-wrapper::before {
       content: "";
+
       position: absolute;
+
       width: 350px;
       height: 350px;
+
       left: 50%;
       top: 60px;
+
       transform: translateX(-50%);
+
       background: rgba(124,58,237,.15);
+
       filter: blur(110px);
+
       border-radius: 50%;
+
       z-index: -1;
+
       pointer-events: none;
     }
 
@@ -181,6 +200,7 @@
     .brand-logo {
       width: 72px;
       height: 72px;
+
       margin: 0 auto 19px;
 
       display: flex;
@@ -190,8 +210,10 @@
       border-radius: 22px;
 
       color: white;
+
       font-size: 27px;
       font-weight: 900;
+
       letter-spacing: -2px;
 
       background:
@@ -209,24 +231,32 @@
         inset 0 1px 1px rgba(255,255,255,.4);
 
       position: relative;
+
       overflow: hidden;
     }
 
     .brand-logo::before {
       content: "";
+
       position: absolute;
+
       width: 150px;
       height: 35px;
+
       left: -45px;
       top: -10px;
+
       transform: rotate(-35deg);
+
       background: rgba(255,255,255,.18);
+
       filter: blur(7px);
     }
 
     .brand h1 {
       font-size: 38px;
       font-weight: 850;
+
       letter-spacing: -2px;
 
       background:
@@ -238,20 +268,25 @@
 
       -webkit-background-clip: text;
       background-clip: text;
+
       color: transparent;
     }
 
     .brand p {
       margin-top: 9px;
+
       color: var(--muted);
+
       font-size: 12px;
     }
 
     .login-card {
       position: relative;
+
       padding: 31px;
 
       border: 1px solid var(--border);
+
       border-radius: 24px;
 
       background:
@@ -273,10 +308,13 @@
 
     .login-card::before {
       content: "";
+
       position: absolute;
+
       top: 0;
       left: 15%;
       right: 15%;
+
       height: 1px;
 
       background:
@@ -297,14 +335,18 @@
 
     .login-title {
       color: #f8f8fb;
+
       font-size: 20px;
       font-weight: 780;
+
       letter-spacing: -.5px;
     }
 
     .login-description {
       margin-top: 8px;
+
       color: var(--muted);
+
       font-size: 12px;
       line-height: 1.7;
     }
@@ -315,25 +357,33 @@
 
     .input-label {
       display: block;
+
       margin-bottom: 9px;
+
       color: #9997a5;
+
       font-size: 10px;
       font-weight: 750;
+
       text-transform: uppercase;
+
       letter-spacing: .8px;
     }
 
     .key-input {
       width: 100%;
       height: 55px;
+
       padding: 0 16px;
 
       outline: none;
 
       border: 1px solid rgba(255,255,255,.075);
+
       border-radius: 13px;
 
       color: white;
+
       background: rgba(255,255,255,.035);
 
       font-size: 13px;
@@ -341,8 +391,7 @@
       transition:
         border-color .2s ease,
         background .2s ease,
-        box-shadow .2s ease,
-        transform .2s ease;
+        box-shadow .2s ease;
     }
 
     .key-input:hover {
@@ -351,6 +400,7 @@
 
     .key-input:focus {
       border-color: rgba(139,92,246,.7);
+
       background: rgba(139,92,246,.045);
 
       box-shadow:
@@ -364,9 +414,11 @@
     .unlock-button {
       width: 100%;
       height: 55px;
+
       margin-top: 12px;
 
       border: 0;
+
       border-radius: 13px;
 
       color: white;
@@ -394,6 +446,7 @@
 
     .unlock-button:hover {
       transform: translateY(-2px);
+
       filter: brightness(1.05);
 
       box-shadow:
@@ -402,13 +455,17 @@
 
     .unlock-button:disabled {
       opacity: .6;
+
       cursor: not-allowed;
+
       transform: none;
     }
 
     #verifyResult {
       margin-top: 13px;
+
       padding: 12px;
+
       border-radius: 11px;
 
       font-size: 11px;
@@ -419,33 +476,43 @@
 
     #verifyResult.error {
       display: block;
+
       color: #fca5a5;
+
       background: rgba(239,68,68,.055);
+
       border: 1px solid rgba(239,68,68,.13);
     }
 
     #verifyResult.success {
       display: block;
+
       color: #86efac;
+
       background: rgba(34,197,94,.055);
+
       border: 1px solid rgba(34,197,94,.13);
     }
 
     .server-status {
       display: flex;
+
       align-items: center;
       justify-content: center;
+
       gap: 8px;
 
       margin-top: 19px;
 
       color: #62616c;
+
       font-size: 10px;
     }
 
     .status-dot {
       width: 6px;
       height: 6px;
+
       border-radius: 50%;
 
       background: var(--green);
@@ -467,20 +534,24 @@
       }
     }
 
-    /* =========================
+    /* =====================================================
        DASHBOARD
-    ========================= */
+    ===================================================== */
 
     #dashboardPage {
       min-height: 100vh;
+
       padding: 22px 24px 60px;
+
       position: relative;
     }
 
     .dashboard-container {
       width: 100%;
       max-width: 1240px;
+
       margin: 0 auto;
+
       position: relative;
       z-index: 2;
     }
@@ -489,13 +560,16 @@
       height: 68px;
 
       display: flex;
+
       align-items: center;
       justify-content: space-between;
 
       padding: 0 10px 0 16px;
+
       margin-bottom: 55px;
 
       border: 1px solid rgba(255,255,255,.065);
+
       border-radius: 18px;
 
       background: rgba(9,9,13,.72);
@@ -514,9 +588,12 @@
       content: "";
 
       position: absolute;
+
       left: 22%;
       right: 22%;
+
       bottom: -1px;
+
       height: 1px;
 
       background:
@@ -530,12 +607,16 @@
 
     .topbar-brand {
       display: flex;
+
       align-items: center;
+
       gap: 12px;
 
       color: white;
+
       font-size: 15px;
       font-weight: 800;
+
       letter-spacing: -.3px;
     }
 
@@ -544,6 +625,7 @@
       height: 39px;
 
       display: flex;
+
       align-items: center;
       justify-content: center;
 
@@ -570,12 +652,15 @@
 
     .logout-button {
       height: 39px;
+
       padding: 0 16px;
 
       border: 1px solid rgba(255,255,255,.07);
+
       border-radius: 11px;
 
       color: #858390;
+
       background: rgba(255,255,255,.025);
 
       font-size: 10px;
@@ -586,14 +671,19 @@
 
     .logout-button:hover {
       color: white;
+
       border-color: rgba(255,255,255,.14);
+
       background: rgba(255,255,255,.055);
+
       transform: translateY(-1px);
     }
 
     .welcome {
       margin-bottom: 28px;
+
       position: relative;
+
       padding-left: 3px;
     }
 
@@ -601,20 +691,24 @@
       content: "SECURE CONTROL CENTER";
 
       display: block;
+
       margin-bottom: 10px;
 
       color: #9675e9;
 
       font-size: 9px;
       font-weight: 850;
+
       letter-spacing: 1.8px;
     }
 
     .welcome h2 {
       font-size: 43px;
+
       line-height: 1;
 
       font-weight: 850;
+
       letter-spacing: -2.2px;
 
       background:
@@ -626,28 +720,36 @@
 
       -webkit-background-clip: text;
       background-clip: text;
+
       color: transparent;
     }
 
     .welcome p {
       margin-top: 11px;
+
       color: #6e6c79;
+
       font-size: 12px;
     }
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+
+      grid-template-columns:
+        repeat(3, 1fr);
 
       gap: 14px;
+
       margin-bottom: 16px;
     }
 
     .stat-card {
       min-height: 145px;
+
       padding: 23px;
 
       border: 1px solid rgba(255,255,255,.065);
+
       border-radius: 18px;
 
       background:
@@ -658,6 +760,7 @@
         );
 
       position: relative;
+
       overflow: hidden;
 
       transition:
@@ -680,6 +783,7 @@
       border-radius: 50%;
 
       background: rgba(124,58,237,.14);
+
       filter: blur(45px);
     }
 
@@ -689,6 +793,7 @@
       position: absolute;
 
       top: 0;
+
       left: 20px;
       right: 20px;
 
@@ -722,6 +827,7 @@
       font-weight: 800;
 
       text-transform: uppercase;
+
       letter-spacing: 1px;
     }
 
@@ -731,9 +837,11 @@
       color: #f6f5f9;
 
       font-size: 31px;
+
       line-height: 1;
 
       font-weight: 850;
+
       letter-spacing: -1.3px;
     }
 
@@ -757,8 +865,13 @@
 
     #accountStatus {
       color: #86efac;
+
       font-size: 27px;
     }
+
+    /* =====================================================
+       MAIN INVENTORY CARD
+    ===================================================== */
 
     .main-card {
       position: relative;
@@ -766,6 +879,7 @@
       padding: 27px;
 
       border: 1px solid rgba(255,255,255,.07);
+
       border-radius: 21px;
 
       background:
@@ -780,6 +894,8 @@
         inset 0 1px 0 rgba(255,255,255,.035);
 
       overflow: hidden;
+
+      margin-bottom: 16px;
     }
 
     .main-card::before {
@@ -796,6 +912,7 @@
       transform: translateX(-50%);
 
       background: rgba(124,58,237,.12);
+
       filter: blur(60px);
 
       border-radius: 50%;
@@ -807,6 +924,7 @@
       position: absolute;
 
       top: 0;
+
       left: 12%;
       right: 12%;
 
@@ -823,35 +941,45 @@
 
     .card-header {
       display: flex;
+
       align-items: center;
       justify-content: space-between;
 
       gap: 25px;
+
       margin-bottom: 22px;
 
       position: relative;
+
       z-index: 1;
     }
 
     .card-header h3 {
       color: #f5f4f8;
+
       font-size: 18px;
       font-weight: 800;
+
       letter-spacing: -.45px;
     }
 
     .card-header p {
       margin-top: 6px;
+
       color: #6e6c78;
+
       font-size: 11px;
     }
 
     .generate-button {
       height: 46px;
+
       min-width: 165px;
+
       padding: 0 20px;
 
       border: 0;
+
       border-radius: 12px;
 
       color: white;
@@ -874,6 +1002,7 @@
       transition: .2s ease;
 
       position: relative;
+
       overflow: hidden;
     }
 
@@ -886,6 +1015,7 @@
       bottom: 0;
 
       left: -80%;
+
       width: 55%;
 
       transform: skewX(-20deg);
@@ -897,6 +1027,7 @@
 
     .generate-button:hover {
       transform: translateY(-2px);
+
       filter: brightness(1.06);
 
       box-shadow:
@@ -913,7 +1044,9 @@
 
     .generate-button:disabled {
       opacity: .55;
+
       cursor: not-allowed;
+
       transform: none;
     }
 
@@ -921,12 +1054,14 @@
       min-height: 145px;
 
       display: flex;
+
       align-items: center;
       justify-content: center;
 
       padding: 25px;
 
       border: 1px dashed rgba(255,255,255,.08);
+
       border-radius: 15px;
 
       color: #5e5d69;
@@ -939,9 +1074,11 @@
         );
 
       text-align: center;
+
       font-size: 11px;
 
       position: relative;
+
       overflow: hidden;
     }
 
@@ -949,6 +1086,7 @@
       content: "";
 
       position: absolute;
+
       inset: 0;
 
       background-image:
@@ -958,6 +1096,7 @@
         );
 
       background-size: 22px 22px;
+
       opacity: .08;
 
       pointer-events: none;
@@ -965,7 +1104,9 @@
 
     .inventory-result:has(.item-box) {
       border-style: solid;
-      border-color: rgba(139,92,246,.16);
+
+      border-color:
+        rgba(139,92,246,.16);
 
       background:
         linear-gradient(
@@ -977,13 +1118,18 @@
 
     .item-box {
       width: 100%;
+
       position: relative;
+
       z-index: 1;
     }
 
     .item-row {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+
+      grid-template-columns:
+        repeat(2, 1fr);
+
       gap: 11px;
     }
 
@@ -993,6 +1139,7 @@
       text-align: left;
 
       border: 1px solid rgba(255,255,255,.055);
+
       border-radius: 12px;
 
       background: rgba(255,255,255,.022);
@@ -1001,8 +1148,12 @@
     }
 
     .item-field:hover {
-      border-color: rgba(139,92,246,.2);
-      background: rgba(139,92,246,.035);
+      border-color:
+        rgba(139,92,246,.2);
+
+      background:
+        rgba(139,92,246,.035);
+
       transform: translateY(-1px);
     }
 
@@ -1017,6 +1168,7 @@
       font-weight: 800;
 
       text-transform: uppercase;
+
       letter-spacing: .9px;
     }
 
@@ -1033,8 +1185,371 @@
       line-height: 1.5;
     }
 
+    /* =====================================================
+       SAVE LOGIN BUTTON
+    ===================================================== */
+
+    .save-login-wrapper {
+      display: flex;
+
+      align-items: center;
+      justify-content: flex-end;
+
+      gap: 10px;
+
+      margin-top: 13px;
+
+      position: relative;
+
+      z-index: 2;
+    }
+
+    .save-login-button {
+      height: 42px;
+
+      padding: 0 17px;
+
+      display: inline-flex;
+
+      align-items: center;
+      justify-content: center;
+
+      gap: 8px;
+
+      border: 1px solid rgba(139,92,246,.2);
+
+      border-radius: 11px;
+
+      color: #d8cdfb;
+
+      background:
+        rgba(139,92,246,.07);
+
+      font-size: 10px;
+      font-weight: 800;
+
+      transition:
+        transform .2s ease,
+        background .2s ease,
+        border-color .2s ease,
+        box-shadow .2s ease;
+    }
+
+    .save-login-button:hover {
+      transform: translateY(-1px);
+
+      background:
+        rgba(139,92,246,.13);
+
+      border-color:
+        rgba(139,92,246,.4);
+
+      box-shadow:
+        0 10px 25px rgba(109,40,217,.16);
+    }
+
+    .save-login-button.saved {
+      color: #86efac;
+
+      border-color:
+        rgba(34,197,94,.2);
+
+      background:
+        rgba(34,197,94,.06);
+    }
+
+    .save-login-button:disabled {
+      opacity: .45;
+
+      cursor: not-allowed;
+
+      transform: none;
+    }
+
+    /* =====================================================
+       SAVED LOGINS
+    ===================================================== */
+
+    .saved-card {
+      position: relative;
+
+      padding: 27px;
+
+      border: 1px solid rgba(255,255,255,.07);
+
+      border-radius: 21px;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(17,17,23,.94),
+          rgba(8,8,12,.9)
+        );
+
+      box-shadow:
+        0 30px 90px rgba(0,0,0,.25),
+        inset 0 1px 0 rgba(255,255,255,.035);
+
+      overflow: hidden;
+    }
+
+    .saved-card::before {
+      content: "";
+
+      position: absolute;
+
+      width: 280px;
+      height: 170px;
+
+      top: -130px;
+      right: 10%;
+
+      background:
+        rgba(124,58,237,.1);
+
+      filter: blur(65px);
+
+      border-radius: 50%;
+    }
+
+    .saved-header {
+      display: flex;
+
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 20px;
+
+      margin-bottom: 18px;
+
+      position: relative;
+
+      z-index: 1;
+    }
+
+    .saved-title {
+      color: #f5f4f8;
+
+      font-size: 18px;
+      font-weight: 800;
+
+      letter-spacing: -.45px;
+    }
+
+    .saved-subtitle {
+      margin-top: 6px;
+
+      color: #6e6c78;
+
+      font-size: 11px;
+    }
+
+    .saved-count {
+      min-width: 31px;
+      height: 28px;
+
+      display: inline-flex;
+
+      align-items: center;
+      justify-content: center;
+
+      padding: 0 9px;
+
+      border-radius: 9px;
+
+      color: #c9b9f7;
+
+      background:
+        rgba(139,92,246,.08);
+
+      border: 1px solid
+        rgba(139,92,246,.13);
+
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .saved-empty {
+      min-height: 110px;
+
+      display: flex;
+
+      align-items: center;
+      justify-content: center;
+
+      padding: 25px;
+
+      border: 1px dashed
+        rgba(255,255,255,.075);
+
+      border-radius: 14px;
+
+      color: #5e5d69;
+
+      text-align: center;
+
+      font-size: 11px;
+
+      position: relative;
+
+      z-index: 1;
+    }
+
+    .saved-list {
+      display: grid;
+
+      gap: 10px;
+
+      position: relative;
+
+      z-index: 1;
+    }
+
+    .saved-login {
+      display: grid;
+
+      grid-template-columns:
+        minmax(0, 1fr)
+        auto;
+
+      gap: 12px;
+
+      padding: 14px;
+
+      border: 1px solid
+        rgba(255,255,255,.055);
+
+      border-radius: 13px;
+
+      background:
+        rgba(255,255,255,.018);
+
+      transition: .2s ease;
+    }
+
+    .saved-login:hover {
+      border-color:
+        rgba(139,92,246,.18);
+
+      background:
+        rgba(139,92,246,.025);
+    }
+
+    .saved-login-info {
+      min-width: 0;
+
+      display: grid;
+
+      gap: 8px;
+    }
+
+    .saved-field {
+      min-width: 0;
+    }
+
+    .saved-field-label {
+      display: block;
+
+      margin-bottom: 4px;
+
+      color: #5f5d6a;
+
+      font-size: 8px;
+      font-weight: 800;
+
+      text-transform: uppercase;
+
+      letter-spacing: .8px;
+    }
+
+    .saved-field-value {
+      display: block;
+
+      overflow: hidden;
+
+      text-overflow: ellipsis;
+
+      white-space: nowrap;
+
+      color: #dedbe6;
+
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .saved-login-actions {
+      display: flex;
+
+      align-items: center;
+
+      gap: 7px;
+    }
+
+    .copy-button,
+    .delete-button {
+      width: 36px;
+      height: 36px;
+
+      display: inline-flex;
+
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 9px;
+
+      font-size: 11px;
+      font-weight: 800;
+
+      transition: .2s ease;
+    }
+
+    .copy-button {
+      border: 1px solid
+        rgba(255,255,255,.07);
+
+      color: #aaa6b7;
+
+      background:
+        rgba(255,255,255,.025);
+    }
+
+    .copy-button:hover {
+      color: white;
+
+      background:
+        rgba(255,255,255,.06);
+
+      border-color:
+        rgba(255,255,255,.13);
+    }
+
+    .delete-button {
+      border: 1px solid
+        rgba(239,68,68,.09);
+
+      color: #a87373;
+
+      background:
+        rgba(239,68,68,.025);
+    }
+
+    .delete-button:hover {
+      color: #fca5a5;
+
+      background:
+        rgba(239,68,68,.07);
+
+      border-color:
+        rgba(239,68,68,.2);
+    }
+
+    /* =====================================================
+       MESSAGES
+    ===================================================== */
+
     .message {
       margin-top: 13px;
+
       padding: 12px 14px;
 
       border-radius: 11px;
@@ -1042,28 +1557,37 @@
       display: none;
 
       font-size: 10px;
+
       line-height: 1.5;
     }
 
     .message.error {
       display: block;
+
       color: #fca5a5;
 
-      background: rgba(239,68,68,.055);
-      border: 1px solid rgba(239,68,68,.12);
+      background:
+        rgba(239,68,68,.055);
+
+      border:
+        1px solid rgba(239,68,68,.12);
     }
 
     .message.success {
       display: block;
+
       color: #86efac;
 
-      background: rgba(34,197,94,.055);
-      border: 1px solid rgba(34,197,94,.12);
+      background:
+        rgba(34,197,94,.055);
+
+      border:
+        1px solid rgba(34,197,94,.12);
     }
 
-    /* =========================
+    /* =====================================================
        MOBILE
-    ========================= */
+    ===================================================== */
 
     @media (max-width: 700px) {
 
@@ -1078,7 +1602,9 @@
       .brand-logo {
         width: 61px;
         height: 61px;
+
         border-radius: 18px;
+
         margin-bottom: 16px;
       }
 
@@ -1088,6 +1614,7 @@
 
       .login-card {
         padding: 22px;
+
         border-radius: 20px;
       }
 
@@ -1097,13 +1624,16 @@
 
       .topbar {
         height: 61px;
+
         margin-bottom: 38px;
+
         border-radius: 15px;
       }
 
       .small-logo {
         width: 35px;
         height: 35px;
+
         border-radius: 10px;
       }
 
@@ -1113,6 +1643,7 @@
 
       .welcome h2 {
         font-size: 34px;
+
         letter-spacing: -1.7px;
       }
 
@@ -1122,27 +1653,34 @@
 
       .stats-grid {
         grid-template-columns: 1fr;
+
         gap: 9px;
       }
 
       .stat-card {
         min-height: 105px;
+
         padding: 19px;
       }
 
       .stat-value {
         margin-top: 13px;
+
         font-size: 27px;
       }
 
-      .main-card {
+      .main-card,
+      .saved-card {
         padding: 18px;
+
         border-radius: 17px;
       }
 
       .card-header {
         flex-direction: column;
+
         align-items: stretch;
+
         gap: 15px;
       }
 
@@ -1150,13 +1688,34 @@
         width: 100%;
       }
 
+      .save-login-wrapper {
+        justify-content: stretch;
+      }
+
+      .save-login-button {
+        width: 100%;
+      }
+
       .inventory-result {
         min-height: 115px;
+
         padding: 17px;
       }
 
       .item-row {
         grid-template-columns: 1fr;
+      }
+
+      .saved-header {
+        align-items: flex-start;
+      }
+
+      .saved-login {
+        grid-template-columns: 1fr;
+      }
+
+      .saved-login-actions {
+        justify-content: flex-end;
       }
     }
 
@@ -1178,11 +1737,13 @@
         line-height: 1.6;
       }
 
-      .main-card {
+      .main-card,
+      .saved-card {
         padding: 15px;
       }
 
-      .card-header h3 {
+      .card-header h3,
+      .saved-title {
         font-size: 16px;
       }
 
@@ -1195,9 +1756,9 @@
 
 <body>
 
-  <!-- =========================
-       LOGIN / HOME
-  ========================== -->
+  <!-- =====================================================
+       LOGIN
+  ====================================================== -->
 
   <section id="loginPage">
 
@@ -1278,9 +1839,9 @@
   </section>
 
 
-  <!-- =========================
+  <!-- =====================================================
        DASHBOARD
-  ========================== -->
+  ====================================================== -->
 
   <section
     id="dashboardPage"
@@ -1379,6 +1940,10 @@
       </div>
 
 
+      <!-- =================================================
+           INVENTORY
+      ================================================== -->
+
       <div class="main-card">
 
         <div class="card-header">
@@ -1414,9 +1979,70 @@
         </div>
 
 
+        <div class="save-login-wrapper">
+
+          <button
+            id="saveLoginButton"
+            class="save-login-button"
+            type="button"
+            disabled
+          >
+            <span>＋</span>
+            <span>Save Login</span>
+          </button>
+
+        </div>
+
+
         <div
           id="dashboardMessage"
           class="message"
+        ></div>
+
+      </div>
+
+
+      <!-- =================================================
+           SAVED LOGINS
+      ================================================== -->
+
+      <div class="saved-card">
+
+        <div class="saved-header">
+
+          <div>
+
+            <div class="saved-title">
+              Saved Logins
+            </div>
+
+            <div class="saved-subtitle">
+              Your saved inventory logins on this device.
+            </div>
+
+          </div>
+
+          <div
+            id="savedCount"
+            class="saved-count"
+          >
+            0
+          </div>
+
+        </div>
+
+
+        <div
+          id="savedLoginsEmpty"
+          class="saved-empty"
+        >
+          No saved logins yet.
+        </div>
+
+
+        <div
+          id="savedLoginsList"
+          class="saved-list hidden"
         ></div>
 
       </div>
@@ -1426,26 +2052,105 @@
   </section>
 
 
-  <!-- =========================
+  <!-- =====================================================
        JAVASCRIPT
-       FUNCTIONALITY UNCHANGED
-  ========================== -->
+  ====================================================== -->
 
   <script>
     "use strict";
 
-    const API_URL = "https://novi-1.onrender.com";
+    const API_URL =
+      "https://novi-1.onrender.com";
+
+
+    /* =====================================================
+       SESSION
+    ===================================================== */
 
     let sessionToken =
-      sessionStorage.getItem("noviSessionToken") || "";
+      sessionStorage.getItem(
+        "noviSessionToken"
+      ) || "";
 
     let currentKey = "";
 
     let currentDeviceId =
-      localStorage.getItem("noviDeviceId") || "";
+      localStorage.getItem(
+        "noviDeviceId"
+      ) || "";
 
     let unlocked = false;
 
+
+    /* =====================================================
+       SAVED LOGIN STORAGE
+    ===================================================== */
+
+    const SAVED_LOGINS_KEY =
+      "noviSavedLogins";
+
+
+    let currentGeneratedItem = null;
+
+
+    function getSavedLogins() {
+
+      try {
+
+        const saved =
+          localStorage.getItem(
+            SAVED_LOGINS_KEY
+          );
+
+        if (!saved) {
+          return [];
+        }
+
+        const parsed =
+          JSON.parse(saved);
+
+        return Array.isArray(parsed)
+          ? parsed
+          : [];
+
+      } catch (error) {
+
+        console.error(
+          "Saved logins read error:",
+          error
+        );
+
+        return [];
+      }
+    }
+
+
+    function saveSavedLogins(logins) {
+
+      try {
+
+        localStorage.setItem(
+          SAVED_LOGINS_KEY,
+          JSON.stringify(logins)
+        );
+
+        return true;
+
+      } catch (error) {
+
+        console.error(
+          "Saved logins save error:",
+          error
+        );
+
+        return false;
+      }
+    }
+
+
+    /* =====================================================
+       DEVICE ID
+    ===================================================== */
 
     function getDeviceId() {
 
@@ -1455,7 +2160,8 @@
 
       if (
         window.crypto &&
-        typeof window.crypto.randomUUID === "function"
+        typeof window.crypto.randomUUID ===
+          "function"
       ) {
 
         currentDeviceId =
@@ -1467,8 +2173,9 @@
           "novi-" +
           Date.now().toString(36) +
           "-" +
-          Math.random().toString(36).slice(2);
-
+          Math.random()
+            .toString(36)
+            .slice(2);
       }
 
       localStorage.setItem(
@@ -1480,42 +2187,94 @@
     }
 
 
+    /* =====================================================
+       ELEMENTS
+    ===================================================== */
+
     const loginPage =
-      document.getElementById("loginPage");
+      document.getElementById(
+        "loginPage"
+      );
 
     const dashboardPage =
-      document.getElementById("dashboardPage");
+      document.getElementById(
+        "dashboardPage"
+      );
 
     const keyInput =
-      document.getElementById("keyInput");
+      document.getElementById(
+        "keyInput"
+      );
 
     const unlockButton =
-      document.getElementById("unlockButton");
+      document.getElementById(
+        "unlockButton"
+      );
 
     const verifyResult =
-      document.getElementById("verifyResult");
+      document.getElementById(
+        "verifyResult"
+      );
 
     const logoutButton =
-      document.getElementById("logoutButton");
+      document.getElementById(
+        "logoutButton"
+      );
 
     const stockCount =
-      document.getElementById("stockCount");
+      document.getElementById(
+        "stockCount"
+      );
 
     const keyDuration =
-      document.getElementById("keyDuration");
+      document.getElementById(
+        "keyDuration"
+      );
 
     const accountStatus =
-      document.getElementById("accountStatus");
+      document.getElementById(
+        "accountStatus"
+      );
 
     const generateButton =
-      document.getElementById("generateButton");
+      document.getElementById(
+        "generateButton"
+      );
 
     const inventoryResult =
-      document.getElementById("inventoryResult");
+      document.getElementById(
+        "inventoryResult"
+      );
 
     const dashboardMessage =
-      document.getElementById("dashboardMessage");
+      document.getElementById(
+        "dashboardMessage"
+      );
 
+    const saveLoginButton =
+      document.getElementById(
+        "saveLoginButton"
+      );
+
+    const savedCount =
+      document.getElementById(
+        "savedCount"
+      );
+
+    const savedLoginsEmpty =
+      document.getElementById(
+        "savedLoginsEmpty"
+      );
+
+    const savedLoginsList =
+      document.getElementById(
+        "savedLoginsList"
+      );
+
+
+    /* =====================================================
+       MESSAGES
+    ===================================================== */
 
     function showVerifyMessage(
       message,
@@ -1527,7 +2286,9 @@
 
       verifyResult.className = "";
 
-      verifyResult.classList.add(type);
+      verifyResult.classList.add(
+        type
+      );
     }
 
 
@@ -1561,11 +2322,19 @@
     }
 
 
+    /* =====================================================
+       PAGE SWITCHING
+    ===================================================== */
+
     function showLogin() {
 
-      loginPage.classList.remove("hidden");
+      loginPage.classList.remove(
+        "hidden"
+      );
 
-      dashboardPage.classList.add("hidden");
+      dashboardPage.classList.add(
+        "hidden"
+      );
 
       unlocked = false;
     }
@@ -1573,11 +2342,17 @@
 
     function showDashboard() {
 
-      loginPage.classList.add("hidden");
+      loginPage.classList.add(
+        "hidden"
+      );
 
-      dashboardPage.classList.remove("hidden");
+      dashboardPage.classList.remove(
+        "hidden"
+      );
 
       unlocked = true;
+
+      renderSavedLogins();
     }
 
 
@@ -1597,18 +2372,26 @@
     }
 
 
+    /* =====================================================
+       AUTHENTICATED FETCH
+    ===================================================== */
+
     async function authenticatedFetch(
       endpoint,
       options = {}
     ) {
 
       if (!sessionToken) {
-        throw new Error("NO_SESSION");
+        throw new Error(
+          "NO_SESSION"
+        );
       }
 
       const headers = {
         ...(options.headers || {}),
-        "x-novi-session": sessionToken
+
+        "x-novi-session":
+          sessionToken
       };
 
       const response =
@@ -1637,6 +2420,10 @@
     }
 
 
+    /* =====================================================
+       UNLOCK
+    ===================================================== */
+
     async function unlock() {
 
       const key =
@@ -1664,7 +2451,8 @@
 
         const response =
           await fetch(
-            API_URL + "/api/verify",
+            API_URL +
+              "/api/verify",
             {
               method: "POST",
 
@@ -1676,10 +2464,13 @@
                   "application/json"
               },
 
-              body: JSON.stringify({
-                key: key,
-                deviceId: getDeviceId()
-              }),
+              body:
+                JSON.stringify({
+                  key: key,
+
+                  deviceId:
+                    getDeviceId()
+                }),
 
               cache: "no-store"
             }
@@ -1687,6 +2478,7 @@
 
 
         let result = {};
+
 
         const contentType =
           response.headers.get(
@@ -1821,6 +2613,10 @@
     }
 
 
+    /* =====================================================
+       DURATION
+    ===================================================== */
+
     function formatDuration(
       duration
     ) {
@@ -1828,10 +2624,15 @@
       const values = {
 
         "1d": "1 Day",
+
         "3d": "3 Days",
+
         "1week": "1 Week",
+
         "1month": "1 Month",
+
         "1year": "1 Year",
+
         "lifetime": "Lifetime"
 
       };
@@ -1843,6 +2644,10 @@
       );
     }
 
+
+    /* =====================================================
+       LOAD STOCK
+    ===================================================== */
 
     async function loadStock() {
 
@@ -1871,7 +2676,8 @@
 
 
         stockCount.textContent =
-          typeof result.count === "number"
+          typeof result.count ===
+          "number"
             ? result.count
             : "0";
 
@@ -1902,6 +2708,10 @@
     }
 
 
+    /* =====================================================
+       GENERATE INVENTORY
+    ===================================================== */
+
     async function generateInventory() {
 
       if (!sessionToken) {
@@ -1916,6 +2726,22 @@
 
       generateButton.textContent =
         "Generating...";
+
+
+      saveLoginButton.disabled = true;
+
+      saveLoginButton.classList.remove(
+        "saved"
+      );
+
+
+      saveLoginButton.innerHTML =
+        "<span>＋</span><span>Save Login</span>";
+
+
+      currentGeneratedItem =
+        null;
+
 
       clearDashboardMessage();
 
@@ -1936,7 +2762,8 @@
                   "application/json"
               },
 
-              body: JSON.stringify({})
+              body:
+                JSON.stringify({})
             }
           );
 
@@ -1969,6 +2796,10 @@
           result.item;
 
 
+        currentGeneratedItem =
+          item;
+
+
         if (!item) {
 
           inventoryResult.innerHTML =
@@ -1976,7 +2807,18 @@
 
         } else {
 
-          renderInventoryItem(item);
+          renderInventoryItem(
+            item
+          );
+
+
+          if (
+            isSaveableLogin(item)
+          ) {
+
+            saveLoginButton.disabled =
+              false;
+          }
         }
 
 
@@ -2032,12 +2874,221 @@
     }
 
 
+    /* =====================================================
+       DETECT EMAIL/PASSWORD
+    ===================================================== */
+
+    function getLoginCredentials(
+      item
+    ) {
+
+      if (
+        !item ||
+        typeof item !== "object"
+      ) {
+
+        return null;
+      }
+
+
+      const emailKeys = [
+        "email",
+        "username",
+        "user",
+        "login"
+      ];
+
+
+      const passwordKeys = [
+        "password",
+        "pass",
+        "pwd"
+      ];
+
+
+      let email = "";
+
+      let password = "";
+
+
+      for (
+        const key of emailKeys
+      ) {
+
+        if (
+          item[key] !== undefined &&
+          item[key] !== null
+        ) {
+
+          email =
+            String(item[key]).trim();
+
+          if (email) {
+            break;
+          }
+        }
+      }
+
+
+      for (
+        const key of passwordKeys
+      ) {
+
+        if (
+          item[key] !== undefined &&
+          item[key] !== null
+        ) {
+
+          password =
+            String(item[key]);
+
+          if (password) {
+            break;
+          }
+        }
+      }
+
+
+      if (
+        email &&
+        password
+      ) {
+
+        return {
+          email,
+          password
+        };
+      }
+
+
+      return null;
+    }
+
+
+    function parseStringLogin(
+      value
+    ) {
+
+      if (
+        typeof value !==
+        "string"
+      ) {
+
+        return null;
+      }
+
+
+      const text =
+        value.trim();
+
+
+      if (!text) {
+        return null;
+      }
+
+
+      const separators = [
+        ":",
+        "|",
+        ";"
+      ];
+
+
+      for (
+        const separator of separators
+      ) {
+
+        const index =
+          text.indexOf(
+            separator
+          );
+
+
+        if (index > 0) {
+
+          const email =
+            text
+              .slice(0, index)
+              .trim();
+
+
+          const password =
+            text
+              .slice(index + 1)
+              .trim();
+
+
+          if (
+            email &&
+            password
+          ) {
+
+            return {
+              email,
+              password
+            };
+          }
+        }
+      }
+
+
+      return null;
+    }
+
+
+    function getCredentialsFromItem(
+      item
+    ) {
+
+      const objectLogin =
+        getLoginCredentials(
+          item
+        );
+
+
+      if (objectLogin) {
+        return objectLogin;
+      }
+
+
+      if (
+        typeof item ===
+        "string"
+      ) {
+
+        return parseStringLogin(
+          item
+        );
+      }
+
+
+      return null;
+    }
+
+
+    function isSaveableLogin(
+      item
+    ) {
+
+      return Boolean(
+        getCredentialsFromItem(
+          item
+        )
+      );
+    }
+
+
+    /* =====================================================
+       RENDER INVENTORY
+    ===================================================== */
+
     function renderInventoryItem(
       item
     ) {
 
       if (
-        typeof item !== "object" ||
+        typeof item !==
+          "object" ||
         item === null
       ) {
 
@@ -2095,26 +3146,454 @@
                 <strong>${escapeHtml(String(displayValue))}</strong>
               </div>
             `;
-
           }
         ).join("");
 
 
       inventoryResult.innerHTML = `
         <div class="item-box">
+
           <div class="item-row">
             ${fields}
           </div>
+
         </div>
       `;
     }
 
 
+    /* =====================================================
+       SAVE CURRENT LOGIN
+    ===================================================== */
+
+    function saveCurrentLogin() {
+
+      if (
+        !currentGeneratedItem
+      ) {
+
+        showDashboardMessage(
+          "Generate a login first."
+        );
+
+        return;
+      }
+
+
+      const credentials =
+        getCredentialsFromItem(
+          currentGeneratedItem
+        );
+
+
+      if (!credentials) {
+
+        showDashboardMessage(
+          "This inventory item does not contain an email and password."
+        );
+
+        return;
+      }
+
+
+      const saved =
+        getSavedLogins();
+
+
+      const duplicate =
+        saved.some(
+          item =>
+            item.email ===
+              credentials.email &&
+            item.password ===
+              credentials.password
+        );
+
+
+      if (duplicate) {
+
+        showDashboardMessage(
+          "This login is already saved.",
+          "success"
+        );
+
+        markLoginSaved();
+
+        return;
+      }
+
+
+      saved.unshift({
+        id:
+          Date.now().toString(36) +
+          "-" +
+          Math.random()
+            .toString(36)
+            .slice(2),
+
+        email:
+          credentials.email,
+
+        password:
+          credentials.password,
+
+        savedAt:
+          new Date().toISOString()
+      });
+
+
+      if (
+        !saveSavedLogins(saved)
+      ) {
+
+        showDashboardMessage(
+          "Could not save this login."
+        );
+
+        return;
+      }
+
+
+      renderSavedLogins();
+
+      markLoginSaved();
+
+
+      showDashboardMessage(
+        "Login saved successfully.",
+        "success"
+      );
+    }
+
+
+    function markLoginSaved() {
+
+      saveLoginButton.disabled =
+        true;
+
+      saveLoginButton.classList.add(
+        "saved"
+      );
+
+      saveLoginButton.innerHTML =
+        "<span>✓</span><span>Saved</span>";
+    }
+
+
+    /* =====================================================
+       RENDER SAVED LOGINS
+    ===================================================== */
+
+    function renderSavedLogins() {
+
+      const saved =
+        getSavedLogins();
+
+
+      savedCount.textContent =
+        String(saved.length);
+
+
+      if (!saved.length) {
+
+        savedLoginsEmpty.classList.remove(
+          "hidden"
+        );
+
+        savedLoginsList.classList.add(
+          "hidden"
+        );
+
+        savedLoginsList.innerHTML =
+          "";
+
+        return;
+      }
+
+
+      savedLoginsEmpty.classList.add(
+        "hidden"
+      );
+
+      savedLoginsList.classList.remove(
+        "hidden"
+      );
+
+
+      savedLoginsList.innerHTML =
+        saved
+          .map(
+            (item, index) => {
+
+              const email =
+                escapeHtml(
+                  String(
+                    item.email ||
+                    ""
+                  )
+                );
+
+
+              const password =
+                escapeHtml(
+                  String(
+                    item.password ||
+                    ""
+                  )
+                );
+
+
+              return `
+                <div
+                  class="saved-login"
+                  data-index="${index}"
+                >
+
+                  <div class="saved-login-info">
+
+                    <div class="saved-field">
+
+                      <span class="saved-field-label">
+                        Email
+                      </span>
+
+                      <strong class="saved-field-value">
+                        ${email}
+                      </strong>
+
+                    </div>
+
+                    <div class="saved-field">
+
+                      <span class="saved-field-label">
+                        Password
+                      </span>
+
+                      <strong class="saved-field-value">
+                        ${password}
+                      </strong>
+
+                    </div>
+
+                  </div>
+
+
+                  <div class="saved-login-actions">
+
+                    <button
+                      class="copy-button"
+                      type="button"
+                      data-action="copy-email"
+                      data-index="${index}"
+                      title="Copy email"
+                    >
+                      E
+                    </button>
+
+                    <button
+                      class="copy-button"
+                      type="button"
+                      data-action="copy-password"
+                      data-index="${index}"
+                      title="Copy password"
+                    >
+                      P
+                    </button>
+
+                    <button
+                      class="delete-button"
+                      type="button"
+                      data-action="delete"
+                      data-index="${index}"
+                      title="Delete login"
+                    >
+                      ×
+                    </button>
+
+                  </div>
+
+                </div>
+              `;
+            }
+          )
+          .join("");
+    }
+
+
+    /* =====================================================
+       COPY SAVED LOGIN
+    ===================================================== */
+
+    async function copySavedLogin(
+      index,
+      type
+    ) {
+
+      const saved =
+        getSavedLogins();
+
+
+      const item =
+        saved[index];
+
+
+      if (!item) {
+        return;
+      }
+
+
+      const value =
+        type === "email"
+          ? item.email
+          : item.password;
+
+
+      try {
+
+        await navigator.clipboard.writeText(
+          String(value || "")
+        );
+
+
+        showDashboardMessage(
+          type === "email"
+            ? "Email copied."
+            : "Password copied.",
+          "success"
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Clipboard error:",
+          error
+        );
+
+
+        showDashboardMessage(
+          "Could not copy to clipboard."
+        );
+      }
+    }
+
+
+    /* =====================================================
+       DELETE SAVED LOGIN
+    ===================================================== */
+
+    function deleteSavedLogin(
+      index
+    ) {
+
+      const saved =
+        getSavedLogins();
+
+
+      if (!saved[index]) {
+        return;
+      }
+
+
+      saved.splice(
+        index,
+        1
+      );
+
+
+      saveSavedLogins(
+        saved
+      );
+
+
+      renderSavedLogins();
+
+
+      showDashboardMessage(
+        "Saved login removed.",
+        "success"
+      );
+    }
+
+
+    /* =====================================================
+       SAVED LOGIN BUTTON EVENTS
+    ===================================================== */
+
+    savedLoginsList.addEventListener(
+      "click",
+      function(event) {
+
+        const button =
+          event.target.closest(
+            "button"
+          );
+
+
+        if (!button) {
+          return;
+        }
+
+
+        const index =
+          Number(
+            button.dataset.index
+          );
+
+
+        const action =
+          button.dataset.action;
+
+
+        if (
+          action ===
+          "copy-email"
+        ) {
+
+          copySavedLogin(
+            index,
+            "email"
+          );
+
+          return;
+        }
+
+
+        if (
+          action ===
+          "copy-password"
+        ) {
+
+          copySavedLogin(
+            index,
+            "password"
+          );
+
+          return;
+        }
+
+
+        if (
+          action ===
+          "delete"
+        ) {
+
+          deleteSavedLogin(
+            index
+          );
+        }
+      }
+    );
+
+
+    /* =====================================================
+       ESCAPE HTML
+    ===================================================== */
+
     function escapeHtml(
       value
     ) {
 
-      return value
+      return String(value)
         .replace(
           /&/g,
           "&amp;"
@@ -2138,6 +3617,10 @@
     }
 
 
+    /* =====================================================
+       LOGOUT
+    ===================================================== */
+
     async function logout() {
 
       try {
@@ -2145,7 +3628,8 @@
         if (sessionToken) {
 
           await fetch(
-            API_URL + "/api/logout",
+            API_URL +
+              "/api/logout",
             {
               method: "POST",
 
@@ -2178,9 +3662,26 @@
           'Click "Generate Item" to retrieve inventory.';
 
         clearDashboardMessage();
+
+        currentGeneratedItem =
+          null;
+
+        saveLoginButton.disabled =
+          true;
+
+        saveLoginButton.classList.remove(
+          "saved"
+        );
+
+        saveLoginButton.innerHTML =
+          "<span>＋</span><span>Save Login</span>";
       }
     }
 
+
+    /* =====================================================
+       VERIFY CURRENT SESSION
+    ===================================================== */
 
     async function verifyCurrentSession() {
 
@@ -2196,7 +3697,8 @@
 
         const response =
           await fetch(
-            API_URL + "/api/stock",
+            API_URL +
+              "/api/stock",
             {
               method: "GET",
 
@@ -2237,7 +3739,8 @@
 
 
         stockCount.textContent =
-          typeof result.count === "number"
+          typeof result.count ===
+          "number"
             ? result.count
             : "0";
 
@@ -2259,6 +3762,10 @@
     }
 
 
+    /* =====================================================
+       EVENT LISTENERS
+    ===================================================== */
+
     unlockButton.addEventListener(
       "click",
       unlock
@@ -2270,7 +3777,8 @@
       function(event) {
 
         if (
-          event.key === "Enter"
+          event.key ===
+          "Enter"
         ) {
 
           unlock();
@@ -2291,7 +3799,19 @@
     );
 
 
+    saveLoginButton.addEventListener(
+      "click",
+      saveCurrentLogin
+    );
+
+
+    /* =====================================================
+       START
+    ===================================================== */
+
     getDeviceId();
+
+    renderSavedLogins();
 
     verifyCurrentSession();
 
