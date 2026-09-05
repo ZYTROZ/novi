@@ -246,7 +246,7 @@ function normalizeDuration(input) {
 let stockCreatedAtType = "timestamp";
 
 // ============================================================
-// STOCK TABLE CLEANUP
+// STOCK TABLE
 // ============================================================
 
 async function initializeStockTable() {
@@ -758,7 +758,7 @@ function hasAllowedDiscordRole(message) {
 }
 
 async function denyDiscordCommand(message) {
-  return message.reply(
+  return message.channel.send(
     "❌ You don't have permission to use this command."
   );
 }
@@ -796,7 +796,7 @@ async function handleGen(
     amount < 1 ||
     amount > 100
   ) {
-    return message.reply(
+    return message.channel.send(
       "❌ Amount must be between 1 and 100."
     );
   }
@@ -807,7 +807,7 @@ async function handleGen(
     );
 
   if (!duration) {
-    return message.reply(
+    return message.channel.send(
       "❌ Valid durations: `1d`, `3d`, `1w`, `1mo`, `lifetime`"
     );
   }
@@ -864,7 +864,7 @@ async function handleGen(
     generated.push(key);
   }
 
-  return message.reply(
+  return message.channel.send(
     `✅ Generated **${generated.length}** ${duration} key(s):\n` +
     generated
       .map(
@@ -998,7 +998,7 @@ async function handleAdd(
           error
         );
 
-        return message.reply(
+        return message.channel.send(
           `❌ Could not read \`${attachment.name || "file"}\`.`
         );
       }
@@ -1010,7 +1010,7 @@ async function handleAdd(
   // ----------------------------------------------------------
 
   if (items.length === 0) {
-    return message.reply(
+    return message.channel.send(
       "❌ Usage:\n" +
       "`!add ITEM-123`\n" +
       "or attach a `.txt` file to `!add`."
@@ -1022,7 +1022,7 @@ async function handleAdd(
   // ----------------------------------------------------------
 
   if (items.length > 5000) {
-    return message.reply(
+    return message.channel.send(
       "❌ Too many stock IDs. Maximum: **5000**."
     );
   }
@@ -1085,6 +1085,7 @@ async function handleAdd(
       }
 
       added++;
+
     } catch (error) {
       console.error(
         "❌ Failed to insert stock ID:",
@@ -1108,7 +1109,14 @@ async function handleAdd(
       countResult.rows[0].count
     );
 
-  return message.reply(
+  // ----------------------------------------------------------
+  // FIX:
+  // Use channel.send() instead of message.reply()
+  // so Discord doesn't try to reference the original
+  // command message.
+  // ----------------------------------------------------------
+
+  return message.channel.send(
     `✅ Added **${added}** stock item(s).\n` +
     `📦 Current stock: **${count}**`
   );
@@ -1138,7 +1146,7 @@ async function handleStock(message) {
       result.rows[0].count
     );
 
-  return message.reply(
+  return message.channel.send(
     `📦 Novi stock: **${count}**`
   );
 }
@@ -1162,7 +1170,7 @@ async function handleClearStock(message) {
       RETURNING id
     `);
 
-  return message.reply(
+  return message.channel.send(
     `🗑️ Cleared **${result.rowCount}** stock item(s).`
   );
 }
@@ -1180,7 +1188,7 @@ async function handleHelp(message) {
     );
   }
 
-  return message.reply(
+  return message.channel.send(
     [
       "**Novi Commands**",
       "",
@@ -1286,6 +1294,7 @@ discordClient.on(
 
         return;
       }
+
     } catch (error) {
       console.error(
         "❌ Discord command error:",
@@ -1293,7 +1302,7 @@ discordClient.on(
       );
 
       try {
-        await message.reply(
+        await message.channel.send(
           "❌ Something went wrong while running that command."
         );
       } catch {}
@@ -1385,12 +1394,15 @@ async function start() {
         );
       }
     );
+
   } catch (error) {
     console.error(
       "❌ FAILED TO START NOVI"
     );
 
-    console.error(error);
+    console.error(
+      error
+    );
 
     process.exit(1);
   }
