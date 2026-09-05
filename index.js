@@ -58,7 +58,12 @@ const pool = new Pool({
 // ============================================================
 
 app.use(cors());
-app.use(express.json({ limit: "2mb" }));
+
+app.use(
+  express.json({
+    limit: "2mb",
+  })
+);
 
 // ============================================================
 // SESSION SYSTEM
@@ -67,24 +72,29 @@ app.use(express.json({ limit: "2mb" }));
 const sessions = new Map();
 
 function createSession(keyId, expiresAt) {
-  const token = crypto.randomBytes(32).toString("hex");
+  const token = crypto
+    .randomBytes(32)
+    .toString("hex");
 
   sessions.set(token, {
     keyId,
-    expiresAt: expiresAt ?? null,
+    expiresAt:
+      expiresAt ?? null,
   });
 
   return token;
 }
 
 function getSession(req) {
-  const token = req.headers["x-novi-session"];
+  const token =
+    req.headers["x-novi-session"];
 
   if (!token) {
     return null;
   }
 
-  const session = sessions.get(token);
+  const session =
+    sessions.get(token);
 
   if (!session) {
     return null;
@@ -92,7 +102,8 @@ function getSession(req) {
 
   if (
     session.expiresAt !== null &&
-    Date.now() >= Number(session.expiresAt)
+    Date.now() >=
+      Number(session.expiresAt)
   ) {
     sessions.delete(token);
     return null;
@@ -104,17 +115,24 @@ function getSession(req) {
   };
 }
 
-function requireSession(req, res, next) {
-  const session = getSession(req);
+function requireSession(
+  req,
+  res,
+  next
+) {
+  const session =
+    getSession(req);
 
   if (!session) {
     return res.status(401).json({
       success: false,
-      error: "Your session has expired or is invalid.",
+      error:
+        "Your session has expired or is invalid.",
     });
   }
 
   req.noviSession = session;
+
   next();
 }
 
@@ -123,37 +141,59 @@ function requireSession(req, res, next) {
 // ============================================================
 
 function generateKey() {
-  const random = crypto
-    .randomBytes(12)
-    .toString("hex")
-    .toUpperCase();
+  const random =
+    crypto
+      .randomBytes(12)
+      .toString("hex")
+      .toUpperCase();
 
-  return `NOVI-${random.slice(0, 4)}-${random.slice(
+  return `NOVI-${random.slice(
+    0,
+    4
+  )}-${random.slice(
     4,
     8
-  )}-${random.slice(8, 12)}-${random.slice(
+  )}-${random.slice(
+    8,
+    12
+  )}-${random.slice(
     12,
     16
-  )}-${random.slice(16, 24)}`;
+  )}-${random.slice(
+    16,
+    24
+  )}`;
 }
 
 function normalizeLogin(item) {
-  if (item === null || item === undefined) {
+  if (
+    item === null ||
+    item === undefined
+  ) {
     return {
       email: "",
       password: "",
     };
   }
 
-  if (typeof item === "object") {
+  if (
+    typeof item === "object"
+  ) {
     return {
-      email: String(item.email || ""),
-      password: String(item.password || ""),
+      email: String(
+        item.email || ""
+      ),
+      password: String(
+        item.password || ""
+      ),
     };
   }
 
-  const value = String(item);
-  const separator = value.indexOf(":");
+  const value =
+    String(item);
+
+  const separator =
+    value.indexOf(":");
 
   if (separator === -1) {
     return {
@@ -163,12 +203,19 @@ function normalizeLogin(item) {
   }
 
   return {
-    email: value.slice(0, separator),
-    password: value.slice(separator + 1),
+    email: value.slice(
+      0,
+      separator
+    ),
+    password: value.slice(
+      separator + 1
+    ),
   };
 }
 
-function isExpired(expiresAt) {
+function isExpired(
+  expiresAt
+) {
   if (
     expiresAt === null ||
     expiresAt === undefined
@@ -176,13 +223,18 @@ function isExpired(expiresAt) {
     return false;
   }
 
-  const timestamp = Number(expiresAt);
+  const timestamp =
+    Number(expiresAt);
 
-  if (!Number.isFinite(timestamp)) {
+  if (
+    !Number.isFinite(timestamp)
+  ) {
     return false;
   }
 
-  return Date.now() >= timestamp;
+  return (
+    Date.now() >= timestamp
+  );
 }
 
 // ============================================================
@@ -190,27 +242,57 @@ function isExpired(expiresAt) {
 // ============================================================
 
 const DURATION_MS = {
-  "1d": 24 * 60 * 60 * 1000,
-  "3d": 3 * 24 * 60 * 60 * 1000,
-  "1w": 7 * 24 * 60 * 60 * 1000,
-  "1mo": 30 * 24 * 60 * 60 * 1000,
-  "lifetime": null,
+  "1d":
+    24 *
+    60 *
+    60 *
+    1000,
+
+  "3d":
+    3 *
+    24 *
+    60 *
+    60 *
+    1000,
+
+  "1w":
+    7 *
+    24 *
+    60 *
+    60 *
+    1000,
+
+  "1mo":
+    30 *
+    24 *
+    60 *
+    60 *
+    1000,
+
+  lifetime: null,
 };
 
-function normalizeDuration(input) {
+function normalizeDuration(
+  input
+) {
   if (!input) {
     return null;
   }
 
-  const value = String(input)
-    .toLowerCase()
-    .trim();
+  const value =
+    String(input)
+      .toLowerCase()
+      .trim();
 
-  if (value === "1d") {
+  if (
+    value === "1d"
+  ) {
     return "1d";
   }
 
-  if (value === "3d") {
+  if (
+    value === "3d"
+  ) {
     return "3d";
   }
 
@@ -228,7 +310,9 @@ function normalizeDuration(input) {
     return "1mo";
   }
 
-  if (value === "lifetime") {
+  if (
+    value === "lifetime"
+  ) {
     return "lifetime";
   }
 
@@ -239,21 +323,20 @@ function normalizeDuration(input) {
 // DATABASE TYPE VARIABLES
 // ============================================================
 
-let stockCreatedAtType = "timestamp";
-let savedCreatedAtType = "timestamp";
+let stockCreatedAtType =
+  "timestamp";
+
+let savedCreatedAtType =
+  "timestamp";
 
 // ============================================================
-// DATABASE CLEANUP
+// CLEAN SAVED ITEMS TABLE
 // ============================================================
 
 async function cleanSavedLoginTable() {
   console.log(
     "🧹 Cleaning novi_saved_items..."
   );
-
-  // ----------------------------------------------------------
-  // Make sure the table exists.
-  // ----------------------------------------------------------
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS novi_saved_items (
@@ -264,59 +347,45 @@ async function cleanSavedLoginTable() {
     )
   `);
 
-  // ----------------------------------------------------------
-  // IMPORTANT:
-  //
-  // The old novi_saved_items table has leftover columns such as:
-  //
-  // stock_id
-  // device_id
-  // etc.
-  //
-  // Instead of guessing which old columns exist, we inspect the
-  // actual table and remove EVERY column that isn't needed.
-  //
-  // This leaves ONLY:
-  //
-  // id
-  // email
-  // password
-  // created_at
-  //
-  // This fixes future "null value in column X" errors caused by
-  // old NOT NULL columns.
-  // ----------------------------------------------------------
+  const allowedColumns =
+    new Set([
+      "id",
+      "email",
+      "password",
+      "created_at",
+    ]);
 
-  const allowedColumns = new Set([
-    "id",
-    "email",
-    "password",
-    "created_at",
-  ]);
-
-  const columnsResult = await pool.query(`
-    SELECT column_name
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'novi_saved_items'
-    ORDER BY ordinal_position
-  `);
+  const columnsResult =
+    await pool.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'novi_saved_items'
+      ORDER BY ordinal_position
+    `);
 
   const columnsToRemove =
     columnsResult.rows
-      .map(row => row.column_name)
+      .map(
+        row =>
+          row.column_name
+      )
       .filter(
         column =>
-          !allowedColumns.has(column)
+          !allowedColumns.has(
+            column
+          )
       );
 
   for (
-    const column of columnsToRemove
+    const column of
+      columnsToRemove
   ) {
-    // Column names come directly from PostgreSQL's
-    // information_schema, not user input.
     const safeColumn =
-      `"${column.replace(/"/g, '""')}"`;
+      `"${column.replace(
+        /"/g,
+        '""'
+      )}"`;
 
     console.log(
       `🧹 Removing old saved-login column: ${column}`
@@ -328,38 +397,21 @@ async function cleanSavedLoginTable() {
     `);
   }
 
-  // ----------------------------------------------------------
-  // Make sure email exists.
-  // ----------------------------------------------------------
-
   await pool.query(`
     ALTER TABLE novi_saved_items
     ADD COLUMN IF NOT EXISTS email TEXT
   `);
-
-  // ----------------------------------------------------------
-  // Make sure password exists.
-  // ----------------------------------------------------------
 
   await pool.query(`
     ALTER TABLE novi_saved_items
     ADD COLUMN IF NOT EXISTS password TEXT
   `);
 
-  // ----------------------------------------------------------
-  // Make sure created_at exists.
-  // ----------------------------------------------------------
-
   await pool.query(`
     ALTER TABLE novi_saved_items
     ADD COLUMN IF NOT EXISTS created_at
     TIMESTAMP WITH TIME ZONE DEFAULT NOW()
   `);
-
-  // ----------------------------------------------------------
-  // Remove NOT NULL constraints from email/password/created_at
-  // so old malformed rows cannot prevent inserts.
-  // ----------------------------------------------------------
 
   await pool.query(`
     ALTER TABLE novi_saved_items
@@ -372,37 +424,29 @@ async function cleanSavedLoginTable() {
   `);
 
   await pool.query(`
+    ALTER TABLE novi_saved_items
     ALTER COLUMN created_at DROP NOT NULL
-  `).catch(async () => {
-    // Some PostgreSQL versions/old schemas may require the
-    // table-qualified version.
-    await pool.query(`
-      ALTER TABLE novi_saved_items
-      ALTER COLUMN created_at DROP NOT NULL
-    `);
-  });
-
-  // ----------------------------------------------------------
-  // Show final table.
-  // ----------------------------------------------------------
-
-  const finalResult = await pool.query(`
-    SELECT
-      column_name,
-      data_type,
-      is_nullable
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'novi_saved_items'
-    ORDER BY ordinal_position
   `);
+
+  const finalResult =
+    await pool.query(`
+      SELECT
+        column_name,
+        data_type,
+        is_nullable
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'novi_saved_items'
+      ORDER BY ordinal_position
+    `);
 
   console.log(
     "📋 Final novi_saved_items structure:"
   );
 
   for (
-    const row of finalResult.rows
+    const row of
+      finalResult.rows
   ) {
     console.log(
       `   ${row.column_name} | ${row.data_type} | nullable=${row.is_nullable}`
@@ -419,16 +463,19 @@ async function cleanSavedLoginTable() {
 // ============================================================
 
 async function fixDurationColumn() {
-  const result = await pool.query(`
-    SELECT data_type
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'novi_keys'
-      AND column_name = 'duration'
-    LIMIT 1
-  `);
+  const result =
+    await pool.query(`
+      SELECT data_type
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'novi_keys'
+        AND column_name = 'duration'
+      LIMIT 1
+    `);
 
-  if (result.rows.length === 0) {
+  if (
+    result.rows.length === 0
+  ) {
     return;
   }
 
@@ -474,25 +521,27 @@ async function fixDurationColumn() {
 }
 
 // ============================================================
-// DETECT CREATED_AT TYPES
+// DETECT DATABASE TYPES
 // ============================================================
 
 async function detectDatabaseTypes() {
-  const result = await pool.query(`
-    SELECT
-      table_name,
-      data_type
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name IN (
-        'novi_stock_items',
-        'novi_saved_items'
-      )
-      AND column_name = 'created_at'
-  `);
+  const result =
+    await pool.query(`
+      SELECT
+        table_name,
+        data_type
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name IN (
+          'novi_stock_items',
+          'novi_saved_items'
+        )
+        AND column_name = 'created_at'
+    `);
 
   for (
-    const row of result.rows
+    const row of
+      result.rows
   ) {
     const type =
       row.data_type.includes(
@@ -505,14 +554,16 @@ async function detectDatabaseTypes() {
       row.table_name ===
       "novi_stock_items"
     ) {
-      stockCreatedAtType = type;
+      stockCreatedAtType =
+        type;
     }
 
     if (
       row.table_name ===
       "novi_saved_items"
     ) {
-      savedCreatedAtType = type;
+      savedCreatedAtType =
+        type;
     }
   }
 
@@ -581,7 +632,7 @@ async function initializeDatabase() {
   `);
 
   // ----------------------------------------------------------
-  // SAVED LOGINS
+  // SAVED ITEMS
   // ----------------------------------------------------------
 
   await cleanSavedLoginTable();
@@ -603,7 +654,7 @@ async function initializeDatabase() {
   `);
 
   // ----------------------------------------------------------
-  // FIX OLD DATA
+  // OLD DATA FIXES
   // ----------------------------------------------------------
 
   await fixDurationColumn();
@@ -635,7 +686,7 @@ app.get(
         "SELECT 1"
       );
 
-      res.json({
+      return res.json({
         success: true,
         ok: true,
         database: true,
@@ -646,7 +697,7 @@ app.get(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         ok: false,
         database: false,
@@ -722,7 +773,9 @@ app.post(
               keyRow.expires_at
             );
 
-      if (isExpired(expiresAt)) {
+      if (
+        isExpired(expiresAt)
+      ) {
         return res.status(403).json({
           success: false,
           error:
@@ -904,7 +957,7 @@ app.post(
       return res.status(500).json({
         success: false,
         error:
-          "Could not generate account.",
+          "Could not generate item.",
       });
     } finally {
       client.release();
@@ -913,7 +966,7 @@ app.post(
 );
 
 // ============================================================
-// GET SAVED LOGINS
+// GET SAVED ITEMS
 // ============================================================
 
 app.get(
@@ -934,33 +987,30 @@ app.get(
 
       return res.json({
         success: true,
-
         logins:
           result.rows,
-
         savedLogins:
           result.rows,
-
         items:
           result.rows,
       });
     } catch (error) {
       console.error(
-        "❌ GET saved logins:",
+        "❌ GET saved items:",
         error
       );
 
       return res.status(500).json({
         success: false,
         error:
-          "Could not load saved logins.",
+          "Could not load saved items.",
       });
     }
   }
 );
 
 // ============================================================
-// SAVE LOGIN
+// SAVE ITEM
 // ============================================================
 
 app.post(
@@ -978,10 +1028,6 @@ app.post(
           req.body?.password || ""
         );
 
-      console.log(
-        "📥 Save login request received."
-      );
-
       if (!email) {
         return res.status(400).json({
           success: false,
@@ -991,10 +1037,6 @@ app.post(
       }
 
       let result;
-
-      // --------------------------------------------------------
-      // Timestamp database
-      // --------------------------------------------------------
 
       if (
         savedCreatedAtType ===
@@ -1026,13 +1068,7 @@ app.post(
               password,
             ]
           );
-      }
-
-      // --------------------------------------------------------
-      // Bigint database
-      // --------------------------------------------------------
-
-      else {
+      } else {
         result =
           await pool.query(
             `
@@ -1062,21 +1098,19 @@ app.post(
           );
       }
 
-      const savedLogin =
+      const savedItem =
         result.rows[0];
 
       console.log(
-        `✅ Saved login #${savedLogin.id}`
+        `✅ Saved item #${savedItem.id}`
       );
 
       return res.json({
         success: true,
-
         login:
-          savedLogin,
-
+          savedItem,
         item:
-          savedLogin,
+          savedItem,
       });
     } catch (error) {
       console.error(
@@ -1084,7 +1118,7 @@ app.post(
       );
 
       console.error(
-        "❌ SAVE LOGIN FAILED"
+        "❌ SAVE ITEM FAILED"
       );
 
       console.error(
@@ -1113,17 +1147,16 @@ app.post(
 
       return res.status(500).json({
         success: false,
-
         error:
           error.message ||
-          "Could not save login.",
+          "Could not save item.",
       });
     }
   }
 );
 
 // ============================================================
-// GET ONE SAVED LOGIN
+// GET ONE SAVED ITEM
 // ============================================================
 
 app.get(
@@ -1167,7 +1200,7 @@ app.get(
         return res.status(404).json({
           success: false,
           error:
-            "Saved login not found.",
+            "Saved item not found.",
         });
       }
 
@@ -1180,21 +1213,21 @@ app.get(
       });
     } catch (error) {
       console.error(
-        "❌ GET saved login:",
+        "❌ GET saved item:",
         error
       );
 
       return res.status(500).json({
         success: false,
         error:
-          "Could not load saved login.",
+          "Could not load saved item.",
       });
     }
   }
 );
 
 // ============================================================
-// DELETE SAVED LOGIN
+// DELETE SAVED ITEM
 // ============================================================
 
 app.delete(
@@ -1233,7 +1266,7 @@ app.delete(
         return res.status(404).json({
           success: false,
           error:
-            "Saved login not found.",
+            "Saved item not found.",
         });
       }
 
@@ -1242,14 +1275,14 @@ app.delete(
       });
     } catch (error) {
       console.error(
-        "❌ DELETE saved login:",
+        "❌ DELETE saved item:",
         error
       );
 
       return res.status(500).json({
         success: false,
         error:
-          "Could not delete saved login.",
+          "Could not delete saved item.",
       });
     }
   }
@@ -1336,6 +1369,7 @@ async function handleGen(
   }
 
   let amount = 1;
+
   let durationInput =
     args[0];
 
@@ -1428,13 +1462,27 @@ async function handleGen(
 
   return message.reply(
     `✅ Generated **${generated.length}** ${duration} key(s):\n${generated
-      .map(key => `\`${key}\``)
+      .map(
+        key =>
+          `\`${key}\``
+      )
       .join("\n")}`
   );
 }
 
 // ============================================================
 // !add
+//
+// Supports:
+//
+// !add item
+//
+// OR
+//
+// !add
+// + attach .txt
+//
+// Each non-empty line in the TXT file becomes one stock item.
 // ============================================================
 
 async function handleAdd(
@@ -1451,16 +1499,144 @@ async function handleAdd(
     );
   }
 
-  if (!args.length) {
+  let items = [];
+
+  // ----------------------------------------------------------
+  // TEXT PROVIDED DIRECTLY
+  // ----------------------------------------------------------
+
+  if (
+    args &&
+    args.length > 0
+  ) {
+    const text =
+      args
+        .join(" ")
+        .trim();
+
+    if (text) {
+      items.push(text);
+    }
+  }
+
+  // ----------------------------------------------------------
+  // TXT ATTACHMENT
+  // ----------------------------------------------------------
+
+  if (
+    message.attachments &&
+    message.attachments.size > 0
+  ) {
+    for (
+      const attachment of
+        message.attachments.values()
+    ) {
+      const fileName =
+        String(
+          attachment.name || ""
+        ).toLowerCase();
+
+      const contentType =
+        String(
+          attachment.contentType ||
+            ""
+        ).toLowerCase();
+
+      const isTextFile =
+        fileName.endsWith(
+          ".txt"
+        ) ||
+        contentType.startsWith(
+          "text/"
+        );
+
+      if (!isTextFile) {
+        continue;
+      }
+
+      try {
+        console.log(
+          `📄 Downloading TXT attachment: ${attachment.name}`
+        );
+
+        const response =
+          await fetch(
+            attachment.url
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            `Download failed with HTTP ${response.status}`
+          );
+        }
+
+        const text =
+          await response.text();
+
+        const lines =
+          text
+            .split(/\r?\n/)
+            .map(
+              line =>
+                line.trim()
+            )
+            .filter(Boolean);
+
+        items.push(
+          ...lines
+        );
+
+        console.log(
+          `📄 Read ${lines.length} line(s) from ${attachment.name}`
+        );
+      } catch (error) {
+        console.error(
+          "❌ TXT attachment error:",
+          error
+        );
+
+        return message.reply(
+          `❌ Could not read \`${attachment.name || "file"}\`.`
+        );
+      }
+    }
+  }
+
+  // ----------------------------------------------------------
+  // NOTHING PROVIDED
+  // ----------------------------------------------------------
+
+  if (
+    items.length === 0
+  ) {
     return message.reply(
-      "❌ Usage: `!add email:password`"
+      "❌ Usage:\n" +
+      "`!add item`\n" +
+      "or attach a `.txt` file to `!add`."
     );
   }
+
+  // ----------------------------------------------------------
+  // SAFETY LIMIT
+  // ----------------------------------------------------------
+
+  if (
+    items.length > 5000
+  ) {
+    return message.reply(
+      "❌ The file contains too many items. Maximum: **5000**."
+    );
+  }
+
+  // ----------------------------------------------------------
+  // INSERT ITEMS
+  // ----------------------------------------------------------
 
   let added = 0;
 
   for (
-    const rawItem of args
+    const rawItem of
+      items
   ) {
     const stockId =
       String(rawItem).trim();
@@ -1512,6 +1688,10 @@ async function handleAdd(
     added++;
   }
 
+  // ----------------------------------------------------------
+  // UPDATED STOCK COUNT
+  // ----------------------------------------------------------
+
   const countResult =
     await pool.query(`
       SELECT COUNT(*)::INTEGER AS count
@@ -1524,7 +1704,8 @@ async function handleAdd(
     );
 
   return message.reply(
-    `✅ Added **${added}** stock item(s).\n📦 Current stock: **${count}**`
+    `✅ Added **${added}** item(s).\n` +
+    `📦 Current stock: **${count}**`
   );
 }
 
@@ -1594,8 +1775,10 @@ async function handleHelp(
       "`!gen 5 1mo` — Generate 5 one-month keys",
       "`!gen 5 lifetime` — Generate 5 lifetime keys",
       "",
-      "`!add email:password` — Add stock",
+      "`!add item` — Add one stock item",
+      "`!add + .txt` — Import TXT stock",
       "`!stock` — Check stock",
+      "`!help` — Show commands",
     ].join("\n")
   );
 }
@@ -1608,12 +1791,16 @@ discordClient.on(
   "messageCreate",
   async message => {
     try {
-      if (message.author.bot) {
+      if (
+        message.author.bot
+      ) {
         return;
       }
 
       if (
-        !message.content.startsWith("!")
+        !message.content.startsWith(
+          "!"
+        )
       ) {
         return;
       }
@@ -1628,43 +1815,52 @@ discordClient.on(
           .shift()
           .toLowerCase();
 
-      const args = parts;
+      const args =
+        parts;
 
       if (
-        command === "!gen"
+        command ===
+        "!gen"
       ) {
         await handleGen(
           message,
           args
         );
+
         return;
       }
 
       if (
-        command === "!add"
+        command ===
+        "!add"
       ) {
         await handleAdd(
           message,
           args
         );
+
         return;
       }
 
       if (
-        command === "!stock"
+        command ===
+        "!stock"
       ) {
         await handleStock(
           message
         );
+
         return;
       }
 
       if (
-        command === "!help"
+        command ===
+        "!help"
       ) {
         await handleHelp(
           message
         );
+
         return;
       }
     } catch (error) {
@@ -1699,7 +1895,7 @@ discordClient.once(
 
     for (
       const roleId of
-      ALLOWED_ROLE_IDS
+        ALLOWED_ROLE_IDS
     ) {
       console.log(
         `   • ${roleId}`
@@ -1714,7 +1910,9 @@ discordClient.once(
 
 if (DISCORD_TOKEN) {
   discordClient
-    .login(DISCORD_TOKEN)
+    .login(
+      DISCORD_TOKEN
+    )
     .catch(error => {
       console.error(
         "❌ Discord login failed:",
@@ -1750,7 +1948,7 @@ app.get(
 );
 
 // ============================================================
-// START
+// START SERVER
 // ============================================================
 
 async function start() {
