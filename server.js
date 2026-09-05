@@ -6,6 +6,10 @@ const crypto = require("crypto");
 
 const app = express();
 
+/* =========================================================
+   CONFIG
+========================================================= */
+
 const PORT = process.env.PORT || 10000;
 const PUBLIC_DIR = path.join(__dirname, "public");
 
@@ -16,45 +20,41 @@ const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET || "";
 
 const SESSION_DURATION = 30 * 60 * 1000;
 
-// =========================================================
-// SESSION STORAGE
-// =========================================================
+/* =========================================================
+   MEMORY
+========================================================= */
 
 const sessions = new Map();
-
-// =========================================================
-// KEY VERIFICATION RATE LIMIT
-// =========================================================
-
 const verifyAttempts = new Map();
 
-const VERIFY_WINDOW = 5 * 60 * 1000;
-const VERIFY_MAX_ATTEMPTS = 10;
-
-// =========================================================
-// BASIC SETUP
-// =========================================================
+/* =========================================================
+   BASIC SETUP
+========================================================= */
 
 app.disable("x-powered-by");
 
-app.use(cors({
-    origin: true,
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: [
-        "Content-Type",
-        "Accept",
-        "x-novi-session",
-        "x-novi-admin-secret"
-    ]
-}));
+app.use(
+    cors({
+        origin: true,
+        methods: ["GET", "POST", "OPTIONS"],
+        allowedHeaders: [
+            "Content-Type",
+            "Accept",
+            "x-novi-session",
+            "x-novi-admin-secret"
+        ]
+    })
+);
 
-app.use(express.json({
-    limit: "1mb"
-}));
+app.use(
+    express.json({
+        limit: "1mb"
+    })
+);
 
-// =========================================================
-// FILE HELPERS
-// =========================================================
+/* =========================================================
+   FILE HELPERS
+========================================================= */
 
 function ensureFile(file, defaultValue) {
     try {
@@ -71,11 +71,12 @@ function ensureFile(file, defaultValue) {
     }
 }
 
-ensureFile(KEY_FILE, []);
-ensureFile(STOCK_FILE, []);
-
 function readJSON(file, fallback) {
     try {
+        if (!fs.existsSync(file)) {
+            return fallback;
+        }
+
         const raw = fs.readFileSync(file, "utf8");
 
         if (!raw.trim()) {
@@ -108,9 +109,12 @@ function writeJSON(file, data) {
     }
 }
 
-// =========================================================
-// KEY HELPERS
-// =========================================================
+ensureFile(KEY_FILE, []);
+ensureFile(STOCK_FILE, []);
+
+/* =========================================================
+   KEY HELPERS
+========================================================= */
 
 function normalizeKey(value) {
     return String(value || "")
@@ -151,9 +155,9 @@ function safeEqual(a, b) {
     }
 }
 
-// =========================================================
-// KEY DURATIONS
-// =========================================================
+/* =========================================================
+   KEY DURATIONS
+========================================================= */
 
 const DURATIONS = {
     "1d": 24 * 60 * 60 * 1000,
@@ -181,18 +185,18 @@ function calculateExpiration(duration) {
         return null;
     }
 
-    const length = DURATIONS[duration];
+    const durationLength = DURATIONS[duration];
 
-    if (length === null) {
+    if (durationLength === null) {
         return null;
     }
 
-    return Date.now() + length;
+    return Date.now() + durationLength;
 }
 
-// =========================================================
-// KEY STORAGE
-// =========================================================
+/* =========================================================
+   KEY STORAGE
+========================================================= */
 
 function readKeys() {
     const data = readJSON(KEY_FILE, []);
@@ -224,19 +228,11 @@ function createKeyRecord(duration) {
     };
 }
 
-// =========================================================
-// FIND KEY
-// =========================================================
-
 function findKey(rawKey) {
     const key = normalizeKey(rawKey);
 
     if (!key) {
-        return {
-            found: false,
-            key: null,
-            index: -1
-        };
+        return null;
     }
 
     const keys = readKeys();
@@ -251,23 +247,18 @@ function findKey(rawKey) {
 
         if (safeEqual(storedKey, key)) {
             return {
-                found: true,
-                key: record,
+                record,
                 index: i
             };
         }
     }
 
-    return {
-        found: false,
-        key: null,
-        index: -1
-    };
+    return null;
 }
 
-// =========================================================
-// VERIFY KEY
-// =========================================================
+/* =========================================================
+   VERIFY KEY
+========================================================= */
 
 function verifyKey(rawKey, rawDeviceId) {
     const key = normalizeKey(rawKey);
@@ -317,9 +308,9 @@ function verifyKey(rawKey, rawDeviceId) {
         };
     }
 
-    // =====================================================
-    // CONVERT OLD STRING-ONLY KEYS
-    // =====================================================
+    /* -------------------------------------------------------
+       Convert old string keys
+    ------------------------------------------------------- */
 
     if (typeof found === "string") {
         found = {
@@ -335,9 +326,9 @@ function verifyKey(rawKey, rawDeviceId) {
         keys[foundIndex] = found;
     }
 
-    // =====================================================
-    // CHECK EXPIRATION
-    // =====================================================
+    /* -------------------------------------------------------
+       Check expiration
+    ------------------------------------------------------- */
 
     if (
         found.expiresAt !== null &&
@@ -351,9 +342,9 @@ function verifyKey(rawKey, rawDeviceId) {
         };
     }
 
-    // =====================================================
-    // BIND KEY TO FIRST DEVICE
-    // =====================================================
+    /* -------------------------------------------------------
+       Bind key to device
+    ------------------------------------------------------- */
 
     if (!found.deviceId) {
         found.deviceId = deviceId;
@@ -393,13 +384,14 @@ function verifyKey(rawKey, rawDeviceId) {
     };
 }
 
-// =========================================================
-// SESSIONS
-// =========================================================
+/* =========================================================
+   SESSIONS
+========================================================= */
 
 function createSession(key, deviceId) {
-    const token =
-        crypto.randomBytes(32).toString("hex");
+    const token = crypto
+        .randomBytes(32)
+        .toString("hex");
 
     const expiresAt =
         Date.now() + SESSION_DURATION;
@@ -427,44 +419,39 @@ function getSession(token) {
         return null;
     }
 
-    // =====================================================
-    // SESSION EXPIRATION
-    // =====================================================
-
     if (session.expiresAt <= Date.now()) {
         sessions.delete(token);
         return null;
     }
 
-    // =====================================================
-    // CHECK KEY STILL EXISTS
-    // =====================================================
+    /* -------------------------------------------------------
+       Re-check key
+    ------------------------------------------------------- */
 
-    const keyResult = findKey(session.key);
+    const result = findKey(session.key);
 
-    if (!keyResult.found) {
+    if (!result) {
         sessions.delete(token);
         return null;
     }
 
-    let keyRecord = keyResult.key;
-
-    // =====================================================
-    // OLD STRING KEY
-    // =====================================================
+    let keyRecord = result.record;
 
     if (typeof keyRecord === "string") {
         keyRecord = {
             key: normalizeKey(keyRecord),
             duration: "lifetime",
+            durationName: "Lifetime",
+            createdAt: Date.now(),
             expiresAt: null,
-            deviceId: null
+            deviceId: null,
+            activatedAt: null
         };
     }
 
-    // =====================================================
-    // CHECK KEY EXPIRATION
-    // =====================================================
+    /* -------------------------------------------------------
+       Re-check expiration
+    ------------------------------------------------------- */
 
     if (
         keyRecord.expiresAt !== null &&
@@ -475,19 +462,15 @@ function getSession(token) {
         return null;
     }
 
-    // =====================================================
-    // CHECK DEVICE BINDING
-    // =====================================================
+    /* -------------------------------------------------------
+       Re-check device binding
+    ------------------------------------------------------- */
 
     if (
         keyRecord.deviceId &&
         !safeEqual(
-            normalizeDeviceId(
-                keyRecord.deviceId
-            ),
-            normalizeDeviceId(
-                session.deviceId
-            )
+            normalizeDeviceId(keyRecord.deviceId),
+            normalizeDeviceId(session.deviceId)
         )
     ) {
         sessions.delete(token);
@@ -497,9 +480,9 @@ function getSession(token) {
     return session;
 }
 
-// =========================================================
-// AUTH MIDDLEWARE
-// =========================================================
+/* =========================================================
+   AUTH MIDDLEWARE
+========================================================= */
 
 function requireSession(req, res, next) {
     const token =
@@ -540,74 +523,86 @@ function requireAdmin(req, res, next) {
     ) {
         return res.status(403).json({
             success: false,
-            message:
-                "Admin access denied."
+            message: "Admin access denied."
         });
     }
 
     next();
 }
 
-// =========================================================
-// VERIFY RATE LIMIT
-// =========================================================
+/* =========================================================
+   VERIFY RATE LIMIT
+========================================================= */
 
-function getRateLimitIdentifier(req) {
+function getClientIP(req) {
     const forwarded =
         req.headers["x-forwarded-for"];
 
     if (forwarded) {
-        return String(forwarded)
-            .split(",")[0]
-            .trim();
+        return String(
+            forwarded
+        ).split(",")[0].trim();
     }
 
-    return req.ip || "unknown";
+    return (
+        req.socket?.remoteAddress ||
+        "unknown"
+    );
 }
 
-function checkVerifyRateLimit(req) {
-    const identifier =
-        getRateLimitIdentifier(req);
-
+function checkVerifyRateLimit(ip) {
     const now = Date.now();
 
-    let record =
-        verifyAttempts.get(identifier);
+    const WINDOW =
+        5 * 60 * 1000;
 
-    if (!record) {
-        record = {
+    const MAX_ATTEMPTS = 10;
+
+    let data =
+        verifyAttempts.get(ip);
+
+    if (!data) {
+        data = {
             count: 0,
-            resetAt:
-                now + VERIFY_WINDOW
+            resetAt: now + WINDOW
         };
 
         verifyAttempts.set(
-            identifier,
-            record
+            ip,
+            data
         );
     }
 
-    if (now >= record.resetAt) {
-        record.count = 0;
-        record.resetAt =
-            now + VERIFY_WINDOW;
+    if (now >= data.resetAt) {
+        data.count = 0;
+        data.resetAt =
+            now + WINDOW;
     }
+
+    data.count++;
 
     if (
-        record.count >=
-        VERIFY_MAX_ATTEMPTS
+        data.count >
+        MAX_ATTEMPTS
     ) {
-        return false;
+        return {
+            allowed: false,
+            retryAfter:
+                Math.ceil(
+                    (data.resetAt - now) /
+                    1000
+                )
+        };
     }
 
-    record.count++;
-
-    return true;
+    return {
+        allowed: true
+    };
 }
 
-// =========================================================
-// STOCK
-// =========================================================
+/* =========================================================
+   STOCK
+========================================================= */
 
 function readStock() {
     const data =
@@ -628,9 +623,9 @@ function saveStock(stock) {
     );
 }
 
-// =========================================================
-// HEALTH
-// =========================================================
+/* =========================================================
+   HEALTH
+========================================================= */
 
 app.get(
     "/api/health",
@@ -643,9 +638,9 @@ app.get(
     }
 );
 
-// =========================================================
-// ADMIN STATUS
-// =========================================================
+/* =========================================================
+   ADMIN STATUS
+========================================================= */
 
 app.get(
     "/api/admin-status",
@@ -658,9 +653,9 @@ app.get(
     }
 );
 
-// =========================================================
-// API ROOT
-// =========================================================
+/* =========================================================
+   API ROOT
+========================================================= */
 
 app.get(
     "/api",
@@ -672,26 +667,31 @@ app.get(
     }
 );
 
-// =========================================================
-// VERIFY KEY
-// =========================================================
+/* =========================================================
+   VERIFY KEY
+========================================================= */
 
 app.post(
     "/api/verify",
     (req, res) => {
-
         try {
+            const ip =
+                getClientIP(req);
 
-            // =================================================
-            // RATE LIMIT KEY ATTEMPTS
-            // =================================================
+            const rate =
+                checkVerifyRateLimit(ip);
 
-            if (!checkVerifyRateLimit(req)) {
+            if (!rate.allowed) {
+                res.setHeader(
+                    "Retry-After",
+                    rate.retryAfter
+                );
+
                 return res.status(429).json({
                     success: false,
                     valid: false,
                     message:
-                        "Too many key attempts. Please try again later."
+                        "Too many verification attempts. Please try again later."
                 });
             }
 
@@ -708,9 +708,9 @@ app.post(
                 );
 
             if (!result.success) {
-                return res.status(401).json(
-                    result
-                );
+                return res
+                    .status(401)
+                    .json(result);
             }
 
             const session =
@@ -722,10 +722,8 @@ app.post(
             return res.json({
                 success: true,
                 valid: true,
-
                 sessionToken:
                     session.token,
-
                 expiresAt:
                     session.expiresAt,
 
@@ -744,9 +742,7 @@ app.post(
                         result.key.expiresAt
                 }
             });
-
         } catch (error) {
-
             console.error(
                 "VERIFY ERROR:",
                 error
@@ -762,57 +758,52 @@ app.post(
     }
 );
 
-// =========================================================
-// LOGOUT
-// =========================================================
+/* =========================================================
+   LOGOUT
+========================================================= */
 
 app.post(
     "/api/logout",
     requireSession,
     (req, res) => {
-
         const token =
             req.headers["x-novi-session"];
 
         sessions.delete(token);
 
-        res.json({
+        return res.json({
             success: true
         });
     }
 );
 
-// =========================================================
-// STOCK COUNT
-// =========================================================
+/* =========================================================
+   USER STOCK COUNT
+========================================================= */
 
 app.get(
     "/api/stock",
     requireSession,
     (req, res) => {
-
         const stock =
             readStock();
 
-        res.json({
+        return res.json({
             success: true,
-            count:
-                stock.length
+            count: stock.length
         });
     }
 );
 
-// =========================================================
-// GENERATE STOCK ITEM
-// =========================================================
+/* =========================================================
+   USER GENERATE STOCK ITEM
+========================================================= */
 
 app.post(
     "/api/stock/generate",
     requireSession,
     (req, res) => {
-
         try {
-
             const stock =
                 readStock();
 
@@ -844,9 +835,7 @@ app.post(
                 remaining:
                     stock.length
             });
-
         } catch (error) {
-
             console.error(
                 "STOCK GENERATE ERROR:",
                 error
@@ -861,20 +850,19 @@ app.post(
     }
 );
 
-// =========================================================
-// ADMIN: CREATE KEY
-// =========================================================
+/* =========================================================
+   ADMIN CREATE KEY
+========================================================= */
 
 app.post(
     "/api/keys",
     requireAdmin,
     (req, res) => {
-
         try {
-
             const duration =
                 String(
-                    req.body?.duration || ""
+                    req.body?.duration ||
+                    ""
                 )
                     .trim()
                     .toLowerCase();
@@ -922,25 +910,17 @@ app.post(
 
             return res.status(201).json({
                 success: true,
-
-                key:
-                    record.key,
-
+                key: record.key,
                 duration:
                     record.duration,
-
                 durationName:
                     record.durationName,
-
                 expiresAt:
                     record.expiresAt,
-
                 createdAt:
                     record.createdAt
             });
-
         } catch (error) {
-
             console.error(
                 "CREATE KEY ERROR:",
                 error
@@ -955,17 +935,15 @@ app.post(
     }
 );
 
-// =========================================================
-// ADMIN: ADD STOCK
-// =========================================================
+/* =========================================================
+   ADMIN ADD STOCK
+========================================================= */
 
 app.post(
     "/api/stock/add",
     requireAdmin,
     (req, res) => {
-
         try {
-
             const item =
                 req.body?.item;
 
@@ -983,7 +961,40 @@ app.post(
             const stock =
                 readStock();
 
-            stock.push(item);
+            const normalizedItem =
+                String(item).trim();
+
+            if (!normalizedItem) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Inventory item cannot be empty."
+                });
+            }
+
+            /* ------------------------------------------------
+               Duplicate check
+            ------------------------------------------------ */
+
+            const duplicate =
+                stock.some(
+                    (existing) =>
+                        String(existing).trim() ===
+                        normalizedItem
+                );
+
+            if (duplicate) {
+                return res.json({
+                    success: true,
+                    added: 0,
+                    duplicates: 1,
+                    count: stock.length
+                });
+            }
+
+            stock.push(
+                normalizedItem
+            );
 
             const saved =
                 saveStock(stock);
@@ -996,20 +1007,19 @@ app.post(
                 });
             }
 
-            res.json({
+            return res.json({
                 success: true,
-                count:
-                    stock.length
+                added: 1,
+                duplicates: 0,
+                count: stock.length
             });
-
         } catch (error) {
-
             console.error(
                 "ADD STOCK ERROR:",
                 error
             );
 
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
                 message:
                     "Failed to add inventory."
@@ -1018,12 +1028,44 @@ app.post(
     }
 );
 
-// =========================================================
-// STATIC WEBSITE
-// =========================================================
+/* =========================================================
+   ADMIN STOCK COUNT
+========================================================= */
 
-if (fs.existsSync(PUBLIC_DIR)) {
+app.get(
+    "/api/admin/stock",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const stock =
+                readStock();
 
+            return res.json({
+                success: true,
+                count: stock.length
+            });
+        } catch (error) {
+            console.error(
+                "ADMIN STOCK COUNT ERROR:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Failed to read inventory."
+            });
+        }
+    }
+);
+
+/* =========================================================
+   STATIC WEBSITE
+========================================================= */
+
+if (
+    fs.existsSync(PUBLIC_DIR)
+) {
     app.use(
         express.static(
             PUBLIC_DIR
@@ -1033,7 +1075,6 @@ if (fs.existsSync(PUBLIC_DIR)) {
     app.get(
         "/",
         (req, res) => {
-
             const indexFile =
                 path.join(
                     PUBLIC_DIR,
@@ -1041,29 +1082,32 @@ if (fs.existsSync(PUBLIC_DIR)) {
                 );
 
             if (
-                fs.existsSync(indexFile)
+                fs.existsSync(
+                    indexFile
+                )
             ) {
                 return res.sendFile(
                     indexFile
                 );
             }
 
-            res.status(404).send(
-                "Novi frontend not found."
-            );
+            return res
+                .status(404)
+                .send(
+                    "Novi frontend not found."
+                );
         }
     );
 }
 
-// =========================================================
-// UNKNOWN API ROUTES
-// =========================================================
+/* =========================================================
+   UNKNOWN API ROUTES
+========================================================= */
 
 app.use(
     "/api",
     (req, res) => {
-
-        res.status(404).json({
+        return res.status(404).json({
             success: false,
             message:
                 "API endpoint not found."
@@ -1071,19 +1115,18 @@ app.use(
     }
 );
 
-// =========================================================
-// ERROR HANDLER
-// =========================================================
+/* =========================================================
+   ERROR HANDLER
+========================================================= */
 
 app.use(
     (error, req, res, next) => {
-
         console.error(
             "SERVER ERROR:",
             error
         );
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message:
                 "Internal server error."
@@ -1091,15 +1134,14 @@ app.use(
     }
 );
 
-// =========================================================
-// START SERVER
-// =========================================================
+/* =========================================================
+   START SERVER
+========================================================= */
 
 app.listen(
     PORT,
     "0.0.0.0",
     () => {
-
         console.log(
             "=============================="
         );
@@ -1126,18 +1168,6 @@ app.listen(
                     ? "CONFIGURED"
                     : "NOT CONFIGURED"
             }`
-        );
-
-        console.log(
-            "Dashboard protection: ENABLED"
-        );
-
-        console.log(
-            "Session validation: ENABLED"
-        );
-
-        console.log(
-            "Key attempt protection: ENABLED"
         );
 
         console.log(
