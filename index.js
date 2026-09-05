@@ -25,6 +25,7 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 
 const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET || "";
 const DATABASE_URL = process.env.DATABASE_URL || "";
+
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN || "";
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || "";
 
@@ -35,7 +36,9 @@ if (!DATABASE_URL) {
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 // ============================================================
@@ -113,6 +116,7 @@ function requireSession(req, res, next) {
   }
 
   req.noviSession = session;
+
   next();
 }
 
@@ -225,6 +229,7 @@ function extractStockIds(body) {
       for (const item of value) {
         add(item);
       }
+
       return;
     }
 
@@ -282,6 +287,43 @@ function extractStockIds(body) {
 }
 
 // ============================================================
+// KEY GENERATOR
+// ============================================================
+
+async function generateKeys(amount = 1, duration = 86400000) {
+  amount = Math.max(1, Math.min(Number(amount) || 1, 100));
+  duration = Number(duration) || 86400000;
+
+  const keys = [];
+
+  for (let i = 0; i < amount; i++) {
+    const key = `NOVI-${crypto
+      .randomBytes(8)
+      .toString("hex")
+      .toUpperCase()}`;
+
+    const expiresAt = new Date(Date.now() + duration);
+
+    await pool.query(
+      `
+      INSERT INTO novi_keys
+      (key, duration, expires_at)
+      VALUES ($1, $2, $3)
+      `,
+      [key, duration, expiresAt]
+    );
+
+    keys.push({
+      key,
+      duration,
+      expiresAt,
+    });
+  }
+
+  return keys;
+}
+
+// ============================================================
 // HEALTH
 // ============================================================
 
@@ -329,31 +371,7 @@ app.post("/api/keys", requireAdmin, async (req, res) => {
       Number(req.body?.durationMs) ||
       86400000;
 
-    const keys = [];
-
-    for (let i = 0; i < amount; i++) {
-      const key = `NOVI-${crypto
-        .randomBytes(8)
-        .toString("hex")
-        .toUpperCase()}`;
-
-      const expiresAt = new Date(Date.now() + duration);
-
-      await pool.query(
-        `
-        INSERT INTO novi_keys
-        (key, duration, expires_at)
-        VALUES ($1, $2, $3)
-        `,
-        [key, duration, expiresAt]
-      );
-
-      keys.push({
-        key,
-        duration,
-        expiresAt,
-      });
-    }
+    const keys = await generateKeys(amount, duration);
 
     res.json({
       success: true,
@@ -404,9 +422,9 @@ app.post("/api/verify", async (req, res) => {
   try {
     const key = String(
       req.body?.key ||
-      req.body?.licenseKey ||
-      req.body?.token ||
-      ""
+        req.body?.licenseKey ||
+        req.body?.token ||
+        ""
     ).trim();
 
     if (!key) {
@@ -697,9 +715,9 @@ app.post("/api/saved-items", requireSession, async (req, res) => {
   try {
     const stockId = cleanStockValue(
       req.body?.stockId ??
-      req.body?.stock_id ??
-      req.body?.value ??
-      req.body?.item
+        req.body?.stock_id ??
+        req.body?.value ??
+        req.body?.item
     );
 
     const deviceId =
@@ -815,15 +833,25 @@ async function startDiscordBot() {
   }
 
   discordClient = new Client({
-    intents: [GatewayIntentBits.Guilds],
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
+    ],
   });
+
+  // ==========================================================
+  // BOT READY
+  // ==========================================================
 
   discordClient.once("ready", async (client) => {
     console.log(`Discord bot online as ${client.user.tag}`);
 
     if (DISCORD_CLIENT_ID) {
       try {
-        const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
+        const rest = new REST({ version: "10" }).setToken(
+          DISCORD_TOKEN
+        );
 
         const commands = [
           new SlashCommandBuilder()
@@ -837,20 +865,24 @@ async function startDiscordBot() {
 
         await rest.put(
           Routes.applicationCommands(DISCORD_CLIENT_ID),
-          { body: commands }
+          {
+            body: commands,
+          }
         );
 
         console.log("Discord slash commands registered.");
       } catch (err) {
-        console.error("Failed to register Discord commands:");
+        console.error(
+          "Failed to register Discord commands:"
+        );
         console.error(err);
       }
-    } else {
-      console.log(
-        "DISCORD_CLIENT_ID is missing. Slash commands were not registered."
-      );
     }
   });
+
+  // ==========================================================
+  // SLASH COMMANDS
+  // ==========================================================
 
   discordClient.on("interactionCreate", async (interaction) => {
     if (!interaction.isChatInputCommand()) return;
@@ -869,10 +901,8 @@ async function startDiscordBot() {
           FROM novi_stock_items
         `);
 
-        const count = result.rows[0].count;
-
         return interaction.reply({
-          content: `📦 Current Novi stock: **${count}**`,
+          content: `📦 Current Novi stock: **${result.rows[0].count}**`,
         });
       }
     } catch (err) {
@@ -891,6 +921,174 @@ async function startDiscordBot() {
       }
     }
   });
+
+  // ==========================================================
+  // ! COMMANDS
+  // ==========================================================
+
+  discordClient.on("messageCreate", async (message) => {
+    try {
+      if (message.author.bot) return;
+
+      const content = message.content.trim();
+
+      if (!content.startsWith("!")) return;
+
+      const parts = content
+        .slice(1)
+        .trim()
+        .split(/\s+/);
+
+      const command = parts.shift()?.toLowerCase();
+
+      // ========================================================
+      // !GEN
+      //
+      // !gen
+      // !gen 5
+      //
+      // Generates website license keys.
+      // ========================================================
+
+      if (command === "gen") {
+        let amount = Number(parts[0]) || 1;
+
+        amount = Math.max(1, Math.min(amount, 100));
+
+        const keys = await generateKeys(
+          amount,
+          86400000
+        );
+
+        const keyText = keys
+          .map((item) => `\`${item.key}\``)
+          .join("\n");
+
+        try {
+          await message.author.send(
+            [
+              "🔑 **Novi License Key Generator**",
+              "",
+              keyText,
+              "",
+              "⏱️ Duration: **24 hours**",
+              `📦 Amount: **${keys.length}**`,
+            ].join("\n")
+          );
+
+          return message.reply(
+            `✅ Generated **${keys.length}** key${
+              keys.length === 1 ? "" : "s"
+            } and sent ${
+              keys.length === 1 ? "it" : "them"
+            } to your DMs.`
+          );
+        } catch (dmError) {
+          return message.reply(
+            "❌ I generated the key, but I couldn't DM you. Please enable DMs from server members."
+          );
+        }
+      }
+
+      // ========================================================
+      // !ADD
+      //
+      // !add stock1
+      // !add stock1 stock2 stock3
+      //
+      // Only Discord server administrators can use it.
+      // ========================================================
+
+      if (command === "add") {
+        const isAdmin =
+          message.member?.permissions?.has("Administrator");
+
+        if (!isAdmin) {
+          return message.reply(
+            "❌ You need Administrator permission to use `!add`."
+          );
+        }
+
+        if (parts.length === 0) {
+          return message.reply(
+            "❌ Usage: `!add <stock1> <stock2> <stock3>`"
+          );
+        }
+
+        const stockIds = [
+          ...new Set(
+            parts
+              .map((item) => item.trim())
+              .filter(Boolean)
+          ),
+        ];
+
+        const client = await pool.connect();
+
+        try {
+          await client.query("BEGIN");
+
+          for (const stockId of stockIds) {
+            await client.query(
+              `
+              INSERT INTO novi_stock_items
+              (stock_id)
+              VALUES ($1)
+              `,
+              [stockId]
+            );
+          }
+
+          await client.query("COMMIT");
+
+          return message.reply(
+            `✅ Added **${stockIds.length}** stock item${
+              stockIds.length === 1 ? "" : "s"
+            }.`
+          );
+        } catch (err) {
+          await client.query("ROLLBACK");
+          throw err;
+        } finally {
+          client.release();
+        }
+      }
+
+      // ========================================================
+      // !HELP
+      // ========================================================
+
+      if (command === "help") {
+        return message.reply(
+          [
+            "**Novi Commands**",
+            "",
+            "`!gen` — Generate 1 website key",
+            "`!gen 5` — Generate 5 website keys",
+            "`!add <stock>` — Add stock",
+            "",
+            "`/stock` — Check stock count",
+            "`/ping` — Check bot status",
+          ].join("\n")
+        );
+      }
+    } catch (err) {
+      console.error(
+        "Discord prefix command error:",
+        err
+      );
+
+      try {
+        await message.reply(
+          "❌ Something went wrong while running that command."
+        );
+      } catch {}
+    }
+  });
+
+  // ==========================================================
+  // DISCORD ERRORS
+  // ==========================================================
 
   discordClient.on("error", (err) => {
     console.error("Discord client error:");
@@ -919,7 +1117,6 @@ async function start() {
     });
 
     await startDiscordBot();
-
   } catch (err) {
     console.error("FAILED TO START NOVI:");
     console.error(err);
@@ -932,7 +1129,9 @@ async function start() {
 // ============================================================
 
 async function shutdown(signal) {
-  console.log(`Received ${signal}. Shutting down Novi...`);
+  console.log(
+    `Received ${signal}. Shutting down Novi...`
+  );
 
   try {
     if (discordClient) {
