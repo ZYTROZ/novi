@@ -13,119 +13,26 @@
     }
 
     :root {
-      --bg: #08070d;
-      --card: rgba(24, 21, 34, 0.86);
-      --card-hover: rgba(30, 26, 43, 0.92);
-
-      --border: rgba(255, 255, 255, 0.10);
-      --border-bright: rgba(255, 255, 255, 0.14);
-
+      --bg: #060609;
+      --card: rgba(16, 16, 24, 0.82);
+      --card2: rgba(22, 22, 32, 0.9);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f7f7fb;
+      --muted: #9898a8;
       --purple: #8b5cf6;
-      --purple-light: #b794ff;
-      --purple-bright: #c8adff;
-      --purple-dark: #6d28d9;
-
-      --text: #faf9ff;
-      --muted: #9995a8;
-      --muted-light: #c2bdce;
-
-      --green: #4ade80;
-      --red: #f87171;
-      --orange: #fbbf24;
-    }
-
-    html {
-      scroll-behavior: smooth;
+      --purple2: #a855f7;
+      --danger: #ef4444;
+      --success: #22c55e;
     }
 
     body {
       min-height: 100vh;
-
-      background:
-        radial-gradient(
-          circle at 50% -12%,
-          rgba(139, 92, 246, 0.30),
-          transparent 38%
-        ),
-        radial-gradient(
-          circle at 100% 25%,
-          rgba(124, 58, 237, 0.13),
-          transparent 30%
-        ),
-        radial-gradient(
-          circle at 0% 100%,
-          rgba(109, 40, 217, 0.15),
-          transparent 35%
-        ),
-        linear-gradient(
-          180deg,
-          #0a0910 0%,
-          #07070b 100%
-        );
-
+      font-family: Inter, Arial, Helvetica, sans-serif;
       color: var(--text);
-
-      font-family:
-        Inter,
-        ui-sans-serif,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-      overflow-x: hidden;
-    }
-
-    body::before {
-      content: "";
-
-      position: fixed;
-      inset: 0;
-
-      pointer-events: none;
-
-      background-image:
-        linear-gradient(
-          rgba(255,255,255,.024) 1px,
-          transparent 1px
-        ),
-        linear-gradient(
-          90deg,
-          rgba(255,255,255,.024) 1px,
-          transparent 1px
-        );
-
-      background-size: 55px 55px;
-
-      mask-image:
-        linear-gradient(
-          to bottom,
-          black 0%,
-          rgba(0,0,0,.5) 60%,
-          transparent 100%
-        );
-    }
-
-    body::after {
-      content: "";
-
-      position: fixed;
-
-      width: 500px;
-      height: 500px;
-
-      top: -300px;
-      left: 50%;
-
-      transform: translateX(-50%);
-
       background:
-        rgba(139,92,246,.13);
-
-      filter: blur(120px);
-
-      pointer-events: none;
+        radial-gradient(circle at 50% -10%, rgba(139, 92, 246, 0.18), transparent 35%),
+        radial-gradient(circle at 0% 100%, rgba(168, 85, 247, 0.08), transparent 30%),
+        var(--bg);
     }
 
     button,
@@ -137,1399 +44,431 @@
       cursor: pointer;
     }
 
-    /* =====================================================
-       LOGIN
-    ===================================================== */
+    .hidden {
+      display: none !important;
+    }
 
-    #loginPage {
+    /* ========================================================
+       LOCK SCREEN
+       ======================================================== */
+
+    #loginScreen {
       min-height: 100vh;
-
       display: flex;
-
       align-items: center;
       justify-content: center;
-
-      padding: 24px;
-    }
-
-    .login-wrapper {
-      width: 100%;
-      max-width: 440px;
-
-      position: relative;
-    }
-
-    .login-glow {
-      position: absolute;
-
-      width: 330px;
-      height: 330px;
-
-      left: 50%;
-      top: 20%;
-
-      transform:
-        translate(-50%, -50%);
-
-      background:
-        rgba(124,58,237,.23);
-
-      filter: blur(100px);
-
-      pointer-events: none;
+      padding: 20px;
     }
 
     .login-card {
-      position: relative;
-
-      padding: 44px;
-
-      border:
-        1px solid rgba(255,255,255,.11);
-
-      border-radius: 26px;
-
-      background:
-        linear-gradient(
-          145deg,
-          rgba(27,24,39,.95),
-          rgba(12,11,17,.92)
-        );
-
-      backdrop-filter: blur(28px);
-
+      width: 100%;
+      max-width: 430px;
+      padding: 38px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: rgba(13, 13, 20, 0.88);
       box-shadow:
-        0 35px 120px rgba(0,0,0,.55),
-        0 0 70px rgba(124,58,237,.10),
-        inset 0 1px 0 rgba(255,255,255,.06);
+        0 30px 80px rgba(0, 0, 0, 0.5),
+        0 0 70px rgba(139, 92, 246, 0.08);
+      backdrop-filter: blur(18px);
     }
 
-    .brand {
-      text-align: center;
-
-      margin-bottom: 34px;
-    }
-
-    .brand-logo {
-      width: 67px;
-      height: 67px;
-
-      margin:
-        0 auto 18px;
-
-      border-radius: 20px;
-
+    .logo {
+      width: 58px;
+      height: 58px;
+      border-radius: 17px;
       display: flex;
-
       align-items: center;
       justify-content: center;
-
-      font-size: 29px;
+      margin: 0 auto 22px;
+      font-size: 26px;
       font-weight: 900;
-
-      color: white;
-
-      background:
-        linear-gradient(
-          145deg,
-          #b084ff,
-          #6422cf
-        );
-
-      box-shadow:
-        0 18px 42px rgba(124,58,237,.38),
-        0 0 35px rgba(139,92,246,.13),
-        inset 0 1px 0 rgba(255,255,255,.3);
+      background: linear-gradient(135deg, var(--purple), var(--purple2));
+      box-shadow: 0 15px 40px rgba(139, 92, 246, 0.3);
     }
 
-    .brand h1 {
-      font-size: 31px;
-
-      font-weight: 850;
-
-      letter-spacing: -1px;
+    .login-card h1 {
+      text-align: center;
+      font-size: 30px;
+      margin-bottom: 8px;
     }
 
-    .brand p {
-      margin-top: 8px;
-
+    .login-card p {
+      text-align: center;
       color: var(--muted);
-
       font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 28px;
     }
 
-    .input-label {
-      display: block;
-
-      margin-bottom: 9px;
-
-      color: #dedbe8;
-
-      font-size: 13px;
-
-      font-weight: 650;
-    }
-
-    .input-wrap {
-      position: relative;
-    }
-
-    .input-wrap input {
+    .key-input {
       width: 100%;
-      height: 53px;
-
-      border:
-        1px solid rgba(255,255,255,.11);
-
+      height: 54px;
+      padding: 0 17px;
       border-radius: 13px;
-
+      border: 1px solid var(--border);
       outline: none;
-
-      padding: 0 15px;
-
       color: white;
-
-      background:
-        rgba(255,255,255,.045);
-
-      transition:
-        border .2s ease,
-        box-shadow .2s ease,
-        background .2s ease;
+      background: rgba(255, 255, 255, 0.04);
+      transition: 0.2s;
     }
 
-    .input-wrap input::placeholder {
-      color: #686474;
+    .key-input:focus {
+      border-color: rgba(139, 92, 246, 0.7);
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
     }
 
-    .input-wrap input:focus {
-      border-color:
-        rgba(139,92,246,.8);
-
-      box-shadow:
-        0 0 0 4px rgba(139,92,246,.11),
-        0 0 30px rgba(139,92,246,.08);
-
-      background:
-        rgba(139,92,246,.055);
-    }
-
-    #unlockButton {
+    .unlock-btn {
       width: 100%;
-      height: 53px;
-
-      margin-top: 14px;
-
+      height: 54px;
+      margin-top: 13px;
       border: 0;
-
       border-radius: 13px;
-
       color: white;
-
-      font-weight: 750;
-
-      background:
-        linear-gradient(
-          135deg,
-          #9b6cff,
-          #6d28d9
-        );
-
-      box-shadow:
-        0 14px 35px rgba(109,40,217,.30),
-        0 0 25px rgba(139,92,246,.10);
-
-      transition:
-        transform .2s ease,
-        box-shadow .2s ease;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--purple), var(--purple2));
+      transition: 0.2s;
     }
 
-    #unlockButton:hover {
-      transform:
-        translateY(-2px);
-
-      box-shadow:
-        0 18px 42px rgba(109,40,217,.38),
-        0 0 30px rgba(139,92,246,.16);
+    .unlock-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 30px rgba(139, 92, 246, 0.25);
     }
 
-    #unlockButton:disabled {
-      opacity: .6;
-
+    .unlock-btn:disabled {
+      opacity: 0.6;
       cursor: not-allowed;
-
       transform: none;
     }
 
-    #verifyResult {
-      min-height: 22px;
-
-      margin-top: 14px;
-
-      text-align: center;
-
-      font-size: 13px;
-    }
-
-    .success {
-      color: var(--green);
-    }
-
     .error {
-      color: var(--red);
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      color: #fecaca;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      font-size: 13px;
+      text-align: center;
     }
 
-    /* =====================================================
+    /* ========================================================
        DASHBOARD
-    ===================================================== */
+       ======================================================== */
 
-    #dashboardPage {
-      display: none;
-
+    #dashboard {
       min-height: 100vh;
-
-      animation:
-        dashboardEnter .45s ease both;
     }
-
-    .dashboard-container {
-      width:
-        min(
-          1160px,
-          calc(100% - 34px)
-        );
-
-      margin: 0 auto;
-
-      padding:
-        26px
-        0
-        80px;
-    }
-
-    @keyframes dashboardEnter {
-      from {
-        opacity: 0;
-
-        transform:
-          translateY(12px);
-      }
-
-      to {
-        opacity: 1;
-
-        transform:
-          translateY(0);
-      }
-    }
-
-    /* =====================================================
-       TOPBAR
-    ===================================================== */
 
     .topbar {
-      height: 66px;
-
+      height: 76px;
       display: flex;
-
       align-items: center;
       justify-content: space-between;
-
-      padding:
-        0 18px;
-
-      margin-bottom: 38px;
-
-      border:
-        1px solid rgba(255,255,255,.10);
-
-      border-radius: 18px;
-
-      background:
-        linear-gradient(
-          135deg,
-          rgba(30,26,43,.91),
-          rgba(13,12,19,.84)
-        );
-
-      backdrop-filter: blur(24px);
-
-      box-shadow:
-        0 20px 65px rgba(0,0,0,.27),
-        inset 0 1px 0 rgba(255,255,255,.05);
-
-      position: relative;
-
-      overflow: hidden;
-    }
-
-    .topbar::before {
-      content: "";
-
-      position: absolute;
-
-      left: 0;
+      padding: 0 28px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(6, 6, 9, 0.7);
+      backdrop-filter: blur(18px);
+      position: sticky;
       top: 0;
-
-      width: 100%;
-      height: 1px;
-
-      background:
-        linear-gradient(
-          90deg,
-          transparent,
-          rgba(167,139,250,.75),
-          transparent
-        );
-
-      opacity: .55;
+      z-index: 20;
     }
 
-    .topbar-brand {
+    .brand {
       display: flex;
-
       align-items: center;
-
-      gap: 11px;
-
-      font-size: 15px;
-
-      font-weight: 800;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 900;
     }
 
-    .small-logo {
-      width: 37px;
-      height: 37px;
-
+    .brand-logo {
+      width: 39px;
+      height: 39px;
       display: flex;
-
       align-items: center;
       justify-content: center;
-
       border-radius: 11px;
-
-      font-size: 15px;
-
-      font-weight: 900;
-
-      background:
-        linear-gradient(
-          145deg,
-          #a879ff,
-          #6422cf
-        );
-
-      box-shadow:
-        0 8px 22px rgba(124,58,237,.32),
-        inset 0 1px 0 rgba(255,255,255,.25);
+      background: linear-gradient(135deg, var(--purple), var(--purple2));
+      font-size: 18px;
     }
 
-    #logoutButton {
-      border:
-        1px solid rgba(255,255,255,.09);
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      margin-right: 8px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+    }
+
+    .logout-btn {
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      color: #ddd;
       border-radius: 10px;
-
-      padding:
-        9px 15px;
-
-      color: #c9c5d5;
-
-      background:
-        rgba(255,255,255,.04);
-
-      transition:
-        .2s ease;
+      padding: 9px 13px;
     }
 
-    #logoutButton:hover {
-      color: white;
-
-      border-color:
-        rgba(248,113,113,.27);
-
-      background:
-        rgba(248,113,113,.07);
+    .logout-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
     }
 
-    /* =====================================================
-       WELCOME
-    ===================================================== */
+    .container {
+      width: min(1200px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 35px 0 60px;
+    }
 
     .welcome {
-      margin-bottom: 27px;
-
-      position: relative;
+      margin-bottom: 28px;
     }
 
     .welcome h1 {
-      font-size:
-        clamp(30px, 4vw, 43px);
-
-      letter-spacing:
-        -1.6px;
-
-      font-weight: 850;
-
-      background:
-        linear-gradient(
-          135deg,
-          #ffffff 20%,
-          #c9b5ff 100%
-        );
-
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-size: clamp(28px, 5vw, 42px);
+      letter-spacing: -1px;
+      margin-bottom: 7px;
     }
 
     .welcome p {
       color: var(--muted);
-
-      margin-top: 8px;
-
       font-size: 14px;
     }
 
-    /* =====================================================
-       STATS
-    ===================================================== */
+    /* ========================================================
+       CARDS
+       ======================================================== */
 
-    .stats-grid {
+    .cards {
       display: grid;
-
-      grid-template-columns:
-        repeat(4, 1fr);
-
-      gap: 15px;
-
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
       margin-bottom: 18px;
     }
 
-    .stat-card {
-      position: relative;
-
-      overflow: hidden;
-
-      min-height: 128px;
-
+    .card {
       padding: 22px;
-
-      border:
-        1px solid rgba(255,255,255,.09);
-
-      border-radius: 19px;
-
-      background:
-        linear-gradient(
-          145deg,
-          rgba(29,25,42,.91),
-          rgba(17,16,24,.84)
-        );
-
-      backdrop-filter: blur(18px);
-
-      box-shadow:
-        0 15px 50px rgba(0,0,0,.21),
-        inset 0 1px 0 rgba(255,255,255,.035);
-
-      transition:
-        transform .22s ease,
-        border .22s ease,
-        box-shadow .22s ease;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      backdrop-filter: blur(15px);
     }
 
-    .stat-card::before {
-      content: "";
-
-      position: absolute;
-
-      width: 130px;
-      height: 130px;
-
-      right: -65px;
-      top: -65px;
-
-      background:
-        rgba(139,92,246,.18);
-
-      filter: blur(35px);
-
-      pointer-events: none;
-    }
-
-    .stat-card::after {
-      content: "";
-
-      position: absolute;
-
-      left: 0;
-      top: 0;
-
-      width: 100%;
-      height: 1px;
-
-      background:
-        linear-gradient(
-          90deg,
-          transparent,
-          rgba(255,255,255,.08),
-          transparent
-        );
-    }
-
-    .stat-card:hover {
-      transform:
-        translateY(-3px);
-
-      border-color:
-        rgba(139,92,246,.24);
-
-      box-shadow:
-        0 22px 60px rgba(0,0,0,.30),
-        0 0 28px rgba(139,92,246,.07);
-    }
-
-    .stat-label {
-      color: #9995a8;
-
-      font-size: 11px;
-
-      font-weight: 700;
-
-      margin-bottom: 11px;
-
-      text-transform: uppercase;
-
-      letter-spacing: .65px;
-    }
-
-    .stat-value {
-      font-size: 26px;
-
-      font-weight: 850;
-
-      letter-spacing: -.7px;
-
-      color: #faf9ff;
-    }
-
-    #stockCount {
-      color: #c7aaff;
-
-      text-shadow:
-        0 0 25px rgba(139,92,246,.20);
-    }
-
-    #keyDuration {
-      color: #eeeaff;
-    }
-
-    #keyExpiration {
-      color:
-        var(--purple-bright);
-
-      font-variant-numeric:
-        tabular-nums;
-
-      white-space: nowrap;
-
-      font-size: 20px;
-    }
-
-    #keyExpiration.expiring {
-      color:
-        var(--orange);
-
-      text-shadow:
-        0 0 20px rgba(251,191,36,.15);
-    }
-
-    #keyExpiration.expired {
-      color:
-        var(--red);
-    }
-
-    #accountStatus {
-      display: inline-flex;
-
-      align-items: center;
-
-      gap: 8px;
-
-      color:
-        var(--green);
-
-      font-size: 20px;
-    }
-
-    #accountStatus::before {
-      content: "";
-
-      width: 8px;
-      height: 8px;
-
-      flex-shrink: 0;
-
-      border-radius: 50%;
-
-      background:
-        var(--green);
-
-      box-shadow:
-        0 0 13px rgba(74,222,128,.75);
-    }
-
-    /* =====================================================
-       MAIN CARDS
-    ===================================================== */
-
-    .main-card {
-      margin-top: 18px;
-
-      border:
-        1px solid rgba(255,255,255,.09);
-
-      border-radius: 20px;
-
-      overflow: hidden;
-
-      background:
-        linear-gradient(
-          145deg,
-          rgba(28,24,40,.91),
-          rgba(15,14,21,.86)
-        );
-
-      backdrop-filter: blur(22px);
-
-      box-shadow:
-        0 20px 70px rgba(0,0,0,.24),
-        inset 0 1px 0 rgba(255,255,255,.035);
-
-      transition:
-        border .2s ease;
-    }
-
-    .main-card:hover {
-      border-color:
-        rgba(255,255,255,.12);
-    }
-
-    .card-header {
-      display: flex;
-
-      align-items: center;
-      justify-content: space-between;
-
-      gap: 15px;
-
-      padding:
-        22px 23px;
-
-      border-bottom:
-        1px solid rgba(255,255,255,.065);
-
-      background:
-        rgba(255,255,255,.012);
-    }
-
-    .card-title h2 {
-      font-size: 17px;
-
-      font-weight: 800;
-
-      letter-spacing: -.25px;
-    }
-
-    .card-title p {
+    .card-label {
       color: var(--muted);
-
       font-size: 12px;
-
-      margin-top: 5px;
-    }
-
-    /* =====================================================
-       GENERATE BUTTON
-    ===================================================== */
-
-    #generateButton {
-      border: 0;
-
-      border-radius: 11px;
-
-      padding:
-        12px 19px;
-
-      color: white;
-
-      font-size: 13px;
-
-      font-weight: 750;
-
-      background:
-        linear-gradient(
-          135deg,
-          #9a6aff,
-          #6d28d9
-        );
-
-      white-space: nowrap;
-
-      box-shadow:
-        0 11px 30px rgba(109,40,217,.28);
-
-      transition:
-        transform .2s ease,
-        box-shadow .2s ease,
-        opacity .2s ease;
-    }
-
-    #generateButton:hover:not(:disabled) {
-      transform:
-        translateY(-2px);
-
-      box-shadow:
-        0 15px 38px rgba(109,40,217,.40),
-        0 0 28px rgba(139,92,246,.12);
-    }
-
-    #generateButton:active:not(:disabled) {
-      transform:
-        translateY(0);
-    }
-
-    #generateButton:disabled {
-      opacity: .5;
-
-      cursor: not-allowed;
-    }
-
-    /* =====================================================
-       INVENTORY
-    ===================================================== */
-
-    #inventoryResult {
-      padding:
-        21px 23px;
-    }
-
-    .empty-state {
-      padding:
-        40px 15px;
-
-      text-align: center;
-
-      color:
-        #777384;
-
-      font-size: 13px;
-    }
-
-    .inventory-item {
-      border:
-        1px solid rgba(139,92,246,.20);
-
-      border-radius: 16px;
-
-      background:
-        linear-gradient(
-          145deg,
-          rgba(139,92,246,.075),
-          rgba(255,255,255,.018)
-        );
-
-      overflow: hidden;
-
-      box-shadow:
-        0 12px 40px rgba(0,0,0,.17);
-
-      animation:
-        inventoryEnter .3s ease both;
-    }
-
-    @keyframes inventoryEnter {
-      from {
-        opacity: 0;
-
-        transform:
-          translateY(8px);
-      }
-
-      to {
-        opacity: 1;
-
-        transform:
-          translateY(0);
-      }
-    }
-
-    .inventory-row {
-      display: flex;
-
-      align-items: center;
-      justify-content: space-between;
-
-      gap: 15px;
-
-      padding:
-        17px 18px;
-
-      border-bottom:
-        1px solid rgba(255,255,255,.055);
-    }
-
-    .inventory-label {
-      color:
-        #817b91;
-
-      font-size: 11px;
-
       text-transform: uppercase;
-
-      letter-spacing: .8px;
-
-      font-weight: 750;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
     }
 
-    .inventory-value {
-      max-width: 75%;
-
-      color:
-        #f1eff7;
-
-      font-size: 13px;
-
-      word-break: break-all;
-
-      text-align: right;
+    .card-value {
+      font-size: 27px;
+      font-weight: 850;
     }
 
-    .inventory-actions {
-      display: flex;
-
-      gap: 9px;
-
-      padding:
-        15px 18px;
-
-      background:
-        rgba(255,255,255,.015);
-    }
-
-    .action-btn {
-      border:
-        1px solid rgba(255,255,255,.085);
-
-      border-radius: 9px;
-
-      padding:
-        9px 13px;
-
-      color:
-        #d2cedc;
-
-      background:
-        rgba(255,255,255,.04);
-
+    .card-small {
+      color: var(--muted);
       font-size: 12px;
-
-      font-weight: 650;
-
-      transition:
-        .2s ease;
+      margin-top: 7px;
     }
 
-    .action-btn:hover {
-      color: white;
+    /* ========================================================
+       MAIN GRID
+       ======================================================== */
 
-      border-color:
-        rgba(255,255,255,.15);
-
-      background:
-        rgba(255,255,255,.065);
-
-      transform:
-        translateY(-1px);
-    }
-
-    .action-btn.primary {
-      border-color:
-        rgba(139,92,246,.32);
-
-      color:
-        #c8aeff;
-
-      background:
-        rgba(139,92,246,.11);
-    }
-
-    .action-btn.primary:hover {
-      border-color:
-        rgba(139,92,246,.50);
-
-      background:
-        rgba(139,92,246,.17);
-
-      box-shadow:
-        0 0 22px rgba(139,92,246,.08);
-    }
-
-    .dashboard-message {
-      min-height: 20px;
-
-      padding:
-        0 23px
-        18px;
-
-      font-size: 13px;
-    }
-
-    /* =====================================================
-       SAVED LOGINS
-    ===================================================== */
-
-    .saved-login-list {
+    .grid {
       display: grid;
-
-      gap: 10px;
-
-      padding:
-        21px 23px;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 18px;
     }
 
-    .saved-login {
-      display: flex;
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 19px;
+      background: var(--card);
+      overflow: hidden;
+    }
 
+    .panel-header {
+      padding: 20px 21px;
+      display: flex;
       align-items: center;
       justify-content: space-between;
-
-      gap: 15px;
-
-      padding: 16px;
-
-      border:
-        1px solid rgba(255,255,255,.07);
-
-      border-radius: 14px;
-
-      background:
-        rgba(255,255,255,.025);
-
-      transition:
-        transform .2s ease,
-        border .2s ease,
-        background .2s ease;
+      border-bottom: 1px solid var(--border);
     }
 
-    .saved-login:hover {
-      transform:
-        translateY(-2px);
-
-      border-color:
-        rgba(139,92,246,.20);
-
-      background:
-        rgba(139,92,246,.04);
+    .panel-title {
+      font-weight: 800;
+      font-size: 16px;
     }
 
-    .saved-info {
-      min-width: 0;
+    .panel-subtitle {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
     }
 
-    .saved-email {
-      color:
-        #f0eef6;
+    .panel-body {
+      padding: 21px;
+    }
 
-      font-size: 13px;
+    /* ========================================================
+       STOCK
+       ======================================================== */
 
-      font-weight: 700;
+    .stock-controls {
+      display: flex;
+      gap: 9px;
+      margin-bottom: 17px;
+    }
 
+    .stock-amount {
+      width: 100px;
+      height: 43px;
+      padding: 0 13px;
+      border-radius: 10px;
+      outline: none;
+      border: 1px solid var(--border);
+      color: white;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .primary-btn {
+      height: 43px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 10px;
+      color: white;
+      font-weight: 750;
+      background: linear-gradient(135deg, var(--purple), var(--purple2));
+    }
+
+    .primary-btn:hover {
+      opacity: 0.9;
+    }
+
+    .stock-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 350px;
+      overflow-y: auto;
+    }
+
+    .stock-item {
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.025);
+      font-family: monospace;
+      font-size: 12px;
+      color: #ddd;
       word-break: break-all;
     }
 
-    .saved-date {
-      color:
-        #706b7d;
-
-      font-size: 11px;
-
-      margin-top: 5px;
+    .empty {
+      padding: 35px 15px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
     }
 
-    .saved-actions {
+    /* ========================================================
+       KEY INFO
+       ======================================================== */
+
+    .info-row {
       display: flex;
-
-      gap: 7px;
-
-      flex-shrink: 0;
+      justify-content: space-between;
+      gap: 15px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
     }
 
-    .saved-actions button {
-      border:
-        1px solid rgba(255,255,255,.08);
-
-      border-radius: 8px;
-
-      padding:
-        8px 11px;
-
-      color:
-        #aaa5b7;
-
-      background:
-        rgba(255,255,255,.035);
-
-      font-size: 11px;
-
-      transition:
-        .2s ease;
+    .info-row:last-child {
+      border-bottom: 0;
     }
 
-    .saved-actions button:hover {
-      color: white;
-
-      background:
-        rgba(255,255,255,.065);
+    .info-label {
+      color: var(--muted);
+      font-size: 13px;
     }
 
-    .saved-actions .delete-btn:hover {
-      color:
-        #ff9b9b;
-
-      border-color:
-        rgba(248,113,113,.22);
-
-      background:
-        rgba(248,113,113,.06);
-    }
-
-    /* =====================================================
-       MODAL
-    ===================================================== */
-
-    .modal-overlay {
-      position: fixed;
-
-      inset: 0;
-
-      z-index: 100;
-
-      display: none;
-
-      align-items: center;
-      justify-content: center;
-
-      padding: 20px;
-
-      background:
-        rgba(3,2,7,.76);
-
-      backdrop-filter:
-        blur(12px);
-    }
-
-    .modal {
-      width:
-        min(430px, 100%);
-
-      border:
-        1px solid rgba(255,255,255,.10);
-
-      border-radius: 20px;
-
-      padding: 25px;
-
-      background:
-        linear-gradient(
-          145deg,
-          #1b1825,
-          #101016
-        );
-
-      box-shadow:
-        0 35px 120px rgba(0,0,0,.65),
-        0 0 50px rgba(139,92,246,.08);
-
-      animation:
-        modalEnter .25s ease both;
-    }
-
-    @keyframes modalEnter {
-      from {
-        opacity: 0;
-
-        transform:
-          scale(.97)
-          translateY(8px);
-      }
-
-      to {
-        opacity: 1;
-
-        transform:
-          scale(1)
-          translateY(0);
-      }
-    }
-
-    .modal h3 {
-      font-size: 19px;
-    }
-
-    .modal p {
-      color:
-        var(--muted);
-
-      font-size: 12px;
-
-      margin-top: 6px;
-    }
-
-    .modal-field {
-      margin-top: 18px;
-    }
-
-    .modal-field label {
-      display: block;
-
-      margin-bottom: 7px;
-
-      color:
-        #c9c4d5;
-
-      font-size: 12px;
-
-      font-weight: 650;
-    }
-
-    .modal-field input {
-      width: 100%;
-      height: 46px;
-
-      border:
-        1px solid rgba(255,255,255,.08);
-
-      border-radius: 10px;
-
-      outline: none;
-
-      padding:
-        0 12px;
-
-      color: white;
-
-      background:
-        rgba(255,255,255,.04);
-    }
-
-    .modal-buttons {
-      display: flex;
-
-      gap: 9px;
-
-      margin-top: 20px;
-    }
-
-    .modal-buttons button {
-      flex: 1;
-
-      height: 45px;
-
-      border-radius: 10px;
-
-      font-size: 12px;
-
+    .info-value {
+      text-align: right;
+      font-size: 13px;
       font-weight: 700;
+      word-break: break-word;
     }
 
-    #cancelSaveButton {
-      border:
-        1px solid rgba(255,255,255,.08);
-
-      color:
-        #aaaab4;
-
-      background:
-        rgba(255,255,255,.035);
-    }
-
-    #confirmSaveButton {
-      border: 0;
-
-      color: white;
-
-      background:
-        linear-gradient(
-          135deg,
-          #9868ff,
-          #6d28d9
-        );
-
-      box-shadow:
-        0 8px 25px rgba(109,40,217,.22);
-    }
-
-    /* =====================================================
-       LOADING
-    ===================================================== */
-
-    .loading {
+    .badge {
       display: inline-flex;
-
       align-items: center;
-
-      gap: 8px;
+      padding: 5px 9px;
+      border-radius: 7px;
+      font-size: 11px;
+      background: rgba(139, 92, 246, 0.13);
+      color: #c4b5fd;
+      border: 1px solid rgba(139, 92, 246, 0.2);
     }
 
-    .spinner {
-      width: 14px;
-      height: 14px;
-
-      border:
-        2px solid rgba(255,255,255,.25);
-
-      border-top-color:
-        white;
-
-      border-radius: 50%;
-
-      animation:
-        spin .7s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform:
-          rotate(360deg);
-      }
-    }
-
-    /* =====================================================
+    /* ========================================================
        RESPONSIVE
-    ===================================================== */
+       ======================================================== */
 
-    @media (max-width: 900px) {
+    @media (max-width: 850px) {
+      .cards {
+        grid-template-columns: 1fr;
+      }
 
-      .stats-grid {
-        grid-template-columns:
-          repeat(2, 1fr);
+      .grid {
+        grid-template-columns: 1fr;
       }
     }
 
-    @media (max-width: 700px) {
+    @media (max-width: 600px) {
+      .topbar {
+        padding: 0 16px;
+      }
+
+      .status {
+        display: none;
+      }
+
+      .container {
+        width: min(100% - 24px, 1200px);
+        padding-top: 24px;
+      }
 
       .login-card {
-        padding:
-          30px 22px;
+        padding: 27px 20px;
       }
 
-      .dashboard-container {
-        width:
-          calc(100% - 20px);
-
-        padding-top: 10px;
+      .stock-controls {
+        flex-wrap: wrap;
       }
 
-      .topbar {
-        margin-bottom: 28px;
-      }
-
-      .welcome h1 {
-        font-size: 31px;
-      }
-
-      .stats-grid {
-        grid-template-columns:
-          1fr;
-      }
-
-      .card-header {
-        align-items:
-          flex-start;
-
-        flex-direction:
-          column;
-      }
-
-      #generateButton {
+      .stock-amount {
         width: 100%;
       }
 
-      .inventory-row {
-        align-items:
-          flex-start;
-
-        flex-direction:
-          column;
-
-        gap: 7px;
-      }
-
-      .inventory-value {
-        max-width:
-          100%;
-
-        text-align:
-          left;
-      }
-
-      .inventory-actions {
-        flex-wrap:
-          wrap;
-      }
-
-      .action-btn {
-        flex: 1;
-      }
-
-      .saved-login {
-        align-items:
-          flex-start;
-
-        flex-direction:
-          column;
-      }
-
-      .saved-actions {
+      .primary-btn {
         width: 100%;
-      }
-
-      .saved-actions button {
-        flex: 1;
-      }
-    }
-
-    @media (max-width: 420px) {
-
-      .dashboard-container {
-        width:
-          calc(100% - 16px);
-      }
-
-      .topbar {
-        padding:
-          0 13px;
-      }
-
-      .stat-card {
-        padding: 18px;
-      }
-
-      .main-card {
-        border-radius: 17px;
-      }
-
-      .card-header,
-      #inventoryResult,
-      .saved-login-list {
-        padding-left: 17px;
-        padding-right: 17px;
-      }
-
-      .dashboard-message {
-        padding-left: 17px;
-        padding-right: 17px;
       }
     }
   </style>
@@ -1537,2552 +476,1182 @@
 
 <body>
 
-<!-- =========================================================
-     LOGIN PAGE
-========================================================= -->
+  <!-- ========================================================
+       LOGIN
+       ======================================================== -->
 
-<section id="loginPage">
-
-  <div class="login-wrapper">
-
-    <div class="login-glow"></div>
+  <section id="loginScreen">
 
     <div class="login-card">
 
-      <div class="brand">
+      <div class="logo">N</div>
 
-        <div class="brand-logo">
-          N
-        </div>
+      <h1>Welcome to Novi</h1>
 
-        <h1>Novi</h1>
+      <p>
+        Enter your Novi key to access the dashboard.
+        Your key is locked to the browser that first claims it.
+      </p>
 
-        <p>
-          Enter your access key to continue
-        </p>
-
-      </div>
-
-      <label
-        class="input-label"
-        for="keyInput"
+      <input
+        id="keyInput"
+        class="key-input"
+        type="text"
+        autocomplete="off"
+        placeholder="NOVI-XXXX-XXXX-XXXX-XXXX-XXXXXXXX"
       >
-        Access Key
-      </label>
 
-      <div class="input-wrap">
-
-        <input
-          id="keyInput"
-          type="text"
-          autocomplete="off"
-          placeholder="NOVI-XXXX-XXXX-XXXX-XXXX"
-        >
-
-      </div>
-
-      <button id="unlockButton">
-        Unlock Dashboard
+      <button
+        id="unlockBtn"
+        class="unlock-btn"
+        onclick="unlock()"
+      >
+        Unlock Novi
       </button>
 
-      <div id="verifyResult"></div>
+      <div
+        id="loginError"
+        class="error hidden"
+      ></div>
 
     </div>
 
-  </div>
-
-</section>
+  </section>
 
 
-<!-- =========================================================
-     DASHBOARD
-========================================================= -->
+  <!-- ========================================================
+       DASHBOARD
+       ======================================================== -->
 
-<section id="dashboardPage">
-
-  <div class="dashboard-container">
-
-    <!-- TOPBAR -->
+  <section id="dashboard" class="hidden">
 
     <header class="topbar">
 
-      <div class="topbar-brand">
-
-        <div class="small-logo">
-          N
-        </div>
-
-        <span>
-          Novi
-        </span>
-
+      <div class="brand">
+        <div class="brand-logo">N</div>
+        <span>Novi</span>
       </div>
 
-      <button id="logoutButton">
-        Logout
-      </button>
+      <div class="top-actions">
 
-    </header>
-
-
-    <!-- WELCOME -->
-
-    <div class="welcome">
-
-      <h1>
-        Dashboard
-      </h1>
-
-      <p>
-        Manage your inventory and saved logins.
-      </p>
-
-    </div>
-
-
-    <!-- STATS -->
-
-    <div class="stats-grid">
-
-      <div class="stat-card">
-
-        <div class="stat-label">
-          Available Stock
+        <div class="status">
+          <span class="status-dot"></span>
+          <span>Online</span>
         </div>
 
-        <div
-          class="stat-value"
-          id="stockCount"
+        <button
+          class="logout-btn"
+          onclick="logout()"
         >
-          —
-        </div>
-
-      </div>
-
-
-      <div class="stat-card">
-
-        <div class="stat-label">
-          Key Duration
-        </div>
-
-        <div
-          class="stat-value"
-          id="keyDuration"
-        >
-          —
-        </div>
-
-      </div>
-
-
-      <div class="stat-card">
-
-        <div class="stat-label">
-          Time Remaining
-        </div>
-
-        <div
-          class="stat-value"
-          id="keyExpiration"
-        >
-          —
-        </div>
-
-      </div>
-
-
-      <div class="stat-card">
-
-        <div class="stat-label">
-          Account Status
-        </div>
-
-        <div
-          class="stat-value"
-          id="accountStatus"
-        >
-          Active
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <!-- INVENTORY -->
-
-    <div class="main-card">
-
-      <div class="card-header">
-
-        <div class="card-title">
-
-          <h2>
-            Inventory
-          </h2>
-
-          <p>
-            Generate an account from available stock.
-          </p>
-
-        </div>
-
-        <button id="generateButton">
-          Generate Account
+          Logout
         </button>
 
       </div>
 
-      <div id="inventoryResult">
+    </header>
 
-        <div class="empty-state">
-          No account generated yet.
+
+    <main class="container">
+
+      <div class="welcome">
+        <h1>Dashboard</h1>
+        <p>Manage your Novi access and stock.</p>
+      </div>
+
+
+      <!-- ====================================================
+           STATS
+           ==================================================== -->
+
+      <div class="cards">
+
+        <div class="card">
+          <div class="card-label">Key Status</div>
+
+          <div
+            id="keyStatus"
+            class="card-value"
+          >
+            Active
+          </div>
+
+          <div class="card-small">
+            Your Novi key is active.
+          </div>
+        </div>
+
+
+        <div class="card">
+          <div class="card-label">Expiration</div>
+
+          <div
+            id="expiration"
+            class="card-value"
+          >
+            —
+          </div>
+
+          <div class="card-small">
+            Time remaining
+          </div>
+        </div>
+
+
+        <div class="card">
+          <div class="card-label">Stock</div>
+
+          <div
+            id="stockCount"
+            class="card-value"
+          >
+            0
+          </div>
+
+          <div class="card-small">
+            Items currently available
+          </div>
         </div>
 
       </div>
 
-      <div id="dashboardMessage"></div>
 
-    </div>
+      <!-- ====================================================
+           PANELS
+           ==================================================== -->
+
+      <div class="grid">
 
 
-    <!-- SAVED LOGINS -->
+        <!-- STOCK PANEL -->
 
-    <div class="main-card">
+        <div class="panel">
 
-      <div class="card-header">
+          <div class="panel-header">
 
-        <div class="card-title">
+            <div>
+              <div class="panel-title">
+                Stock
+              </div>
 
-          <h2>
-            Saved Logins
-          </h2>
+              <div class="panel-subtitle">
+                Generate new stock items
+              </div>
+            </div>
 
-          <p>
-            Logins saved to your Novi account.
-          </p>
+          </div>
+
+          <div class="panel-body">
+
+            <div class="stock-controls">
+
+              <input
+                id="stockAmount"
+                class="stock-amount"
+                type="number"
+                min="1"
+                max="100"
+                value="1"
+              >
+
+              <button
+                class="primary-btn"
+                onclick="generateStock()"
+              >
+                Generate Stock
+              </button>
+
+            </div>
+
+            <div
+              id="stockList"
+              class="stock-list"
+            >
+              <div class="empty">
+                Loading stock...
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- KEY PANEL -->
+
+        <div class="panel">
+
+          <div class="panel-header">
+
+            <div>
+              <div class="panel-title">
+                Key Information
+              </div>
+
+              <div class="panel-subtitle">
+                Current access information
+              </div>
+            </div>
+
+          </div>
+
+          <div class="panel-body">
+
+            <div class="info-row">
+
+              <span class="info-label">
+                Key
+              </span>
+
+              <span
+                id="currentKey"
+                class="info-value"
+              >
+                —
+              </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+              <span class="info-label">
+                Duration
+              </span>
+
+              <span
+                id="duration"
+                class="info-value"
+              >
+                —
+              </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+              <span class="info-label">
+                Expires
+              </span>
+
+              <span
+                id="expiresDate"
+                class="info-value"
+              >
+                —
+              </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+              <span class="info-label">
+                Browser Lock
+              </span>
+
+              <span class="info-value">
+                <span class="badge">
+                  Enabled
+                </span>
+              </span>
+
+            </div>
+
+          </div>
 
         </div>
 
       </div>
 
-      <div id="savedLoginResult">
+    </main>
 
-        <div class="empty-state">
-          No saved logins.
-        </div>
+  </section>
 
-      </div>
 
-    </div>
+  <script>
 
-  </div>
+    // ==========================================================
+    // IMPORTANT
+    // ==========================================================
+    // Empty string means the website uses its OWN backend.
+    //
+    // DO NOT change this to novi-1.onrender.com.
+    // ==========================================================
 
-</section>
+    const API_URL = "";
 
+    const SESSION_KEY = "noviSessionToken";
+    const DEVICE_KEY = "noviDeviceId";
+    const EXPIRATION_KEY = "noviExpiration";
+    const DURATION_KEY = "noviDuration";
+    const CURRENT_KEY = "noviCurrentKey";
 
-<!-- =========================================================
-     SAVE MODAL
-========================================================= -->
 
-<div
-  class="modal-overlay"
-  id="saveModal"
->
+    // ==========================================================
+    // DEVICE ID
+    // ==========================================================
 
-  <div class="modal">
+    function getDeviceId() {
 
-    <h3>
-      Save Login
-    </h3>
+      let deviceId =
+        localStorage.getItem(DEVICE_KEY);
 
-    <p>
-      Save this generated login to your Novi account.
-    </p>
+      if (!deviceId) {
 
-    <div class="modal-field">
+        if (
+          window.crypto &&
+          typeof crypto.randomUUID === "function"
+        ) {
 
-      <label>
-        Email
-      </label>
+          deviceId = crypto.randomUUID();
 
-      <input
-        id="saveEmail"
-        type="text"
-        readonly
-      >
+        } else {
 
-    </div>
+          deviceId =
+            "novi-" +
+            Date.now() +
+            "-" +
+            Math.random()
+              .toString(36)
+              .substring(2);
 
-    <div class="modal-field">
-
-      <label>
-        Password
-      </label>
-
-      <input
-        id="savePassword"
-        type="password"
-        readonly
-      >
-
-    </div>
-
-    <div class="modal-buttons">
-
-      <button id="cancelSaveButton">
-        Cancel
-      </button>
-
-      <button id="confirmSaveButton">
-        Save Login
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<script>
-"use strict";
-
-/* =========================================================
-   CONFIG
-========================================================= */
-
-const API_URL =
-  "https://novi-1.onrender.com";
-
-const SESSION_KEY =
-  "noviSessionToken";
-
-const DEVICE_KEY =
-  "noviDeviceId";
-
-const EXPIRATION_KEY =
-  "noviKeyExpiration";
-
-const DURATION_KEY =
-  "noviKeyDuration";
-
-
-/* =========================================================
-   STATE
-========================================================= */
-
-let currentSession =
-  sessionStorage.getItem(
-    SESSION_KEY
-  ) || "";
-
-let currentGeneratedLogin =
-  null;
-
-let expirationTimer =
-  null;
-
-let stockRefreshTimer =
-  null;
-
-let isGenerating =
-  false;
-
-
-/* =========================================================
-   ELEMENTS
-========================================================= */
-
-const loginPage =
-  document.getElementById(
-    "loginPage"
-  );
-
-const dashboardPage =
-  document.getElementById(
-    "dashboardPage"
-  );
-
-const keyInput =
-  document.getElementById(
-    "keyInput"
-  );
-
-const unlockButton =
-  document.getElementById(
-    "unlockButton"
-  );
-
-const verifyResult =
-  document.getElementById(
-    "verifyResult"
-  );
-
-const logoutButton =
-  document.getElementById(
-    "logoutButton"
-  );
-
-const stockCount =
-  document.getElementById(
-    "stockCount"
-  );
-
-const keyDuration =
-  document.getElementById(
-    "keyDuration"
-  );
-
-const keyExpiration =
-  document.getElementById(
-    "keyExpiration"
-  );
-
-const accountStatus =
-  document.getElementById(
-    "accountStatus"
-  );
-
-const generateButton =
-  document.getElementById(
-    "generateButton"
-  );
-
-const inventoryResult =
-  document.getElementById(
-    "inventoryResult"
-  );
-
-const dashboardMessage =
-  document.getElementById(
-    "dashboardMessage"
-  );
-
-const savedLoginResult =
-  document.getElementById(
-    "savedLoginResult"
-  );
-
-const saveModal =
-  document.getElementById(
-    "saveModal"
-  );
-
-const saveEmail =
-  document.getElementById(
-    "saveEmail"
-  );
-
-const savePassword =
-  document.getElementById(
-    "savePassword"
-  );
-
-const cancelSaveButton =
-  document.getElementById(
-    "cancelSaveButton"
-  );
-
-const confirmSaveButton =
-  document.getElementById(
-    "confirmSaveButton"
-  );
-
-
-/* =========================================================
-   DEVICE ID
-========================================================= */
-
-function getDeviceId() {
-
-  let deviceId =
-    localStorage.getItem(
-      DEVICE_KEY
-    );
-
-  if (!deviceId) {
-
-    if (
-      window.crypto &&
-      typeof crypto.randomUUID ===
-        "function"
-    ) {
-
-      deviceId =
-        crypto.randomUUID();
-
-    } else {
-
-      deviceId =
-        Date.now().toString(36) +
-        Math.random()
-          .toString(36)
-          .slice(2);
-    }
-
-    localStorage.setItem(
-      DEVICE_KEY,
-      deviceId
-    );
-  }
-
-  return deviceId;
-}
-
-
-/* =========================================================
-   API HELPERS
-========================================================= */
-
-async function parseResponse(
-  response
-) {
-
-  const text =
-    await response.text();
-
-  if (!text) {
-    return {};
-  }
-
-  try {
-
-    return JSON.parse(
-      text
-    );
-
-  } catch {
-
-    return {
-      success: false,
-      error: text
-    };
-  }
-}
-
-
-async function authenticatedFetch(
-  url,
-  options = {}
-) {
-
-  if (!currentSession) {
-
-    throw new Error(
-      "Your session has expired."
-    );
-  }
-
-  const headers = {
-
-    ...(options.headers || {}),
-
-    "x-novi-session":
-      currentSession
-  };
-
-  return fetch(
-    url,
-    {
-      ...options,
-      headers
-    }
-  );
-}
-
-
-function isSessionError(
-  result
-) {
-
-  const message =
-    String(
-      result?.message ||
-      result?.error ||
-      ""
-    ).toLowerCase();
-
-  return (
-    message.includes("session") ||
-    message.includes("expired") ||
-    message.includes("invalid")
-  );
-}
-
-
-/* =========================================================
-   VERIFY
-========================================================= */
-
-async function unlock() {
-
-  const key =
-    keyInput.value.trim();
-
-  if (!key) {
-
-    showVerify(
-      "Please enter your access key.",
-      false
-    );
-
-    return;
-  }
-
-  unlockButton.disabled =
-    true;
-
-  unlockButton.innerHTML = `
-    <span class="loading">
-      <span class="spinner"></span>
-      Verifying...
-    </span>
-  `;
-
-  try {
-
-    const response =
-      await fetch(
-        `${API_URL}/api/verify`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({
-              key,
-              deviceId:
-                getDeviceId()
-            })
         }
-      );
 
-    const result =
-      await parseResponse(
-        response
-      );
-
-    if (
-      !response.ok ||
-      !result.success ||
-      !result.sessionToken
-    ) {
-
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Invalid or expired key."
-      );
-    }
-
-    currentSession =
-      result.sessionToken;
-
-    sessionStorage.setItem(
-      SESSION_KEY,
-      currentSession
-    );
-
-    const duration =
-      result.key?.duration ||
-      result.duration ||
-      "Active";
-
-    const expiresAt =
-      result.key?.keyExpiresAt ??
-      result.key?.expiresAt ??
-      result.expiresAt ??
-      null;
-
-    sessionStorage.setItem(
-      DURATION_KEY,
-      duration
-    );
-
-    if (
-      expiresAt !== null &&
-      expiresAt !== undefined &&
-      expiresAt !== ""
-    ) {
-
-      sessionStorage.setItem(
-        EXPIRATION_KEY,
-        String(expiresAt)
-      );
-
-    } else {
-
-      sessionStorage.removeItem(
-        EXPIRATION_KEY
-      );
-    }
-
-    keyDuration.textContent =
-      formatDuration(
-        duration
-      );
-
-    accountStatus.textContent =
-      "Active";
-
-    startExpirationTimer(
-      expiresAt
-    );
-
-    loginPage.style.display =
-      "none";
-
-    dashboardPage.style.display =
-      "block";
-
-    verifyResult.textContent =
-      "";
-
-    await loadStock();
-
-    startLiveStock();
-
-    await loadSavedLogins();
-
-  } catch (error) {
-
-    currentSession =
-      "";
-
-    sessionStorage.removeItem(
-      SESSION_KEY
-    );
-
-    sessionStorage.removeItem(
-      EXPIRATION_KEY
-    );
-
-    sessionStorage.removeItem(
-      DURATION_KEY
-    );
-
-    showVerify(
-      error.message ||
-      "Unable to verify key.",
-      false
-    );
-
-  } finally {
-
-    unlockButton.disabled =
-      false;
-
-    unlockButton.textContent =
-      "Unlock Dashboard";
-  }
-}
-
-
-function showVerify(
-  message,
-  success
-) {
-
-  verifyResult.textContent =
-    message;
-
-  verifyResult.className =
-    success
-      ? "success"
-      : "error";
-}
-
-
-/* =========================================================
-   DURATION
-========================================================= */
-
-function formatDuration(
-  duration
-) {
-
-  const value =
-    String(
-      duration || ""
-    ).toLowerCase();
-
-  if (value === "1d")
-    return "1 Day";
-
-  if (value === "3d")
-    return "3 Days";
-
-  if (value === "1w")
-    return "1 Week";
-
-  if (value === "1mo")
-    return "1 Month";
-
-  if (value === "lifetime")
-    return "Lifetime";
-
-  return duration ||
-    "Active";
-}
-
-
-/* =========================================================
-   EXPIRATION
-========================================================= */
-
-function normalizeExpiration(
-  value
-) {
-
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
-    return null;
-  }
-
-  if (
-    typeof value === "number" &&
-    Number.isFinite(value)
-  ) {
-    return value;
-  }
-
-  const stringValue =
-    String(value).trim();
-
-  if (
-    /^[0-9]+$/.test(
-      stringValue
-    )
-  ) {
-
-    const numeric =
-      Number(
-        stringValue
-      );
-
-    if (!Number.isFinite(numeric)) {
-      return null;
-    }
-
-    if (
-      numeric < 100000000000
-    ) {
-      return numeric * 1000;
-    }
-
-    return numeric;
-  }
-
-  const parsed =
-    Date.parse(
-      stringValue
-    );
-
-  return Number.isFinite(parsed)
-    ? parsed
-    : null;
-}
-
-
-function startExpirationTimer(
-  expiresAt
-) {
-
-  if (expirationTimer) {
-
-    clearInterval(
-      expirationTimer
-    );
-
-    expirationTimer =
-      null;
-  }
-
-  if (
-    expiresAt === null ||
-    expiresAt === undefined ||
-    expiresAt === ""
-  ) {
-
-    keyExpiration.textContent =
-      "Never Expires";
-
-    keyExpiration.classList.remove(
-      "expiring",
-      "expired"
-    );
-
-    return;
-  }
-
-  const expirationTime =
-    normalizeExpiration(
-      expiresAt
-    );
-
-  if (
-    !Number.isFinite(
-      expirationTime
-    )
-  ) {
-
-    keyExpiration.textContent =
-      "Active";
-
-    return;
-  }
-
-  function updateTimer() {
-
-    const remaining =
-      expirationTime -
-      Date.now();
-
-    if (remaining <= 0) {
-
-      keyExpiration.textContent =
-        "Expired";
-
-      keyExpiration.classList.remove(
-        "expiring"
-      );
-
-      keyExpiration.classList.add(
-        "expired"
-      );
-
-      accountStatus.textContent =
-        "Expired";
-
-      if (expirationTimer) {
-
-        clearInterval(
-          expirationTimer
+        localStorage.setItem(
+          DEVICE_KEY,
+          deviceId
         );
-
-        expirationTimer =
-          null;
       }
 
-      setTimeout(
-        () => {
-
-          forceLogout(
-            "Your key has expired."
-          );
-
-        },
-        1000
-      );
-
-      return;
+      return deviceId;
     }
 
-    keyExpiration.textContent =
-      formatRemaining(
-        remaining
-      );
 
-    if (
-      remaining <=
-      60 * 60 * 1000
-    ) {
+    // Create the device ID immediately.
+    getDeviceId();
 
-      keyExpiration.classList.add(
-        "expiring"
-      );
 
-    } else {
+    // ==========================================================
+    // ELEMENTS
+    // ==========================================================
 
-      keyExpiration.classList.remove(
-        "expiring"
-      );
+    const loginScreen =
+      document.getElementById("loginScreen");
+
+    const dashboard =
+      document.getElementById("dashboard");
+
+    const keyInput =
+      document.getElementById("keyInput");
+
+    const unlockBtn =
+      document.getElementById("unlockBtn");
+
+    const loginError =
+      document.getElementById("loginError");
+
+
+    // ==========================================================
+    // FORMAT KEY
+    // ==========================================================
+
+    keyInput.addEventListener(
+      "input",
+      () => {
+
+        keyInput.value =
+          keyInput.value
+            .toUpperCase()
+            .replace(/\s+/g, "");
+
+      }
+    );
+
+
+    keyInput.addEventListener(
+      "keydown",
+      event => {
+
+        if (event.key === "Enter") {
+          unlock();
+        }
+
+      }
+    );
+
+
+    // ==========================================================
+    // ERROR
+    // ==========================================================
+
+    function showLoginError(message) {
+
+      loginError.textContent = message;
+
+      loginError.classList.remove("hidden");
     }
 
-    keyExpiration.classList.remove(
-      "expired"
-    );
 
-    accountStatus.textContent =
-      "Active";
-  }
+    function hideLoginError() {
 
-  updateTimer();
+      loginError.textContent = "";
 
-  expirationTimer =
-    setInterval(
-      updateTimer,
-      1000
-    );
-}
+      loginError.classList.add("hidden");
+    }
 
 
-function formatRemaining(
-  milliseconds
-) {
+    // ==========================================================
+    // UNLOCK
+    // ==========================================================
 
-  let totalSeconds =
-    Math.max(
-      0,
-      Math.floor(
-        milliseconds / 1000
-      )
-    );
+    async function unlock() {
 
-  const days =
-    Math.floor(
-      totalSeconds / 86400
-    );
+      hideLoginError();
 
-  totalSeconds %=
-    86400;
+      const key =
+        keyInput.value.trim();
 
-  const hours =
-    Math.floor(
-      totalSeconds / 3600
-    );
+      if (!key) {
 
-  totalSeconds %=
-    3600;
-
-  const minutes =
-    Math.floor(
-      totalSeconds / 60
-    );
-
-  const seconds =
-    totalSeconds % 60;
-
-  const hh =
-    String(hours)
-      .padStart(2, "0");
-
-  const mm =
-    String(minutes)
-      .padStart(2, "0");
-
-  const ss =
-    String(seconds)
-      .padStart(2, "0");
-
-  if (days > 0) {
-
-    return `${days}d ${hh}h ${mm}m`;
-  }
-
-  return `${hh}h ${mm}m ${ss}s`;
-}
-
-
-function restoreExpirationTimer() {
-
-  const duration =
-    sessionStorage.getItem(
-      DURATION_KEY
-    );
-
-  const expiresAt =
-    sessionStorage.getItem(
-      EXPIRATION_KEY
-    );
-
-  if (duration) {
-
-    keyDuration.textContent =
-      formatDuration(
-        duration
-      );
-  }
-
-  if (
-    expiresAt !== null &&
-    expiresAt !== ""
-  ) {
-
-    startExpirationTimer(
-      expiresAt
-    );
-
-  } else if (
-    String(duration).toLowerCase() ===
-    "lifetime"
-  ) {
-
-    keyExpiration.textContent =
-      "Never Expires";
-
-  } else {
-
-    keyExpiration.textContent =
-      "—";
-  }
-}
-
-
-/* =========================================================
-   STOCK
-========================================================= */
-
-async function loadStock() {
-
-  if (!currentSession) {
-    return;
-  }
-
-  try {
-
-    const response =
-      await authenticatedFetch(
-        `${API_URL}/api/stock`
-      );
-
-    const result =
-      await parseResponse(
-        response
-      );
-
-    if (
-      response.status === 401
-    ) {
-
-      if (
-        isSessionError(
-          result
-        )
-      ) {
-
-        forceLogout(
-          result.message ||
-          result.error ||
-          "Your session has expired."
+        showLoginError(
+          "Please enter your Novi key."
         );
 
         return;
       }
 
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Could not load stock."
-      );
-    }
 
-    if (!response.ok) {
+      unlockBtn.disabled = true;
 
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Could not load stock."
-      );
-    }
+      unlockBtn.textContent =
+        "Checking key...";
 
-    const count =
-      Number(
-        result.count ??
-        result.stockCount ??
-        0
-      );
 
-    stockCount.textContent =
-      count;
+      try {
 
-    if (!isGenerating) {
+        const response =
+          await fetch(
+            `${API_URL}/api/verify`,
+            {
+              method: "POST",
 
-      if (count <= 0) {
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
 
-        generateButton.disabled =
-          true;
+              body: JSON.stringify({
+                key,
+                deviceId: getDeviceId()
+              })
+            }
+          );
 
-        generateButton.textContent =
-          "Out of Stock";
 
-      } else {
+        const result =
+          await response.json();
 
-        generateButton.disabled =
-          false;
 
-        generateButton.textContent =
-          "Generate Account";
+        if (!response.ok || !result.success) {
+
+          showLoginError(
+            result.error ||
+            "Invalid key."
+          );
+
+          return;
+        }
+
+
+        // ======================================================
+        // SAVE SESSION
+        // ======================================================
+
+        sessionStorage.setItem(
+          SESSION_KEY,
+          result.sessionToken
+        );
+
+
+        localStorage.setItem(
+          CURRENT_KEY,
+          result.key || key
+        );
+
+
+        if (result.duration) {
+
+          localStorage.setItem(
+            DURATION_KEY,
+            result.duration
+          );
+
+        }
+
+
+        if (result.expiresAt) {
+
+          localStorage.setItem(
+            EXPIRATION_KEY,
+            String(result.expiresAt)
+          );
+
+        } else {
+
+          localStorage.removeItem(
+            EXPIRATION_KEY
+          );
+
+        }
+
+
+        showDashboard();
+
+      } catch (error) {
+
+        console.error(
+          "Unlock error:",
+          error
+        );
+
+        showLoginError(
+          "Could not connect to Novi."
+        );
+
+      } finally {
+
+        unlockBtn.disabled = false;
+
+        unlockBtn.textContent =
+          "Unlock Novi";
+
       }
+
     }
 
-  } catch (error) {
 
-    console.error(
-      "Stock error:",
-      error
-    );
-  }
-}
+    // ==========================================================
+    // SHOW DASHBOARD
+    // ==========================================================
+
+    function showDashboard() {
+
+      loginScreen.classList.add(
+        "hidden"
+      );
+
+      dashboard.classList.remove(
+        "hidden"
+      );
+
+      updateKeyInfo();
+
+      loadStock();
+
+    }
 
 
-function startLiveStock() {
+    // ==========================================================
+    // SESSION CHECK
+    // ==========================================================
 
-  stopLiveStock();
+    async function checkExistingSession() {
 
-  loadStock();
+      const token =
+        sessionStorage.getItem(
+          SESSION_KEY
+        );
 
-  stockRefreshTimer =
+      if (!token) {
+        return;
+      }
+
+
+      try {
+
+        const response =
+          await fetch(
+            `${API_URL}/api/stock`,
+            {
+              headers: {
+                "x-novi-session":
+                  token
+              }
+            }
+          );
+
+
+        if (response.ok) {
+
+          showDashboard();
+
+        } else {
+
+          sessionStorage.removeItem(
+            SESSION_KEY
+          );
+
+        }
+
+      } catch {
+
+        // Keep login screen if backend
+        // cannot be reached.
+
+      }
+
+    }
+
+
+    // ==========================================================
+    // AUTHENTICATED FETCH
+    // ==========================================================
+
+    async function authenticatedFetch(
+      endpoint,
+      options = {}
+    ) {
+
+      const token =
+        sessionStorage.getItem(
+          SESSION_KEY
+        );
+
+
+      if (!token) {
+
+        throw new Error(
+          "NO_SESSION"
+        );
+
+      }
+
+
+      const headers = {
+        ...(options.headers || {}),
+        "x-novi-session": token
+      };
+
+
+      return fetch(
+        `${API_URL}${endpoint}`,
+        {
+          ...options,
+          headers
+        }
+      );
+
+    }
+
+
+    // ==========================================================
+    // LOAD STOCK
+    // ==========================================================
+
+    async function loadStock() {
+
+      const stockList =
+        document.getElementById(
+          "stockList"
+        );
+
+
+      try {
+
+        const response =
+          await authenticatedFetch(
+            "/api/stock"
+          );
+
+
+        if (response.status === 401) {
+
+          forceLogout();
+
+          return;
+        }
+
+
+        const result =
+          await response.json();
+
+
+        if (!result.success) {
+
+          stockList.innerHTML =
+            `<div class="empty">
+              Could not load stock.
+            </div>`;
+
+          return;
+        }
+
+
+        const stock =
+          Array.isArray(result.stock)
+            ? result.stock
+            : [];
+
+
+        updateStockCount(
+          stock.length
+        );
+
+
+        if (stock.length === 0) {
+
+          stockList.innerHTML =
+            `<div class="empty">
+              No stock available.
+            </div>`;
+
+          return;
+        }
+
+
+        stockList.innerHTML =
+          stock
+            .slice()
+            .reverse()
+            .map(item => {
+
+              const value =
+                typeof item === "string"
+                  ? item
+                  : item.value || "";
+
+
+              return `
+                <div class="stock-item">
+                  ${escapeHtml(value)}
+                </div>
+              `;
+
+            })
+            .join("");
+
+
+      } catch (error) {
+
+        console.error(
+          "Stock error:",
+          error
+        );
+
+        if (
+          error.message ===
+          "NO_SESSION"
+        ) {
+
+          forceLogout();
+
+          return;
+        }
+
+
+        stockList.innerHTML =
+          `<div class="empty">
+            Could not connect to the server.
+          </div>`;
+
+      }
+
+    }
+
+
+    // ==========================================================
+    // GENERATE STOCK
+    // ==========================================================
+
+    async function generateStock() {
+
+      const amountInput =
+        document.getElementById(
+          "stockAmount"
+        );
+
+
+      let amount =
+        Number(amountInput.value);
+
+
+      if (!Number.isFinite(amount)) {
+        amount = 1;
+      }
+
+
+      amount =
+        Math.max(
+          1,
+          Math.min(
+            100,
+            Math.floor(amount)
+          )
+        );
+
+
+      amountInput.value =
+        amount;
+
+
+      try {
+
+        const response =
+          await authenticatedFetch(
+            "/api/stock/generate",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                amount
+              })
+            }
+          );
+
+
+        if (response.status === 401) {
+
+          forceLogout();
+
+          return;
+        }
+
+
+        const result =
+          await response.json();
+
+
+        if (!response.ok || !result.success) {
+
+          alert(
+            result.error ||
+            "Could not generate stock."
+          );
+
+          return;
+        }
+
+
+        await loadStock();
+
+      } catch (error) {
+
+        console.error(
+          "Generate stock error:",
+          error
+        );
+
+        alert(
+          "Could not connect to Novi."
+        );
+
+      }
+
+    }
+
+
+    // ==========================================================
+    // KEY INFO
+    // ==========================================================
+
+    function updateKeyInfo() {
+
+      const currentKey =
+        localStorage.getItem(
+          CURRENT_KEY
+        ) || "—";
+
+
+      const duration =
+        localStorage.getItem(
+          DURATION_KEY
+        ) || "—";
+
+
+      const expiration =
+        localStorage.getItem(
+          EXPIRATION_KEY
+        );
+
+
+      document.getElementById(
+        "currentKey"
+      ).textContent =
+        currentKey;
+
+
+      document.getElementById(
+        "duration"
+      ).textContent =
+        formatDuration(duration);
+
+
+      const expirationElement =
+        document.getElementById(
+          "expiresDate"
+        );
+
+
+      const expirationCard =
+        document.getElementById(
+          "expiration"
+        );
+
+
+      if (!expiration) {
+
+        expirationElement.textContent =
+          "Never";
+
+        expirationCard.textContent =
+          "Lifetime";
+
+        return;
+      }
+
+
+      const date =
+        new Date(
+          Number(expiration)
+        );
+
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+
+        expirationElement.textContent =
+          "Unknown";
+
+        expirationCard.textContent =
+          "Unknown";
+
+        return;
+      }
+
+
+      expirationElement.textContent =
+        date.toLocaleString();
+
+
+      expirationCard.textContent =
+        getTimeRemaining(
+          date.getTime()
+        );
+
+    }
+
+
+    // ==========================================================
+    // DURATION FORMAT
+    // ==========================================================
+
+    function formatDuration(value) {
+
+      switch (value) {
+
+        case "1d":
+          return "1 Day";
+
+        case "3d":
+          return "3 Days";
+
+        case "1w":
+          return "1 Week";
+
+        case "1mo":
+          return "1 Month";
+
+        case "lifetime":
+          return "Lifetime";
+
+        default:
+          return value;
+
+      }
+
+    }
+
+
+    // ==========================================================
+    // TIME REMAINING
+    // ==========================================================
+
+    function getTimeRemaining(
+      timestamp
+    ) {
+
+      const difference =
+        timestamp -
+        Date.now();
+
+
+      if (difference <= 0) {
+        return "Expired";
+      }
+
+
+      const seconds =
+        Math.floor(
+          difference / 1000
+        );
+
+
+      const days =
+        Math.floor(
+          seconds / 86400
+        );
+
+
+      const hours =
+        Math.floor(
+          (seconds % 86400) /
+          3600
+        );
+
+
+      const minutes =
+        Math.floor(
+          (seconds % 3600) /
+          60
+        );
+
+
+      if (days > 0) {
+
+        return `${days}d ${hours}h`;
+
+      }
+
+
+      if (hours > 0) {
+
+        return `${hours}h ${minutes}m`;
+
+      }
+
+
+      return `${minutes}m`;
+
+    }
+
+
+    // ==========================================================
+    // STOCK COUNT
+    // ==========================================================
+
+    function updateStockCount(
+      count
+    ) {
+
+      document.getElementById(
+        "stockCount"
+      ).textContent =
+        count;
+
+    }
+
+
+    // ==========================================================
+    // LOGOUT
+    // ==========================================================
+
+    async function logout() {
+
+      try {
+
+        await authenticatedFetch(
+          "/api/logout",
+          {
+            method: "POST"
+          }
+        );
+
+      } catch {}
+
+      forceLogout();
+
+    }
+
+
+    // ==========================================================
+    // FORCE LOGOUT
+    // ==========================================================
+
+    function forceLogout() {
+
+      sessionStorage.removeItem(
+        SESSION_KEY
+      );
+
+      loginScreen.classList.remove(
+        "hidden"
+      );
+
+      dashboard.classList.add(
+        "hidden"
+      );
+
+      keyInput.value = "";
+
+      hideLoginError();
+
+    }
+
+
+    // ==========================================================
+    // ESCAPE HTML
+    // ==========================================================
+
+    function escapeHtml(value) {
+
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+    }
+
+
+    // ==========================================================
+    // EXPIRATION TIMER
+    // ==========================================================
+
     setInterval(
       () => {
 
         if (
-          dashboardPage.style.display !==
-            "none" &&
-          currentSession
+          !dashboard.classList.contains(
+            "hidden"
+          )
         ) {
 
-          loadStock();
+          updateKeyInfo();
+
         }
 
       },
-      2000
-    );
-}
-
-
-function stopLiveStock() {
-
-  if (stockRefreshTimer) {
-
-    clearInterval(
-      stockRefreshTimer
+      1000
     );
 
-    stockRefreshTimer =
-      null;
-  }
-}
 
+    // ==========================================================
+    // START
+    // ==========================================================
 
-/* =========================================================
-   GENERATE
-========================================================= */
+    checkExistingSession();
 
-async function generateInventory() {
-
-  if (isGenerating) {
-    return;
-  }
-
-  if (!currentSession) {
-
-    forceLogout(
-      "Your session has expired."
-    );
-
-    return;
-  }
-
-  isGenerating =
-    true;
-
-  generateButton.disabled =
-    true;
-
-  generateButton.innerHTML = `
-    <span class="loading">
-      <span class="spinner"></span>
-      Generating...
-    </span>
-  `;
-
-  dashboardMessage.textContent =
-    "";
-
-  try {
-
-    const response =
-      await authenticatedFetch(
-        `${API_URL}/api/stock/generate`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          }
-        }
-      );
-
-    const result =
-      await parseResponse(
-        response
-      );
-
-    if (
-      response.status === 401
-    ) {
-
-      if (
-        isSessionError(
-          result
-        )
-      ) {
-
-        forceLogout(
-          result.message ||
-          result.error ||
-          "Your session has expired."
-        );
-
-        return;
-      }
-
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Generation request was rejected."
-      );
-    }
-
-    if (
-      !response.ok ||
-      !result.success
-    ) {
-
-      throw new Error(
-        result.message ||
-        result.error ||
-        "No stock available."
-      );
-    }
-
-    const item =
-      result.item ||
-      result.account ||
-      result;
-
-    currentGeneratedLogin =
-      normalizeLogin(
-        item
-      );
-
-    renderInventoryItem(
-      currentGeneratedLogin
-    );
-
-    dashboardMessage.textContent =
-      "Account generated successfully.";
-
-    dashboardMessage.className =
-      "dashboard-message success";
-
-    await loadStock();
-
-  } catch (error) {
-
-    dashboardMessage.textContent =
-      error.message ||
-      "Generation failed.";
-
-    dashboardMessage.className =
-      "dashboard-message error";
-
-  } finally {
-
-    isGenerating =
-      false;
-
-    await loadStock();
-  }
-}
-
-
-function normalizeLogin(
-  item
-) {
-
-  if (!item) {
-
-    return {
-      email: "",
-      password: ""
-    };
-  }
-
-  if (
-    typeof item === "object" &&
-    (
-      "email" in item ||
-      "password" in item
-    )
-  ) {
-
-    return {
-
-      email:
-        String(
-          item.email || ""
-        ),
-
-      password:
-        String(
-          item.password || ""
-        )
-    };
-  }
-
-  if (
-    typeof item === "string"
-  ) {
-
-    const separator =
-      item.indexOf(":");
-
-    if (separator !== -1) {
-
-      return {
-
-        email:
-          item.slice(
-            0,
-            separator
-          ),
-
-        password:
-          item.slice(
-            separator + 1
-          )
-      };
-    }
-
-    return {
-      email: item,
-      password: ""
-    };
-  }
-
-  return {
-    email: "",
-    password: ""
-  };
-}
-
-
-/* =========================================================
-   INVENTORY UI
-========================================================= */
-
-function renderInventoryItem(
-  item
-) {
-
-  inventoryResult.innerHTML =
-    "";
-
-  const wrapper =
-    document.createElement(
-      "div"
-    );
-
-  wrapper.className =
-    "inventory-item";
-
-  const emailRow =
-    document.createElement(
-      "div"
-    );
-
-  emailRow.className =
-    "inventory-row";
-
-  emailRow.innerHTML = `
-    <span class="inventory-label">
-      Email
-    </span>
-
-    <span class="inventory-value"></span>
-  `;
-
-  emailRow
-    .querySelector(
-      ".inventory-value"
-    )
-    .textContent =
-      item.email || "—";
-
-
-  const passwordRow =
-    document.createElement(
-      "div"
-    );
-
-  passwordRow.className =
-    "inventory-row";
-
-  passwordRow.innerHTML = `
-    <span class="inventory-label">
-      Password
-    </span>
-
-    <span class="inventory-value"></span>
-  `;
-
-  passwordRow
-    .querySelector(
-      ".inventory-value"
-    )
-    .textContent =
-      item.password || "—";
-
-
-  const actions =
-    document.createElement(
-      "div"
-    );
-
-  actions.className =
-    "inventory-actions";
-
-
-  const copyEmail =
-    document.createElement(
-      "button"
-    );
-
-  copyEmail.className =
-    "action-btn";
-
-  copyEmail.textContent =
-    "Copy Email";
-
-  copyEmail.onclick =
-    () =>
-      copyText(
-        item.email,
-        "Email copied."
-      );
-
-
-  const copyPassword =
-    document.createElement(
-      "button"
-    );
-
-  copyPassword.className =
-    "action-btn";
-
-  copyPassword.textContent =
-    "Copy Password";
-
-  copyPassword.onclick =
-    () =>
-      copyText(
-        item.password,
-        "Password copied."
-      );
-
-
-  const saveButton =
-    document.createElement(
-      "button"
-    );
-
-  saveButton.className =
-    "action-btn primary";
-
-  saveButton.textContent =
-    "Save Login";
-
-  saveButton.onclick =
-    () =>
-      openSaveModal(
-        item
-      );
-
-
-  actions.appendChild(
-    copyEmail
-  );
-
-  actions.appendChild(
-    copyPassword
-  );
-
-  actions.appendChild(
-    saveButton
-  );
-
-
-  wrapper.appendChild(
-    emailRow
-  );
-
-  wrapper.appendChild(
-    passwordRow
-  );
-
-  wrapper.appendChild(
-    actions
-  );
-
-  inventoryResult.appendChild(
-    wrapper
-  );
-}
-
-
-/* =========================================================
-   COPY
-========================================================= */
-
-async function copyText(
-  text,
-  message
-) {
-
-  if (!text) {
-    return;
-  }
-
-  try {
-
-    await navigator.clipboard.writeText(
-      text
-    );
-
-    dashboardMessage.textContent =
-      message;
-
-    dashboardMessage.className =
-      "dashboard-message success";
-
-    setTimeout(
-      () => {
-
-        dashboardMessage.textContent =
-          "";
-
-      },
-      1800
-    );
-
-  } catch {
-
-    dashboardMessage.textContent =
-      "Copy failed.";
-
-    dashboardMessage.className =
-      "dashboard-message error";
-  }
-}
-
-
-/* =========================================================
-   SAVE MODAL
-========================================================= */
-
-function openSaveModal(
-  item
-) {
-
-  currentGeneratedLogin =
-    item;
-
-  saveEmail.value =
-    item.email || "";
-
-  savePassword.value =
-    item.password || "";
-
-  saveModal.style.display =
-    "flex";
-}
-
-
-function closeSaveModal() {
-
-  saveModal.style.display =
-    "none";
-
-  saveEmail.value =
-    "";
-
-  savePassword.value =
-    "";
-}
-
-
-/* =========================================================
-   SAVE LOGIN
-========================================================= */
-
-async function saveCurrentLogin() {
-
-  if (
-    !currentGeneratedLogin ||
-    !currentGeneratedLogin.email ||
-    !currentGeneratedLogin.password
-  ) {
-
-    dashboardMessage.textContent =
-      "The generated login is incomplete.";
-
-    dashboardMessage.className =
-      "dashboard-message error";
-
-    return;
-  }
-
-  if (!currentSession) {
-
-    closeSaveModal();
-
-    forceLogout(
-      "Your session has expired."
-    );
-
-    return;
-  }
-
-  confirmSaveButton.disabled =
-    true;
-
-  confirmSaveButton.textContent =
-    "Saving...";
-
-  try {
-
-    const payload = {
-
-      email:
-        currentGeneratedLogin.email,
-
-      password:
-        currentGeneratedLogin.password
-    };
-
-    const response =
-      await authenticatedFetch(
-        `${API_URL}/api/saved-logins`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify(
-              payload
-            )
-        }
-      );
-
-    const result =
-      await parseResponse(
-        response
-      );
-
-    if (
-      response.status === 401
-    ) {
-
-      if (
-        isSessionError(
-          result
-        )
-      ) {
-
-        closeSaveModal();
-
-        forceLogout(
-          result.message ||
-          result.error ||
-          "Your session has expired."
-        );
-
-        return;
-      }
-
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Unauthorized."
-      );
-    }
-
-    if (!response.ok) {
-
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Could not save login."
-      );
-    }
-
-    if (!result.success) {
-
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Could not save login."
-      );
-    }
-
-    closeSaveModal();
-
-    dashboardMessage.textContent =
-      "Login saved successfully.";
-
-    dashboardMessage.className =
-      "dashboard-message success";
-
-    await loadSavedLogins();
-
-  } catch (error) {
-
-    console.error(
-      "Save login error:",
-      error
-    );
-
-    dashboardMessage.textContent =
-      error.message ||
-      "Could not save login.";
-
-    dashboardMessage.className =
-      "dashboard-message error";
-
-  } finally {
-
-    confirmSaveButton.disabled =
-      false;
-
-    confirmSaveButton.textContent =
-      "Save Login";
-  }
-}
-
-
-/* =========================================================
-   SAVED LOGINS
-========================================================= */
-
-async function loadSavedLogins() {
-
-  if (!currentSession) {
-    return;
-  }
-
-  try {
-
-    const response =
-      await authenticatedFetch(
-        `${API_URL}/api/saved-logins`
-      );
-
-    const result =
-      await parseResponse(
-        response
-      );
-
-    if (
-      response.status === 401
-    ) {
-
-      if (
-        isSessionError(
-          result
-        )
-      ) {
-
-        forceLogout(
-          result.message ||
-          result.error ||
-          "Your session has expired."
-        );
-
-        return;
-      }
-
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Could not load saved logins."
-      );
-    }
-
-    if (!response.ok) {
-
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Could not load saved logins."
-      );
-    }
-
-    const logins =
-      Array.isArray(result)
-        ? result
-        : (
-            result.logins ||
-            result.savedLogins ||
-            []
-          );
-
-    renderSavedLogins(
-      logins
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Load saved logins error:",
-      error
-    );
-
-    savedLoginResult.innerHTML =
-      "";
-
-    const errorDiv =
-      document.createElement(
-        "div"
-      );
-
-    errorDiv.className =
-      "empty-state error";
-
-    errorDiv.textContent =
-      error.message ||
-      "Could not load saved logins.";
-
-    savedLoginResult.appendChild(
-      errorDiv
-    );
-  }
-}
-
-
-function renderSavedLogins(
-  logins
-) {
-
-  if (
-    !Array.isArray(logins) ||
-    logins.length === 0
-  ) {
-
-    savedLoginResult.innerHTML = `
-      <div class="empty-state">
-        No saved logins.
-      </div>
-    `;
-
-    return;
-  }
-
-  const list =
-    document.createElement(
-      "div"
-    );
-
-  list.className =
-    "saved-login-list";
-
-  logins.forEach(
-    login => {
-
-      const row =
-        document.createElement(
-          "div"
-        );
-
-      row.className =
-        "saved-login";
-
-
-      const info =
-        document.createElement(
-          "div"
-        );
-
-      info.className =
-        "saved-info";
-
-
-      const email =
-        document.createElement(
-          "div"
-        );
-
-      email.className =
-        "saved-email";
-
-      email.textContent =
-        login.email ||
-        "Unknown";
-
-
-      const date =
-        document.createElement(
-          "div"
-        );
-
-      date.className =
-        "saved-date";
-
-
-      const created =
-        login.createdAt ??
-        login.created_at;
-
-      date.textContent =
-        created
-          ? `Saved ${formatDate(created)}`
-          : "Saved login";
-
-
-      info.appendChild(
-        email
-      );
-
-      info.appendChild(
-        date
-      );
-
-
-      const actions =
-        document.createElement(
-          "div"
-        );
-
-      actions.className =
-        "saved-actions";
-
-
-      const copy =
-        document.createElement(
-          "button"
-        );
-
-      copy.textContent =
-        "Copy";
-
-      copy.onclick =
-        () =>
-          revealAndCopy(
-            login.id
-          );
-
-
-      const deleteButton =
-        document.createElement(
-          "button"
-        );
-
-      deleteButton.textContent =
-        "Delete";
-
-      deleteButton.className =
-        "delete-btn";
-
-      deleteButton.onclick =
-        () =>
-          deleteSavedLogin(
-            login.id
-          );
-
-
-      actions.appendChild(
-        copy
-      );
-
-      actions.appendChild(
-        deleteButton
-      );
-
-
-      row.appendChild(
-        info
-      );
-
-      row.appendChild(
-        actions
-      );
-
-      list.appendChild(
-        row
-      );
-    }
-  );
-
-
-  savedLoginResult.innerHTML =
-    "";
-
-  savedLoginResult.appendChild(
-    list
-  );
-}
-
-
-/* =========================================================
-   REVEAL + COPY
-========================================================= */
-
-async function revealAndCopy(
-  id
-) {
-
-  if (!id) {
-    return;
-  }
-
-  try {
-
-    const response =
-      await authenticatedFetch(
-        `${API_URL}/api/saved-logins/${encodeURIComponent(id)}`
-      );
-
-    const result =
-      await parseResponse(
-        response
-      );
-
-    if (
-      response.status === 401
-    ) {
-
-      if (
-        isSessionError(
-          result
-        )
-      ) {
-
-        forceLogout(
-          result.message ||
-          result.error ||
-          "Your session has expired."
-        );
-
-        return;
-      }
-
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Unauthorized."
-      );
-    }
-
-    if (
-      !response.ok ||
-      !result.success
-    ) {
-
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Could not retrieve login."
-      );
-    }
-
-    const login =
-      result.login ||
-      result.item ||
-      result;
-
-    const text =
-      `${login.email || ""}:${login.password || ""}`;
-
-    await navigator.clipboard.writeText(
-      text
-    );
-
-    dashboardMessage.textContent =
-      "Saved login copied.";
-
-    dashboardMessage.className =
-      "dashboard-message success";
-
-    setTimeout(
-      () => {
-
-        dashboardMessage.textContent =
-          "";
-
-      },
-      1800
-    );
-
-  } catch (error) {
-
-    dashboardMessage.textContent =
-      error.message ||
-      "Could not copy saved login.";
-
-    dashboardMessage.className =
-      "dashboard-message error";
-  }
-}
-
-
-/* =========================================================
-   DELETE
-========================================================= */
-
-async function deleteSavedLogin(
-  id
-) {
-
-  if (!id) {
-    return;
-  }
-
-  try {
-
-    const response =
-      await authenticatedFetch(
-        `${API_URL}/api/saved-logins/${encodeURIComponent(id)}`,
-        {
-          method: "DELETE"
-        }
-      );
-
-    const result =
-      await parseResponse(
-        response
-      );
-
-    if (
-      response.status === 401
-    ) {
-
-      if (
-        isSessionError(
-          result
-        )
-      ) {
-
-        forceLogout(
-          result.message ||
-          result.error ||
-          "Your session has expired."
-        );
-
-        return;
-      }
-
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Unauthorized."
-      );
-    }
-
-    if (
-      !response.ok ||
-      !result.success
-    ) {
-
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Could not delete login."
-      );
-    }
-
-    await loadSavedLogins();
-
-    dashboardMessage.textContent =
-      "Saved login deleted.";
-
-    dashboardMessage.className =
-      "dashboard-message success";
-
-    setTimeout(
-      () => {
-
-        dashboardMessage.textContent =
-          "";
-
-      },
-      1800
-    );
-
-  } catch (error) {
-
-    dashboardMessage.textContent =
-      error.message ||
-      "Could not delete saved login.";
-
-    dashboardMessage.className =
-      "dashboard-message error";
-  }
-}
-
-
-/* =========================================================
-   LOGOUT
-========================================================= */
-
-async function logout() {
-
-  try {
-
-    if (currentSession) {
-
-      await authenticatedFetch(
-        `${API_URL}/api/logout`,
-        {
-          method: "POST"
-        }
-      );
-    }
-
-  } catch {
-    // Ignore logout errors.
-  }
-
-  forceLogout();
-}
-
-
-function forceLogout(
-  message = ""
-) {
-
-  stopLiveStock();
-
-  if (expirationTimer) {
-
-    clearInterval(
-      expirationTimer
-    );
-
-    expirationTimer =
-      null;
-  }
-
-  currentSession =
-    "";
-
-  sessionStorage.removeItem(
-    SESSION_KEY
-  );
-
-  sessionStorage.removeItem(
-    EXPIRATION_KEY
-  );
-
-  sessionStorage.removeItem(
-    DURATION_KEY
-  );
-
-  dashboardPage.style.display =
-    "none";
-
-  loginPage.style.display =
-    "flex";
-
-  keyInput.value =
-    "";
-
-  verifyResult.textContent =
-    message;
-
-  verifyResult.className =
-    message
-      ? "error"
-      : "";
-
-  inventoryResult.innerHTML = `
-    <div class="empty-state">
-      No account generated yet.
-    </div>
-  `;
-
-  savedLoginResult.innerHTML = `
-    <div class="empty-state">
-      No saved logins.
-    </div>
-  `;
-
-  stockCount.textContent =
-    "—";
-
-  keyDuration.textContent =
-    "—";
-
-  keyExpiration.textContent =
-    "—";
-
-  keyExpiration.classList.remove(
-    "expiring",
-    "expired"
-  );
-
-  accountStatus.textContent =
-    "Active";
-
-  currentGeneratedLogin =
-    null;
-
-  isGenerating =
-    false;
-}
-
-
-/* =========================================================
-   EXISTING SESSION
-========================================================= */
-
-async function verifyCurrentSession() {
-
-  if (!currentSession) {
-    return;
-  }
-
-  restoreExpirationTimer();
-
-  try {
-
-    const response =
-      await authenticatedFetch(
-        `${API_URL}/api/stock`
-      );
-
-    const result =
-      await parseResponse(
-        response
-      );
-
-    if (!response.ok) {
-
-      throw new Error(
-        result.message ||
-        result.error ||
-        "Session expired."
-      );
-    }
-
-    loginPage.style.display =
-      "none";
-
-    dashboardPage.style.display =
-      "block";
-
-    await loadStock();
-
-    startLiveStock();
-
-    await loadSavedLogins();
-
-  } catch (error) {
-
-    forceLogout(
-      error.message ||
-      "Your session is no longer valid."
-    );
-  }
-}
-
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function formatDate(
-  value
-) {
-
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "";
-  }
-
-  return date.toLocaleString(
-    undefined,
-    {
-      dateStyle: "medium",
-      timeStyle: "short"
-    }
-  );
-}
-
-
-/* =========================================================
-   EVENTS
-========================================================= */
-
-unlockButton.addEventListener(
-  "click",
-  unlock
-);
-
-keyInput.addEventListener(
-  "keydown",
-  event => {
-
-    if (
-      event.key === "Enter"
-    ) {
-
-      unlock();
-    }
-  }
-);
-
-generateButton.addEventListener(
-  "click",
-  generateInventory
-);
-
-logoutButton.addEventListener(
-  "click",
-  logout
-);
-
-cancelSaveButton.addEventListener(
-  "click",
-  closeSaveModal
-);
-
-confirmSaveButton.addEventListener(
-  "click",
-  saveCurrentLogin
-);
-
-saveModal.addEventListener(
-  "click",
-  event => {
-
-    if (
-      event.target ===
-      saveModal
-    ) {
-
-      closeSaveModal();
-    }
-  }
-);
-
-
-/* =========================================================
-   START
-========================================================= */
-
-verifyCurrentSession();
-</script>
+  </script>
 
 </body>
 </html>
