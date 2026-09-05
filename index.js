@@ -23,14 +23,23 @@ const app = express();
 const PORT = Number(process.env.PORT) || 10000;
 const PUBLIC_DIR = path.join(__dirname, "public");
 
-const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET || "";
-const DATABASE_URL = process.env.DATABASE_URL || "";
+const ADMIN_SECRET =
+  process.env.NOVI_ADMIN_SECRET || "";
 
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN || "";
-const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || "";
+const DATABASE_URL =
+  process.env.DATABASE_URL || "";
+
+const DISCORD_TOKEN =
+  process.env.DISCORD_TOKEN || "";
+
+const DISCORD_CLIENT_ID =
+  process.env.DISCORD_CLIENT_ID || "";
 
 if (!DATABASE_URL) {
-  console.error("ERROR: DATABASE_URL is missing.");
+  console.error(
+    "ERROR: DATABASE_URL is missing."
+  );
+
   process.exit(1);
 }
 
@@ -40,13 +49,17 @@ if (!DATABASE_URL) {
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
+
   ssl: {
     rejectUnauthorized: false,
   },
 });
 
 pool.on("error", (err) => {
-  console.error("Unexpected PostgreSQL pool error:", err);
+  console.error(
+    "Unexpected PostgreSQL pool error:",
+    err
+  );
 });
 
 // ============================================================
@@ -80,12 +93,22 @@ app.use(
 
 const sessions = new Map();
 
-function createSession(keyId, durationMs) {
-  const token = crypto.randomBytes(32).toString("hex");
+function createSession(
+  keyId,
+  durationMs,
+  lifetime = false
+) {
+  const token =
+    crypto.randomBytes(32).toString("hex");
 
   sessions.set(token, {
     keyId,
-    expiresAt: Date.now() + Number(durationMs),
+
+    lifetime,
+
+    expiresAt: lifetime
+      ? null
+      : Date.now() + Number(durationMs),
   });
 
   return token;
@@ -94,20 +117,32 @@ function createSession(keyId, durationMs) {
 function getSession(req) {
   const token =
     req.headers["x-novi-session"] ||
-    req.headers["authorization"]?.replace(/^Bearer\s+/i, "");
+    req.headers[
+      "authorization"
+    ]?.replace(
+      /^Bearer\s+/i,
+      ""
+    );
 
   if (!token) {
     return null;
   }
 
-  const session = sessions.get(token);
+  const session =
+    sessions.get(token);
 
   if (!session) {
     return null;
   }
 
-  if (Date.now() > session.expiresAt) {
+  // Lifetime sessions never expire.
+  if (
+    !session.lifetime &&
+    session.expiresAt !== null &&
+    Date.now() > session.expiresAt
+  ) {
     sessions.delete(token);
+
     return null;
   }
 
@@ -117,8 +152,13 @@ function getSession(req) {
   };
 }
 
-function requireSession(req, res, next) {
-  const session = getSession(req);
+function requireSession(
+  req,
+  res,
+  next
+) {
+  const session =
+    getSession(req);
 
   if (!session) {
     return res.status(401).json({
@@ -132,23 +172,35 @@ function requireSession(req, res, next) {
   next();
 }
 
-function requireAdmin(req, res, next) {
+function requireAdmin(
+  req,
+  res,
+  next
+) {
   if (!ADMIN_SECRET) {
     return res.status(500).json({
       success: false,
-      error: "Admin secret is not configured",
+      error:
+        "Admin secret is not configured",
     });
   }
 
   const supplied =
-    req.headers["x-novi-admin-secret"] ||
-    req.headers["x-admin-secret"] ||
+    req.headers[
+      "x-novi-admin-secret"
+    ] ||
+    req.headers[
+      "x-admin-secret"
+    ] ||
     req.body?.adminSecret ||
     req.body?.secret ||
     req.query?.adminSecret ||
     req.query?.secret;
 
-  if (!supplied || supplied !== ADMIN_SECRET) {
+  if (
+    !supplied ||
+    supplied !== ADMIN_SECRET
+  ) {
     return res.status(403).json({
       success: false,
       error: "Forbidden",
@@ -166,15 +218,13 @@ async function initDatabase() {
   /*
    * IMPORTANT:
    *
-   * Your existing novi_keys table uses:
+   * Your existing novi_keys table uses BIGINT
+   * for created_at and expires_at.
    *
-   * expires_at = BIGINT
+   * Lifetime keys use NULL for expires_at.
    *
-   * duration = BIGINT
-   *
-   * created_at = TIMESTAMPTZ / NOT NULL
-   *
-   * We explicitly insert NOW() for created_at.
+   * This CREATE TABLE only applies when the table
+   * does not already exist.
    */
 
   await pool.query(`
@@ -182,7 +232,7 @@ async function initDatabase() {
       id SERIAL PRIMARY KEY,
       key TEXT UNIQUE NOT NULL,
       duration BIGINT NOT NULL DEFAULT 86400000,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      created_at BIGINT NOT NULL,
       expires_at BIGINT
     )
   `);
@@ -191,7 +241,7 @@ async function initDatabase() {
     CREATE TABLE IF NOT EXISTS novi_stock_items (
       id SERIAL PRIMARY KEY,
       stock_id TEXT NOT NULL,
-      created_at TIMESTAMPTZ DEFAULT NOW()
+      created_at BIGINT
     )
   `);
 
@@ -200,33 +250,42 @@ async function initDatabase() {
       id SERIAL PRIMARY KEY,
       stock_id TEXT NOT NULL,
       device_id TEXT,
-      created_at TIMESTAMPTZ DEFAULT NOW()
+      created_at BIGINT
     )
   `);
 
   await pool.query(`
-    CREATE INDEX IF NOT EXISTS novi_stock_items_stock_id_idx
+    CREATE INDEX IF NOT EXISTS
+    novi_stock_items_stock_id_idx
     ON novi_stock_items(stock_id)
   `);
 
   await pool.query(`
-    CREATE INDEX IF NOT EXISTS novi_saved_items_device_id_idx
+    CREATE INDEX IF NOT EXISTS
+    novi_saved_items_device_id_idx
     ON novi_saved_items(device_id)
   `);
 
-  console.log("Database initialized");
+  console.log(
+    "Database initialized"
+  );
 }
 
 // ============================================================
-// HELPERS
+// STOCK HELPERS
 // ============================================================
 
 function cleanStockValue(value) {
-  if (value === undefined || value === null) {
+  if (
+    value === undefined ||
+    value === null
+  ) {
     return null;
   }
 
-  if (typeof value === "object") {
+  if (
+    typeof value === "object"
+  ) {
     value =
       value.stockId ??
       value.stock_id ??
@@ -236,11 +295,15 @@ function cleanStockValue(value) {
       value.name;
   }
 
-  if (value === undefined || value === null) {
+  if (
+    value === undefined ||
+    value === null
+  ) {
     return null;
   }
 
-  const cleaned = String(value).trim();
+  const cleaned =
+    String(value).trim();
 
   if (!cleaned) {
     return null;
@@ -254,14 +317,17 @@ function extractStockIds(body) {
 
   function add(value) {
     if (Array.isArray(value)) {
-      for (const item of value) {
+      for (
+        const item of value
+      ) {
         add(item);
       }
 
       return;
     }
 
-    const cleaned = cleanStockValue(value);
+    const cleaned =
+      cleanStockValue(value);
 
     if (cleaned) {
       result.push(cleaned);
@@ -270,7 +336,10 @@ function extractStockIds(body) {
 
   if (Array.isArray(body)) {
     add(body);
-  } else if (body && typeof body === "object") {
+  } else if (
+    body &&
+    typeof body === "object"
+  ) {
     const possibleFields = [
       "stock",
       "stocks",
@@ -290,103 +359,397 @@ function extractStockIds(body) {
       "name",
     ];
 
-    for (const field of possibleFields) {
-      if (body[field] !== undefined) {
+    for (
+      const field of possibleFields
+    ) {
+      if (
+        body[field] !== undefined
+      ) {
         add(body[field]);
       }
     }
 
     if (result.length === 0) {
-      for (const value of Object.values(body)) {
+      for (
+        const value of Object.values(
+          body
+        )
+      ) {
         if (
           typeof value === "string" ||
           Array.isArray(value) ||
-          (value && typeof value === "object")
+          (
+            value &&
+            typeof value === "object"
+          )
         ) {
           add(value);
         }
       }
     }
-  } else if (typeof body === "string") {
+  } else if (
+    typeof body === "string"
+  ) {
     add(body);
   }
 
-  return [...new Set(result)];
+  return [
+    ...new Set(result),
+  ];
+}
+
+// ============================================================
+// LICENSE DURATION HELPERS
+// ============================================================
+
+function parseDuration(value) {
+  if (!value) {
+    return {
+      duration: 24 * 60 * 60 * 1000,
+      lifetime: false,
+    };
+  }
+
+  const input =
+    String(value)
+      .trim()
+      .toLowerCase();
+
+  // ==========================================================
+  // LIFETIME
+  // ==========================================================
+
+  if (
+    input === "lifetime" ||
+    input === "life" ||
+    input === "forever" ||
+    input === "perm" ||
+    input === "permanent"
+  ) {
+    return {
+      duration: null,
+      lifetime: true,
+    };
+  }
+
+  // ==========================================================
+  // 1 MONTH
+  //
+  // 1 month = 30 days
+  // ==========================================================
+
+  const monthMatch =
+    input.match(
+      /^(\d+(?:\.\d+)?)(mo|mos|month|months)$/
+    );
+
+  if (monthMatch) {
+    const number =
+      Number(monthMatch[1]);
+
+    if (
+      !Number.isFinite(number) ||
+      number <= 0
+    ) {
+      return {
+        duration: NaN,
+        lifetime: false,
+      };
+    }
+
+    return {
+      duration: Math.floor(
+        number *
+          30 *
+          24 *
+          60 *
+          60 *
+          1000
+      ),
+
+      lifetime: false,
+    };
+  }
+
+  // ==========================================================
+  // DAYS / WEEKS / HOURS / MINUTES
+  // ==========================================================
+
+  const match =
+    input.match(
+      /^(\d+(?:\.\d+)?)(s|m|h|d|w)$/
+    );
+
+  if (!match) {
+    return {
+      duration: NaN,
+      lifetime: false,
+    };
+  }
+
+  const number =
+    Number(match[1]);
+
+  const unit =
+    match[2];
+
+  if (
+    !Number.isFinite(number) ||
+    number <= 0
+  ) {
+    return {
+      duration: NaN,
+      lifetime: false,
+    };
+  }
+
+  const multipliers = {
+    s: 1000,
+
+    m:
+      60 *
+      1000,
+
+    h:
+      60 *
+      60 *
+      1000,
+
+    d:
+      24 *
+      60 *
+      60 *
+      1000,
+
+    w:
+      7 *
+      24 *
+      60 *
+      60 *
+      1000,
+  };
+
+  return {
+    duration: Math.floor(
+      number *
+        multipliers[unit]
+    ),
+
+    lifetime: false,
+  };
+}
+
+function formatDuration(
+  duration,
+  lifetime = false
+) {
+  if (lifetime) {
+    return "Lifetime";
+  }
+
+  const ms =
+    Number(duration);
+
+  if (
+    !Number.isFinite(ms) ||
+    ms <= 0
+  ) {
+    return "Unknown";
+  }
+
+  const seconds =
+    Math.floor(ms / 1000);
+
+  if (
+    seconds %
+      (30 * 24 * 60 * 60) ===
+    0
+  ) {
+    return `${
+      seconds /
+      (30 * 24 * 60 * 60)
+    } month(s)`;
+  }
+
+  if (
+    seconds %
+      (7 * 24 * 60 * 60) ===
+    0
+  ) {
+    return `${
+      seconds /
+      (7 * 24 * 60 * 60)
+    } week(s)`;
+  }
+
+  if (
+    seconds %
+      (24 * 60 * 60) ===
+    0
+  ) {
+    return `${
+      seconds /
+      (24 * 60 * 60)
+    } day(s)`;
+  }
+
+  if (
+    seconds %
+      (60 * 60) ===
+    0
+  ) {
+    return `${
+      seconds /
+      (60 * 60)
+    } hour(s)`;
+  }
+
+  if (
+    seconds % 60 ===
+    0
+  ) {
+    return `${
+      seconds / 60
+    } minute(s)`;
+  }
+
+  return `${seconds} second(s)`;
 }
 
 // ============================================================
 // LICENSE KEY GENERATOR
 // ============================================================
 
-async function generateKeys(amount = 1, duration = 86400000) {
+async function generateKeys(
+  amount = 1,
+  duration = 86400000,
+  lifetime = false
+) {
   amount = Number(amount);
 
-  if (!Number.isFinite(amount)) {
+  if (
+    !Number.isFinite(amount)
+  ) {
     amount = 1;
   }
 
-  amount = Math.floor(amount);
+  amount =
+    Math.floor(amount);
 
-  amount = Math.max(1, Math.min(amount, 100));
+  amount =
+    Math.max(
+      1,
+      Math.min(
+        amount,
+        100
+      )
+    );
 
-  duration = Number(duration);
+  if (!lifetime) {
+    duration =
+      Number(duration);
 
-  if (!Number.isFinite(duration) || duration <= 0) {
-    duration = 86400000;
+    if (
+      !Number.isFinite(duration) ||
+      duration <= 0
+    ) {
+      duration =
+        86400000;
+    }
+
+    duration =
+      Math.floor(duration);
+  } else {
+    duration = null;
   }
 
-  duration = Math.floor(duration);
-
-  const client = await pool.connect();
+  const client =
+    await pool.connect();
 
   try {
-    await client.query("BEGIN");
+    await client.query(
+      "BEGIN"
+    );
 
     const keys = [];
 
-    for (let i = 0; i < amount; i++) {
+    for (
+      let i = 0;
+      i < amount;
+      i++
+    ) {
       let inserted = false;
 
-      for (let attempt = 0; attempt < 10; attempt++) {
+      for (
+        let attempt = 0;
+        attempt < 10;
+        attempt++
+      ) {
         const key =
           "NOVI-" +
-          crypto.randomBytes(8).toString("hex").toUpperCase();
+          crypto
+            .randomBytes(8)
+            .toString("hex")
+            .toUpperCase();
 
-        // BIGINT Unix timestamp in milliseconds
-        const expiresAt = Date.now() + duration;
+        // BIGINT Unix milliseconds
+        const createdAt =
+          Date.now();
 
-        /*
-         * IMPORTANT FIX:
-         *
-         * created_at is explicitly set to NOW()
-         * so existing NOT NULL constraints are satisfied.
-         */
+        const expiresAt =
+          lifetime
+            ? null
+            : createdAt +
+              duration;
 
-        const result = await client.query(
-          `
-          INSERT INTO novi_keys
-            (key, duration, created_at, expires_at)
-          VALUES
-            ($1, $2::BIGINT, NOW(), $3::BIGINT)
-          ON CONFLICT (key)
-          DO NOTHING
-          RETURNING
-            id,
-            key,
-            duration,
-            created_at,
-            expires_at
-          `,
-          [
-            key,
-            duration,
-            expiresAt,
-          ]
-        );
+        const result =
+          await client.query(
+            `
+            INSERT INTO novi_keys
+              (
+                key,
+                duration,
+                created_at,
+                expires_at
+              )
+            VALUES
+              (
+                $1,
+                $2::BIGINT,
+                $3::BIGINT,
+                $4::BIGINT
+              )
+            ON CONFLICT (key)
+            DO NOTHING
+            RETURNING
+              id,
+              key,
+              duration,
+              created_at,
+              expires_at
+            `,
+            [
+              key,
 
-        if (result.rows.length > 0) {
-          keys.push(result.rows[0]);
+              lifetime
+                ? 0
+                : duration,
+
+              createdAt,
+
+              expiresAt,
+            ]
+          );
+
+        if (
+          result.rows.length > 0
+        ) {
+          keys.push(
+            result.rows[0]
+          );
+
           inserted = true;
+
           break;
         }
       }
@@ -398,11 +761,16 @@ async function generateKeys(amount = 1, duration = 86400000) {
       }
     }
 
-    await client.query("COMMIT");
+    await client.query(
+      "COMMIT"
+    );
 
     return keys;
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.query(
+      "ROLLBACK"
+    );
+
     throw err;
   } finally {
     client.release();
@@ -413,237 +781,410 @@ async function generateKeys(amount = 1, duration = 86400000) {
 // HEALTH
 // ============================================================
 
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    service: "Novi",
-    status: "online",
-  });
-});
-
-app.get("/api/health", async (req, res) => {
-  try {
-    await pool.query("SELECT 1");
-
+app.get(
+  "/",
+  (req, res) => {
     res.json({
       success: true,
+      service: "Novi",
       status: "online",
-      database: "connected",
-    });
-  } catch (err) {
-    console.error("Health check error:", err);
-
-    res.status(500).json({
-      success: false,
-      status: "offline",
-      database: "error",
     });
   }
-});
+);
 
-// ============================================================
-// CREATE WEBSITE LICENSE KEYS
-// ============================================================
+app.get(
+  "/api/health",
+  async (req, res) => {
+    try {
+      await pool.query(
+        "SELECT 1"
+      );
 
-app.post("/api/keys", requireAdmin, async (req, res) => {
-  try {
-    const amount = Math.max(
-      1,
-      Math.min(Number(req.body?.amount) || 1, 100)
-    );
+      res.json({
+        success: true,
+        status: "online",
+        database:
+          "connected",
+      });
+    } catch (err) {
+      console.error(
+        "Health check error:",
+        err
+      );
 
-    const duration =
-      Number(req.body?.duration) ||
-      Number(req.body?.durationMs) ||
-      86400000;
-
-    const keys = await generateKeys(
-      amount,
-      duration
-    );
-
-    res.json({
-      success: true,
-      keys,
-    });
-  } catch (err) {
-    console.error("Create keys error:", err);
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to create keys",
-      details: err.message,
-    });
+      res.status(500).json({
+        success: false,
+        status: "offline",
+        database:
+          "error",
+      });
+    }
   }
-});
+);
 
 // ============================================================
-// GET WEBSITE LICENSE KEYS
+// CREATE WEBSITE KEYS
 // ============================================================
 
-app.get("/api/keys", requireAdmin, async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT
-        id,
-        key,
+app.post(
+  "/api/keys",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const amount =
+        Math.max(
+          1,
+          Math.min(
+            Number(
+              req.body?.amount
+            ) || 1,
+            100
+          )
+        );
+
+      let duration =
+        Number(
+          req.body?.duration
+        ) ||
+        Number(
+          req.body?.durationMs
+        ) ||
+        86400000;
+
+      let lifetime =
+        Boolean(
+          req.body?.lifetime
+        );
+
+      if (
+        req.body?.durationType
+      ) {
+        const parsed =
+          parseDuration(
+            req.body.durationType
+          );
+
+        if (
+          parsed.lifetime
+        ) {
+          lifetime = true;
+          duration = null;
+        } else if (
+          Number.isFinite(
+            parsed.duration
+          )
+        ) {
+          duration =
+            parsed.duration;
+
+          lifetime = false;
+        }
+      }
+
+      const keys =
+        await generateKeys(
+          amount,
+          duration,
+          lifetime
+        );
+
+      res.json({
+        success: true,
+        keys,
+      });
+    } catch (err) {
+      console.error(
+        "Create keys error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          "Failed to create keys",
+        details:
+          err.message,
+      });
+    }
+  }
+);
+
+// ============================================================
+// GET WEBSITE KEYS
+// ============================================================
+
+app.get(
+  "/api/keys",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const result =
+        await pool.query(`
+          SELECT
+            id,
+            key,
+            duration,
+            created_at,
+            expires_at
+          FROM novi_keys
+          ORDER BY id DESC
+        `);
+
+      res.json({
+        success: true,
+        keys:
+          result.rows,
+      });
+    } catch (err) {
+      console.error(
+        "Get keys error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          "Failed to get keys",
+      });
+    }
+  }
+);
+
+// ============================================================
+// VERIFY WEBSITE KEY
+// ============================================================
+
+app.post(
+  "/api/verify",
+  async (req, res) => {
+    try {
+      const key =
+        String(
+          req.body?.key ||
+            req.body?.licenseKey ||
+            req.body?.token ||
+            ""
+        ).trim();
+
+      if (!key) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Key is required",
+        });
+      }
+
+      const result =
+        await pool.query(
+          `
+          SELECT *
+          FROM novi_keys
+          WHERE key = $1
+          LIMIT 1
+          `,
+          [key]
+        );
+
+      if (
+        result.rows.length ===
+        0
+      ) {
+        return res.status(401).json({
+          success: false,
+          valid: false,
+          error:
+            "Invalid key",
+        });
+      }
+
+      const keyRow =
+        result.rows[0];
+
+      /*
+       * NULL expires_at means lifetime.
+       */
+
+      const isLifetime =
+        keyRow.expires_at ===
+          null ||
+        keyRow.expires_at ===
+          undefined;
+
+      if (!isLifetime) {
+        const expiresAt =
+          Number(
+            keyRow.expires_at
+          );
+
+        if (
+          !Number.isFinite(
+            expiresAt
+          )
+        ) {
+          return res.status(500).json({
+            success: false,
+            valid: false,
+            error:
+              "Invalid expiration data",
+          });
+        }
+
+        if (
+          expiresAt <=
+          Date.now()
+        ) {
+          return res.status(401).json({
+            success: false,
+            valid: false,
+            error:
+              "Key expired",
+          });
+        }
+      }
+
+      const duration =
+        isLifetime
+          ? 0
+          : Number(
+              keyRow.duration
+            ) ||
+            86400000;
+
+      const token =
+        createSession(
+          keyRow.id,
+          duration,
+          isLifetime
+        );
+
+      res.json({
+        success: true,
+        valid: true,
+
+        token,
+
+        sessionToken:
+          token,
+
+        lifetime:
+          isLifetime,
+
         duration,
-        created_at,
-        expires_at
-      FROM novi_keys
-      ORDER BY id DESC
-    `);
 
-    res.json({
-      success: true,
-      keys: result.rows,
-    });
-  } catch (err) {
-    console.error("Get keys error:", err);
+        expiresAt:
+          isLifetime
+            ? null
+            : keyRow.expires_at,
+      });
+    } catch (err) {
+      console.error(
+        "Verify error:",
+        err
+      );
 
-    res.status(500).json({
-      success: false,
-      error: "Failed to get keys",
-    });
+      res.status(500).json({
+        success: false,
+        error:
+          "Verification failed",
+      });
+    }
   }
-});
+);
 
 // ============================================================
-// VERIFY WEBSITE LICENSE KEY
+// STOCK ADD
 // ============================================================
 
-app.post("/api/verify", async (req, res) => {
+async function stockAddHandler(
+  req,
+  res
+) {
   try {
-    const key = String(
-      req.body?.key ||
-        req.body?.licenseKey ||
-        req.body?.token ||
-        ""
-    ).trim();
-
-    if (!key) {
-      return res.status(400).json({
-        success: false,
-        error: "Key is required",
-      });
-    }
-
-    const result = await pool.query(
-      `
-      SELECT *
-      FROM novi_keys
-      WHERE key = $1
-      LIMIT 1
-      `,
-      [key]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(401).json({
-        success: false,
-        valid: false,
-        error: "Invalid key",
-      });
-    }
-
-    const keyRow = result.rows[0];
-
-    // expires_at is BIGINT
-    const expiresAt = Number(keyRow.expires_at);
+    const stockIds =
+      extractStockIds(
+        req.body
+      );
 
     if (
-      Number.isFinite(expiresAt) &&
-      expiresAt <= Date.now()
+      stockIds.length ===
+      0
     ) {
-      return res.status(401).json({
-        success: false,
-        valid: false,
-        error: "Key expired",
-      });
-    }
-
-    const duration =
-      Number(keyRow.duration) || 86400000;
-
-    const token = createSession(
-      keyRow.id,
-      duration
-    );
-
-    res.json({
-      success: true,
-      valid: true,
-      token,
-      sessionToken: token,
-      duration,
-      expiresAt: keyRow.expires_at,
-    });
-  } catch (err) {
-    console.error("Verify error:", err);
-
-    res.status(500).json({
-      success: false,
-      error: "Verification failed",
-    });
-  }
-});
-
-// ============================================================
-// STOCK ADD API
-// ============================================================
-
-async function stockAddHandler(req, res) {
-  try {
-    const stockIds = extractStockIds(req.body);
-
-    if (stockIds.length === 0) {
       return res.status(400).json({
         success: false,
-        error: "No stock supplied",
+        error:
+          "No stock supplied",
       });
     }
 
-    const client = await pool.connect();
+    const client =
+      await pool.connect();
 
     try {
-      await client.query("BEGIN");
+      await client.query(
+        "BEGIN"
+      );
 
-      for (const stockId of stockIds) {
+      for (
+        const stockId of stockIds
+      ) {
         await client.query(
           `
           INSERT INTO novi_stock_items
-            (stock_id, created_at)
+            (
+              stock_id,
+              created_at
+            )
           VALUES
-            ($1, NOW())
+            (
+              $1,
+              $2::BIGINT
+            )
           `,
-          [stockId]
+          [
+            stockId,
+            Date.now(),
+          ]
         );
       }
 
-      await client.query("COMMIT");
+      await client.query(
+        "COMMIT"
+      );
 
       console.log(
-        `Added ${stockIds.length} stock item(s)`
+        `[WEBSITE STOCK] Added ${stockIds.length} item(s)`
       );
 
       return res.json({
         success: true,
-        added: stockIds.length,
-        count: stockIds.length,
+
+        added:
+          stockIds.length,
+
+        count:
+          stockIds.length,
       });
     } catch (err) {
-      await client.query("ROLLBACK");
+      await client.query(
+        "ROLLBACK"
+      );
+
       throw err;
     } finally {
       client.release();
     }
   } catch (err) {
-    console.error("Stock add error:", err);
+    console.error(
+      "Stock add error:",
+      err
+    );
 
     return res.status(500).json({
       success: false,
-      error: "Failed to add stock",
-      details: err.message,
+      error:
+        "Failed to add stock",
+      details:
+        err.message,
     });
   }
 }
@@ -664,92 +1205,130 @@ app.post(
 // STOCK COUNT
 // ============================================================
 
-app.get("/api/stock/count", async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT COUNT(*)::int AS count
-      FROM novi_stock_items
-    `);
+app.get(
+  "/api/stock/count",
+  async (req, res) => {
+    try {
+      const result =
+        await pool.query(`
+          SELECT
+            COUNT(*)::int AS count
+          FROM novi_stock_items
+        `);
 
-    res.json({
-      success: true,
-      count: result.rows[0].count,
-    });
-  } catch (err) {
-    console.error("Stock count error:", err);
+      res.json({
+        success: true,
 
-    res.status(500).json({
-      success: false,
-      error: "Failed to get stock count",
-    });
+        count:
+          result.rows[0]
+            .count,
+      });
+    } catch (err) {
+      console.error(
+        "Stock count error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          "Failed to get stock count",
+      });
+    }
   }
-});
+);
 
 // ============================================================
 // STOCK VIEW
 // ============================================================
 
-app.get("/api/stock", requireSession, async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT
-        id,
-        stock_id AS "stockId",
-        created_at AS "createdAt"
-      FROM novi_stock_items
-      ORDER BY id ASC
-    `);
+app.get(
+  "/api/stock",
+  requireSession,
+  async (req, res) => {
+    try {
+      const result =
+        await pool.query(`
+          SELECT
+            id,
+            stock_id AS "stockId",
+            created_at AS "createdAt"
+          FROM novi_stock_items
+          ORDER BY id ASC
+        `);
 
-    res.json({
-      success: true,
-      stock: result.rows,
-      items: result.rows,
-      count: result.rows.length,
-    });
-  } catch (err) {
-    console.error("Get stock error:", err);
+      res.json({
+        success: true,
 
-    res.status(500).json({
-      success: false,
-      error: "Failed to get stock",
-    });
+        stock:
+          result.rows,
+
+        items:
+          result.rows,
+
+        count:
+          result.rows.length,
+      });
+    } catch (err) {
+      console.error(
+        "Get stock error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          "Failed to get stock",
+      });
+    }
   }
-});
+);
 
 // ============================================================
-// STOCK GENERATE
+// GENERATE / TAKE STOCK
 // ============================================================
 
 app.post(
   "/api/stock/generate",
   requireSession,
   async (req, res) => {
-    const client = await pool.connect();
+    const client =
+      await pool.connect();
 
     try {
-      await client.query("BEGIN");
+      await client.query(
+        "BEGIN"
+      );
 
-      const result = await client.query(`
-        SELECT
-          id,
-          stock_id AS "stockId",
-          created_at AS "createdAt"
-        FROM novi_stock_items
-        ORDER BY id ASC
-        LIMIT 1
-        FOR UPDATE SKIP LOCKED
-      `);
+      const result =
+        await client.query(`
+          SELECT
+            id,
+            stock_id AS "stockId",
+            created_at AS "createdAt"
+          FROM novi_stock_items
+          ORDER BY id ASC
+          LIMIT 1
+          FOR UPDATE SKIP LOCKED
+        `);
 
-      if (result.rows.length === 0) {
-        await client.query("ROLLBACK");
+      if (
+        result.rows.length ===
+        0
+      ) {
+        await client.query(
+          "ROLLBACK"
+        );
 
         return res.status(404).json({
           success: false,
-          error: "No stock available",
+          error:
+            "No stock available",
         });
       }
 
-      const item = result.rows[0];
+      const item =
+        result.rows[0];
 
       await client.query(
         `
@@ -759,18 +1338,29 @@ app.post(
         [item.id]
       );
 
-      await client.query("COMMIT");
+      await client.query(
+        "COMMIT"
+      );
 
       res.json({
         success: true,
+
         item,
-        stock: item.stockId,
-        stockId: item.stockId,
-        value: item.stockId,
+
+        stock:
+          item.stockId,
+
+        stockId:
+          item.stockId,
+
+        value:
+          item.stockId,
       });
     } catch (err) {
       try {
-        await client.query("ROLLBACK");
+        await client.query(
+          "ROLLBACK"
+        );
       } catch {}
 
       console.error(
@@ -780,7 +1370,8 @@ app.post(
 
       res.status(500).json({
         success: false,
-        error: "Failed to generate stock",
+        error:
+          "Failed to generate stock",
       });
     } finally {
       client.release();
@@ -798,28 +1389,34 @@ app.get(
   async (req, res) => {
     try {
       const deviceId =
-        req.headers["x-novi-device"] ||
-        req.headers["x-device-id"] ||
+        req.headers[
+          "x-novi-device"
+        ] ||
+        req.headers[
+          "x-device-id"
+        ] ||
         req.query?.deviceId ||
         null;
 
-      const result = await pool.query(
-        `
-        SELECT
-          id,
-          stock_id AS "stockId",
-          device_id AS "deviceId",
-          created_at AS "createdAt"
-        FROM novi_saved_items
-        WHERE device_id = $1
-        ORDER BY id DESC
-        `,
-        [deviceId]
-      );
+      const result =
+        await pool.query(
+          `
+          SELECT
+            id,
+            stock_id AS "stockId",
+            device_id AS "deviceId",
+            created_at AS "createdAt"
+          FROM novi_saved_items
+          WHERE device_id = $1
+          ORDER BY id DESC
+          `,
+          [deviceId]
+        );
 
       res.json({
         success: true,
-        items: result.rows,
+        items:
+          result.rows,
       });
     } catch (err) {
       console.error(
@@ -829,7 +1426,8 @@ app.get(
 
       res.status(500).json({
         success: false,
-        error: "Failed to get saved items",
+        error:
+          "Failed to get saved items",
       });
     }
   }
@@ -840,47 +1438,64 @@ app.post(
   requireSession,
   async (req, res) => {
     try {
-      const stockId = cleanStockValue(
-        req.body?.stockId ??
-          req.body?.stock_id ??
-          req.body?.value ??
-          req.body?.item
-      );
+      const stockId =
+        cleanStockValue(
+          req.body?.stockId ??
+            req.body?.stock_id ??
+            req.body?.value ??
+            req.body?.item
+        );
 
       const deviceId =
-        req.headers["x-novi-device"] ||
-        req.headers["x-device-id"] ||
+        req.headers[
+          "x-novi-device"
+        ] ||
+        req.headers[
+          "x-device-id"
+        ] ||
         req.body?.deviceId ||
         null;
 
       if (!stockId) {
         return res.status(400).json({
           success: false,
-          error: "stockId is required",
+          error:
+            "stockId is required",
         });
       }
 
-      const result = await pool.query(
-        `
-        INSERT INTO novi_saved_items
-          (stock_id, device_id, created_at)
-        VALUES
-          ($1, $2, NOW())
-        RETURNING
-          id,
-          stock_id AS "stockId",
-          device_id AS "deviceId",
-          created_at AS "createdAt"
-        `,
-        [
-          stockId,
-          deviceId,
-        ]
-      );
+      const result =
+        await pool.query(
+          `
+          INSERT INTO novi_saved_items
+            (
+              stock_id,
+              device_id,
+              created_at
+            )
+          VALUES
+            (
+              $1,
+              $2,
+              $3::BIGINT
+            )
+          RETURNING
+            id,
+            stock_id AS "stockId",
+            device_id AS "deviceId",
+            created_at AS "createdAt"
+          `,
+          [
+            stockId,
+            deviceId,
+            Date.now(),
+          ]
+        );
 
       res.json({
         success: true,
-        item: result.rows[0],
+        item:
+          result.rows[0],
       });
     } catch (err) {
       console.error(
@@ -890,7 +1505,8 @@ app.post(
 
       res.status(500).json({
         success: false,
-        error: "Failed to save item",
+        error:
+          "Failed to save item",
       });
     }
   }
@@ -902,26 +1518,34 @@ app.delete(
   async (req, res) => {
     try {
       const deviceId =
-        req.headers["x-novi-device"] ||
-        req.headers["x-device-id"] ||
+        req.headers[
+          "x-novi-device"
+        ] ||
+        req.headers[
+          "x-device-id"
+        ] ||
         null;
 
-      const result = await pool.query(
-        `
-        DELETE FROM novi_saved_items
-        WHERE id = $1
-          AND device_id = $2
-        RETURNING id
-        `,
-        [
-          req.params.id,
-          deviceId,
-        ]
-      );
+      const result =
+        await pool.query(
+          `
+          DELETE FROM novi_saved_items
+          WHERE id = $1
+            AND device_id = $2
+          RETURNING id
+          `,
+          [
+            req.params.id,
+            deviceId,
+          ]
+        );
 
       res.json({
         success: true,
-        deleted: result.rowCount > 0,
+
+        deleted:
+          result.rowCount >
+          0,
       });
     } catch (err) {
       console.error(
@@ -931,7 +1555,8 @@ app.delete(
 
       res.status(500).json({
         success: false,
-        error: "Failed to delete saved item",
+        error:
+          "Failed to delete saved item",
       });
     }
   }
@@ -941,37 +1566,53 @@ app.delete(
 // LOGOUT
 // ============================================================
 
-app.post("/api/logout", (req, res) => {
-  const token =
-    req.headers["x-novi-session"] ||
-    req.headers["authorization"]?.replace(
-      /^Bearer\s+/i,
-      ""
-    );
+app.post(
+  "/api/logout",
+  (req, res) => {
+    const token =
+      req.headers[
+        "x-novi-session"
+      ] ||
+      req.headers[
+        "authorization"
+      ]?.replace(
+        /^Bearer\s+/i,
+        ""
+      );
 
-  if (token) {
-    sessions.delete(token);
+    if (token) {
+      sessions.delete(
+        token
+      );
+    }
+
+    res.json({
+      success: true,
+    });
   }
-
-  res.json({
-    success: true,
-  });
-});
+);
 
 // ============================================================
 // STATIC WEBSITE
 // ============================================================
 
-app.use(express.static(PUBLIC_DIR));
+app.use(
+  express.static(
+    PUBLIC_DIR
+  )
+);
 
-app.get("/{*splat}", (req, res) => {
-  res.sendFile(
-    path.join(
-      PUBLIC_DIR,
-      "index.html"
-    )
-  );
-});
+app.get(
+  "/{*splat}",
+  (req, res) => {
+    res.sendFile(
+      path.join(
+        PUBLIC_DIR,
+        "index.html"
+      )
+    );
+  }
+);
 
 // ============================================================
 // DISCORD BOT
@@ -988,13 +1629,16 @@ async function startDiscordBot() {
     return;
   }
 
-  discordClient = new Client({
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMessages,
-      GatewayIntentBits.MessageContent,
-    ],
-  });
+  discordClient =
+    new Client({
+      intents: [
+        GatewayIntentBits.Guilds,
+
+        GatewayIntentBits.GuildMessages,
+
+        GatewayIntentBits.MessageContent,
+      ],
+    });
 
   // ==========================================================
   // READY
@@ -1007,7 +1651,9 @@ async function startDiscordBot() {
         `Discord bot online as ${client.user.tag}`
       );
 
-      if (!DISCORD_CLIENT_ID) {
+      if (
+        !DISCORD_CLIENT_ID
+      ) {
         console.log(
           "DISCORD_CLIENT_ID missing. Slash commands skipped."
         );
@@ -1016,9 +1662,12 @@ async function startDiscordBot() {
       }
 
       try {
-        const rest = new REST({
-          version: "10",
-        }).setToken(DISCORD_TOKEN);
+        const rest =
+          new REST({
+            version: "10",
+          }).setToken(
+            DISCORD_TOKEN
+          );
 
         const commands = [
           new SlashCommandBuilder()
@@ -1030,10 +1679,11 @@ async function startDiscordBot() {
           new SlashCommandBuilder()
             .setName("stock")
             .setDescription(
-              "Check the current Novi stock count"
+              "Check the current Novi website stock count"
             ),
-        ].map((command) =>
-          command.toJSON()
+        ].map(
+          (command) =>
+            command.toJSON()
         );
 
         await rest.put(
@@ -1089,13 +1739,14 @@ async function startDiscordBot() {
         ) {
           const result =
             await pool.query(`
-              SELECT COUNT(*)::int AS count
+              SELECT
+                COUNT(*)::int AS count
               FROM novi_stock_items
             `);
 
           return interaction.reply({
             content:
-              `📦 Current Novi stock: **${result.rows[0].count}**`,
+              `📦 Current Novi website stock: **${result.rows[0].count}**`,
           });
         }
       } catch (err) {
@@ -1134,14 +1785,18 @@ async function startDiscordBot() {
     "messageCreate",
     async (message) => {
       try {
-        if (message.author.bot) {
+        if (
+          message.author.bot
+        ) {
           return;
         }
 
         const content =
           message.content.trim();
 
-        if (!content.startsWith("!")) {
+        if (
+          !content.startsWith("!")
+        ) {
           return;
         }
 
@@ -1149,11 +1804,12 @@ async function startDiscordBot() {
           `[DISCORD] ${message.author.tag}: ${content}`
         );
 
-        const parts = content
-          .slice(1)
-          .trim()
-          .split(/\s+/)
-          .filter(Boolean);
+        const parts =
+          content
+            .slice(1)
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
 
         const command = (
           parts.shift() || ""
@@ -1163,7 +1819,9 @@ async function startDiscordBot() {
         // !GEN
         // ======================================================
 
-        if (command === "gen") {
+        if (
+          command === "gen"
+        ) {
           const isAdmin =
             message.member?.permissions?.has(
               "Administrator"
@@ -1175,34 +1833,135 @@ async function startDiscordBot() {
             );
           }
 
-          let amount = Number(parts[0]);
+          let amount = 1;
 
-          if (!Number.isFinite(amount)) {
-            amount = 1;
-          }
-
-          amount = Math.floor(amount);
-
-          amount = Math.max(
-            1,
-            Math.min(amount, 100)
-          );
-
-          console.log(
-            `[DISCORD] Generating ${amount} WEBSITE key(s)...`
-          );
-
-          // 24 hours
-          const duration =
+          let duration =
             24 *
             60 *
             60 *
             1000;
 
+          let lifetime =
+            false;
+
+          /*
+           * Examples:
+           *
+           * !gen 1d
+           * !gen 3d
+           * !gen 1w
+           * !gen 1mo
+           * !gen lifetime
+           *
+           * !gen 5 1d
+           * !gen 5 3d
+           * !gen 5 1w
+           * !gen 5 1mo
+           * !gen 5 lifetime
+           */
+
+          if (parts[0]) {
+            const first =
+              parts[0].toLowerCase();
+
+            // !gen 5
+            if (
+              /^\d+$/.test(
+                first
+              )
+            ) {
+              amount =
+                Number(first);
+
+              if (parts[1]) {
+                const parsed =
+                  parseDuration(
+                    parts[1]
+                  );
+
+                duration =
+                  parsed.duration;
+
+                lifetime =
+                  parsed.lifetime;
+              }
+            } else {
+              // !gen 1d
+              // !gen 3d
+              // !gen 1w
+              // !gen 1mo
+              // !gen lifetime
+
+              const parsed =
+                parseDuration(
+                  first
+                );
+
+              duration =
+                parsed.duration;
+
+              lifetime =
+                parsed.lifetime;
+            }
+          }
+
+          if (
+            !Number.isFinite(
+              amount
+            )
+          ) {
+            amount = 1;
+          }
+
+          amount =
+            Math.floor(
+              amount
+            );
+
+          amount =
+            Math.max(
+              1,
+              Math.min(
+                amount,
+                100
+              )
+            );
+
+          if (
+            !lifetime &&
+            (
+              !Number.isFinite(
+                duration
+              ) ||
+              duration <= 0
+            )
+          ) {
+            return message.reply(
+              [
+                "❌ Invalid duration.",
+                "",
+                "Use:",
+                "`1d` = 1 day",
+                "`3d` = 3 days",
+                "`1w` = 1 week",
+                "`1mo` = 1 month",
+                "`lifetime` = never expires",
+              ].join("\n")
+            );
+          }
+
+          console.log(
+            `[DISCORD] Generating ${amount} WEBSITE key(s) for ${formatDuration(
+              duration,
+              lifetime
+            )}...`
+          );
+
           const keys =
             await generateKeys(
               amount,
-              duration
+              duration,
+              lifetime
             );
 
           if (
@@ -1230,7 +1989,10 @@ async function startDiscordBot() {
             content:
               `🔑 **Novi Website License Keys**\n\n` +
               `${keyText}\n\n` +
-              `⏱️ Duration: **24 hours**\n` +
+              `⏱️ Duration: **${formatDuration(
+                duration,
+                lifetime
+              )}**\n` +
               `📦 Generated: **${keys.length}**`,
           });
         }
@@ -1239,7 +2001,9 @@ async function startDiscordBot() {
         // !ADD
         // ======================================================
 
-        if (command === "add") {
+        if (
+          command === "add"
+        ) {
           const isAdmin =
             message.member?.permissions?.has(
               "Administrator"
@@ -1251,17 +2015,32 @@ async function startDiscordBot() {
             );
           }
 
-          if (parts.length === 0) {
+          if (
+            parts.length ===
+            0
+          ) {
             return message.reply(
               "❌ Usage: `!add <stock1> <stock2> <stock3>`"
             );
           }
 
+          /*
+           * Every value after !add is inserted
+           * directly into the website stock.
+           *
+           * Example:
+           *
+           * !add item1 item2 item3
+           *
+           * Website stock becomes +3.
+           */
+
           const stockIds = [
             ...new Set(
               parts
-                .map((item) =>
-                  item.trim()
+                .map(
+                  (item) =>
+                    item.trim()
                 )
                 .filter(Boolean)
             ),
@@ -1281,11 +2060,20 @@ async function startDiscordBot() {
               await client.query(
                 `
                 INSERT INTO novi_stock_items
-                  (stock_id, created_at)
+                  (
+                    stock_id,
+                    created_at
+                  )
                 VALUES
-                  ($1, NOW())
+                  (
+                    $1,
+                    $2::BIGINT
+                  )
                 `,
-                [stockId]
+                [
+                  stockId,
+                  Date.now(),
+                ]
               );
             }
 
@@ -1294,15 +2082,16 @@ async function startDiscordBot() {
             );
 
             console.log(
-              `[DISCORD] Added ${stockIds.length} stock item(s).`
+              `[DISCORD] Added ${stockIds.length} item(s) directly to website stock.`
             );
 
             return message.reply(
               `✅ Added **${stockIds.length}** stock item${
-                stockIds.length === 1
+                stockIds.length ===
+                1
                   ? ""
                   : "s"
-              }.`
+              } to the **Novi website stock**.`
             );
           } catch (err) {
             await client.query(
@@ -1319,15 +2108,18 @@ async function startDiscordBot() {
         // !STOCK
         // ======================================================
 
-        if (command === "stock") {
+        if (
+          command === "stock"
+        ) {
           const result =
             await pool.query(`
-              SELECT COUNT(*)::int AS count
+              SELECT
+                COUNT(*)::int AS count
               FROM novi_stock_items
             `);
 
           return message.reply(
-            `📦 Current Novi stock: **${result.rows[0].count}**`
+            `📦 Current Novi website stock: **${result.rows[0].count}**`
           );
         }
 
@@ -1335,18 +2127,33 @@ async function startDiscordBot() {
         // !HELP
         // ======================================================
 
-        if (command === "help") {
+        if (
+          command === "help"
+        ) {
           return message.reply(
             [
               "**Novi Commands**",
               "",
-              "`!gen` → Generate 1 website license key",
-              "`!gen 5` → Generate 5 website license keys",
-              "`!add <stock>` → Add stock",
-              "`!stock` → Check stock",
+              "**License Keys**",
+              "`!gen 1d` → 1-day key",
+              "`!gen 3d` → 3-day key",
+              "`!gen 1w` → 1-week key",
+              "`!gen 1mo` → 1-month key",
+              "`!gen lifetime` → Lifetime key",
               "",
+              "`!gen 5 1d` → 5 one-day keys",
+              "`!gen 5 3d` → 5 three-day keys",
+              "`!gen 5 1w` → 5 one-week keys",
+              "`!gen 5 1mo` → 5 one-month keys",
+              "`!gen 5 lifetime` → 5 lifetime keys",
+              "",
+              "**Website Stock**",
+              "`!add <stock>` → Add stock directly to website",
+              "`!stock` → Check website stock",
+              "",
+              "**Other**",
               "`/ping` → Check bot status",
-              "`/stock` → Check stock",
+              "`/stock` → Check website stock",
             ].join("\n")
           );
         }
@@ -1455,7 +2262,7 @@ async function start() {
         );
 
         console.log(
-          "Stock API: ready"
+          "Website stock API: ready"
         );
 
         console.log(
@@ -1484,7 +2291,9 @@ async function start() {
 // SHUTDOWN
 // ============================================================
 
-async function shutdown(signal) {
+async function shutdown(
+  signal
+) {
   console.log(
     `Received ${signal}. Shutting down Novi...`
   );
@@ -1509,12 +2318,14 @@ async function shutdown(signal) {
 
 process.on(
   "SIGTERM",
-  () => shutdown("SIGTERM")
+  () =>
+    shutdown("SIGTERM")
 );
 
 process.on(
   "SIGINT",
-  () => shutdown("SIGINT")
+  () =>
+    shutdown("SIGINT")
 );
 
 // ============================================================
