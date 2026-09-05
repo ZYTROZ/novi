@@ -34,11 +34,19 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
+// ============================================================
+// DATABASE
+// ============================================================
+
 const pool = new Pool({
   connectionString: DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
+});
+
+pool.on("error", (err) => {
+  console.error("Unexpected PostgreSQL pool error:", err);
 });
 
 // ============================================================
@@ -86,16 +94,17 @@ function createSession(keyId, durationMs) {
 function getSession(req) {
   const token =
     req.headers["x-novi-session"] ||
-    req.headers["authorization"]?.replace(
-      /^Bearer\s+/i,
-      ""
-    );
+    req.headers["authorization"]?.replace(/^Bearer\s+/i, "");
 
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
 
   const session = sessions.get(token);
 
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
 
   if (Date.now() > session.expiresAt) {
     sessions.delete(token);
@@ -150,17 +159,22 @@ function requireAdmin(req, res, next) {
 }
 
 // ============================================================
-// DATABASE
+// DATABASE INITIALIZATION
 // ============================================================
 
 async function initDatabase() {
   /*
    * IMPORTANT:
    *
-   * Your EXISTING database has expires_at as BIGINT.
+   * Your existing novi_keys table uses:
    *
-   * Therefore we keep expiration values as Unix
-   * timestamps in milliseconds.
+   * expires_at = BIGINT
+   *
+   * duration = BIGINT
+   *
+   * created_at = TIMESTAMPTZ / NOT NULL
+   *
+   * We explicitly insert NOW() for created_at.
    */
 
   await pool.query(`
@@ -168,7 +182,7 @@ async function initDatabase() {
       id SERIAL PRIMARY KEY,
       key TEXT UNIQUE NOT NULL,
       duration BIGINT NOT NULL DEFAULT 86400000,
-      created_at TIMESTAMPTZ DEFAULT NOW(),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       expires_at BIGINT
     )
   `);
@@ -228,7 +242,9 @@ function cleanStockValue(value) {
 
   const cleaned = String(value).trim();
 
-  if (!cleaned) return null;
+  if (!cleaned) {
+    return null;
+  }
 
   return cleaned;
 }
@@ -254,10 +270,7 @@ function extractStockIds(body) {
 
   if (Array.isArray(body)) {
     add(body);
-  } else if (
-    body &&
-    typeof body === "object"
-  ) {
+  } else if (body && typeof body === "object") {
     const possibleFields = [
       "stock",
       "stocks",
@@ -288,16 +301,13 @@ function extractStockIds(body) {
         if (
           typeof value === "string" ||
           Array.isArray(value) ||
-          (value &&
-            typeof value === "object")
+          (value && typeof value === "object")
         ) {
           add(value);
         }
       }
     }
-  } else if (
-    typeof body === "string"
-  ) {
+  } else if (typeof body === "string") {
     add(body);
   }
 
@@ -305,13 +315,10 @@ function extractStockIds(body) {
 }
 
 // ============================================================
-// KEY GENERATOR
+// LICENSE KEY GENERATOR
 // ============================================================
 
-async function generateKeys(
-  amount = 1,
-  duration = 86400000
-) {
+async function generateKeys(amount = 1, duration = 86400000) {
   amount = Number(amount);
 
   if (!Number.isFinite(amount)) {
@@ -320,91 +327,66 @@ async function generateKeys(
 
   amount = Math.floor(amount);
 
-  amount = Math.max(
-    1,
-    Math.min(amount, 100)
-  );
+  amount = Math.max(1, Math.min(amount, 100));
 
   duration = Number(duration);
 
-  if (
-    !Number.isFinite(duration) ||
-    duration <= 0
-  ) {
+  if (!Number.isFinite(duration) || duration <= 0) {
     duration = 86400000;
   }
 
   duration = Math.floor(duration);
 
-  const client =
-    await pool.connect();
+  const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
 
     const keys = [];
 
-    for (
-      let i = 0;
-      i < amount;
-      i++
-    ) {
+    for (let i = 0; i < amount; i++) {
       let inserted = false;
 
-      for (
-        let attempt = 0;
-        attempt < 10;
-        attempt++
-      ) {
+      for (let attempt = 0; attempt < 10; attempt++) {
         const key =
           "NOVI-" +
-          crypto
-            .randomBytes(8)
-            .toString("hex")
-            .toUpperCase();
+          crypto.randomBytes(8).toString("hex").toUpperCase();
+
+        // BIGINT Unix timestamp in milliseconds
+        const expiresAt = Date.now() + duration;
 
         /*
-         * BIGINT expiration.
+         * IMPORTANT FIX:
          *
-         * Example:
-         * 1778183191674
+         * created_at is explicitly set to NOW()
+         * so existing NOT NULL constraints are satisfied.
          */
 
-        const expiresAt =
-          Date.now() + duration;
+        const result = await client.query(
+          `
+          INSERT INTO novi_keys
+            (key, duration, created_at, expires_at)
+          VALUES
+            ($1, $2::BIGINT, NOW(), $3::BIGINT)
+          ON CONFLICT (key)
+          DO NOTHING
+          RETURNING
+            id,
+            key,
+            duration,
+            created_at,
+            expires_at
+          `,
+          [
+            key,
+            duration,
+            expiresAt,
+          ]
+        );
 
-        const result =
-          await client.query(
-            `
-            INSERT INTO novi_keys
-              (key, duration, expires_at)
-            VALUES
-              ($1, $2::BIGINT, $3::BIGINT)
-            ON CONFLICT (key)
-            DO NOTHING
-            RETURNING
-              id,
-              key,
-              duration,
-              created_at,
-              expires_at
-            `,
-            [
-              key,
-              duration,
-              expiresAt,
-            ]
-          );
-
-        if (
-          result.rows.length > 0
-        ) {
-          keys.push(
-            result.rows[0]
-          );
-
+        if (result.rows.length > 0) {
+          keys.push(result.rows[0]);
           inserted = true;
-
           break;
         }
       }
@@ -416,16 +398,11 @@ async function generateKeys(
       }
     }
 
-    await client.query(
-      "COMMIT"
-    );
+    await client.query("COMMIT");
 
     return keys;
   } catch (err) {
-    await client.query(
-      "ROLLBACK"
-    );
-
+    await client.query("ROLLBACK");
     throw err;
   } finally {
     client.release();
@@ -444,287 +421,206 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get(
-  "/api/health",
-  async (req, res) => {
-    try {
-      await pool.query(
-        "SELECT 1"
-      );
-
-      res.json({
-        success: true,
-        status: "online",
-        database: "connected",
-      });
-    } catch (err) {
-      console.error(
-        "Health check error:",
-        err
-      );
-
-      res.status(500).json({
-        success: false,
-        status: "offline",
-        database: "error",
-      });
-    }
-  }
-);
-
-// ============================================================
-// CREATE WEBSITE KEYS
-// ============================================================
-
-app.post(
-  "/api/keys",
-  requireAdmin,
-  async (req, res) => {
-    try {
-      const amount =
-        Math.max(
-          1,
-          Math.min(
-            Number(
-              req.body?.amount
-            ) || 1,
-            100
-          )
-        );
-
-      const duration =
-        Number(
-          req.body?.duration
-        ) ||
-        Number(
-          req.body?.durationMs
-        ) ||
-        86400000;
-
-      const keys =
-        await generateKeys(
-          amount,
-          duration
-        );
-
-      res.json({
-        success: true,
-        keys,
-      });
-    } catch (err) {
-      console.error(
-        "Create keys error:",
-        err
-      );
-
-      res.status(500).json({
-        success: false,
-        error:
-          "Failed to create keys",
-        details:
-          err.message,
-      });
-    }
-  }
-);
-
-// ============================================================
-// GET WEBSITE KEYS
-// ============================================================
-
-app.get(
-  "/api/keys",
-  requireAdmin,
-  async (req, res) => {
-    try {
-      const result =
-        await pool.query(`
-          SELECT
-            id,
-            key,
-            duration,
-            created_at,
-            expires_at
-          FROM novi_keys
-          ORDER BY id DESC
-        `);
-
-      res.json({
-        success: true,
-        keys: result.rows,
-      });
-    } catch (err) {
-      console.error(
-        "Get keys error:",
-        err
-      );
-
-      res.status(500).json({
-        success: false,
-        error:
-          "Failed to get keys",
-      });
-    }
-  }
-);
-
-// ============================================================
-// VERIFY WEBSITE KEY
-// ============================================================
-
-app.post(
-  "/api/verify",
-  async (req, res) => {
-    try {
-      const key = String(
-        req.body?.key ||
-          req.body?.licenseKey ||
-          req.body?.token ||
-          ""
-      ).trim();
-
-      if (!key) {
-        return res.status(400).json({
-          success: false,
-          error:
-            "Key is required",
-        });
-      }
-
-      const result =
-        await pool.query(
-          `
-          SELECT *
-          FROM novi_keys
-          WHERE key = $1
-          LIMIT 1
-          `,
-          [key]
-        );
-
-      if (
-        result.rows.length === 0
-      ) {
-        return res.status(401).json({
-          success: false,
-          valid: false,
-          error:
-            "Invalid key",
-        });
-      }
-
-      const keyRow =
-        result.rows[0];
-
-      /*
-       * expires_at is BIGINT.
-       * Convert it to a number before comparing.
-       */
-
-      const expiresAt =
-        Number(
-          keyRow.expires_at
-        );
-
-      if (
-        Number.isFinite(
-          expiresAt
-        ) &&
-        expiresAt <= Date.now()
-      ) {
-        return res.status(401).json({
-          success: false,
-          valid: false,
-          error:
-            "Key expired",
-        });
-      }
-
-      const duration =
-        Number(
-          keyRow.duration
-        ) || 86400000;
-
-      const token =
-        createSession(
-          keyRow.id,
-          duration
-        );
-
-      res.json({
-        success: true,
-        valid: true,
-        token,
-        sessionToken:
-          token,
-        duration,
-        expiresAt:
-          keyRow.expires_at,
-      });
-    } catch (err) {
-      console.error(
-        "Verify error:",
-        err
-      );
-
-      res.status(500).json({
-        success: false,
-        error:
-          "Verification failed",
-      });
-    }
-  }
-);
-
-// ============================================================
-// STOCK ADD
-// ============================================================
-
-async function stockAddHandler(
-  req,
-  res
-) {
+app.get("/api/health", async (req, res) => {
   try {
-    const stockIds =
-      extractStockIds(
-        req.body
-      );
+    await pool.query("SELECT 1");
 
-    if (
-      stockIds.length === 0
-    ) {
+    res.json({
+      success: true,
+      status: "online",
+      database: "connected",
+    });
+  } catch (err) {
+    console.error("Health check error:", err);
+
+    res.status(500).json({
+      success: false,
+      status: "offline",
+      database: "error",
+    });
+  }
+});
+
+// ============================================================
+// CREATE WEBSITE LICENSE KEYS
+// ============================================================
+
+app.post("/api/keys", requireAdmin, async (req, res) => {
+  try {
+    const amount = Math.max(
+      1,
+      Math.min(Number(req.body?.amount) || 1, 100)
+    );
+
+    const duration =
+      Number(req.body?.duration) ||
+      Number(req.body?.durationMs) ||
+      86400000;
+
+    const keys = await generateKeys(
+      amount,
+      duration
+    );
+
+    res.json({
+      success: true,
+      keys,
+    });
+  } catch (err) {
+    console.error("Create keys error:", err);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to create keys",
+      details: err.message,
+    });
+  }
+});
+
+// ============================================================
+// GET WEBSITE LICENSE KEYS
+// ============================================================
+
+app.get("/api/keys", requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        id,
+        key,
+        duration,
+        created_at,
+        expires_at
+      FROM novi_keys
+      ORDER BY id DESC
+    `);
+
+    res.json({
+      success: true,
+      keys: result.rows,
+    });
+  } catch (err) {
+    console.error("Get keys error:", err);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to get keys",
+    });
+  }
+});
+
+// ============================================================
+// VERIFY WEBSITE LICENSE KEY
+// ============================================================
+
+app.post("/api/verify", async (req, res) => {
+  try {
+    const key = String(
+      req.body?.key ||
+        req.body?.licenseKey ||
+        req.body?.token ||
+        ""
+    ).trim();
+
+    if (!key) {
       return res.status(400).json({
         success: false,
-        error:
-          "No stock supplied",
+        error: "Key is required",
       });
     }
 
-    const client =
-      await pool.connect();
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM novi_keys
+      WHERE key = $1
+      LIMIT 1
+      `,
+      [key]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        valid: false,
+        error: "Invalid key",
+      });
+    }
+
+    const keyRow = result.rows[0];
+
+    // expires_at is BIGINT
+    const expiresAt = Number(keyRow.expires_at);
+
+    if (
+      Number.isFinite(expiresAt) &&
+      expiresAt <= Date.now()
+    ) {
+      return res.status(401).json({
+        success: false,
+        valid: false,
+        error: "Key expired",
+      });
+    }
+
+    const duration =
+      Number(keyRow.duration) || 86400000;
+
+    const token = createSession(
+      keyRow.id,
+      duration
+    );
+
+    res.json({
+      success: true,
+      valid: true,
+      token,
+      sessionToken: token,
+      duration,
+      expiresAt: keyRow.expires_at,
+    });
+  } catch (err) {
+    console.error("Verify error:", err);
+
+    res.status(500).json({
+      success: false,
+      error: "Verification failed",
+    });
+  }
+});
+
+// ============================================================
+// STOCK ADD API
+// ============================================================
+
+async function stockAddHandler(req, res) {
+  try {
+    const stockIds = extractStockIds(req.body);
+
+    if (stockIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "No stock supplied",
+      });
+    }
+
+    const client = await pool.connect();
 
     try {
-      await client.query(
-        "BEGIN"
-      );
+      await client.query("BEGIN");
 
-      for (
-        const stockId of stockIds
-      ) {
+      for (const stockId of stockIds) {
         await client.query(
           `
           INSERT INTO novi_stock_items
-            (stock_id)
+            (stock_id, created_at)
           VALUES
-            ($1)
+            ($1, NOW())
           `,
           [stockId]
         );
       }
 
-      await client.query(
-        "COMMIT"
-      );
+      await client.query("COMMIT");
 
       console.log(
         `Added ${stockIds.length} stock item(s)`
@@ -732,32 +628,22 @@ async function stockAddHandler(
 
       return res.json({
         success: true,
-        added:
-          stockIds.length,
-        count:
-          stockIds.length,
+        added: stockIds.length,
+        count: stockIds.length,
       });
     } catch (err) {
-      await client.query(
-        "ROLLBACK"
-      );
-
+      await client.query("ROLLBACK");
       throw err;
     } finally {
       client.release();
     }
   } catch (err) {
-    console.error(
-      "Stock add error:",
-      err
-    );
+    console.error("Stock add error:", err);
 
     return res.status(500).json({
       success: false,
-      error:
-        "Failed to add stock",
-      details:
-        err.message,
+      error: "Failed to add stock",
+      details: err.message,
     });
   }
 }
@@ -778,78 +664,57 @@ app.post(
 // STOCK COUNT
 // ============================================================
 
-app.get(
-  "/api/stock/count",
-  async (req, res) => {
-    try {
-      const result =
-        await pool.query(`
-          SELECT COUNT(*)::int AS count
-          FROM novi_stock_items
-        `);
+app.get("/api/stock/count", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT COUNT(*)::int AS count
+      FROM novi_stock_items
+    `);
 
-      res.json({
-        success: true,
-        count:
-          result.rows[0].count,
-      });
-    } catch (err) {
-      console.error(
-        "Stock count error:",
-        err
-      );
+    res.json({
+      success: true,
+      count: result.rows[0].count,
+    });
+  } catch (err) {
+    console.error("Stock count error:", err);
 
-      res.status(500).json({
-        success: false,
-        error:
-          "Failed to get stock count",
-      });
-    }
+    res.status(500).json({
+      success: false,
+      error: "Failed to get stock count",
+    });
   }
-);
+});
 
 // ============================================================
 // STOCK VIEW
 // ============================================================
 
-app.get(
-  "/api/stock",
-  requireSession,
-  async (req, res) => {
-    try {
-      const result =
-        await pool.query(`
-          SELECT
-            id,
-            stock_id AS "stockId",
-            created_at AS "createdAt"
-          FROM novi_stock_items
-          ORDER BY id ASC
-        `);
+app.get("/api/stock", requireSession, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        id,
+        stock_id AS "stockId",
+        created_at AS "createdAt"
+      FROM novi_stock_items
+      ORDER BY id ASC
+    `);
 
-      res.json({
-        success: true,
-        stock:
-          result.rows,
-        items:
-          result.rows,
-        count:
-          result.rows.length,
-      });
-    } catch (err) {
-      console.error(
-        "Get stock error:",
-        err
-      );
+    res.json({
+      success: true,
+      stock: result.rows,
+      items: result.rows,
+      count: result.rows.length,
+    });
+  } catch (err) {
+    console.error("Get stock error:", err);
 
-      res.status(500).json({
-        success: false,
-        error:
-          "Failed to get stock",
-      });
-    }
+    res.status(500).json({
+      success: false,
+      error: "Failed to get stock",
+    });
   }
-);
+});
 
 // ============================================================
 // STOCK GENERATE
@@ -859,42 +724,32 @@ app.post(
   "/api/stock/generate",
   requireSession,
   async (req, res) => {
-    const client =
-      await pool.connect();
+    const client = await pool.connect();
 
     try {
-      await client.query(
-        "BEGIN"
-      );
+      await client.query("BEGIN");
 
-      const result =
-        await client.query(`
-          SELECT
-            id,
-            stock_id AS "stockId",
-            created_at AS "createdAt"
-          FROM novi_stock_items
-          ORDER BY id ASC
-          LIMIT 1
-          FOR UPDATE SKIP LOCKED
-        `);
+      const result = await client.query(`
+        SELECT
+          id,
+          stock_id AS "stockId",
+          created_at AS "createdAt"
+        FROM novi_stock_items
+        ORDER BY id ASC
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+      `);
 
-      if (
-        result.rows.length === 0
-      ) {
-        await client.query(
-          "ROLLBACK"
-        );
+      if (result.rows.length === 0) {
+        await client.query("ROLLBACK");
 
         return res.status(404).json({
           success: false,
-          error:
-            "No stock available",
+          error: "No stock available",
         });
       }
 
-      const item =
-        result.rows[0];
+      const item = result.rows[0];
 
       await client.query(
         `
@@ -904,24 +759,19 @@ app.post(
         [item.id]
       );
 
-      await client.query(
-        "COMMIT"
-      );
+      await client.query("COMMIT");
 
       res.json({
         success: true,
         item,
-        stock:
-          item.stockId,
-        stockId:
-          item.stockId,
-        value:
-          item.stockId,
+        stock: item.stockId,
+        stockId: item.stockId,
+        value: item.stockId,
       });
     } catch (err) {
-      await client.query(
-        "ROLLBACK"
-      );
+      try {
+        await client.query("ROLLBACK");
+      } catch {}
 
       console.error(
         "Generate stock error:",
@@ -930,8 +780,7 @@ app.post(
 
       res.status(500).json({
         success: false,
-        error:
-          "Failed to generate stock",
+        error: "Failed to generate stock",
       });
     } finally {
       client.release();
@@ -949,34 +798,28 @@ app.get(
   async (req, res) => {
     try {
       const deviceId =
-        req.headers[
-          "x-novi-device"
-        ] ||
-        req.headers[
-          "x-device-id"
-        ] ||
+        req.headers["x-novi-device"] ||
+        req.headers["x-device-id"] ||
         req.query?.deviceId ||
         null;
 
-      const result =
-        await pool.query(
-          `
-          SELECT
-            id,
-            stock_id AS "stockId",
-            device_id AS "deviceId",
-            created_at AS "createdAt"
-          FROM novi_saved_items
-          WHERE device_id = $1
-          ORDER BY id DESC
-          `,
-          [deviceId]
-        );
+      const result = await pool.query(
+        `
+        SELECT
+          id,
+          stock_id AS "stockId",
+          device_id AS "deviceId",
+          created_at AS "createdAt"
+        FROM novi_saved_items
+        WHERE device_id = $1
+        ORDER BY id DESC
+        `,
+        [deviceId]
+      );
 
       res.json({
         success: true,
-        items:
-          result.rows,
+        items: result.rows,
       });
     } catch (err) {
       console.error(
@@ -986,8 +829,7 @@ app.get(
 
       res.status(500).json({
         success: false,
-        error:
-          "Failed to get saved items",
+        error: "Failed to get saved items",
       });
     }
   }
@@ -998,55 +840,47 @@ app.post(
   requireSession,
   async (req, res) => {
     try {
-      const stockId =
-        cleanStockValue(
-          req.body?.stockId ??
-            req.body?.stock_id ??
-            req.body?.value ??
-            req.body?.item
-        );
+      const stockId = cleanStockValue(
+        req.body?.stockId ??
+          req.body?.stock_id ??
+          req.body?.value ??
+          req.body?.item
+      );
 
       const deviceId =
-        req.headers[
-          "x-novi-device"
-        ] ||
-        req.headers[
-          "x-device-id"
-        ] ||
+        req.headers["x-novi-device"] ||
+        req.headers["x-device-id"] ||
         req.body?.deviceId ||
         null;
 
       if (!stockId) {
         return res.status(400).json({
           success: false,
-          error:
-            "stockId is required",
+          error: "stockId is required",
         });
       }
 
-      const result =
-        await pool.query(
-          `
-          INSERT INTO novi_saved_items
-            (stock_id, device_id)
-          VALUES
-            ($1, $2)
-          RETURNING
-            id,
-            stock_id AS "stockId",
-            device_id AS "deviceId",
-            created_at AS "createdAt"
-          `,
-          [
-            stockId,
-            deviceId,
-          ]
-        );
+      const result = await pool.query(
+        `
+        INSERT INTO novi_saved_items
+          (stock_id, device_id, created_at)
+        VALUES
+          ($1, $2, NOW())
+        RETURNING
+          id,
+          stock_id AS "stockId",
+          device_id AS "deviceId",
+          created_at AS "createdAt"
+        `,
+        [
+          stockId,
+          deviceId,
+        ]
+      );
 
       res.json({
         success: true,
-        item:
-          result.rows[0],
+        item: result.rows[0],
       });
     } catch (err) {
       console.error(
@@ -1056,8 +890,7 @@ app.post(
 
       res.status(500).json({
         success: false,
-        error:
-          "Failed to save item",
+        error: "Failed to save item",
       });
     }
   }
@@ -1069,32 +902,26 @@ app.delete(
   async (req, res) => {
     try {
       const deviceId =
-        req.headers[
-          "x-novi-device"
-        ] ||
-        req.headers[
-          "x-device-id"
-        ] ||
+        req.headers["x-novi-device"] ||
+        req.headers["x-device-id"] ||
         null;
 
-      const result =
-        await pool.query(
-          `
-          DELETE FROM novi_saved_items
-          WHERE id = $1
-            AND device_id = $2
-          RETURNING id
-          `,
-          [
-            req.params.id,
-            deviceId,
-          ]
-        );
+      const result = await pool.query(
+        `
+        DELETE FROM novi_saved_items
+        WHERE id = $1
+          AND device_id = $2
+        RETURNING id
+        `,
+        [
+          req.params.id,
+          deviceId,
+        ]
+      );
 
       res.json({
         success: true,
-        deleted:
-          result.rowCount > 0,
+        deleted: result.rowCount > 0,
       });
     } catch (err) {
       console.error(
@@ -1104,8 +931,7 @@ app.delete(
 
       res.status(500).json({
         success: false,
-        error:
-          "Failed to delete saved item",
+        error: "Failed to delete saved item",
       });
     }
   }
@@ -1115,53 +941,37 @@ app.delete(
 // LOGOUT
 // ============================================================
 
-app.post(
-  "/api/logout",
-  (req, res) => {
-    const token =
-      req.headers[
-        "x-novi-session"
-      ] ||
-      req.headers[
-        "authorization"
-      ]?.replace(
-        /^Bearer\s+/i,
-        ""
-      );
+app.post("/api/logout", (req, res) => {
+  const token =
+    req.headers["x-novi-session"] ||
+    req.headers["authorization"]?.replace(
+      /^Bearer\s+/i,
+      ""
+    );
 
-    if (token) {
-      sessions.delete(
-        token
-      );
-    }
-
-    res.json({
-      success: true,
-    });
+  if (token) {
+    sessions.delete(token);
   }
-);
+
+  res.json({
+    success: true,
+  });
+});
 
 // ============================================================
 // STATIC WEBSITE
 // ============================================================
 
-app.use(
-  express.static(
-    PUBLIC_DIR
-  )
-);
+app.use(express.static(PUBLIC_DIR));
 
-app.get(
-  "/{*splat}",
-  (req, res) => {
-    res.sendFile(
-      path.join(
-        PUBLIC_DIR,
-        "index.html"
-      )
-    );
-  }
-);
+app.get("/{*splat}", (req, res) => {
+  res.sendFile(
+    path.join(
+      PUBLIC_DIR,
+      "index.html"
+    )
+  );
+});
 
 // ============================================================
 // DISCORD BOT
@@ -1178,14 +988,13 @@ async function startDiscordBot() {
     return;
   }
 
-  discordClient =
-    new Client({
-      intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-      ],
-    });
+  discordClient = new Client({
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
+    ],
+  });
 
   // ==========================================================
   // READY
@@ -1198,9 +1007,7 @@ async function startDiscordBot() {
         `Discord bot online as ${client.user.tag}`
       );
 
-      if (
-        !DISCORD_CLIENT_ID
-      ) {
+      if (!DISCORD_CLIENT_ID) {
         console.log(
           "DISCORD_CLIENT_ID missing. Slash commands skipped."
         );
@@ -1209,12 +1016,9 @@ async function startDiscordBot() {
       }
 
       try {
-        const rest =
-          new REST({
-            version: "10",
-          }).setToken(
-            DISCORD_TOKEN
-          );
+        const rest = new REST({
+          version: "10",
+        }).setToken(DISCORD_TOKEN);
 
         const commands = [
           new SlashCommandBuilder()
@@ -1228,9 +1032,8 @@ async function startDiscordBot() {
             .setDescription(
               "Check the current Novi stock count"
             ),
-        ].map(
-          (command) =>
-            command.toJSON()
+        ].map((command) =>
+          command.toJSON()
         );
 
         await rest.put(
@@ -1331,18 +1134,14 @@ async function startDiscordBot() {
     "messageCreate",
     async (message) => {
       try {
-        if (
-          message.author.bot
-        ) {
+        if (message.author.bot) {
           return;
         }
 
         const content =
           message.content.trim();
 
-        if (
-          !content.startsWith("!")
-        ) {
+        if (!content.startsWith("!")) {
           return;
         }
 
@@ -1350,12 +1149,11 @@ async function startDiscordBot() {
           `[DISCORD] ${message.author.tag}: ${content}`
         );
 
-        const parts =
-          content
-            .slice(1)
-            .trim()
-            .split(/\s+/)
-            .filter(Boolean);
+        const parts = content
+          .slice(1)
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean);
 
         const command = (
           parts.shift() || ""
@@ -1365,9 +1163,7 @@ async function startDiscordBot() {
         // !GEN
         // ======================================================
 
-        if (
-          command === "gen"
-        ) {
+        if (command === "gen") {
           const isAdmin =
             message.member?.permissions?.has(
               "Administrator"
@@ -1379,36 +1175,24 @@ async function startDiscordBot() {
             );
           }
 
-          let amount =
-            Number(parts[0]);
+          let amount = Number(parts[0]);
 
-          if (
-            !Number.isFinite(
-              amount
-            )
-          ) {
+          if (!Number.isFinite(amount)) {
             amount = 1;
           }
 
-          amount =
-            Math.floor(amount);
+          amount = Math.floor(amount);
 
-          amount =
-            Math.max(
-              1,
-              Math.min(
-                amount,
-                100
-              )
-            );
+          amount = Math.max(
+            1,
+            Math.min(amount, 100)
+          );
 
           console.log(
             `[DISCORD] Generating ${amount} WEBSITE key(s)...`
           );
 
-          /*
-           * 24 HOURS
-           */
+          // 24 hours
           const duration =
             24 *
             60 *
@@ -1455,9 +1239,7 @@ async function startDiscordBot() {
         // !ADD
         // ======================================================
 
-        if (
-          command === "add"
-        ) {
+        if (command === "add") {
           const isAdmin =
             message.member?.permissions?.has(
               "Administrator"
@@ -1469,9 +1251,7 @@ async function startDiscordBot() {
             );
           }
 
-          if (
-            parts.length === 0
-          ) {
+          if (parts.length === 0) {
             return message.reply(
               "❌ Usage: `!add <stock1> <stock2> <stock3>`"
             );
@@ -1480,9 +1260,8 @@ async function startDiscordBot() {
           const stockIds = [
             ...new Set(
               parts
-                .map(
-                  (item) =>
-                    item.trim()
+                .map((item) =>
+                  item.trim()
                 )
                 .filter(Boolean)
             ),
@@ -1502,9 +1281,9 @@ async function startDiscordBot() {
               await client.query(
                 `
                 INSERT INTO novi_stock_items
-                  (stock_id)
+                  (stock_id, created_at)
                 VALUES
-                  ($1)
+                  ($1, NOW())
                 `,
                 [stockId]
               );
@@ -1520,8 +1299,7 @@ async function startDiscordBot() {
 
             return message.reply(
               `✅ Added **${stockIds.length}** stock item${
-                stockIds.length ===
-                1
+                stockIds.length === 1
                   ? ""
                   : "s"
               }.`
@@ -1541,9 +1319,7 @@ async function startDiscordBot() {
         // !STOCK
         // ======================================================
 
-        if (
-          command === "stock"
-        ) {
+        if (command === "stock") {
           const result =
             await pool.query(`
               SELECT COUNT(*)::int AS count
@@ -1559,9 +1335,7 @@ async function startDiscordBot() {
         // !HELP
         // ======================================================
 
-        if (
-          command === "help"
-        ) {
+        if (command === "help") {
           return message.reply(
             [
               "**Novi Commands**",
@@ -1626,6 +1400,16 @@ async function startDiscordBot() {
       );
 
       console.error(err);
+    }
+  );
+
+  discordClient.on(
+    "warn",
+    (info) => {
+      console.warn(
+        "Discord warning:",
+        info
+      );
     }
   );
 
@@ -1700,9 +1484,7 @@ async function start() {
 // SHUTDOWN
 // ============================================================
 
-async function shutdown(
-  signal
-) {
+async function shutdown(signal) {
   console.log(
     `Received ${signal}. Shutting down Novi...`
   );
@@ -1727,14 +1509,12 @@ async function shutdown(
 
 process.on(
   "SIGTERM",
-  () =>
-    shutdown("SIGTERM")
+  () => shutdown("SIGTERM")
 );
 
 process.on(
   "SIGINT",
-  () =>
-    shutdown("SIGINT")
+  () => shutdown("SIGINT")
 );
 
 // ============================================================
