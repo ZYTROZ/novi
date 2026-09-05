@@ -147,8 +147,15 @@ const DURATIONS = {
   "3d": 3 * 24 * 60 * 60 * 1000,
   "1week": 7 * 24 * 60 * 60 * 1000,
   "1month": 30 * 24 * 60 * 60 * 1000,
-  "1year": 365 * 24 * 60 * 60 * 1000,
   "lifetime": null
+};
+
+const DURATION_NAMES = {
+  "1d": "1 Day",
+  "3d": "3 Days",
+  "1week": "1 Week",
+  "1month": "1 Month",
+  "lifetime": "Lifetime"
 };
 
 function calculateExpiration(duration) {
@@ -196,6 +203,7 @@ function createKeyRecord(duration) {
   return {
     key: generateKey(),
     duration,
+    durationName: DURATION_NAMES[duration],
     createdAt: Date.now(),
     expiresAt: calculateExpiration(duration),
     deviceId: null,
@@ -210,10 +218,6 @@ function createKeyRecord(duration) {
 function verifyKey(rawKey, rawDeviceId) {
   const key = normalizeKey(rawKey);
   const deviceId = normalizeDeviceId(rawDeviceId);
-
-  console.log("VERIFY KEY START");
-  console.log("Key supplied:", Boolean(key));
-  console.log("Device ID supplied:", Boolean(deviceId));
 
   if (!key) {
     return {
@@ -232,8 +236,6 @@ function verifyKey(rawKey, rawDeviceId) {
   }
 
   const keys = readKeys();
-
-  console.log("Keys loaded:", keys.length);
 
   let found = null;
   let foundIndex = -1;
@@ -254,8 +256,6 @@ function verifyKey(rawKey, rawDeviceId) {
   }
 
   if (!found) {
-    console.log("VERIFY RESULT: INVALID KEY");
-
     return {
       success: false,
       valid: false,
@@ -271,6 +271,7 @@ function verifyKey(rawKey, rawDeviceId) {
     found = {
       key: normalizeKey(found),
       duration: "lifetime",
+      durationName: "Lifetime",
       createdAt: Date.now(),
       expiresAt: null,
       deviceId: null,
@@ -289,8 +290,6 @@ function verifyKey(rawKey, rawDeviceId) {
     found.expiresAt !== undefined &&
     Number(found.expiresAt) <= Date.now()
   ) {
-    console.log("VERIFY RESULT: EXPIRED");
-
     return {
       success: false,
       valid: false,
@@ -303,8 +302,6 @@ function verifyKey(rawKey, rawDeviceId) {
   ------------------------------------------------------- */
 
   if (!found.deviceId) {
-    console.log("First activation. Binding device.");
-
     found.deviceId = deviceId;
     found.activatedAt = Date.now();
 
@@ -313,16 +310,12 @@ function verifyKey(rawKey, rawDeviceId) {
     const saved = saveKeys(keys);
 
     if (!saved) {
-      console.error("KEY SAVE FAILED");
-
       return {
         success: false,
         valid: false,
         message: "Could not save key activation."
       };
     }
-
-    console.log("Key successfully saved.");
   } else {
     if (
       !safeEqual(
@@ -330,8 +323,6 @@ function verifyKey(rawKey, rawDeviceId) {
         deviceId
       )
     ) {
-      console.log("VERIFY RESULT: WRONG DEVICE");
-
       return {
         success: false,
         valid: false,
@@ -339,11 +330,7 @@ function verifyKey(rawKey, rawDeviceId) {
           "This key is already bound to another device."
       };
     }
-
-    console.log("Existing device accepted.");
   }
-
-  console.log("VERIFY RESULT: VALID");
 
   return {
     success: true,
@@ -419,10 +406,6 @@ function requireSession(req, res, next) {
 
 function requireAdmin(req, res, next) {
   if (!ADMIN_SECRET) {
-    console.error(
-      "ADMIN REQUEST REJECTED: NOVI_ADMIN_SECRET missing"
-    );
-
     return res.status(503).json({
       success: false,
       message: "Admin secret is not configured."
@@ -438,10 +421,6 @@ function requireAdmin(req, res, next) {
       ADMIN_SECRET
     )
   ) {
-    console.error(
-      "ADMIN REQUEST REJECTED: INVALID SECRET"
-    );
-
     return res.status(403).json({
       success: false,
       message: "Admin access denied."
@@ -507,20 +486,9 @@ app.get("/api", (req, res) => {
 ========================================================= */
 
 app.post("/api/verify", (req, res) => {
-  console.log("=================================");
-  console.log("VERIFY REQUEST RECEIVED");
-  console.log("=================================");
-
-  console.log("Request body:", {
-    hasKey: Boolean(req.body?.key),
-    hasDeviceId: Boolean(req.body?.deviceId)
-  });
-
   try {
     const key = req.body?.key;
     const deviceId = req.body?.deviceId;
-
-    console.log("VERIFY: checking key");
 
     const result =
       verifyKey(
@@ -528,17 +496,9 @@ app.post("/api/verify", (req, res) => {
         deviceId
       );
 
-    console.log("VERIFY RESULT:", {
-      success: result.success,
-      valid: result.valid,
-      message: result.message || null
-    });
-
     if (!result.success) {
       return res.status(401).json(result);
     }
-
-    console.log("VERIFY: creating session");
 
     const session =
       createSession(
@@ -546,29 +506,24 @@ app.post("/api/verify", (req, res) => {
         deviceId
       );
 
-    console.log("VERIFY: session created");
-
     return res.json({
       success: true,
       valid: true,
       sessionToken: session.token,
       expiresAt: session.expiresAt,
+
       key: {
         duration: result.key.duration,
+        durationName:
+          result.key.durationName ||
+          DURATION_NAMES[result.key.duration] ||
+          "Lifetime",
         expiresAt: result.key.expiresAt
       }
     });
 
   } catch (error) {
-    console.error(
-      "========== VERIFY CRASH =========="
-    );
-
-    console.error(error);
-
-    console.error(
-      "=================================="
-    );
+    console.error("VERIFY ERROR:", error);
 
     return res.status(500).json({
       success: false,
@@ -682,20 +637,22 @@ app.post(
   requireAdmin,
   (req, res) => {
 
-    console.log("=================================");
-    console.log("CREATE KEY REQUEST RECEIVED");
-    console.log("=================================");
-
     try {
       const duration =
         String(
-          req.body?.duration || "lifetime"
-        ).trim();
+          req.body?.duration || ""
+        )
+          .trim()
+          .toLowerCase();
 
-      console.log(
-        "Requested duration:",
-        duration
-      );
+      /*
+        Allowed:
+        1d
+        3d
+        1week
+        1month
+        lifetime
+      */
 
       if (
         !Object.prototype.hasOwnProperty.call(
@@ -705,17 +662,13 @@ app.post(
       ) {
         return res.status(400).json({
           success: false,
-          message: "Invalid duration."
+          message:
+            "Invalid duration. Use 1d, 3d, 1week, 1month, or lifetime."
         });
       }
 
       const keys =
         readKeys();
-
-      console.log(
-        "Existing keys:",
-        keys.length
-      );
 
       const record =
         createKeyRecord(duration);
@@ -726,10 +679,6 @@ app.post(
         saveKeys(keys);
 
       if (!saved) {
-        console.error(
-          "CREATE KEY: FAILED TO SAVE keys.json"
-        );
-
         return res.status(500).json({
           success: false,
           message: "Failed to save key."
@@ -737,33 +686,39 @@ app.post(
       }
 
       console.log(
-        "CREATE KEY: SUCCESS"
+        "Generated key:",
+        record.key,
+        "| Duration:",
+        record.duration
       );
 
       /*
-         Only log the generated key itself because
-         this is already an authenticated admin request.
+        IMPORTANT:
+        key is now a STRING, not an object.
+        This prevents [object Object].
       */
 
-      console.log(
-        "Generated key:",
-        record.key
-      );
-
-      return res.json({
+      return res.status(201).json({
         success: true,
-        key: record
+
+        key: record.key,
+
+        duration: record.duration,
+
+        durationName:
+          record.durationName,
+
+        expiresAt:
+          record.expiresAt,
+
+        createdAt:
+          record.createdAt
       });
 
     } catch (error) {
       console.error(
-        "========== CREATE KEY CRASH =========="
-      );
-
-      console.error(error);
-
-      console.error(
-        "======================================"
+        "CREATE KEY ERROR:",
+        error
       );
 
       return res.status(500).json({
