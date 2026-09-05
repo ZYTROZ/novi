@@ -427,6 +427,85 @@
       border: 1px solid rgba(139, 92, 246, 0.2);
     }
 
+
+    /* ========================================================
+       SAVED LOGINS
+       ======================================================== */
+
+    .saved-logins {
+      margin-top: 18px;
+    }
+
+    .saved-login-item {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.025);
+      margin-bottom: 8px;
+    }
+
+    .saved-login-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .saved-login-info {
+      min-width: 0;
+    }
+
+    .saved-login-name {
+      font-size: 13px;
+      font-weight: 800;
+      word-break: break-all;
+    }
+
+    .saved-login-password {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 5px;
+      word-break: break-all;
+      font-family: monospace;
+    }
+
+    .saved-login-actions {
+      display: flex;
+      gap: 7px;
+      flex-shrink: 0;
+    }
+
+    .small-btn {
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.05);
+      color: #ddd;
+      border-radius: 8px;
+      padding: 7px 9px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .small-btn:hover {
+      background: rgba(139, 92, 246, 0.12);
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .save-login-btn {
+      margin-top: 10px;
+      width: 100%;
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      background: rgba(139, 92, 246, 0.10);
+      color: #c4b5fd;
+      border-radius: 9px;
+      padding: 8px 10px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .save-login-btn:hover {
+      background: rgba(139, 92, 246, 0.18);
+    }
+
     /* ========================================================
        RESPONSIVE
        ======================================================== */
@@ -1048,6 +1127,7 @@
       updateKeyInfo();
 
       loadStock();
+      loadSavedLogins();
 
     }
 
@@ -1219,12 +1299,44 @@
               const value =
                 typeof item === "string"
                   ? item
-                  : item.value || "";
+                  : item.value || item.login || item.email || item.username || "";
 
+              const login =
+                typeof item === "object" && item
+                  ? (item.login || item.email || item.username || "")
+                  : "";
+
+              const password =
+                typeof item === "object" && item
+                  ? (item.password || item.pass || "")
+                  : "";
+
+              const hasCredentials = Boolean(login && password);
+
+              const safeItem = encodeURIComponent(
+                JSON.stringify(
+                  typeof item === "string"
+                    ? { value: item }
+                    : item
+                )
+              );
 
               return `
                 <div class="stock-item">
-                  ${escapeHtml(value)}
+                  <div>${escapeHtml(value)}</div>
+
+                  ${
+                    hasCredentials
+                      ? `
+                        <button
+                          class="save-login-btn"
+                          onclick="saveLoginFromStock('${safeItem}')"
+                        >
+                          Save Login
+                        </button>
+                      `
+                      : ""
+                  }
                 </div>
               `;
 
@@ -1355,6 +1467,160 @@
 
     }
 
+
+
+    // ==========================================================
+    // SAVED LOGINS
+    // ==========================================================
+
+    const SAVED_LOGINS_KEY = "noviSavedLogins";
+
+    function getSavedLogins() {
+      try {
+        const saved = JSON.parse(
+          localStorage.getItem(SAVED_LOGINS_KEY) || "[]"
+        );
+
+        return Array.isArray(saved) ? saved : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function setSavedLogins(logins) {
+      localStorage.setItem(
+        SAVED_LOGINS_KEY,
+        JSON.stringify(logins)
+      );
+    }
+
+    function saveLoginFromStock(encodedItem) {
+      try {
+        const item = JSON.parse(
+          decodeURIComponent(encodedItem)
+        );
+
+        const login =
+          item.login ||
+          item.email ||
+          item.username ||
+          "";
+
+        const password =
+          item.password ||
+          item.pass ||
+          "";
+
+        if (!login || !password) {
+          alert("This stock item does not contain a login and password.");
+          return;
+        }
+
+        const saved = getSavedLogins();
+
+        const alreadySaved = saved.some(
+          entry =>
+            entry.login === login &&
+            entry.password === password
+        );
+
+        if (alreadySaved) {
+          alert("That login is already saved.");
+          return;
+        }
+
+        saved.push({
+          id:
+            typeof crypto !== "undefined" &&
+            typeof crypto.randomUUID === "function"
+              ? crypto.randomUUID()
+              : Date.now() + "-" + Math.random(),
+          login,
+          password,
+          savedAt: Date.now()
+        });
+
+        setSavedLogins(saved);
+
+        alert("Login saved successfully.");
+      } catch (error) {
+        console.error("Save login error:", error);
+        alert("Could not save this login.");
+      }
+    }
+
+    function removeSavedLogin(id) {
+      const saved = getSavedLogins().filter(
+        entry => entry.id !== id
+      );
+
+      setSavedLogins(saved);
+      loadSavedLogins();
+    }
+
+    function copySavedLogin(login, password) {
+      const text = `${login}:${password}`;
+
+      navigator.clipboard.writeText(text)
+        .then(() => alert("Login copied."))
+        .catch(() => alert("Could not copy login."));
+    }
+
+    function loadSavedLogins() {
+      const container =
+        document.getElementById("savedLoginList");
+
+      if (!container) return;
+
+      const saved = getSavedLogins();
+
+      if (saved.length === 0) {
+        container.innerHTML =
+          `<div class="empty">No saved logins yet.</div>`;
+        return;
+      }
+
+      container.innerHTML = saved
+        .slice()
+        .reverse()
+        .map(entry => `
+          <div class="saved-login-item">
+            <div class="saved-login-main">
+              <div class="saved-login-info">
+                <div class="saved-login-name">
+                  ${escapeHtml(entry.login)}
+                </div>
+
+                <div class="saved-login-password">
+                  ${escapeHtml(entry.password)}
+                </div>
+              </div>
+
+              <div class="saved-login-actions">
+                <button
+                  class="small-btn"
+                  onclick='copySavedLogin(
+                    ${JSON.stringify(entry.login)},
+                    ${JSON.stringify(entry.password)}
+                  )'
+                >
+                  Copy
+                </button>
+
+                <button
+                  class="small-btn"
+                  onclick='removeSavedLogin(
+                    ${JSON.stringify(entry.id)}
+                  )'
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        `)
+        .join("");
+    }
 
     // ==========================================================
     // KEY INFO
