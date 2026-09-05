@@ -98,9 +98,18 @@ function encrypt(text) {
   const key = getEncryptionKey();
   const iv = crypto.randomBytes(12);
 
-  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const cipher = crypto.createCipheriv(
+    "aes-256-gcm",
+    key,
+    iv
+  );
 
-  let encrypted = cipher.update(String(text), "utf8", "base64");
+  let encrypted = cipher.update(
+    String(text),
+    "utf8",
+    "base64"
+  );
+
   encrypted += cipher.final("base64");
 
   const authTag = cipher.getAuthTag();
@@ -121,7 +130,9 @@ function decrypt(data) {
     Buffer.from(data.iv, "base64")
   );
 
-  decipher.setAuthTag(Buffer.from(data.authTag, "base64"));
+  decipher.setAuthTag(
+    Buffer.from(data.authTag, "base64")
+  );
 
   let decrypted = decipher.update(
     data.encrypted,
@@ -185,7 +196,21 @@ function getSession(req) {
     return null;
   }
 
-  return sessions.get(token) || null;
+  const session = sessions.get(token);
+
+  if (!session) {
+    return null;
+  }
+
+  if (
+    session.expiresAt !== null &&
+    session.expiresAt <= Date.now()
+  ) {
+    sessions.delete(token);
+    return null;
+  }
+
+  return session;
 }
 
 function requireSession(req, res, next) {
@@ -249,7 +274,7 @@ app.get("/health", async (req, res) => {
       timestamp: Date.now(),
     });
   } catch (error) {
-    console.error("Health check database error:", error);
+    console.error("Health check error:", error);
 
     res.status(500).json({
       success: false,
@@ -272,7 +297,7 @@ app.get("/api", (req, res) => {
 });
 
 // ============================================================
-// KEYS
+// CREATE KEYS
 // ============================================================
 
 app.post("/api/keys", requireAdmin, async (req, res) => {
@@ -280,7 +305,10 @@ app.post("/api/keys", requireAdmin, async (req, res) => {
     const duration = req.body?.duration;
 
     const amount = Math.min(
-      Math.max(Number(req.body?.amount) || 1, 1),
+      Math.max(
+        Number(req.body?.amount) || 1,
+        1
+      ),
       1000
     );
 
@@ -313,7 +341,9 @@ app.post("/api/keys", requireAdmin, async (req, res) => {
       }
 
       const expiresAt =
-        durationMs === null ? null : now + durationMs;
+        durationMs === null
+          ? null
+          : now + durationMs;
 
       await pool.query(
         `
@@ -321,7 +351,12 @@ app.post("/api/keys", requireAdmin, async (req, res) => {
         (key, duration, created_at, expires_at, used)
         VALUES ($1, $2, $3, $4, FALSE)
         `,
-        [key, duration, now, expiresAt]
+        [
+          key,
+          duration,
+          now,
+          expiresAt,
+        ]
       );
 
       created.push({
@@ -345,6 +380,10 @@ app.post("/api/keys", requireAdmin, async (req, res) => {
     });
   }
 });
+
+// ============================================================
+// GET KEYS
+// ============================================================
 
 app.get("/api/keys", requireAdmin, async (req, res) => {
   try {
@@ -386,34 +425,42 @@ app.get("/api/keys", requireAdmin, async (req, res) => {
   }
 });
 
-app.delete("/api/keys/:key", requireAdmin, async (req, res) => {
-  try {
-    const key = req.params.key;
+// ============================================================
+// DELETE KEY
+// ============================================================
 
-    const result = await pool.query(
-      "DELETE FROM novi_keys WHERE key = $1",
-      [key]
-    );
+app.delete(
+  "/api/keys/:key",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const key = req.params.key;
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({
+      const result = await pool.query(
+        "DELETE FROM novi_keys WHERE key = $1",
+        [key]
+      );
+
+      if (result.rowCount === 0) {
+        return res.status(404).json({
+          success: false,
+          error: "Key not found",
+        });
+      }
+
+      res.json({
+        success: true,
+      });
+    } catch (error) {
+      console.error("Delete key error:", error);
+
+      res.status(500).json({
         success: false,
-        error: "Key not found",
+        error: "Failed to delete key",
       });
     }
-
-    res.json({
-      success: true,
-    });
-  } catch (error) {
-    console.error("Delete key error:", error);
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to delete key",
-    });
   }
-});
+);
 
 // ============================================================
 // VERIFY KEY
@@ -421,7 +468,13 @@ app.delete("/api/keys/:key", requireAdmin, async (req, res) => {
 
 app.post("/api/verify", async (req, res) => {
   try {
-    const { key, deviceId } = req.body || {};
+    const rawKey = req.body?.key;
+    const deviceId = req.body?.deviceId;
+
+    const key =
+      typeof rawKey === "string"
+        ? rawKey.trim().toUpperCase()
+        : "";
 
     if (!key || !deviceId) {
       return res.status(400).json({
@@ -434,7 +487,7 @@ app.post("/api/verify", async (req, res) => {
       `
       SELECT *
       FROM novi_keys
-      WHERE key = $1
+      WHERE UPPER(key) = $1
       LIMIT 1
       `,
       [key]
@@ -460,10 +513,14 @@ app.post("/api/verify", async (req, res) => {
       });
     }
 
-    if (row.device_id && row.device_id !== deviceId) {
+    if (
+      row.device_id &&
+      row.device_id !== deviceId
+    ) {
       return res.status(401).json({
         success: false,
-        error: "Key is already bound to another device",
+        error:
+          "Key is already bound to another device",
       });
     }
 
@@ -475,16 +532,18 @@ app.post("/api/verify", async (req, res) => {
             used = TRUE
         WHERE id = $2
         `,
-        [deviceId, row.id]
+        [
+          deviceId,
+          row.id,
+        ]
       );
     }
 
-    const token = crypto
-      .randomBytes(32)
-      .toString("hex");
+    const token =
+      crypto.randomBytes(32).toString("hex");
 
     sessions.set(token, {
-      key,
+      key: row.key,
       deviceId,
       createdAt: now,
       expiresAt:
@@ -495,9 +554,13 @@ app.post("/api/verify", async (req, res) => {
 
     res.json({
       success: true,
+
+      // Frontend uses this
       token,
-      key,
+
+      key: row.key,
       duration: row.duration,
+
       expiresAt:
         row.expires_at === null
           ? null
@@ -514,340 +577,446 @@ app.post("/api/verify", async (req, res) => {
 });
 
 // ============================================================
+// STOCK ADD
+// ============================================================
+
+app.post(
+  "/api/stock/add",
+  requireAdmin,
+  async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+      const accounts =
+        Array.isArray(req.body?.accounts)
+          ? req.body.accounts
+          : [];
+
+      if (!accounts.length) {
+        return res.status(400).json({
+          success: false,
+          error: "No accounts supplied",
+        });
+      }
+
+      await client.query("BEGIN");
+
+      let added = 0;
+
+      for (const account of accounts) {
+        if (!account) continue;
+
+        let username = "";
+        let password = "";
+
+        if (typeof account === "string") {
+          const split = account.split(":");
+
+          username =
+            (split[0] || "").trim();
+
+          password =
+            split
+              .slice(1)
+              .join(":")
+              .trim();
+        } else {
+          username = String(
+            account.username ||
+            account.email ||
+            account.emailAddress ||
+            ""
+          ).trim();
+
+          password = String(
+            account.password || ""
+          ).trim();
+        }
+
+        if (!username || !password) {
+          continue;
+        }
+
+        await client.query(
+          `
+          INSERT INTO novi_stock
+          (username, password, created_at)
+          VALUES ($1, $2, $3)
+          `,
+          [
+            username,
+            encryptPassword(password),
+            Date.now(),
+          ]
+        );
+
+        added++;
+      }
+
+      await client.query("COMMIT");
+
+      res.json({
+        success: true,
+        added,
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+
+      console.error("Add stock error:", error);
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to add stock",
+      });
+    } finally {
+      client.release();
+    }
+  }
+);
+
+// ============================================================
+// ADMIN STOCK
+// ============================================================
+
+app.get(
+  "/api/admin/stock",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const result = await pool.query(`
+        SELECT id, username, password, created_at
+        FROM novi_stock
+        ORDER BY id ASC
+      `);
+
+      const stock = result.rows.map((row) => ({
+        id: row.id,
+        username: row.username,
+        password: decryptPassword(row.password),
+        createdAt: Number(row.created_at),
+      }));
+
+      res.json({
+        success: true,
+        stock,
+        count: stock.length,
+      });
+    } catch (error) {
+      console.error("Admin stock error:", error);
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to get stock",
+      });
+    }
+  }
+);
+
+// ============================================================
 // STOCK
 // ============================================================
 
-app.post("/api/stock/add", requireAdmin, async (req, res) => {
-  const client = await pool.connect();
+app.get(
+  "/api/stock",
+  requireSession,
+  async (req, res) => {
+    try {
+      const result = await pool.query(`
+        SELECT id, username, password, created_at
+        FROM novi_stock
+        ORDER BY id ASC
+      `);
 
-  try {
-    const accounts = Array.isArray(req.body?.accounts)
-      ? req.body.accounts
-      : [];
+      const stock = result.rows.map((row) => ({
+        id: row.id,
 
-    if (!accounts.length) {
-      return res.status(400).json({
+        // Return both names for compatibility
+        username: row.username,
+        email: row.username,
+
+        password: decryptPassword(row.password),
+
+        createdAt: Number(row.created_at),
+      }));
+
+      res.json({
+        success: true,
+        stock,
+        count: stock.length,
+      });
+    } catch (error) {
+      console.error("Get stock error:", error);
+
+      res.status(500).json({
         success: false,
-        error: "No accounts supplied",
+        error: "Failed to get stock",
       });
     }
+  }
+);
 
-    await client.query("BEGIN");
+// ============================================================
+// STOCK COUNT
+// ============================================================
 
-    let added = 0;
+app.get(
+  "/api/stock/count",
+  requireSession,
+  async (req, res) => {
+    try {
+      const result = await pool.query(
+        "SELECT COUNT(*)::int AS count FROM novi_stock"
+      );
 
-    for (const account of accounts) {
-      if (!account) continue;
+      res.json({
+        success: true,
+        count: result.rows[0].count,
+      });
+    } catch (error) {
+      console.error("Stock count error:", error);
 
-      let username = "";
-      let password = "";
+      res.status(500).json({
+        success: false,
+        error: "Failed to get stock count",
+      });
+    }
+  }
+);
 
-      if (typeof account === "string") {
-        const split = account.split(":");
+// ============================================================
+// GENERATE STOCK
+// ============================================================
 
-        username = (split[0] || "").trim();
-        password = split.slice(1).join(":").trim();
-      } else {
-        username = String(
-          account.username ||
-          account.email ||
-          account.emailAddress ||
-          ""
-        ).trim();
+app.post(
+  "/api/stock/generate",
+  requireSession,
+  async (req, res) => {
+    const client = await pool.connect();
 
-        password = String(
-          account.password || ""
-        ).trim();
+    try {
+      const amount = Math.min(
+        Math.max(
+          Number(req.body?.amount) || 1,
+          1
+        ),
+        100
+      );
+
+      await client.query("BEGIN");
+
+      const result = await client.query(
+        `
+        SELECT id, username, password, created_at
+        FROM novi_stock
+        ORDER BY id ASC
+        LIMIT $1
+        FOR UPDATE SKIP LOCKED
+        `,
+        [amount]
+      );
+
+      if (result.rowCount === 0) {
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          success: false,
+          error: "No stock available",
+        });
       }
 
-      if (!username || !password) {
-        continue;
-      }
+      const accounts = result.rows.map((row) => ({
+        id: row.id,
+
+        username: row.username,
+        email: row.username,
+
+        password:
+          decryptPassword(row.password),
+
+        createdAt:
+          Number(row.created_at),
+      }));
+
+      const ids =
+        result.rows.map((row) => row.id);
 
       await client.query(
         `
-        INSERT INTO novi_stock
-        (username, password, created_at)
-        VALUES ($1, $2, $3)
+        DELETE FROM novi_stock
+        WHERE id = ANY($1::int[])
         `,
-        [
-          username,
-          encryptPassword(password),
-          Date.now(),
-        ]
+        [ids]
       );
 
-      added++;
-    }
+      await client.query("COMMIT");
 
-    await client.query("COMMIT");
+      res.json({
+        success: true,
 
-    res.json({
-      success: true,
-      added,
-    });
-  } catch (error) {
-    await client.query("ROLLBACK");
+        // Frontend expects account
+        account: accounts[0],
 
-    console.error("Add stock error:", error);
+        // Also return accounts
+        accounts,
 
-    res.status(500).json({
-      success: false,
-      error: "Failed to add stock",
-    });
-  } finally {
-    client.release();
-  }
-});
-
-app.get("/api/admin/stock", requireAdmin, async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT id, username, password, created_at
-      FROM novi_stock
-      ORDER BY id ASC
-    `);
-
-    const stock = result.rows.map((row) => ({
-      id: row.id,
-      username: row.username,
-      password: decryptPassword(row.password),
-      createdAt: Number(row.created_at),
-    }));
-
-    res.json({
-      success: true,
-      stock,
-      count: stock.length,
-    });
-  } catch (error) {
-    console.error("Admin stock error:", error);
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to get stock",
-    });
-  }
-});
-
-app.get("/api/stock", requireSession, async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT id, username, password, created_at
-      FROM novi_stock
-      ORDER BY id ASC
-    `);
-
-    const stock = result.rows.map((row) => ({
-      id: row.id,
-      username: row.username,
-      password: decryptPassword(row.password),
-      createdAt: Number(row.created_at),
-    }));
-
-    res.json({
-      success: true,
-      stock,
-      count: stock.length,
-    });
-  } catch (error) {
-    console.error("Get stock error:", error);
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to get stock",
-    });
-  }
-});
-
-app.get("/api/stock/count", requireSession, async (req, res) => {
-  try {
-    const result = await pool.query(
-      "SELECT COUNT(*)::int AS count FROM novi_stock"
-    );
-
-    res.json({
-      success: true,
-      count: result.rows[0].count,
-    });
-  } catch (error) {
-    console.error("Stock count error:", error);
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to get stock count",
-    });
-  }
-});
-
-app.post("/api/stock/generate", requireSession, async (req, res) => {
-  const client = await pool.connect();
-
-  try {
-    const amount = Math.min(
-      Math.max(Number(req.body?.amount) || 1, 1),
-      100
-    );
-
-    await client.query("BEGIN");
-
-    const result = await client.query(
-      `
-      SELECT id, username, password, created_at
-      FROM novi_stock
-      ORDER BY id ASC
-      LIMIT $1
-      FOR UPDATE SKIP LOCKED
-      `,
-      [amount]
-    );
-
-    if (result.rowCount === 0) {
+        count: accounts.length,
+      });
+    } catch (error) {
       await client.query("ROLLBACK");
 
-      return res.status(404).json({
+      console.error(
+        "Generate stock error:",
+        error
+      );
+
+      res.status(500).json({
         success: false,
-        error: "No stock available",
+        error: "Failed to generate stock",
       });
+    } finally {
+      client.release();
     }
-
-    const accounts = result.rows.map((row) => ({
-      id: row.id,
-      username: row.username,
-      password: decryptPassword(row.password),
-      createdAt: Number(row.created_at),
-    }));
-
-    const ids = result.rows.map((row) => row.id);
-
-    await client.query(
-      `
-      DELETE FROM novi_stock
-      WHERE id = ANY($1::int[])
-      `,
-      [ids]
-    );
-
-    await client.query("COMMIT");
-
-    res.json({
-      success: true,
-      accounts,
-      count: accounts.length,
-    });
-  } catch (error) {
-    await client.query("ROLLBACK");
-
-    console.error("Generate stock error:", error);
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to generate stock",
-    });
-  } finally {
-    client.release();
   }
-});
+);
 
 // ============================================================
 // SAVED LOGINS
 // ============================================================
 
-app.post("/api/saved-logins", requireSession, async (req, res) => {
-  try {
-    const username = String(
-      req.body?.username ||
-      req.body?.email ||
-      ""
-    ).trim();
+app.post(
+  "/api/saved-logins",
+  requireSession,
+  async (req, res) => {
+    try {
+      const username = String(
+        req.body?.username ||
+        req.body?.email ||
+        ""
+      ).trim();
 
-    const password = String(
-      req.body?.password || ""
-    );
+      const password = String(
+        req.body?.password || ""
+      );
 
-    if (!username || !password) {
-      return res.status(400).json({
+      if (!username || !password) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Username and password are required",
+        });
+      }
+
+      const encryptedPassword =
+        encryptPassword(password);
+
+      const result = await pool.query(
+        `
+        INSERT INTO novi_saved_logins
+        (username, password, created_at, device_id)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, username, created_at
+        `,
+        [
+          username,
+          encryptedPassword,
+          Date.now(),
+          req.session.deviceId,
+        ]
+      );
+
+      const row = result.rows[0];
+
+      res.json({
+        success: true,
+
+        login: {
+          id: row.id,
+          username: row.username,
+          email: row.username,
+          createdAt:
+            Number(row.created_at),
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Save login error:",
+        error
+      );
+
+      res.status(500).json({
         success: false,
-        error: "Username and password are required",
+        error: "Failed to save login",
       });
     }
-
-    const encryptedPassword = encryptPassword(password);
-
-    const result = await pool.query(
-      `
-      INSERT INTO novi_saved_logins
-      (username, password, created_at, device_id)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, username, created_at
-      `,
-      [
-        username,
-        encryptedPassword,
-        Date.now(),
-        req.session.deviceId,
-      ]
-    );
-
-    const row = result.rows[0];
-
-    res.json({
-      success: true,
-      login: {
-        id: row.id,
-        username: row.username,
-        createdAt: Number(row.created_at),
-      },
-    });
-  } catch (error) {
-    console.error("Save login error:", error);
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to save login",
-    });
   }
-});
+);
 
-app.get("/api/saved-logins", requireSession, async (req, res) => {
-  try {
-    const result = await pool.query(
-      `
-      SELECT id, username, password, created_at
-      FROM novi_saved_logins
-      WHERE device_id = $1
-      ORDER BY id DESC
-      `,
-      [req.session.deviceId]
-    );
+// ============================================================
+// GET SAVED LOGINS
+// ============================================================
 
-    const logins = result.rows.map((row) => ({
-      id: row.id,
-      username: row.username,
-      password: decryptPassword(row.password),
-      createdAt: Number(row.created_at),
-    }));
+app.get(
+  "/api/saved-logins",
+  requireSession,
+  async (req, res) => {
+    try {
+      const result = await pool.query(
+        `
+        SELECT id, username, password, created_at
+        FROM novi_saved_logins
+        WHERE device_id = $1
+        ORDER BY id DESC
+        `,
+        [req.session.deviceId]
+      );
 
-    res.json({
-      success: true,
-      logins,
-    });
-  } catch (error) {
-    console.error("Get saved logins error:", error);
+      const logins = result.rows.map(
+        (row) => ({
+          id: row.id,
 
-    res.status(500).json({
-      success: false,
-      error: "Failed to get saved logins",
-    });
+          username: row.username,
+          email: row.username,
+
+          password:
+            decryptPassword(
+              row.password
+            ),
+
+          createdAt:
+            Number(row.created_at),
+        })
+      );
+
+      res.json({
+        success: true,
+        logins,
+      });
+    } catch (error) {
+      console.error(
+        "Get saved logins error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          "Failed to get saved logins",
+      });
+    }
   }
-});
+);
+
+// ============================================================
+// GET SAVED LOGIN
+// ============================================================
 
 app.get(
   "/api/saved-logins/:id",
   requireSession,
   async (req, res) => {
     try {
-      const id = Number(req.params.id);
+      const id =
+        Number(req.params.id);
 
       if (!Number.isInteger(id)) {
         return res.status(400).json({
@@ -864,13 +1033,17 @@ app.get(
           AND device_id = $2
         LIMIT 1
         `,
-        [id, req.session.deviceId]
+        [
+          id,
+          req.session.deviceId,
+        ]
       );
 
       if (result.rowCount === 0) {
         return res.status(404).json({
           success: false,
-          error: "Saved login not found",
+          error:
+            "Saved login not found",
         });
       }
 
@@ -878,30 +1051,47 @@ app.get(
 
       res.json({
         success: true,
+
         login: {
           id: row.id,
           username: row.username,
-          password: decryptPassword(row.password),
-          createdAt: Number(row.created_at),
+          email: row.username,
+
+          password:
+            decryptPassword(
+              row.password
+            ),
+
+          createdAt:
+            Number(row.created_at),
         },
       });
     } catch (error) {
-      console.error("Get saved login error:", error);
+      console.error(
+        "Get saved login error:",
+        error
+      );
 
       res.status(500).json({
         success: false,
-        error: "Failed to get saved login",
+        error:
+          "Failed to get saved login",
       });
     }
   }
 );
+
+// ============================================================
+// DELETE SAVED LOGIN
+// ============================================================
 
 app.delete(
   "/api/saved-logins/:id",
   requireSession,
   async (req, res) => {
     try {
-      const id = Number(req.params.id);
+      const id =
+        Number(req.params.id);
 
       if (!Number.isInteger(id)) {
         return res.status(400).json({
@@ -916,13 +1106,17 @@ app.delete(
         WHERE id = $1
           AND device_id = $2
         `,
-        [id, req.session.deviceId]
+        [
+          id,
+          req.session.deviceId,
+        ]
       );
 
       if (result.rowCount === 0) {
         return res.status(404).json({
           success: false,
-          error: "Saved login not found",
+          error:
+            "Saved login not found",
         });
       }
 
@@ -930,11 +1124,15 @@ app.delete(
         success: true,
       });
     } catch (error) {
-      console.error("Delete saved login error:", error);
+      console.error(
+        "Delete saved login error:",
+        error
+      );
 
       res.status(500).json({
         success: false,
-        error: "Failed to delete saved login",
+        error:
+          "Failed to delete login",
       });
     }
   }
@@ -944,51 +1142,73 @@ app.delete(
 // LOGOUT
 // ============================================================
 
-app.post("/api/logout", requireSession, (req, res) => {
-  const auth =
-    req.headers.authorization ||
-    req.headers.Authorization ||
-    "";
+app.post(
+  "/api/logout",
+  requireSession,
+  (req, res) => {
+    const auth =
+      req.headers.authorization ||
+      req.headers.Authorization ||
+      "";
 
-  const token = auth.startsWith("Bearer ")
-    ? auth.slice(7).trim()
-    : null;
+    const token =
+      auth.startsWith("Bearer ")
+        ? auth.slice(7).trim()
+        : null;
 
-  if (token) {
-    sessions.delete(token);
+    if (token) {
+      sessions.delete(token);
+    }
+
+    res.json({
+      success: true,
+    });
   }
-
-  res.json({
-    success: true,
-  });
-});
+);
 
 // ============================================================
 // STATIC WEBSITE
 // ============================================================
 
-app.use(express.static(PUBLIC_DIR));
+app.use(
+  express.static(PUBLIC_DIR)
+);
 
-// Express 5 requires a named wildcard parameter.
-app.get("/{*splat}", (req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, "index.html"));
-});
+app.get(
+  "/{*splat}",
+  (req, res) => {
+    res.sendFile(
+      path.join(
+        PUBLIC_DIR,
+        "index.html"
+      )
+    );
+  }
+);
 
 // ============================================================
-// START SERVER
+// START
 // ============================================================
 
 async function start() {
   try {
     await initDatabase();
 
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(
-        `🚀 Novi server running on port ${PORT}`
-      );
-    });
+    app.listen(
+      PORT,
+      "0.0.0.0",
+      () => {
+        console.log(
+          `🚀 Novi server running on port ${PORT}`
+        );
+      }
+    );
   } catch (error) {
-    console.error("❌ Failed to start Novi:", error);
+    console.error(
+      "❌ Failed to start Novi:",
+      error
+    );
+
     process.exit(1);
   }
 }
