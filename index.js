@@ -36,10 +36,7 @@ const DISCORD_CLIENT_ID =
   process.env.DISCORD_CLIENT_ID || "";
 
 if (!DATABASE_URL) {
-  console.error(
-    "ERROR: DATABASE_URL is missing."
-  );
-
+  console.error("ERROR: DATABASE_URL is missing.");
   process.exit(1);
 }
 
@@ -103,9 +100,7 @@ function createSession(
 
   sessions.set(token, {
     keyId,
-
     lifetime,
-
     expiresAt: lifetime
       ? null
       : Date.now() + Number(durationMs),
@@ -117,9 +112,7 @@ function createSession(
 function getSession(req) {
   const token =
     req.headers["x-novi-session"] ||
-    req.headers[
-      "authorization"
-    ]?.replace(
+    req.headers["authorization"]?.replace(
       /^Bearer\s+/i,
       ""
     );
@@ -142,7 +135,6 @@ function getSession(req) {
     Date.now() > session.expiresAt
   ) {
     sessions.delete(token);
-
     return null;
   }
 
@@ -152,11 +144,7 @@ function getSession(req) {
   };
 }
 
-function requireSession(
-  req,
-  res,
-  next
-) {
+function requireSession(req, res, next) {
   const session =
     getSession(req);
 
@@ -172,26 +160,17 @@ function requireSession(
   next();
 }
 
-function requireAdmin(
-  req,
-  res,
-  next
-) {
+function requireAdmin(req, res, next) {
   if (!ADMIN_SECRET) {
     return res.status(500).json({
       success: false,
-      error:
-        "Admin secret is not configured",
+      error: "Admin secret is not configured",
     });
   }
 
   const supplied =
-    req.headers[
-      "x-novi-admin-secret"
-    ] ||
-    req.headers[
-      "x-admin-secret"
-    ] ||
+    req.headers["x-novi-admin-secret"] ||
+    req.headers["x-admin-secret"] ||
     req.body?.adminSecret ||
     req.body?.secret ||
     req.query?.adminSecret ||
@@ -215,18 +194,6 @@ function requireAdmin(
 // ============================================================
 
 async function initDatabase() {
-  /*
-   * IMPORTANT:
-   *
-   * Your existing novi_keys table uses BIGINT
-   * for created_at and expires_at.
-   *
-   * Lifetime keys use NULL for expires_at.
-   *
-   * This CREATE TABLE only applies when the table
-   * does not already exist.
-   */
-
   await pool.query(`
     CREATE TABLE IF NOT EXISTS novi_keys (
       id SERIAL PRIMARY KEY,
@@ -266,9 +233,7 @@ async function initDatabase() {
     ON novi_saved_items(device_id)
   `);
 
-  console.log(
-    "Database initialized"
-  );
+  console.log("Database initialized");
 }
 
 // ============================================================
@@ -317,9 +282,7 @@ function extractStockIds(body) {
 
   function add(value) {
     if (Array.isArray(value)) {
-      for (
-        const item of value
-      ) {
+      for (const item of value) {
         add(item);
       }
 
@@ -371,9 +334,7 @@ function extractStockIds(body) {
 
     if (result.length === 0) {
       for (
-        const value of Object.values(
-          body
-        )
+        const value of Object.values(body)
       ) {
         if (
           typeof value === "string" ||
@@ -405,7 +366,7 @@ function extractStockIds(body) {
 function parseDuration(value) {
   if (!value) {
     return {
-      duration: 24 * 60 * 60 * 1000,
+      duration: NaN,
       lifetime: false,
     };
   }
@@ -414,6 +375,76 @@ function parseDuration(value) {
     String(value)
       .trim()
       .toLowerCase();
+
+  // ==========================================================
+  // 1 DAY
+  // ==========================================================
+
+  if (input === "1d") {
+    return {
+      duration:
+        1 *
+        24 *
+        60 *
+        60 *
+        1000,
+
+      lifetime: false,
+    };
+  }
+
+  // ==========================================================
+  // 3 DAYS
+  // ==========================================================
+
+  if (input === "3d") {
+    return {
+      duration:
+        3 *
+        24 *
+        60 *
+        60 *
+        1000,
+
+      lifetime: false,
+    };
+  }
+
+  // ==========================================================
+  // 1 WEEK
+  // ==========================================================
+
+  if (input === "1w") {
+    return {
+      duration:
+        7 *
+        24 *
+        60 *
+        60 *
+        1000,
+
+      lifetime: false,
+    };
+  }
+
+  // ==========================================================
+  // 1 MONTH
+  //
+  // 1 month = 30 days
+  // ==========================================================
+
+  if (input === "1mo") {
+    return {
+      duration:
+        30 *
+        24 *
+        60 *
+        60 *
+        1000,
+
+      lifetime: false,
+    };
+  }
 
   // ==========================================================
   // LIFETIME
@@ -432,109 +463,8 @@ function parseDuration(value) {
     };
   }
 
-  // ==========================================================
-  // 1 MONTH
-  //
-  // 1 month = 30 days
-  // ==========================================================
-
-  const monthMatch =
-    input.match(
-      /^(\d+(?:\.\d+)?)(mo|mos|month|months)$/
-    );
-
-  if (monthMatch) {
-    const number =
-      Number(monthMatch[1]);
-
-    if (
-      !Number.isFinite(number) ||
-      number <= 0
-    ) {
-      return {
-        duration: NaN,
-        lifetime: false,
-      };
-    }
-
-    return {
-      duration: Math.floor(
-        number *
-          30 *
-          24 *
-          60 *
-          60 *
-          1000
-      ),
-
-      lifetime: false,
-    };
-  }
-
-  // ==========================================================
-  // DAYS / WEEKS / HOURS / MINUTES
-  // ==========================================================
-
-  const match =
-    input.match(
-      /^(\d+(?:\.\d+)?)(s|m|h|d|w)$/
-    );
-
-  if (!match) {
-    return {
-      duration: NaN,
-      lifetime: false,
-    };
-  }
-
-  const number =
-    Number(match[1]);
-
-  const unit =
-    match[2];
-
-  if (
-    !Number.isFinite(number) ||
-    number <= 0
-  ) {
-    return {
-      duration: NaN,
-      lifetime: false,
-    };
-  }
-
-  const multipliers = {
-    s: 1000,
-
-    m:
-      60 *
-      1000,
-
-    h:
-      60 *
-      60 *
-      1000,
-
-    d:
-      24 *
-      60 *
-      60 *
-      1000,
-
-    w:
-      7 *
-      24 *
-      60 *
-      60 *
-      1000,
-  };
-
   return {
-    duration: Math.floor(
-      number *
-        multipliers[unit]
-    ),
-
+    duration: NaN,
     lifetime: false,
   };
 }
@@ -557,63 +487,37 @@ function formatDuration(
     return "Unknown";
   }
 
-  const seconds =
-    Math.floor(ms / 1000);
+  const day =
+    24 *
+    60 *
+    60 *
+    1000;
 
-  if (
-    seconds %
-      (30 * 24 * 60 * 60) ===
-    0
-  ) {
-    return `${
-      seconds /
-      (30 * 24 * 60 * 60)
-    } month(s)`;
+  const week =
+    7 *
+    day;
+
+  const month =
+    30 *
+    day;
+
+  if (ms === month) {
+    return "1 month";
   }
 
-  if (
-    seconds %
-      (7 * 24 * 60 * 60) ===
-    0
-  ) {
-    return `${
-      seconds /
-      (7 * 24 * 60 * 60)
-    } week(s)`;
+  if (ms === week) {
+    return "1 week";
   }
 
-  if (
-    seconds %
-      (24 * 60 * 60) ===
-    0
-  ) {
-    return `${
-      seconds /
-      (24 * 60 * 60)
-    } day(s)`;
+  if (ms === 3 * day) {
+    return "3 days";
   }
 
-  if (
-    seconds %
-      (60 * 60) ===
-    0
-  ) {
-    return `${
-      seconds /
-      (60 * 60)
-    } hour(s)`;
+  if (ms === day) {
+    return "1 day";
   }
 
-  if (
-    seconds % 60 ===
-    0
-  ) {
-    return `${
-      seconds / 60
-    } minute(s)`;
-  }
-
-  return `${seconds} second(s)`;
+  return "Unknown";
 }
 
 // ============================================================
@@ -653,8 +557,9 @@ async function generateKeys(
       !Number.isFinite(duration) ||
       duration <= 0
     ) {
-      duration =
-        86400000;
+      throw new Error(
+        "Invalid license duration."
+      );
     }
 
     duration =
@@ -667,9 +572,7 @@ async function generateKeys(
     await pool.connect();
 
   try {
-    await client.query(
-      "BEGIN"
-    );
+    await client.query("BEGIN");
 
     const keys = [];
 
@@ -692,7 +595,6 @@ async function generateKeys(
             .toString("hex")
             .toUpperCase();
 
-        // BIGINT Unix milliseconds
         const createdAt =
           Date.now();
 
@@ -761,16 +663,11 @@ async function generateKeys(
       }
     }
 
-    await client.query(
-      "COMMIT"
-    );
+    await client.query("COMMIT");
 
     return keys;
   } catch (err) {
-    await client.query(
-      "ROLLBACK"
-    );
-
+    await client.query("ROLLBACK");
     throw err;
   } finally {
     client.release();
@@ -781,30 +678,19 @@ async function generateKeys(
 // HEALTH
 // ============================================================
 
-app.get(
-  "/",
-  (req, res) => {
-    res.json({
-      success: true,
-      service: "Novi",
-      status: "online",
-    });
-  }
-);
+// DO NOT create app.get("/") JSON here.
+// The website needs "/" to serve public/index.html.
 
 app.get(
   "/api/health",
   async (req, res) => {
     try {
-      await pool.query(
-        "SELECT 1"
-      );
+      await pool.query("SELECT 1");
 
       res.json({
         success: true,
         status: "online",
-        database:
-          "connected",
+        database: "connected",
       });
     } catch (err) {
       console.error(
@@ -815,8 +701,7 @@ app.get(
       res.status(500).json({
         success: false,
         status: "offline",
-        database:
-          "error",
+        database: "error",
       });
     }
   }
@@ -878,6 +763,12 @@ app.post(
             parsed.duration;
 
           lifetime = false;
+        } else {
+          return res.status(400).json({
+            success: false,
+            error:
+              "Invalid duration. Use 1d, 3d, 1w, 1mo, or lifetime.",
+          });
         }
       }
 
@@ -890,7 +781,18 @@ app.post(
 
       res.json({
         success: true,
+
         keys,
+
+        duration:
+          lifetime
+            ? "lifetime"
+            : formatDuration(
+                duration,
+                false
+              ),
+
+        lifetime,
       });
     } catch (err) {
       console.error(
@@ -964,7 +866,9 @@ app.post(
             req.body?.licenseKey ||
             req.body?.token ||
             ""
-        ).trim();
+        )
+          .trim()
+          .toUpperCase();
 
       if (!key) {
         return res.status(400).json({
@@ -979,15 +883,14 @@ app.post(
           `
           SELECT *
           FROM novi_keys
-          WHERE key = $1
+          WHERE UPPER(key) = $1
           LIMIT 1
           `,
           [key]
         );
 
       if (
-        result.rows.length ===
-        0
+        result.rows.length === 0
       ) {
         return res.status(401).json({
           success: false,
@@ -1000,15 +903,10 @@ app.post(
       const keyRow =
         result.rows[0];
 
-      /*
-       * NULL expires_at means lifetime.
-       */
-
+      // NULL expires_at = lifetime.
       const isLifetime =
-        keyRow.expires_at ===
-          null ||
-        keyRow.expires_at ===
-          undefined;
+        keyRow.expires_at === null ||
+        keyRow.expires_at === undefined;
 
       if (!isLifetime) {
         const expiresAt =
@@ -1030,8 +928,7 @@ app.post(
         }
 
         if (
-          expiresAt <=
-          Date.now()
+          expiresAt <= Date.now()
         ) {
           return res.status(401).json({
             success: false,
@@ -1042,18 +939,25 @@ app.post(
         }
       }
 
-      const duration =
+      const durationMs =
         isLifetime
           ? 0
           : Number(
               keyRow.duration
-            ) ||
-            86400000;
+            );
+
+      const durationLabel =
+        isLifetime
+          ? "lifetime"
+          : formatDuration(
+              durationMs,
+              false
+            );
 
       const token =
         createSession(
           keyRow.id,
-          duration,
+          durationMs,
           isLifetime
         );
 
@@ -1069,12 +973,46 @@ app.post(
         lifetime:
           isLifetime,
 
-        duration,
+        // Friendly value for your current HTML.
+        duration:
+          durationLabel,
+
+        // Numeric version if needed by another client.
+        durationMs,
 
         expiresAt:
           isLifetime
             ? null
-            : keyRow.expires_at,
+            : Number(
+                keyRow.expires_at
+              ),
+
+        key: {
+          id:
+            keyRow.id,
+
+          key:
+            keyRow.key,
+
+          duration:
+            durationLabel,
+
+          durationMs,
+
+          expiresAt:
+            isLifetime
+              ? null
+              : Number(
+                  keyRow.expires_at
+                ),
+
+          keyExpiresAt:
+            isLifetime
+              ? null
+              : Number(
+                  keyRow.expires_at
+                ),
+        },
       });
     } catch (err) {
       console.error(
@@ -1106,8 +1044,7 @@ async function stockAddHandler(
       );
 
     if (
-      stockIds.length ===
-      0
+      stockIds.length === 0
     ) {
       return res.status(400).json({
         success: false,
@@ -1120,9 +1057,7 @@ async function stockAddHandler(
       await pool.connect();
 
     try {
-      await client.query(
-        "BEGIN"
-      );
+      await client.query("BEGIN");
 
       for (
         const stockId of stockIds
@@ -1147,9 +1082,7 @@ async function stockAddHandler(
         );
       }
 
-      await client.query(
-        "COMMIT"
-      );
+      await client.query("COMMIT");
 
       console.log(
         `[WEBSITE STOCK] Added ${stockIds.length} item(s)`
@@ -1165,10 +1098,7 @@ async function stockAddHandler(
           stockIds.length,
       });
     } catch (err) {
-      await client.query(
-        "ROLLBACK"
-      );
-
+      await client.query("ROLLBACK");
       throw err;
     } finally {
       client.release();
@@ -1220,8 +1150,7 @@ app.get(
         success: true,
 
         count:
-          result.rows[0]
-            .count,
+          result.rows[0].count,
       });
     } catch (err) {
       console.error(
@@ -1296,9 +1225,7 @@ app.post(
       await pool.connect();
 
     try {
-      await client.query(
-        "BEGIN"
-      );
+      await client.query("BEGIN");
 
       const result =
         await client.query(`
@@ -1313,12 +1240,9 @@ app.post(
         `);
 
       if (
-        result.rows.length ===
-        0
+        result.rows.length === 0
       ) {
-        await client.query(
-          "ROLLBACK"
-        );
+        await client.query("ROLLBACK");
 
         return res.status(404).json({
           success: false,
@@ -1338,9 +1262,7 @@ app.post(
         [item.id]
       );
 
-      await client.query(
-        "COMMIT"
-      );
+      await client.query("COMMIT");
 
       res.json({
         success: true,
@@ -1358,9 +1280,7 @@ app.post(
       });
     } catch (err) {
       try {
-        await client.query(
-          "ROLLBACK"
-        );
+        await client.query("ROLLBACK");
       } catch {}
 
       console.error(
@@ -1380,7 +1300,382 @@ app.post(
 );
 
 // ============================================================
-// SAVED ITEMS
+// SAVED LOGINS
+//
+// Compatible with your current public/index.html:
+//
+// GET    /api/saved-logins
+// POST   /api/saved-logins
+// GET    /api/saved-logins/:id
+// DELETE /api/saved-logins/:id
+// ============================================================
+
+function getDeviceId(req) {
+  return (
+    req.headers["x-novi-device"] ||
+    req.headers["x-device-id"] ||
+    req.body?.deviceId ||
+    req.query?.deviceId ||
+    null
+  );
+}
+
+// ============================================================
+// GET SAVED LOGINS
+// ============================================================
+
+app.get(
+  "/api/saved-logins",
+  requireSession,
+  async (req, res) => {
+    try {
+      const deviceId =
+        getDeviceId(req);
+
+      const result =
+        await pool.query(
+          `
+          SELECT
+            id,
+            stock_id AS "stockId",
+            device_id AS "deviceId",
+            created_at AS "createdAt"
+          FROM novi_saved_items
+          WHERE device_id = $1
+          ORDER BY id DESC
+          `,
+          [deviceId]
+        );
+
+      const items =
+        result.rows.map(
+          (row) => {
+            const raw =
+              String(
+                row.stockId || ""
+              );
+
+            let email =
+              raw;
+
+            let password =
+              "";
+
+            const separator =
+              raw.indexOf(":");
+
+            if (
+              separator !== -1
+            ) {
+              email =
+                raw
+                  .slice(
+                    0,
+                    separator
+                  )
+                  .trim();
+
+              password =
+                raw
+                  .slice(
+                    separator + 1
+                  )
+                  .trim();
+            }
+
+            return {
+              id:
+                row.id,
+
+              stockId:
+                row.stockId,
+
+              deviceId:
+                row.deviceId,
+
+              createdAt:
+                row.createdAt,
+
+              email,
+
+              password,
+            };
+          }
+        );
+
+      res.json({
+        success: true,
+        items,
+      });
+    } catch (err) {
+      console.error(
+        "Get saved logins error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          "Failed to get saved logins",
+      });
+    }
+  }
+);
+
+// ============================================================
+// SAVE LOGIN
+// ============================================================
+
+app.post(
+  "/api/saved-logins",
+  requireSession,
+  async (req, res) => {
+    try {
+      const email =
+        String(
+          req.body?.email || ""
+        ).trim();
+
+      const password =
+        String(
+          req.body?.password || ""
+        );
+
+      const deviceId =
+        getDeviceId(req);
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Email is required",
+        });
+      }
+
+      const stockId =
+        password
+          ? `${email}:${password}`
+          : email;
+
+      const result =
+        await pool.query(
+          `
+          INSERT INTO novi_saved_items
+            (
+              stock_id,
+              device_id,
+              created_at
+            )
+          VALUES
+            (
+              $1,
+              $2,
+              $3::BIGINT
+            )
+          RETURNING
+            id,
+            stock_id AS "stockId",
+            device_id AS "deviceId",
+            created_at AS "createdAt"
+          `,
+          [
+            stockId,
+            deviceId,
+            Date.now(),
+          ]
+        );
+
+      const row =
+        result.rows[0];
+
+      res.json({
+        success: true,
+
+        item: {
+          ...row,
+          email,
+          password,
+        },
+      });
+    } catch (err) {
+      console.error(
+        "Save login error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          "Failed to save login",
+      });
+    }
+  }
+);
+
+// ============================================================
+// REVEAL SAVED LOGIN
+// ============================================================
+
+app.get(
+  "/api/saved-logins/:id",
+  requireSession,
+  async (req, res) => {
+    try {
+      const deviceId =
+        getDeviceId(req);
+
+      const result =
+        await pool.query(
+          `
+          SELECT
+            id,
+            stock_id AS "stockId",
+            device_id AS "deviceId",
+            created_at AS "createdAt"
+          FROM novi_saved_items
+          WHERE id = $1
+            AND device_id = $2
+          LIMIT 1
+          `,
+          [
+            req.params.id,
+            deviceId,
+          ]
+        );
+
+      if (
+        result.rows.length === 0
+      ) {
+        return res.status(404).json({
+          success: false,
+          error:
+            "Saved login not found",
+        });
+      }
+
+      const row =
+        result.rows[0];
+
+      const raw =
+        String(
+          row.stockId || ""
+        );
+
+      let email =
+        raw;
+
+      let password =
+        "";
+
+      const separator =
+        raw.indexOf(":");
+
+      if (
+        separator !== -1
+      ) {
+        email =
+          raw
+            .slice(
+              0,
+              separator
+            )
+            .trim();
+
+        password =
+          raw
+            .slice(
+              separator + 1
+            )
+            .trim();
+      }
+
+      res.json({
+        success: true,
+
+        item: {
+          id:
+            row.id,
+
+          stockId:
+            row.stockId,
+
+          deviceId:
+            row.deviceId,
+
+          createdAt:
+            row.createdAt,
+
+          email,
+
+          password,
+        },
+      });
+    } catch (err) {
+      console.error(
+        "Reveal saved login error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          "Failed to get saved login",
+      });
+    }
+  }
+);
+
+// ============================================================
+// DELETE SAVED LOGIN
+// ============================================================
+
+app.delete(
+  "/api/saved-logins/:id",
+  requireSession,
+  async (req, res) => {
+    try {
+      const deviceId =
+        getDeviceId(req);
+
+      const result =
+        await pool.query(
+          `
+          DELETE FROM novi_saved_items
+          WHERE id = $1
+            AND device_id = $2
+          RETURNING id
+          `,
+          [
+            req.params.id,
+            deviceId,
+          ]
+        );
+
+      res.json({
+        success: true,
+
+        deleted:
+          result.rowCount > 0,
+      });
+    } catch (err) {
+      console.error(
+        "Delete saved login error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          "Failed to delete saved login",
+      });
+    }
+  }
+);
+
+// ============================================================
+// OLD SAVED-ITEMS ROUTES
+//
+// Kept for compatibility.
 // ============================================================
 
 app.get(
@@ -1389,14 +1684,7 @@ app.get(
   async (req, res) => {
     try {
       const deviceId =
-        req.headers[
-          "x-novi-device"
-        ] ||
-        req.headers[
-          "x-device-id"
-        ] ||
-        req.query?.deviceId ||
-        null;
+        getDeviceId(req);
 
       const result =
         await pool.query(
@@ -1441,20 +1729,13 @@ app.post(
       const stockId =
         cleanStockValue(
           req.body?.stockId ??
-            req.body?.stock_id ??
-            req.body?.value ??
-            req.body?.item
+          req.body?.stock_id ??
+          req.body?.value ??
+          req.body?.item
         );
 
       const deviceId =
-        req.headers[
-          "x-novi-device"
-        ] ||
-        req.headers[
-          "x-device-id"
-        ] ||
-        req.body?.deviceId ||
-        null;
+        getDeviceId(req);
 
       if (!stockId) {
         return res.status(400).json({
@@ -1518,13 +1799,7 @@ app.delete(
   async (req, res) => {
     try {
       const deviceId =
-        req.headers[
-          "x-novi-device"
-        ] ||
-        req.headers[
-          "x-device-id"
-        ] ||
-        null;
+        getDeviceId(req);
 
       const result =
         await pool.query(
@@ -1544,8 +1819,7 @@ app.delete(
         success: true,
 
         deleted:
-          result.rowCount >
-          0,
+          result.rowCount > 0,
       });
     } catch (err) {
       console.error(
@@ -1581,9 +1855,7 @@ app.post(
       );
 
     if (token) {
-      sessions.delete(
-        token
-      );
+      sessions.delete(token);
     }
 
     res.json({
@@ -1596,11 +1868,17 @@ app.post(
 // STATIC WEBSITE
 // ============================================================
 
+// IMPORTANT:
+// This must come AFTER the API routes.
+
 app.use(
   express.static(
     PUBLIC_DIR
   )
 );
+
+// Serve index.html for the website root
+// and frontend routes.
 
 app.get(
   "/{*splat}",
@@ -1633,9 +1911,7 @@ async function startDiscordBot() {
     new Client({
       intents: [
         GatewayIntentBits.Guilds,
-
         GatewayIntentBits.GuildMessages,
-
         GatewayIntentBits.MessageContent,
       ],
     });
@@ -1651,9 +1927,7 @@ async function startDiscordBot() {
         `Discord bot online as ${client.user.tag}`
       );
 
-      if (
-        !DISCORD_CLIENT_ID
-      ) {
+      if (!DISCORD_CLIENT_ID) {
         console.log(
           "DISCORD_CLIENT_ID missing. Slash commands skipped."
         );
@@ -1700,10 +1974,9 @@ async function startDiscordBot() {
         );
       } catch (err) {
         console.error(
-          "Discord slash command registration error:"
+          "Discord slash command registration error:",
+          err
         );
-
-        console.error(err);
       }
     }
   );
@@ -1811,9 +2084,10 @@ async function startDiscordBot() {
             .split(/\s+/)
             .filter(Boolean);
 
-        const command = (
-          parts.shift() || ""
-        ).toLowerCase();
+        const command =
+          (
+            parts.shift() || ""
+          ).toLowerCase();
 
         // ======================================================
         // !GEN
@@ -1836,73 +2110,83 @@ async function startDiscordBot() {
           let amount = 1;
 
           let duration =
-            24 *
-            60 *
-            60 *
-            1000;
+            null;
 
           let lifetime =
             false;
 
-          /*
-           * Examples:
-           *
-           * !gen 1d
-           * !gen 3d
-           * !gen 1w
-           * !gen 1mo
-           * !gen lifetime
-           *
-           * !gen 5 1d
-           * !gen 5 3d
-           * !gen 5 1w
-           * !gen 5 1mo
-           * !gen 5 lifetime
-           */
+          // ==================================================
+          // !gen 1d
+          // !gen 3d
+          // !gen 1w
+          // !gen 1mo
+          // !gen lifetime
+          //
+          // !gen 5 1d
+          // !gen 5 3d
+          // !gen 5 1w
+          // !gen 5 1mo
+          // !gen 5 lifetime
+          // ==================================================
 
-          if (parts[0]) {
-            const first =
-              parts[0].toLowerCase();
+          if (!parts[0]) {
+            return message.reply(
+              [
+                "❌ Missing duration.",
+                "",
+                "Use:",
+                "`!gen 1d`",
+                "`!gen 3d`",
+                "`!gen 1w`",
+                "`!gen 1mo`",
+                "`!gen lifetime`",
+                "",
+                "Multiple:",
+                "`!gen 5 1d`",
+                "`!gen 5 3d`",
+                "`!gen 5 1w`",
+                "`!gen 5 1mo`",
+                "`!gen 5 lifetime`",
+              ].join("\n")
+            );
+          }
 
-            // !gen 5
-            if (
-              /^\d+$/.test(
-                first
-              )
-            ) {
-              amount =
-                Number(first);
+          const first =
+            parts[0].toLowerCase();
 
-              if (parts[1]) {
-                const parsed =
-                  parseDuration(
-                    parts[1]
-                  );
+          if (
+            /^\d+$/.test(first)
+          ) {
+            amount =
+              Number(first);
 
-                duration =
-                  parsed.duration;
-
-                lifetime =
-                  parsed.lifetime;
-              }
-            } else {
-              // !gen 1d
-              // !gen 3d
-              // !gen 1w
-              // !gen 1mo
-              // !gen lifetime
-
-              const parsed =
-                parseDuration(
-                  first
-                );
-
-              duration =
-                parsed.duration;
-
-              lifetime =
-                parsed.lifetime;
+            if (!parts[1]) {
+              return message.reply(
+                "❌ Missing duration. Example: `!gen 5 1d`"
+              );
             }
+
+            const parsed =
+              parseDuration(
+                parts[1]
+              );
+
+            duration =
+              parsed.duration;
+
+            lifetime =
+              parsed.lifetime;
+          } else {
+            const parsed =
+              parseDuration(
+                first
+              );
+
+            duration =
+              parsed.duration;
+
+            lifetime =
+              parsed.lifetime;
           }
 
           if (
@@ -1910,7 +2194,9 @@ async function startDiscordBot() {
               amount
             )
           ) {
-            amount = 1;
+            return message.reply(
+              "❌ Invalid amount."
+            );
           }
 
           amount =
@@ -1918,14 +2204,14 @@ async function startDiscordBot() {
               amount
             );
 
-          amount =
-            Math.max(
-              1,
-              Math.min(
-                amount,
-                100
-              )
+          if (
+            amount < 1 ||
+            amount > 100
+          ) {
+            return message.reply(
+              "❌ You can generate between 1 and 100 keys at a time."
             );
+          }
 
           if (
             !lifetime &&
@@ -1940,7 +2226,7 @@ async function startDiscordBot() {
               [
                 "❌ Invalid duration.",
                 "",
-                "Use:",
+                "Allowed durations:",
                 "`1d` = 1 day",
                 "`3d` = 3 days",
                 "`1w` = 1 week",
@@ -1951,7 +2237,7 @@ async function startDiscordBot() {
           }
 
           console.log(
-            `[DISCORD] Generating ${amount} WEBSITE key(s) for ${formatDuration(
+            `[DISCORD] Generating ${amount} website key(s) for ${formatDuration(
               duration,
               lifetime
             )}...`
@@ -1982,7 +2268,7 @@ async function startDiscordBot() {
               .join("\n");
 
           console.log(
-            `[DISCORD] Successfully generated ${keys.length} WEBSITE key(s).`
+            `[DISCORD] Successfully generated ${keys.length} website key(s).`
           );
 
           return message.reply({
@@ -2016,24 +2302,12 @@ async function startDiscordBot() {
           }
 
           if (
-            parts.length ===
-            0
+            parts.length === 0
           ) {
             return message.reply(
               "❌ Usage: `!add <stock1> <stock2> <stock3>`"
             );
           }
-
-          /*
-           * Every value after !add is inserted
-           * directly into the website stock.
-           *
-           * Example:
-           *
-           * !add item1 item2 item3
-           *
-           * Website stock becomes +3.
-           */
 
           const stockIds = [
             ...new Set(
@@ -2087,8 +2361,7 @@ async function startDiscordBot() {
 
             return message.reply(
               `✅ Added **${stockIds.length}** stock item${
-                stockIds.length ===
-                1
+                stockIds.length === 1
                   ? ""
                   : "s"
               } to the **Novi website stock**.`
@@ -2291,9 +2564,7 @@ async function start() {
 // SHUTDOWN
 // ============================================================
 
-async function shutdown(
-  signal
-) {
+async function shutdown(signal) {
   console.log(
     `Received ${signal}. Shutting down Novi...`
   );
