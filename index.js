@@ -8,7 +8,6 @@ const { Pool } = require("pg");
 const {
   Client,
   GatewayIntentBits,
-  PermissionsBitField,
 } = require("discord.js");
 
 // ============================================================
@@ -23,6 +22,12 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 const DATABASE_URL = process.env.DATABASE_URL;
 const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET;
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+
+// ONLY THESE TWO DISCORD ROLES CAN USE BOT COMMANDS
+const ALLOWED_ROLE_IDS = [
+  "1529705570209366167",
+  "1378500563456626719",
+];
 
 if (!DATABASE_URL) {
   console.error("❌ DATABASE_URL is missing.");
@@ -62,12 +67,40 @@ function generateKey() {
   return `NOVI-${random.slice(0, 4)}-${random.slice(
     4,
     8
-  )}-${random.slice(8, 12)}-${random.slice(12, 16)}-${random.slice(16, 24)}`;
+  )}-${random.slice(8, 12)}-${random.slice(12, 16)}-${random.slice(
+    16,
+    24
+  )}`;
 }
 
 function generateSessionToken() {
   return crypto.randomBytes(32).toString("hex");
 }
+
+// ============================================================
+// DURATION
+// ============================================================
+//
+// IMPORTANT:
+// The database/API duration is ONLY:
+//
+// 1d
+// 3d
+// 1w
+// 1mo
+// lifetime
+//
+// The milliseconds are ONLY used internally to calculate
+// expires_at. They are NEVER stored as the duration.
+//
+
+const DURATION_MS = {
+  "1d": 24 * 60 * 60 * 1000,
+  "3d": 3 * 24 * 60 * 60 * 1000,
+  "1w": 7 * 24 * 60 * 60 * 1000,
+  "1mo": 30 * 24 * 60 * 60 * 1000,
+  "lifetime": null,
+};
 
 function normalizeDuration(input) {
   if (!input) return null;
@@ -75,38 +108,23 @@ function normalizeDuration(input) {
   const value = String(input).toLowerCase().trim();
 
   if (value === "1d") {
-    return {
-      name: "1d",
-      ms: 24 * 60 * 60 * 1000,
-    };
+    return "1d";
   }
 
   if (value === "3d") {
-    return {
-      name: "3d",
-      ms: 3 * 24 * 60 * 60 * 1000,
-    };
+    return "3d";
   }
 
   if (value === "1w" || value === "1week") {
-    return {
-      name: "1w",
-      ms: 7 * 24 * 60 * 60 * 1000,
-    };
+    return "1w";
   }
 
   if (value === "1mo" || value === "1month") {
-    return {
-      name: "1mo",
-      ms: 30 * 24 * 60 * 60 * 1000,
-    };
+    return "1mo";
   }
 
   if (value === "lifetime") {
-    return {
-      name: "lifetime",
-      ms: null,
-    };
+    return "lifetime";
   }
 
   return null;
@@ -119,28 +137,6 @@ function isAdmin(req) {
     req.query?.adminSecret;
 
   return provided && provided === ADMIN_SECRET;
-}
-
-function durationDisplay(duration) {
-  switch (duration) {
-    case "1d":
-      return "1d";
-
-    case "3d":
-      return "3d";
-
-    case "1w":
-      return "1w";
-
-    case "1mo":
-      return "1mo";
-
-    case "lifetime":
-      return "lifetime";
-
-    default:
-      return duration;
-  }
 }
 
 function isExpired(expiresAt) {
@@ -191,14 +187,6 @@ function normalizeLogin(item) {
 // ============================================================
 // DATABASE SCHEMA TYPE DETECTION
 // ============================================================
-//
-// Your existing database may have created_at as either:
-// BIGINT
-// or
-// TIMESTAMP WITH TIME ZONE
-//
-// We detect it so the old database doesn't break.
-//
 
 let stockCreatedAtType = "timestamp";
 let savedCreatedAtType = "timestamp";
@@ -211,7 +199,8 @@ async function detectDatabaseTypes() {
         column_name,
         data_type
       FROM information_schema.columns
-      WHERE table_name IN (
+      WHERE table_schema = 'public'
+      AND table_name IN (
         'novi_stock_items',
         'novi_saved_items'
       )
@@ -236,7 +225,78 @@ async function detectDatabaseTypes() {
     console.log("   stock:", stockCreatedAtType);
     console.log("   saved:", savedCreatedAtType);
   } catch (error) {
-    console.error("❌ Could not detect database types:", error.message);
+    console.error(
+      "❌ Could not detect database types:",
+      error.message
+    );
+  }
+}
+
+// ============================================================
+// FIX OLD DURATION COLUMN
+// ============================================================
+//
+// Older versions of Novi used BIGINT for duration.
+// This converts it to TEXT and converts old millisecond
+// values into the proper duration names.
+//
+
+async function fixDurationColumn() {
+  try {
+    const result = await pool.query(`
+      SELECT
+        data_type
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+      AND table_name = 'novi_keys'
+      AND column_name = 'duration'
+      LIMIT 1
+    `);
+
+    if (result.rows.length === 0) {
+      console.log("⚠️ novi_keys.duration was not found.");
+      return;
+    }
+
+    const dataType = result.rows[0].data_type;
+
+    if (
+      dataType === "bigint" ||
+      dataType === "integer" ||
+      dataType === "numeric"
+    ) {
+      console.log(
+        "🔧 Converting novi_keys.duration to TEXT..."
+      );
+
+      await pool.query(`
+        ALTER TABLE novi_keys
+        ALTER COLUMN duration TYPE TEXT
+        USING CASE
+          WHEN duration IS NULL THEN 'lifetime'
+          WHEN duration::text = '86400000' THEN '1d'
+          WHEN duration::text = '259200000' THEN '3d'
+          WHEN duration::text = '604800000' THEN '1w'
+          WHEN duration::text = '2592000000' THEN '1mo'
+          ELSE duration::text
+        END
+      `);
+
+      console.log(
+        "✅ novi_keys.duration is now TEXT."
+      );
+    } else {
+      console.log(
+        "✅ novi_keys.duration is already TEXT-compatible."
+      );
+    }
+  } catch (error) {
+    console.error(
+      "❌ Could not fix duration column:",
+      error.message
+    );
+
+    throw error;
   }
 }
 
@@ -245,16 +305,24 @@ async function detectDatabaseTypes() {
 // ============================================================
 
 async function initializeDatabase() {
+  // ----------------------------------------------------------
+  // LICENSE KEYS
+  // ----------------------------------------------------------
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS novi_keys (
       id SERIAL PRIMARY KEY,
       key TEXT UNIQUE NOT NULL,
       created_at BIGINT NOT NULL,
       expires_at BIGINT,
-      duration BIGINT,
+      duration TEXT,
       used BOOLEAN DEFAULT FALSE
     )
   `);
+
+  // ----------------------------------------------------------
+  // STOCK
+  // ----------------------------------------------------------
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS novi_stock_items (
@@ -263,6 +331,10 @@ async function initializeDatabase() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `);
+
+  // ----------------------------------------------------------
+  // SAVED ITEMS
+  // ----------------------------------------------------------
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS novi_saved_items (
@@ -273,6 +345,10 @@ async function initializeDatabase() {
     )
   `);
 
+  // ----------------------------------------------------------
+  // INDEXES
+  // ----------------------------------------------------------
+
   await pool.query(`
     CREATE INDEX IF NOT EXISTS novi_keys_key_idx
     ON novi_keys(key)
@@ -282,6 +358,12 @@ async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS novi_stock_items_stock_id_idx
     ON novi_stock_items(stock_id)
   `);
+
+  // ----------------------------------------------------------
+  // FIX OLD DATABASE
+  // ----------------------------------------------------------
+
+  await fixDurationColumn();
 
   await detectDatabaseTypes();
 
@@ -301,6 +383,8 @@ app.get("/api/health", async (req, res) => {
       database: true,
     });
   } catch (error) {
+    console.error("❌ /api/health:", error);
+
     res.status(500).json({
       ok: false,
       database: false,
@@ -315,7 +399,9 @@ app.get("/api/health", async (req, res) => {
 
 app.post("/api/verify", async (req, res) => {
   try {
-    const suppliedKey = String(req.body?.key || "").trim();
+    const suppliedKey = String(
+      req.body?.key || ""
+    ).trim();
 
     if (!suppliedKey) {
       return res.status(400).json({
@@ -361,16 +447,25 @@ app.post("/api/verify", async (req, res) => {
         ? null
         : Number(keyRow.expires_at);
 
-    if (expiresAt !== null && Date.now() >= expiresAt) {
+    if (isExpired(expiresAt)) {
       return res.status(403).json({
         success: false,
         error: "This key has expired.",
       });
     }
 
+    const duration =
+      normalizeDuration(keyRow.duration) ||
+      (keyRow.duration === null
+        ? "lifetime"
+        : String(keyRow.duration));
+
     const sessionToken = generateSessionToken();
 
-    // Mark key as used.
+    // --------------------------------------------------------
+    // Mark key as used
+    // --------------------------------------------------------
+
     await pool.query(
       `
       UPDATE novi_keys
@@ -380,42 +475,23 @@ app.post("/api/verify", async (req, res) => {
       [keyRow.id]
     );
 
-    const durationName =
-      keyRow.duration === null
-        ? "lifetime"
-        : keyRow.duration === 86400000
-        ? "1d"
-        : keyRow.duration === 259200000
-        ? "3d"
-        : keyRow.duration === 604800000
-        ? "1w"
-        : keyRow.duration === 2592000000
-        ? "1mo"
-        : String(keyRow.duration);
+    // --------------------------------------------------------
+    // IMPORTANT:
+    // No durationMs is returned.
+    // --------------------------------------------------------
 
     return res.json({
       success: true,
 
       sessionToken,
 
-      duration: durationDisplay(durationName),
-
-      durationMs:
-        keyRow.duration === null
-          ? null
-          : Number(keyRow.duration),
+      duration,
 
       expiresAt,
 
       key: {
         key: keyRow.key,
-        duration: durationDisplay(durationName),
-
-        durationMs:
-          keyRow.duration === null
-            ? null
-            : Number(keyRow.duration),
-
+        duration,
         expiresAt,
         keyExpiresAt: expiresAt,
       },
@@ -468,60 +544,60 @@ app.post("/api/stock/generate", async (req, res) => {
       });
     }
 
-    const amount = Math.max(
-      1,
-      Math.min(1000, Number(req.body?.amount) || 1)
-    );
-
-    const stockItems = Array.isArray(req.body?.items)
+    const stockItems = Array.isArray(
+      req.body?.items
+    )
       ? req.body.items
       : [];
 
-    if (stockItems.length > 0) {
-      let added = 0;
-
-      for (const rawItem of stockItems) {
-        const item = String(rawItem).trim();
-
-        if (!item) continue;
-
-        if (stockCreatedAtType === "timestamp") {
-          await pool.query(
-            `
-            INSERT INTO novi_stock_items
-              (stock_id, created_at)
-            VALUES
-              ($1, NOW())
-            `,
-            [item]
-          );
-        } else {
-          await pool.query(
-            `
-            INSERT INTO novi_stock_items
-              (stock_id, created_at)
-            VALUES
-              ($1, $2)
-            `,
-            [item, Date.now()]
-          );
-        }
-
-        added++;
-      }
-
-      return res.json({
-        success: true,
-        added,
+    if (stockItems.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "No stock items supplied.",
       });
     }
 
-    return res.status(400).json({
-      success: false,
-      error: "No stock items supplied.",
+    let added = 0;
+
+    for (const rawItem of stockItems) {
+      const item = String(rawItem).trim();
+
+      if (!item) continue;
+
+      if (stockCreatedAtType === "timestamp") {
+        await pool.query(
+          `
+          INSERT INTO novi_stock_items
+            (stock_id, created_at)
+          VALUES
+            ($1, NOW())
+          `,
+          [item]
+        );
+      } else {
+        await pool.query(
+          `
+          INSERT INTO novi_stock_items
+            (stock_id, created_at)
+          VALUES
+            ($1, $2)
+          `,
+          [item, Date.now()]
+        );
+      }
+
+      added++;
+    }
+
+    return res.json({
+      success: true,
+      added,
     });
   } catch (error) {
-    console.error("❌ /api/stock/generate:", error);
+    console.error(
+      "❌ /api/stock/generate:",
+      error
+    );
 
     res.status(500).json({
       success: false,
@@ -551,7 +627,10 @@ app.get("/api/saved-logins", async (req, res) => {
       items: result.rows,
     });
   } catch (error) {
-    console.error("❌ GET /api/saved-logins:", error);
+    console.error(
+      "❌ GET /api/saved-logins:",
+      error
+    );
 
     res.status(500).json({
       success: false,
@@ -566,8 +645,13 @@ app.get("/api/saved-logins", async (req, res) => {
 
 app.post("/api/saved-logins", async (req, res) => {
   try {
-    const email = String(req.body?.email || "").trim();
-    const password = String(req.body?.password || "");
+    const email = String(
+      req.body?.email || ""
+    ).trim();
+
+    const password = String(
+      req.body?.password || ""
+    );
 
     if (!email) {
       return res.status(400).json({
@@ -606,7 +690,11 @@ app.post("/api/saved-logins", async (req, res) => {
           password,
           created_at
         `,
-        [email, password, Date.now()]
+        [
+          email,
+          password,
+          Date.now(),
+        ]
       );
     }
 
@@ -615,7 +703,10 @@ app.post("/api/saved-logins", async (req, res) => {
       item: result.rows[0],
     });
   } catch (error) {
-    console.error("❌ POST /api/saved-logins:", error);
+    console.error(
+      "❌ POST /api/saved-logins:",
+      error
+    );
 
     res.status(500).json({
       success: false,
@@ -628,102 +719,118 @@ app.post("/api/saved-logins", async (req, res) => {
 // GET ONE SAVED LOGIN
 // ============================================================
 
-app.get("/api/saved-logins/:id", async (req, res) => {
-  try {
-    const id = Number(req.params.id);
+app.get(
+  "/api/saved-logins/:id",
+  async (req, res) => {
+    try {
+      const id = Number(
+        req.params.id
+      );
 
-    if (!Number.isInteger(id)) {
-      return res.status(400).json({
+      if (!Number.isInteger(id)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid ID.",
+        });
+      }
+
+      const result = await pool.query(
+        `
+        SELECT
+          id,
+          email,
+          password,
+          created_at
+        FROM novi_saved_items
+        WHERE id = $1
+        LIMIT 1
+        `,
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: "Saved login not found.",
+        });
+      }
+
+      res.json({
+        success: true,
+        item: result.rows[0],
+      });
+    } catch (error) {
+      console.error(
+        "❌ GET /api/saved-logins/:id:",
+        error
+      );
+
+      res.status(500).json({
         success: false,
-        error: "Invalid ID.",
+        error: "Could not load saved login.",
       });
     }
-
-    const result = await pool.query(
-      `
-      SELECT
-        id,
-        email,
-        password,
-        created_at
-      FROM novi_saved_items
-      WHERE id = $1
-      LIMIT 1
-      `,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: "Saved login not found.",
-      });
-    }
-
-    res.json({
-      success: true,
-      item: result.rows[0],
-    });
-  } catch (error) {
-    console.error("❌ GET /api/saved-logins/:id:", error);
-
-    res.status(500).json({
-      success: false,
-      error: "Could not load saved login.",
-    });
   }
-});
+);
 
 // ============================================================
 // DELETE SAVED LOGIN
 // ============================================================
 
-app.delete("/api/saved-logins/:id", async (req, res) => {
-  try {
-    if (!isAdmin(req)) {
-      return res.status(401).json({
+app.delete(
+  "/api/saved-logins/:id",
+  async (req, res) => {
+    try {
+      if (!isAdmin(req)) {
+        return res.status(401).json({
+          success: false,
+          error: "Unauthorized.",
+        });
+      }
+
+      const id = Number(
+        req.params.id
+      );
+
+      if (!Number.isInteger(id)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid ID.",
+        });
+      }
+
+      const result = await pool.query(
+        `
+        DELETE FROM novi_saved_items
+        WHERE id = $1
+        RETURNING id
+        `,
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: "Saved login not found.",
+        });
+      }
+
+      res.json({
+        success: true,
+      });
+    } catch (error) {
+      console.error(
+        "❌ DELETE /api/saved-logins/:id:",
+        error
+      );
+
+      res.status(500).json({
         success: false,
-        error: "Unauthorized.",
+        error: "Could not delete saved login.",
       });
     }
-
-    const id = Number(req.params.id);
-
-    if (!Number.isInteger(id)) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid ID.",
-      });
-    }
-
-    const result = await pool.query(
-      `
-      DELETE FROM novi_saved_items
-      WHERE id = $1
-      RETURNING id
-      `,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: "Saved login not found.",
-      });
-    }
-
-    res.json({
-      success: true,
-    });
-  } catch (error) {
-    console.error("❌ DELETE /api/saved-logins/:id:", error);
-
-    res.status(500).json({
-      success: false,
-      error: "Could not delete saved login.",
-    });
   }
-});
+);
 
 // ============================================================
 // LOGOUT
@@ -748,14 +855,27 @@ const discordClient = new Client({
 });
 
 // ============================================================
-// DISCORD ADMIN CHECK
+// DISCORD ROLE CHECK
 // ============================================================
+//
+// IMPORTANT:
+// This does NOT check Administrator.
+// It ONLY checks the two allowed role IDs.
+//
 
-function isDiscordAdmin(message) {
-  if (!message.member) return false;
+function hasAllowedDiscordRole(message) {
+  if (!message.member) {
+    return false;
+  }
 
-  return message.member.permissions.has(
-    PermissionsBitField.Flags.Administrator
+  return ALLOWED_ROLE_IDS.some((roleId) =>
+    message.member.roles.cache.has(roleId)
+  );
+}
+
+function denyDiscordCommand(message) {
+  return message.reply(
+    "❌ You don't have permission to use this command."
   );
 }
 
@@ -764,23 +884,34 @@ function isDiscordAdmin(message) {
 // ============================================================
 
 async function handleGen(message, args) {
-  if (!isDiscordAdmin(message)) {
-    return message.reply("❌ You need Administrator permission.");
+  if (!hasAllowedDiscordRole(message)) {
+    return denyDiscordCommand(message);
   }
 
   let amount = 1;
   let durationInput = args[0];
 
+  // !gen 5 1d
+  // !gen 5 3d
+  // etc.
   if (/^\d+$/.test(args[0] || "")) {
     amount = Number(args[0]);
     durationInput = args[1];
   }
 
-  if (amount < 1 || amount > 100) {
-    return message.reply("❌ Amount must be between 1 and 100.");
+  if (
+    !Number.isInteger(amount) ||
+    amount < 1 ||
+    amount > 100
+  ) {
+    return message.reply(
+      "❌ Amount must be between 1 and 100."
+    );
   }
 
-  const duration = normalizeDuration(durationInput);
+  const duration = normalizeDuration(
+    durationInput
+  );
 
   if (!duration) {
     return message.reply(
@@ -795,10 +926,24 @@ async function handleGen(message, args) {
 
     const createdAt = Date.now();
 
+    const durationMs =
+      DURATION_MS[duration];
+
     const expiresAt =
-      duration.ms === null
+      durationMs === null
         ? null
-        : createdAt + duration.ms;
+        : createdAt + durationMs;
+
+    // IMPORTANT:
+    //
+    // duration = "1d"
+    // duration = "3d"
+    // duration = "1w"
+    // duration = "1mo"
+    // duration = "lifetime"
+    //
+    // NOT 86400000.
+    //
 
     await pool.query(
       `
@@ -823,7 +968,7 @@ async function handleGen(message, args) {
         key,
         createdAt,
         expiresAt,
-        duration.ms,
+        duration,
       ]
     );
 
@@ -835,7 +980,7 @@ async function handleGen(message, args) {
     .join("\n");
 
   return message.reply(
-    `✅ Generated **${generated.length}** ${duration.name} key(s):\n${output}`
+    `✅ Generated **${generated.length}** ${duration} key(s):\n${output}`
   );
 }
 
@@ -844,8 +989,8 @@ async function handleGen(message, args) {
 // ============================================================
 
 async function handleAdd(message, args) {
-  if (!isDiscordAdmin(message)) {
-    return message.reply("❌ You need Administrator permission.");
+  if (!hasAllowedDiscordRole(message)) {
+    return denyDiscordCommand(message);
   }
 
   if (!args.length) {
@@ -857,15 +1002,11 @@ async function handleAdd(message, args) {
   let added = 0;
 
   for (const rawItem of args) {
-    const stockId = String(rawItem).trim();
+    const stockId = String(
+      rawItem
+    ).trim();
 
     if (!stockId) continue;
-
-    // IMPORTANT:
-    // Your existing database has created_at as
-    // TIMESTAMP WITH TIME ZONE.
-    //
-    // So use NOW() instead of Date.now().
 
     if (stockCreatedAtType === "timestamp") {
       await pool.query(
@@ -907,12 +1048,15 @@ async function handleAdd(message, args) {
     added++;
   }
 
-  const countResult = await pool.query(`
-    SELECT COUNT(*)::INTEGER AS count
-    FROM novi_stock_items
-  `);
+  const countResult =
+    await pool.query(`
+      SELECT COUNT(*)::INTEGER AS count
+      FROM novi_stock_items
+    `);
 
-  const count = Number(countResult.rows[0].count);
+  const count = Number(
+    countResult.rows[0].count
+  );
 
   return message.reply(
     `✅ Added **${added}** stock item(s).\n📦 Current stock: **${count}**`
@@ -924,8 +1068,8 @@ async function handleAdd(message, args) {
 // ============================================================
 
 async function handleStock(message) {
-  if (!isDiscordAdmin(message)) {
-    return message.reply("❌ You need Administrator permission.");
+  if (!hasAllowedDiscordRole(message)) {
+    return denyDiscordCommand(message);
   }
 
   const result = await pool.query(`
@@ -933,7 +1077,9 @@ async function handleStock(message) {
     FROM novi_stock_items
   `);
 
-  const count = Number(result.rows[0].count);
+  const count = Number(
+    result.rows[0].count
+  );
 
   return message.reply(
     `📦 Novi stock: **${count}**`
@@ -941,79 +1087,138 @@ async function handleStock(message) {
 }
 
 // ============================================================
+// !help
+// ============================================================
+
+async function handleHelp(message) {
+  if (!hasAllowedDiscordRole(message)) {
+    return denyDiscordCommand(message);
+  }
+
+  return message.reply(
+    [
+      "**Novi Commands**",
+      "",
+      "`!gen 1d` — Generate 1 day key",
+      "`!gen 3d` — Generate 3 day key",
+      "`!gen 1w` — Generate 1 week key",
+      "`!gen 1mo` — Generate 1 month key",
+      "`!gen lifetime` — Generate lifetime key",
+      "",
+      "`!gen 5 1d` — Generate 5 one-day keys",
+      "`!gen 5 3d` — Generate 5 three-day keys",
+      "`!gen 5 1w` — Generate 5 one-week keys",
+      "`!gen 5 1mo` — Generate 5 one-month keys",
+      "`!gen 5 lifetime` — Generate 5 lifetime keys",
+      "",
+      "`!add email:password` — Add stock",
+      "`!stock` — Check stock",
+    ].join("\n")
+  );
+}
+
+// ============================================================
 // DISCORD MESSAGE HANDLER
 // ============================================================
 
-discordClient.on("messageCreate", async (message) => {
-  try {
-    if (message.author.bot) return;
-
-    if (!message.content.startsWith("!")) return;
-
-    const parts = message.content
-      .trim()
-      .split(/\s+/);
-
-    const command = parts.shift().toLowerCase();
-    const args = parts;
-
-    if (command === "!gen") {
-      await handleGen(message, args);
-      return;
-    }
-
-    if (command === "!add") {
-      await handleAdd(message, args);
-      return;
-    }
-
-    if (command === "!stock") {
-      await handleStock(message);
-      return;
-    }
-
-    if (command === "!help") {
-      return message.reply(
-        [
-          "**Novi Commands**",
-          "",
-          "`!gen 1d` — Generate 1 day key",
-          "`!gen 3d` — Generate 3 day key",
-          "`!gen 1w` — Generate 1 week key",
-          "`!gen 1mo` — Generate 1 month key",
-          "`!gen lifetime` — Generate lifetime key",
-          "",
-          "`!gen 5 1d` — Generate 5 one-day keys",
-          "`!gen 5 3d` — Generate 5 three-day keys",
-          "`!gen 5 1w` — Generate 5 one-week keys",
-          "`!gen 5 1mo` — Generate 5 one-month keys",
-          "`!gen 5 lifetime` — Generate 5 lifetime keys",
-          "",
-          "`!add email:password` — Add stock",
-          "`!stock` — Check stock",
-        ].join("\n")
-      );
-    }
-  } catch (error) {
-    console.error("❌ Discord command error:", error);
-
+discordClient.on(
+  "messageCreate",
+  async (message) => {
     try {
-      await message.reply(
-        "❌ Something went wrong while running that command."
+      if (message.author.bot) return;
+
+      if (!message.content.startsWith("!")) {
+        return;
+      }
+
+      const parts = message.content
+        .trim()
+        .split(/\s+/);
+
+      const command = parts
+        .shift()
+        .toLowerCase();
+
+      const args = parts;
+
+      // ------------------------------------------------------
+      // !gen
+      // ------------------------------------------------------
+
+      if (command === "!gen") {
+        await handleGen(
+          message,
+          args
+        );
+        return;
+      }
+
+      // ------------------------------------------------------
+      // !add
+      // ------------------------------------------------------
+
+      if (command === "!add") {
+        await handleAdd(
+          message,
+          args
+        );
+        return;
+      }
+
+      // ------------------------------------------------------
+      // !stock
+      // ------------------------------------------------------
+
+      if (command === "!stock") {
+        await handleStock(message);
+        return;
+      }
+
+      // ------------------------------------------------------
+      // !help
+      // ------------------------------------------------------
+
+      if (command === "!help") {
+        await handleHelp(message);
+        return;
+      }
+    } catch (error) {
+      console.error(
+        "❌ Discord command error:",
+        error
       );
-    } catch {}
+
+      try {
+        await message.reply(
+          "❌ Something went wrong while running that command."
+        );
+      } catch {}
+    }
   }
-});
+);
 
 // ============================================================
 // DISCORD READY
 // ============================================================
 
-discordClient.once("ready", () => {
-  console.log(
-    `🤖 Discord bot logged in as ${discordClient.user.tag}`
-  );
-});
+discordClient.once(
+  "ready",
+  () => {
+    console.log(
+      `🤖 Discord bot logged in as ${discordClient.user.tag}`
+    );
+
+    console.log(
+      "🔐 Allowed Discord roles:"
+    );
+
+    for (const roleId of ALLOWED_ROLE_IDS) {
+      console.log(
+        `   • ${roleId}`
+      );
+    }
+  }
+);
 
 // ============================================================
 // START DISCORD
@@ -1023,7 +1228,10 @@ if (DISCORD_TOKEN) {
   discordClient
     .login(DISCORD_TOKEN)
     .catch((error) => {
-      console.error("❌ Discord login failed:", error);
+      console.error(
+        "❌ Discord login failed:",
+        error
+      );
     });
 } else {
   console.warn(
@@ -1035,15 +1243,21 @@ if (DISCORD_TOKEN) {
 // WEBSITE
 // ============================================================
 
-// Serve the actual Novi website.
-app.use(express.static(PUBLIC_DIR));
+app.use(
+  express.static(PUBLIC_DIR)
+);
 
-// Make sure unknown frontend routes still load index.html.
-app.get("/{*splat}", (req, res) => {
-  res.sendFile(
-    path.join(PUBLIC_DIR, "index.html")
-  );
-});
+app.get(
+  "/{*splat}",
+  (req, res) => {
+    res.sendFile(
+      path.join(
+        PUBLIC_DIR,
+        "index.html"
+      )
+    );
+  }
+);
 
 // ============================================================
 // START SERVER
@@ -1053,11 +1267,15 @@ async function start() {
   try {
     await initializeDatabase();
 
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(
-        `🌐 Novi website running on port ${PORT}`
-      );
-    });
+    app.listen(
+      PORT,
+      "0.0.0.0",
+      () => {
+        console.log(
+          `🌐 Novi website running on port ${PORT}`
+        );
+      }
+    );
   } catch (error) {
     console.error(
       "❌ Failed to start Novi:",
