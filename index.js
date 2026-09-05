@@ -24,13 +24,7 @@ const PUBLIC_DIR =
   path.join(__dirname, "public");
 
 const DATA_FILE =
-  path.join(
-    __dirname,
-    "novi-data.json"
-  );
-
-const ADMIN_SECRET =
-  process.env.NOVI_ADMIN_SECRET;
+  path.join(__dirname, "novi-data.json");
 
 const DISCORD_TOKEN =
   process.env.DISCORD_TOKEN;
@@ -45,7 +39,7 @@ const ALLOWED_ROLE_IDS = [
 ];
 
 // ============================================================
-// DATA
+// DEFAULT DATA
 // ============================================================
 
 const DEFAULT_DATA = {
@@ -56,7 +50,7 @@ const DEFAULT_DATA = {
 };
 
 // ============================================================
-// LOAD DATA
+// DATA STORAGE
 // ============================================================
 
 function createEmptyData() {
@@ -70,11 +64,7 @@ function createEmptyData() {
 
 function loadData() {
   try {
-    if (
-      !fs.existsSync(
-        DATA_FILE
-      )
-    ) {
+    if (!fs.existsSync(DATA_FILE)) {
       fs.writeFileSync(
         DATA_FILE,
         JSON.stringify(
@@ -99,7 +89,24 @@ function loadData() {
       );
 
     if (!raw.trim()) {
-      return createEmptyData();
+      console.log(
+        "⚠️ novi-data.json was empty. Creating fresh data."
+      );
+
+      const fresh =
+        createEmptyData();
+
+      fs.writeFileSync(
+        DATA_FILE,
+        JSON.stringify(
+          fresh,
+          null,
+          2
+        ),
+        "utf8"
+      );
+
+      return fresh;
     }
 
     const parsed =
@@ -138,15 +145,14 @@ function loadData() {
       error
     );
 
-    return createEmptyData();
+    process.exit(1);
   }
 }
 
-let data =
-  loadData();
+let data = loadData();
 
 // ============================================================
-// SAVE DATA
+// SAVE DATA SAFELY
 // ============================================================
 
 function saveData() {
@@ -194,21 +200,7 @@ app.use(
 );
 
 // ============================================================
-// DEVICE COOKIE
-//
-// This is what locks a key to one browser.
-//
-// It is NOT a physical-device fingerprint.
-// It is a persistent browser identifier.
-//
-// If the browser closes:
-//   cookie stays.
-//
-// If the website is reopened:
-//   same device ID.
-//
-// If another browser uses the key:
-//   different device ID.
+// COOKIE HELPERS
 // ============================================================
 
 function parseCookies(
@@ -220,11 +212,8 @@ function parseCookies(
     return cookies;
   }
 
-  const parts =
-    cookieHeader.split(";");
-
   for (
-    const part of parts
+    const part of cookieHeader.split(";")
   ) {
     const index =
       part.indexOf("=");
@@ -256,40 +245,45 @@ function parseCookies(
   return cookies;
 }
 
-function setDeviceCookie(
+function appendCookie(
   res,
-  deviceId
+  cookie
 ) {
-  const isProduction =
-    process.env.NODE_ENV ===
-    "production";
+  const existing =
+    res.getHeader(
+      "Set-Cookie"
+    );
 
-  const cookie =
-    [
-      `novi_device=${encodeURIComponent(
-        deviceId
-      )}`,
+  let cookies = [];
 
-      "Path=/",
+  if (existing) {
+    cookies = Array.isArray(existing)
+      ? existing
+      : [existing];
+  }
 
-      "Max-Age=31536000",
-
-      "HttpOnly",
-
-      "SameSite=Lax",
-
-      isProduction
-        ? "Secure"
-        : "",
-    ]
-      .filter(Boolean)
-      .join("; ");
+  cookies.push(cookie);
 
   res.setHeader(
     "Set-Cookie",
-    cookie
+    cookies
   );
 }
+
+// ============================================================
+// BROWSER ID
+// ============================================================
+//
+// This identifies the browser.
+//
+// Closing the website does NOT remove it.
+//
+// The cookie lasts for one year.
+//
+// IMPORTANT:
+// This is a browser identifier,
+// not a physical hardware fingerprint.
+// ============================================================
 
 function getOrCreateDeviceId(
   req,
@@ -310,17 +304,34 @@ function getOrCreateDeviceId(
     deviceId =
       crypto.randomUUID();
 
-    setDeviceCookie(
+    const production =
+      process.env.NODE_ENV ===
+      "production";
+
+    const cookie =
+      [
+        `novi_device=${encodeURIComponent(
+          deviceId
+        )}`,
+        "Path=/",
+        "Max-Age=31536000",
+        "HttpOnly",
+        "SameSite=Lax",
+        production
+          ? "Secure"
+          : "",
+      ]
+        .filter(Boolean)
+        .join("; ");
+
+    appendCookie(
       res,
-      deviceId
+      cookie
     );
   }
 
   return deviceId;
 }
-
-// Create/check device cookie
-// before API routes.
 
 app.use(
   (req, res, next) => {
@@ -413,7 +424,7 @@ function normalizeDuration(
 }
 
 // ============================================================
-// KEY HELPERS
+// KEY GENERATION
 // ============================================================
 
 function generateKey() {
@@ -464,7 +475,7 @@ function isExpired(
 }
 
 // ============================================================
-// SESSION HELPERS
+// SESSION SYSTEM
 // ============================================================
 
 function generateSessionToken() {
@@ -507,10 +518,6 @@ function getSession(
   let token =
     headerToken;
 
-  // Also support a cookie
-  // session if the frontend
-  // doesn't send the header.
-
   if (!token) {
     const cookies =
       parseCookies(
@@ -528,16 +535,12 @@ function getSession(
   const session =
     data.sessions.find(
       item =>
-        item.token ===
-        token
+        item.token === token
     );
 
   if (!session) {
     return null;
   }
-
-  // Make sure session belongs
-  // to this browser.
 
   if (
     session.deviceId !==
@@ -554,12 +557,44 @@ function getSession(
     data.sessions =
       data.sessions.filter(
         item =>
-          item.token !==
-          token
+          item.token !== token
       );
 
     saveData();
 
+    return null;
+  }
+
+  // Make sure the key still exists.
+  const key =
+    data.keys.find(
+      item =>
+        item.id ===
+        session.keyId
+    );
+
+  if (!key) {
+    return null;
+  }
+
+  // Make sure the key is still owned
+  // by this browser.
+
+  if (
+    key.deviceId &&
+    key.deviceId !==
+      req.noviDeviceId
+  ) {
+    return null;
+  }
+
+  // Make sure the key has not expired.
+
+  if (
+    isExpired(
+      key.expiresAt
+    )
+  ) {
     return null;
   }
 
@@ -574,7 +609,7 @@ function setSessionCookie(
   token,
   expiresAt
 ) {
-  const isProduction =
+  const production =
     process.env.NODE_ENV ===
     "production";
 
@@ -591,8 +626,11 @@ function setSessionCookie(
 
     if (remaining > 0) {
       maxAge =
-        Math.floor(
-          remaining / 1000
+        Math.max(
+          1,
+          Math.floor(
+            remaining / 1000
+          )
         );
     }
   }
@@ -602,44 +640,20 @@ function setSessionCookie(
       `novi_session=${encodeURIComponent(
         token
       )}`,
-
       "Path=/",
-
       `Max-Age=${maxAge}`,
-
       "HttpOnly",
-
       "SameSite=Lax",
-
-      isProduction
+      production
         ? "Secure"
         : "",
     ]
       .filter(Boolean)
       .join("; ");
 
-  // Preserve existing
-  // Set-Cookie header.
-
-  const existing =
-    res.getHeader(
-      "Set-Cookie"
-    );
-
-  const cookies =
-    existing
-      ? Array.isArray(
-          existing
-        )
-        ? existing
-        : [existing]
-      : [];
-
-  cookies.push(cookie);
-
-  res.setHeader(
-    "Set-Cookie",
-    cookies
+  appendCookie(
+    res,
+    cookie
   );
 }
 
@@ -701,37 +715,23 @@ setInterval(
 app.get(
   "/api/health",
   (req, res) => {
-    return res.json({
+    res.json({
       success: true,
       ok: true,
-      database: false,
       storage: "json",
+      database: false,
       keyLocking:
-        "device",
+        "browser-cookie",
+      keys:
+        data.keys.length,
+      stock:
+        data.stock.length,
     });
   }
 );
 
 // ============================================================
 // VERIFY KEY
-//
-// FIRST USE:
-//
-// Key has no owner
-//        ↓
-// Browser claims key
-//        ↓
-// Device ID is saved
-//
-// NEXT USE:
-//
-// Same browser
-//        ↓
-// Allowed
-//
-// Different browser
-//        ↓
-// Rejected
 // ============================================================
 
 app.post(
@@ -751,14 +751,22 @@ app.post(
         });
       }
 
+      // Case-insensitive lookup.
+
       const keyRow =
         data.keys.find(
           item =>
             String(
               item.key || ""
-            ).toUpperCase() ===
+            )
+              .trim()
+              .toUpperCase() ===
             suppliedKey.toUpperCase()
         );
+
+      // ------------------------------------------------------
+      // INVALID KEY
+      // ------------------------------------------------------
 
       if (!keyRow) {
         return res.status(404).json({
@@ -767,6 +775,10 @@ app.post(
             "Invalid key.",
         });
       }
+
+      // ------------------------------------------------------
+      // EXPIRATION
+      // ------------------------------------------------------
 
       const expiresAt =
         keyRow.expiresAt ===
@@ -777,10 +789,6 @@ app.post(
           : Number(
               keyRow.expiresAt
             );
-
-      // ------------------------------------------------------
-      // EXPIRATION
-      // ------------------------------------------------------
 
       if (
         isExpired(
@@ -795,43 +803,35 @@ app.post(
       }
 
       // ------------------------------------------------------
-      // DEVICE LOCK
+      // CURRENT BROWSER
       // ------------------------------------------------------
 
       const currentDeviceId =
         req.noviDeviceId;
 
-      // Older keys may not have
-      // a deviceId property.
-
-      const keyOwner =
-        keyRow.deviceId ||
-        null;
-
       // ------------------------------------------------------
-      // KEY ALREADY BELONGS
-      // TO ANOTHER DEVICE
+      // KEY IS ALREADY LOCKED
       // ------------------------------------------------------
 
       if (
-        keyOwner &&
-        keyOwner !==
+        keyRow.deviceId &&
+        keyRow.deviceId !==
           currentDeviceId
       ) {
         return res.status(403).json({
           success: false,
           error:
-            "This key is already being used on another device.",
+            "This key is already being used on another browser.",
           code:
             "KEY_ALREADY_CLAIMED",
         });
       }
 
       // ------------------------------------------------------
-      // FIRST CLAIM
+      // FIRST USE
       // ------------------------------------------------------
 
-      if (!keyOwner) {
+      if (!keyRow.deviceId) {
         keyRow.deviceId =
           currentDeviceId;
 
@@ -839,10 +839,14 @@ app.post(
           Date.now();
 
         saveData();
+
+        console.log(
+          `🔐 Key ${keyRow.key} claimed by browser ${currentDeviceId}`
+        );
       }
 
       // ------------------------------------------------------
-      // SAME DEVICE
+      // DURATION
       // ------------------------------------------------------
 
       const duration =
@@ -851,29 +855,27 @@ app.post(
         ) ||
         "lifetime";
 
-      // Check whether this
-      // browser already has a
-      // valid session for this key.
+      // ------------------------------------------------------
+      // FIND EXISTING SESSION
+      // ------------------------------------------------------
 
-      let existingSession =
+      let session =
         data.sessions.find(
-          session =>
-            session.keyId ===
+          item =>
+            item.keyId ===
               keyRow.id &&
-            session.deviceId ===
+            item.deviceId ===
               currentDeviceId &&
             !isExpired(
-              session.expiresAt
+              item.expiresAt
             )
         );
 
       let sessionToken;
 
-      if (
-        existingSession
-      ) {
+      if (session) {
         sessionToken =
-          existingSession.token;
+          session.token;
       } else {
         sessionToken =
           createSession(
@@ -883,7 +885,10 @@ app.post(
           );
       }
 
-      // Persistent session cookie.
+      // ------------------------------------------------------
+      // SAVE SESSION COOKIE
+      // ------------------------------------------------------
+
       setSessionCookie(
         res,
         sessionToken,
@@ -904,7 +909,8 @@ app.post(
         expiresAt,
 
         key: {
-          key: keyRow.key,
+          key:
+            keyRow.key,
 
           duration,
 
@@ -980,12 +986,8 @@ app.post(
         });
       }
 
-      // Remove oldest item.
-
       const stockRow =
         data.stock.shift();
-
-      // Save immediately.
 
       saveData();
 
@@ -997,9 +999,7 @@ app.post(
 
       return res.json({
         success: true,
-
         item,
-
         account: item,
       });
     } catch (error) {
@@ -1021,85 +1021,82 @@ app.post(
 // LOGOUT
 // ============================================================
 //
-// IMPORTANT:
-// Logging out does NOT release the key.
+// Logging out DOES NOT release the key.
 //
-// The key remains locked to the
-// browser until the key expires.
-//
-// This prevents someone from
-// logging out and giving the key
-// to another person.
+// The browser remains the owner
+// until the key expires.
 // ============================================================
 
 app.post(
   "/api/logout",
   (req, res) => {
-    const token =
-      req.headers[
-        "x-novi-session"
-      ];
+    try {
+      const token =
+        req.headers[
+          "x-novi-session"
+        ];
 
-    if (token) {
-      data.sessions =
-        data.sessions.filter(
-          session =>
-            session.token !==
-            token
+      const cookies =
+        parseCookies(
+          req.headers.cookie
         );
 
-      saveData();
-    }
+      const cookieToken =
+        cookies.novi_session;
 
-    // Clear session cookie.
+      const tokenToRemove =
+        token ||
+        cookieToken;
 
-    const isProduction =
-      process.env.NODE_ENV ===
-      "production";
+      if (tokenToRemove) {
+        data.sessions =
+          data.sessions.filter(
+            session =>
+              session.token !==
+              tokenToRemove
+          );
 
-    const cookie =
-      [
-        "novi_session=",
+        saveData();
+      }
 
-        "Path=/",
+      const production =
+        process.env.NODE_ENV ===
+        "production";
 
-        "Max-Age=0",
+      const cookie =
+        [
+          "novi_session=",
+          "Path=/",
+          "Max-Age=0",
+          "HttpOnly",
+          "SameSite=Lax",
+          production
+            ? "Secure"
+            : "",
+        ]
+          .filter(Boolean)
+          .join("; ");
 
-        "HttpOnly",
-
-        "SameSite=Lax",
-
-        isProduction
-          ? "Secure"
-          : "",
-      ]
-        .filter(Boolean)
-        .join("; ");
-
-    const existing =
-      res.getHeader(
-        "Set-Cookie"
+      appendCookie(
+        res,
+        cookie
       );
 
-    const cookies =
-      existing
-        ? Array.isArray(
-            existing
-          )
-          ? existing
-          : [existing]
-        : [];
+      return res.json({
+        success: true,
+      });
+    } catch (error) {
+      console.error(
+        "❌ /api/logout error:",
+        error
+      );
 
-    cookies.push(cookie);
-
-    res.setHeader(
-      "Set-Cookie",
-      cookies
-    );
-
-    return res.json({
-      success: true,
-    });
+      return res.status(500).json({
+        success: false,
+        error:
+          "Logout failed.",
+      });
+    }
   }
 );
 
@@ -1228,11 +1225,9 @@ async function handleGen(
         : createdAt +
           durationMs;
 
-    const keyId =
-      crypto.randomUUID();
-
     data.keys.push({
-      id: keyId,
+      id:
+        crypto.randomUUID(),
 
       key,
 
@@ -1242,14 +1237,15 @@ async function handleGen(
 
       duration,
 
-      // Key starts unclaimed.
+      // ------------------------------------------------------
+      // BROWSER LOCK
+      // ------------------------------------------------------
 
       deviceId: null,
 
       claimedAt: null,
 
-      // Kept for compatibility
-      // with older data.
+      // Compatibility field.
 
       used: false,
     });
@@ -1290,9 +1286,7 @@ async function handleAdd(
 
   const items = [];
 
-  // ----------------------------------------------------------
-  // DIRECT ITEM
-  // ----------------------------------------------------------
+  // Direct item.
 
   if (
     args &&
@@ -1310,9 +1304,7 @@ async function handleAdd(
     }
   }
 
-  // ----------------------------------------------------------
-  // TXT FILE
-  // ----------------------------------------------------------
+  // TXT attachment.
 
   if (
     message.attachments &&
@@ -1384,10 +1376,6 @@ async function handleAdd(
     }
   }
 
-  // ----------------------------------------------------------
-  // NOTHING
-  // ----------------------------------------------------------
-
   if (
     items.length === 0
   ) {
@@ -1398,10 +1386,6 @@ async function handleAdd(
     );
   }
 
-  // ----------------------------------------------------------
-  // LIMIT
-  // ----------------------------------------------------------
-
   if (
     items.length > 5000
   ) {
@@ -1409,10 +1393,6 @@ async function handleAdd(
       "❌ Too many stock items. Maximum: **5000**."
     );
   }
-
-  // ----------------------------------------------------------
-  // ADD
-  // ----------------------------------------------------------
 
   let added = 0;
 
@@ -1701,8 +1681,9 @@ app.use(
   )
 );
 
-// Express 4/5 compatible
-// fallback.
+// ============================================================
+// WEBSITE FALLBACK
+// ============================================================
 
 app.use(
   (req, res, next) => {
@@ -1723,9 +1704,11 @@ app.use(
         indexPath
       )
     ) {
-      return res.status(404).send(
-        "Novi website index.html was not found."
-      );
+      return res
+        .status(404)
+        .send(
+          "Novi website index.html was not found."
+        );
     }
 
     return res.sendFile(
@@ -1735,11 +1718,13 @@ app.use(
 );
 
 // ============================================================
-// START SERVER
+// START
 // ============================================================
 
 function start() {
   try {
+    // Make sure the data file exists.
+
     if (
       !fs.existsSync(
         DATA_FILE
@@ -1773,7 +1758,11 @@ function start() {
     );
 
     console.log(
-      "🔐 Key locking: DEVICE"
+      "🗄️ Database: NONE"
+    );
+
+    console.log(
+      "🔐 Key locking: BROWSER"
     );
 
     console.log(
