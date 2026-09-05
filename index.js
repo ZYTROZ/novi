@@ -63,13 +63,6 @@ app.use(express.json({ limit: "2mb" }));
 
 const sessions = new Map();
 
-/*
-  sessionToken -> {
-    keyId,
-    expiresAt
-  }
-*/
-
 function createSession(keyId, expiresAt) {
   const token = crypto.randomBytes(32).toString("hex");
 
@@ -358,6 +351,166 @@ async function fixDurationColumn() {
 }
 
 // ============================================================
+// CLEAN SAVED LOGIN TABLE
+// ============================================================
+
+async function cleanSavedLoginTable() {
+  console.log(
+    "🧹 Checking novi_saved_items database structure..."
+  );
+
+  // ----------------------------------------------------------
+  // Remove the OLD stock_id column.
+  //
+  // This is the specific column causing:
+  //
+  // null value in column "stock_id"
+  //
+  // The stock table keeps its own stock_id.
+  // ----------------------------------------------------------
+
+  const stockColumnCheck = await pool.query(`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'novi_saved_items'
+    AND column_name = 'stock_id'
+  `);
+
+  if (stockColumnCheck.rows.length > 0) {
+    console.log(
+      "🧹 Removing old stock_id column from novi_saved_items..."
+    );
+
+    await pool.query(`
+      ALTER TABLE novi_saved_items
+      DROP COLUMN IF EXISTS stock_id
+    `);
+
+    console.log(
+      "✅ Removed old stock_id column."
+    );
+  } else {
+    console.log(
+      "✅ No old stock_id column found."
+    );
+  }
+
+  // ----------------------------------------------------------
+  // Make sure email exists.
+  // ----------------------------------------------------------
+
+  const emailCheck = await pool.query(`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'novi_saved_items'
+    AND column_name = 'email'
+  `);
+
+  if (emailCheck.rows.length === 0) {
+    console.log(
+      "🧹 Adding email column..."
+    );
+
+    await pool.query(`
+      ALTER TABLE novi_saved_items
+      ADD COLUMN email TEXT
+    `);
+
+    console.log(
+      "✅ Added email column."
+    );
+  }
+
+  // ----------------------------------------------------------
+  // Make sure password exists.
+  // ----------------------------------------------------------
+
+  const passwordCheck = await pool.query(`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'novi_saved_items'
+    AND column_name = 'password'
+  `);
+
+  if (passwordCheck.rows.length === 0) {
+    console.log(
+      "🧹 Adding password column..."
+    );
+
+    await pool.query(`
+      ALTER TABLE novi_saved_items
+      ADD COLUMN password TEXT
+    `);
+
+    console.log(
+      "✅ Added password column."
+    );
+  }
+
+  // ----------------------------------------------------------
+  // Make sure created_at exists.
+  // ----------------------------------------------------------
+
+  const createdAtCheck = await pool.query(`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'novi_saved_items'
+    AND column_name = 'created_at'
+  `);
+
+  if (createdAtCheck.rows.length === 0) {
+    console.log(
+      "🧹 Adding created_at column..."
+    );
+
+    await pool.query(`
+      ALTER TABLE novi_saved_items
+      ADD COLUMN created_at
+      TIMESTAMP WITH TIME ZONE
+      DEFAULT NOW()
+    `);
+
+    console.log(
+      "✅ Added created_at column."
+    );
+  }
+
+  // ----------------------------------------------------------
+  // Show final structure.
+  // ----------------------------------------------------------
+
+  const finalColumns = await pool.query(`
+    SELECT
+      column_name,
+      data_type,
+      is_nullable,
+      column_default
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'novi_saved_items'
+    ORDER BY ordinal_position
+  `);
+
+  console.log(
+    "📊 Final novi_saved_items structure:"
+  );
+
+  for (const column of finalColumns.rows) {
+    console.log(
+      `   ${column.column_name} | ${column.data_type} | nullable=${column.is_nullable}`
+    );
+  }
+
+  console.log(
+    "✅ Saved-login database cleanup complete."
+  );
+}
+
+// ============================================================
 // DATABASE INIT
 // ============================================================
 
@@ -389,6 +542,7 @@ async function initializeDatabase() {
     )
   `);
 
+  // Add missing stock columns if needed.
   await pool.query(`
     ALTER TABLE novi_stock_items
     ADD COLUMN IF NOT EXISTS stock_id TEXT
@@ -413,25 +567,11 @@ async function initializeDatabase() {
     )
   `);
 
-  // IMPORTANT:
-  // This updates an EXISTING table if it was created
-  // with an older schema.
+  // ----------------------------------------------------------
+  // CLEAN OLD SAVED LOGIN DATABASE
+  // ----------------------------------------------------------
 
-  await pool.query(`
-    ALTER TABLE novi_saved_items
-    ADD COLUMN IF NOT EXISTS email TEXT
-  `);
-
-  await pool.query(`
-    ALTER TABLE novi_saved_items
-    ADD COLUMN IF NOT EXISTS password TEXT
-  `);
-
-  await pool.query(`
-    ALTER TABLE novi_saved_items
-    ADD COLUMN IF NOT EXISTS created_at
-    TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-  `);
+  await cleanSavedLoginTable();
 
   // ----------------------------------------------------------
   // INDEXES
@@ -455,7 +595,17 @@ async function initializeDatabase() {
 
   await detectDatabaseTypes();
 
-  console.log("✅ Database ready.");
+  console.log(
+    "========================================"
+  );
+
+  console.log(
+    "✅ NOVI DATABASE READY"
+  );
+
+  console.log(
+    "========================================"
+  );
 }
 
 // ============================================================
@@ -581,8 +731,11 @@ app.post(
 
       return res.json({
         success: true,
+
         sessionToken,
+
         duration,
+
         expiresAt,
 
         key: {
@@ -745,8 +898,6 @@ app.get(
       return res.json({
         success: true,
 
-        // All three are provided so the frontend
-        // can use whichever format it expects.
         logins: result.rows,
         savedLogins: result.rows,
         items: result.rows,
@@ -779,18 +930,6 @@ app.post(
         "📥 SAVE LOGIN REQUEST"
       );
 
-      console.log(
-        "📥 Body:",
-        {
-          hasEmail: Boolean(
-            req.body?.email
-          ),
-          hasPassword: Boolean(
-            req.body?.password
-          ),
-        }
-      );
-
       const email = String(
         req.body?.email || ""
       ).trim();
@@ -807,67 +946,6 @@ app.post(
         });
       }
 
-      // ------------------------------------------------------
-      // CHECK ACTUAL TABLE
-      // ------------------------------------------------------
-
-      const columnsResult =
-        await pool.query(`
-          SELECT
-            column_name,
-            data_type,
-            is_nullable,
-            column_default
-          FROM information_schema.columns
-          WHERE table_schema = 'public'
-          AND table_name = 'novi_saved_items'
-          ORDER BY ordinal_position
-        `);
-
-      console.log(
-        "📊 novi_saved_items columns:",
-        columnsResult.rows
-      );
-
-      const columns =
-        columnsResult.rows;
-
-      const hasEmail =
-        columns.some(
-          column =>
-            column.column_name ===
-            "email"
-        );
-
-      const hasPassword =
-        columns.some(
-          column =>
-            column.column_name ===
-            "password"
-        );
-
-      const createdAtColumn =
-        columns.find(
-          column =>
-            column.column_name ===
-            "created_at"
-        );
-
-      if (
-        !hasEmail ||
-        !hasPassword
-      ) {
-        console.error(
-          "❌ Database is missing email/password columns."
-        );
-
-        return res.status(500).json({
-          success: false,
-          error:
-            "Saved-login database table is missing required columns.",
-        });
-      }
-
       let result;
 
       // ------------------------------------------------------
@@ -875,10 +953,8 @@ app.post(
       // ------------------------------------------------------
 
       if (
-        createdAtColumn &&
-        createdAtColumn.data_type.includes(
-          "timestamp"
-        )
+        savedCreatedAtType ===
+        "timestamp"
       ) {
         result =
           await pool.query(
@@ -912,17 +988,7 @@ app.post(
       // BIGINT / INTEGER / NUMERIC
       // ------------------------------------------------------
 
-      else if (
-        createdAtColumn &&
-        (
-          createdAtColumn.data_type ===
-            "bigint" ||
-          createdAtColumn.data_type ===
-            "integer" ||
-          createdAtColumn.data_type ===
-            "numeric"
-        )
-      ) {
+      else {
         result =
           await pool.query(
             `
@@ -952,36 +1018,6 @@ app.post(
           );
       }
 
-      // ------------------------------------------------------
-      // NO CREATED_AT
-      // ------------------------------------------------------
-
-      else {
-        result =
-          await pool.query(
-            `
-            INSERT INTO novi_saved_items
-              (
-                email,
-                password
-              )
-            VALUES
-              (
-                $1,
-                $2
-              )
-            RETURNING
-              id,
-              email,
-              password
-            `,
-            [
-              email,
-              password,
-            ]
-          );
-      }
-
       const savedLogin =
         result.rows[0];
 
@@ -993,11 +1029,9 @@ app.post(
       return res.json({
         success: true,
 
-        // Both formats supported
         login: savedLogin,
         item: savedLogin,
       });
-
     } catch (error) {
       console.error(
         "========================================"
@@ -1033,10 +1067,6 @@ app.post(
 
       return res.status(500).json({
         success: false,
-
-        // Return the real PostgreSQL
-        // message so the frontend can
-        // show what actually failed.
         error:
           error.message ||
           "Could not save login.",
