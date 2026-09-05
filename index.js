@@ -116,7 +116,6 @@ function requireSession(req, res, next) {
   }
 
   req.noviSession = session;
-
   next();
 }
 
@@ -229,7 +228,6 @@ function extractStockIds(body) {
       for (const item of value) {
         add(item);
       }
-
       return;
     }
 
@@ -294,33 +292,59 @@ async function generateKeys(amount = 1, duration = 86400000) {
   amount = Math.max(1, Math.min(Number(amount) || 1, 100));
   duration = Number(duration) || 86400000;
 
-  const keys = [];
+  const client = await pool.connect();
 
-  for (let i = 0; i < amount; i++) {
-    const key = `NOVI-${crypto
-      .randomBytes(8)
-      .toString("hex")
-      .toUpperCase()}`;
+  try {
+    await client.query("BEGIN");
 
-    const expiresAt = new Date(Date.now() + duration);
+    const keys = [];
 
-    await pool.query(
-      `
-      INSERT INTO novi_keys
-      (key, duration, expires_at)
-      VALUES ($1, $2, $3)
-      `,
-      [key, duration, expiresAt]
-    );
+    for (let i = 0; i < amount; i++) {
+      let created = false;
 
-    keys.push({
-      key,
-      duration,
-      expiresAt,
-    });
+      for (let attempt = 0; attempt < 10 && !created; attempt++) {
+        const key =
+          "NOVI-" +
+          crypto.randomBytes(8).toString("hex").toUpperCase();
+
+        const expiresAt = new Date(Date.now() + duration);
+
+        const result = await client.query(
+          `
+          INSERT INTO novi_keys
+          (key, duration, expires_at)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (key) DO NOTHING
+          RETURNING
+            id,
+            key,
+            duration,
+            created_at,
+            expires_at
+          `,
+          [key, duration, expiresAt]
+        );
+
+        if (result.rows.length > 0) {
+          keys.push(result.rows[0]);
+          created = true;
+        }
+      }
+
+      if (!created) {
+        throw new Error("Could not create a unique key.");
+      }
+    }
+
+    await client.query("COMMIT");
+
+    return keys;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
   }
-
-  return keys;
 }
 
 // ============================================================
@@ -383,6 +407,7 @@ app.post("/api/keys", requireAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Failed to create keys",
+      details: err.message,
     });
   }
 });
@@ -508,8 +533,6 @@ async function stockAddHandler(req, res) {
     try {
       await client.query("BEGIN");
 
-      let added = 0;
-
       for (const stockId of stockIds) {
         await client.query(
           `
@@ -519,18 +542,16 @@ async function stockAddHandler(req, res) {
           `,
           [stockId]
         );
-
-        added++;
       }
 
       await client.query("COMMIT");
 
-      console.log(`Added ${added} stock item(s)`);
+      console.log(`Added ${stockIds.length} stock item(s)`);
 
       return res.json({
         success: true,
-        added,
-        count: added,
+        added: stockIds.length,
+        count: stockIds.length,
       });
     } catch (err) {
       await client.query("ROLLBACK");
@@ -609,7 +630,7 @@ app.get("/api/stock", requireSession, async (req, res) => {
 });
 
 // ============================================================
-// STOCK GENERATE / TAKE ONE
+// STOCK GENERATE
 // ============================================================
 
 app.post("/api/stock/generate", requireSession, async (req, res) => {
@@ -811,7 +832,7 @@ app.post("/api/logout", (req, res) => {
 });
 
 // ============================================================
-// STATIC WEBSITE
+// WEBSITE
 // ============================================================
 
 app.use(express.static(PUBLIC_DIR));
@@ -828,7 +849,9 @@ let discordClient = null;
 
 async function startDiscordBot() {
   if (!DISCORD_TOKEN) {
-    console.log("Discord bot disabled: DISCORD_TOKEN is missing.");
+    console.log(
+      "Discord bot disabled: DISCORD_TOKEN is missing."
+    );
     return;
   }
 
@@ -841,42 +864,55 @@ async function startDiscordBot() {
   });
 
   // ==========================================================
-  // BOT READY
+  // READY
   // ==========================================================
 
   discordClient.once("ready", async (client) => {
-    console.log(`Discord bot online as ${client.user.tag}`);
+    console.log(
+      `Discord bot online as ${client.user.tag}`
+    );
 
-    if (DISCORD_CLIENT_ID) {
-      try {
-        const rest = new REST({ version: "10" }).setToken(
-          DISCORD_TOKEN
-        );
+    if (!DISCORD_CLIENT_ID) {
+      console.log(
+        "DISCORD_CLIENT_ID missing. Slash commands skipped."
+      );
+      return;
+    }
 
-        const commands = [
-          new SlashCommandBuilder()
-            .setName("ping")
-            .setDescription("Check if Novi is online"),
+    try {
+      const rest = new REST({
+        version: "10",
+      }).setToken(DISCORD_TOKEN);
 
-          new SlashCommandBuilder()
-            .setName("stock")
-            .setDescription("Check the current Novi stock count"),
-        ].map((command) => command.toJSON());
+      const commands = [
+        new SlashCommandBuilder()
+          .setName("ping")
+          .setDescription("Check if Novi is online"),
 
-        await rest.put(
-          Routes.applicationCommands(DISCORD_CLIENT_ID),
-          {
-            body: commands,
-          }
-        );
+        new SlashCommandBuilder()
+          .setName("stock")
+          .setDescription(
+            "Check the current Novi stock count"
+          ),
+      ].map((command) => command.toJSON());
 
-        console.log("Discord slash commands registered.");
-      } catch (err) {
-        console.error(
-          "Failed to register Discord commands:"
-        );
-        console.error(err);
-      }
+      await rest.put(
+        Routes.applicationCommands(
+          DISCORD_CLIENT_ID
+        ),
+        {
+          body: commands,
+        }
+      );
+
+      console.log(
+        "Discord slash commands registered."
+      );
+    } catch (err) {
+      console.error(
+        "Discord slash command registration error:"
+      );
+      console.error(err);
     }
   });
 
@@ -884,214 +920,287 @@ async function startDiscordBot() {
   // SLASH COMMANDS
   // ==========================================================
 
-  discordClient.on("interactionCreate", async (interaction) => {
-    if (!interaction.isChatInputCommand()) return;
-
-    try {
-      if (interaction.commandName === "ping") {
-        return interaction.reply({
-          content: "🏓 Novi is online!",
-          ephemeral: true,
-        });
+  discordClient.on(
+    "interactionCreate",
+    async (interaction) => {
+      if (!interaction.isChatInputCommand()) {
+        return;
       }
 
-      if (interaction.commandName === "stock") {
-        const result = await pool.query(`
-          SELECT COUNT(*)::int AS count
-          FROM novi_stock_items
-        `);
+      try {
+        if (interaction.commandName === "ping") {
+          return interaction.reply({
+            content: "🏓 Novi is online!",
+            ephemeral: true,
+          });
+        }
 
-        return interaction.reply({
-          content: `📦 Current Novi stock: **${result.rows[0].count}**`,
-        });
-      }
-    } catch (err) {
-      console.error("Discord command error:", err);
+        if (interaction.commandName === "stock") {
+          const result = await pool.query(`
+            SELECT COUNT(*)::int AS count
+            FROM novi_stock_items
+          `);
 
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({
-          content: "Something went wrong.",
-          ephemeral: true,
-        });
-      } else {
-        await interaction.reply({
-          content: "Something went wrong.",
-          ephemeral: true,
-        });
-      }
-    }
-  });
-
-  // ==========================================================
-  // ! COMMANDS
-  // ==========================================================
-
-  discordClient.on("messageCreate", async (message) => {
-    try {
-      if (message.author.bot) return;
-
-      const content = message.content.trim();
-
-      if (!content.startsWith("!")) return;
-
-      const parts = content
-        .slice(1)
-        .trim()
-        .split(/\s+/);
-
-      const command = parts.shift()?.toLowerCase();
-
-      // ========================================================
-      // !GEN
-      //
-      // !gen
-      // !gen 5
-      //
-      // Generates website license keys.
-      // ========================================================
-
-      if (command === "gen") {
-        let amount = Number(parts[0]) || 1;
-
-        amount = Math.max(1, Math.min(amount, 100));
-
-        const keys = await generateKeys(
-          amount,
-          86400000
+          return interaction.reply({
+            content:
+              `📦 Current Novi stock: **${result.rows[0].count}**`,
+          });
+        }
+      } catch (err) {
+        console.error(
+          "Discord slash command error:",
+          err
         );
 
-        const keyText = keys
-          .map((item) => `\`${item.key}\``)
-          .join("\n");
-
         try {
-          await message.author.send(
-            [
-              "🔑 **Novi License Key Generator**",
-              "",
-              keyText,
-              "",
-              "⏱️ Duration: **24 hours**",
-              `📦 Amount: **${keys.length}**`,
-            ].join("\n")
-          );
-
-          return message.reply(
-            `✅ Generated **${keys.length}** key${
-              keys.length === 1 ? "" : "s"
-            } and sent ${
-              keys.length === 1 ? "it" : "them"
-            } to your DMs.`
-          );
-        } catch (dmError) {
-          return message.reply(
-            "❌ I generated the key, but I couldn't DM you. Please enable DMs from server members."
-          );
-        }
+          if (
+            interaction.replied ||
+            interaction.deferred
+          ) {
+            await interaction.followUp({
+              content:
+                "❌ Something went wrong.",
+              ephemeral: true,
+            });
+          } else {
+            await interaction.reply({
+              content:
+                "❌ Something went wrong.",
+              ephemeral: true,
+            });
+          }
+        } catch {}
       }
+    }
+  );
 
-      // ========================================================
-      // !ADD
-      //
-      // !add stock1
-      // !add stock1 stock2 stock3
-      //
-      // Only Discord server administrators can use it.
-      // ========================================================
+  // ==========================================================
+  // PREFIX COMMANDS
+  // ==========================================================
 
-      if (command === "add") {
-        const isAdmin =
-          message.member?.permissions?.has("Administrator");
+  discordClient.on(
+    "messageCreate",
+    async (message) => {
+      try {
+        if (message.author.bot) return;
 
-        if (!isAdmin) {
-          return message.reply(
-            "❌ You need Administrator permission to use `!add`."
-          );
+        const content = message.content.trim();
+
+        if (!content.startsWith("!")) {
+          return;
         }
 
-        if (parts.length === 0) {
-          return message.reply(
-            "❌ Usage: `!add <stock1> <stock2> <stock3>`"
+        console.log(
+          `[DISCORD] ${message.author.tag}: ${content}`
+        );
+
+        const parts = content
+          .slice(1)
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean);
+
+        const command = (
+          parts.shift() || ""
+        ).toLowerCase();
+
+        // ======================================================
+        // !GEN
+        // ======================================================
+
+        if (command === "gen") {
+          console.log(
+            "[DISCORD] !gen requested"
           );
-        }
 
-        const stockIds = [
-          ...new Set(
-            parts
-              .map((item) => item.trim())
-              .filter(Boolean)
-          ),
-        ];
+          let amount = Number(parts[0]);
 
-        const client = await pool.connect();
+          if (!Number.isFinite(amount)) {
+            amount = 1;
+          }
 
-        try {
-          await client.query("BEGIN");
+          amount = Math.floor(amount);
 
-          for (const stockId of stockIds) {
-            await client.query(
-              `
-              INSERT INTO novi_stock_items
-              (stock_id)
-              VALUES ($1)
-              `,
-              [stockId]
+          if (amount < 1) {
+            amount = 1;
+          }
+
+          if (amount > 100) {
+            amount = 100;
+          }
+
+          console.log(
+            `[DISCORD] Generating ${amount} key(s)`
+          );
+
+          const keys = await generateKeys(
+            amount,
+            86400000
+          );
+
+          if (!keys || keys.length === 0) {
+            return message.reply(
+              "❌ No keys were generated."
             );
           }
 
-          await client.query("COMMIT");
+          const keyText = keys
+            .map((row) => `\`${row.key}\``)
+            .join("\n");
+
+          console.log(
+            `[DISCORD] Successfully generated ${keys.length} key(s)`
+          );
+
+          return message.reply({
+            content:
+              `🔑 **Novi License Keys**\n\n` +
+              `${keyText}\n\n` +
+              `⏱️ Duration: **24 hours**\n` +
+              `📦 Generated: **${keys.length}**`,
+          });
+        }
+
+        // ======================================================
+        // !ADD
+        // ======================================================
+
+        if (command === "add") {
+          const isAdmin =
+            message.member?.permissions?.has(
+              "Administrator"
+            );
+
+          if (!isAdmin) {
+            return message.reply(
+              "❌ You need Administrator permission to use `!add`."
+            );
+          }
+
+          if (parts.length === 0) {
+            return message.reply(
+              "❌ Usage: `!add <stock1> <stock2> <stock3>`"
+            );
+          }
+
+          const stockIds = [
+            ...new Set(
+              parts
+                .map((item) => item.trim())
+                .filter(Boolean)
+            ),
+          ];
+
+          const client = await pool.connect();
+
+          try {
+            await client.query("BEGIN");
+
+            for (const stockId of stockIds) {
+              await client.query(
+                `
+                INSERT INTO novi_stock_items
+                (stock_id)
+                VALUES ($1)
+                `,
+                [stockId]
+              );
+            }
+
+            await client.query("COMMIT");
+
+            console.log(
+              `[DISCORD] Added ${stockIds.length} stock item(s)`
+            );
+
+            return message.reply(
+              `✅ Added **${stockIds.length}** stock item${
+                stockIds.length === 1
+                  ? ""
+                  : "s"
+              }.`
+            );
+          } catch (err) {
+            await client.query("ROLLBACK");
+            throw err;
+          } finally {
+            client.release();
+          }
+        }
+
+        // ======================================================
+        // !STOCK
+        // ======================================================
+
+        if (command === "stock") {
+          const result = await pool.query(`
+            SELECT COUNT(*)::int AS count
+            FROM novi_stock_items
+          `);
 
           return message.reply(
-            `✅ Added **${stockIds.length}** stock item${
-              stockIds.length === 1 ? "" : "s"
-            }.`
+            `📦 Current Novi stock: **${result.rows[0].count}**`
           );
-        } catch (err) {
-          await client.query("ROLLBACK");
-          throw err;
-        } finally {
-          client.release();
+        }
+
+        // ======================================================
+        // !HELP
+        // ======================================================
+
+        if (command === "help") {
+          return message.reply(
+            [
+              "**Novi Commands**",
+              "",
+              "`!gen` → Generate 1 website key",
+              "`!gen 5` → Generate 5 website keys",
+              "`!add <stock>` → Add stock",
+              "`!stock` → Check stock",
+              "",
+              "`/ping` → Check bot",
+              "`/stock` → Check stock",
+            ].join("\n")
+          );
+        }
+      } catch (err) {
+        console.error(
+          "================================"
+        );
+        console.error(
+          "DISCORD COMMAND ERROR"
+        );
+        console.error(
+          "================================"
+        );
+        console.error(err);
+        console.error(
+          "================================"
+        );
+
+        try {
+          await message.reply(
+            `❌ Command failed: ${
+              err?.message || "Unknown error"
+            }`
+          );
+        } catch (replyError) {
+          console.error(
+            "Could not send Discord error:",
+            replyError
+          );
         }
       }
-
-      // ========================================================
-      // !HELP
-      // ========================================================
-
-      if (command === "help") {
-        return message.reply(
-          [
-            "**Novi Commands**",
-            "",
-            "`!gen` — Generate 1 website key",
-            "`!gen 5` — Generate 5 website keys",
-            "`!add <stock>` — Add stock",
-            "",
-            "`/stock` — Check stock count",
-            "`/ping` — Check bot status",
-          ].join("\n")
-        );
-      }
-    } catch (err) {
-      console.error(
-        "Discord prefix command error:",
-        err
-      );
-
-      try {
-        await message.reply(
-          "❌ Something went wrong while running that command."
-        );
-      } catch {}
     }
-  });
+  );
 
   // ==========================================================
   // DISCORD ERRORS
   // ==========================================================
 
   discordClient.on("error", (err) => {
-    console.error("Discord client error:");
+    console.error(
+      "Discord client error:"
+    );
     console.error(err);
   });
 
@@ -1106,19 +1215,44 @@ async function start() {
   try {
     await initDatabase();
 
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log("===============================");
-      console.log("       NOVI SERVER ONLINE");
-      console.log("===============================");
-      console.log(`Port: ${PORT}`);
-      console.log("Database: connected");
-      console.log("Stock API: ready");
-      console.log("===============================");
-    });
+    app.listen(
+      PORT,
+      "0.0.0.0",
+      () => {
+        console.log(
+          "==============================="
+        );
+        console.log(
+          "       NOVI SERVER ONLINE"
+        );
+        console.log(
+          "==============================="
+        );
+        console.log(`Port: ${PORT}`);
+        console.log(
+          "Database: connected"
+        );
+        console.log(
+          "Website: ready"
+        );
+        console.log(
+          "Stock API: ready"
+        );
+        console.log(
+          "Discord: starting..."
+        );
+        console.log(
+          "==============================="
+        );
+      }
+    );
 
     await startDiscordBot();
+
   } catch (err) {
-    console.error("FAILED TO START NOVI:");
+    console.error(
+      "FAILED TO START NOVI:"
+    );
     console.error(err);
     process.exit(1);
   }
@@ -1142,12 +1276,25 @@ async function shutdown(signal) {
 
     process.exit(0);
   } catch (err) {
-    console.error("Shutdown error:", err);
+    console.error(
+      "Shutdown error:",
+      err
+    );
+
     process.exit(1);
   }
 }
 
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () =>
+  shutdown("SIGTERM")
+);
+
+process.on("SIGINT", () =>
+  shutdown("SIGINT")
+);
+
+// ============================================================
+// RUN
+// ============================================================
 
 start();
