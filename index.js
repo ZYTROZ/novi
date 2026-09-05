@@ -18,13 +18,17 @@ const SAVED_FILE = path.join(__dirname, "saved-items.json");
 
 const sessions = new Map();
 
-// ============================================================
-// FILE STORAGE
-// ============================================================
+/* ============================================================
+   FILE STORAGE
+============================================================ */
 
 function ensureJsonFile(file, defaultValue) {
   if (!fs.existsSync(file)) {
-    fs.writeFileSync(file, JSON.stringify(defaultValue, null, 2));
+    fs.writeFileSync(
+      file,
+      JSON.stringify(defaultValue, null, 2),
+      "utf8"
+    );
   }
 }
 
@@ -35,44 +39,75 @@ ensureJsonFile(SAVED_FILE, []);
 function readJson(file, fallback) {
   try {
     if (!fs.existsSync(file)) {
-      fs.writeFileSync(file, JSON.stringify(fallback, null, 2));
+      ensureJsonFile(file, fallback);
       return fallback;
     }
 
-    const data = fs.readFileSync(file, "utf8").trim();
+    const raw = fs.readFileSync(file, "utf8").trim();
 
-    if (!data) return fallback;
+    if (!raw) {
+      return fallback;
+    }
 
-    return JSON.parse(data);
+    const parsed = JSON.parse(raw);
+
+    return parsed;
   } catch (error) {
-    console.error(`Failed reading ${file}:`, error);
+    console.error(`Error reading ${file}:`, error);
     return fallback;
   }
 }
 
 function writeJson(file, data) {
-  const temp = `${file}.tmp`;
+  const tempFile = `${file}.tmp`;
 
   fs.writeFileSync(
-    temp,
+    tempFile,
     JSON.stringify(data, null, 2),
     "utf8"
   );
 
-  fs.renameSync(temp, file);
+  fs.renameSync(tempFile, file);
 }
 
-// ============================================================
-// EXPRESS
-// ============================================================
+/* ============================================================
+   EXPRESS
+============================================================ */
 
 app.use(cors());
-app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
-// ============================================================
-// HELPERS
-// ============================================================
+app.use(
+  express.json({
+    limit: "2mb"
+  })
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "2mb"
+  })
+);
+
+/* ============================================================
+   HELPERS
+============================================================ */
+
+function normalizeString(value) {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  return String(value).trim();
+}
+
+function createToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+/* ============================================================
+   ADMIN AUTH
+============================================================ */
 
 function getAdminSecret(req) {
   const headerSecret =
@@ -83,10 +118,16 @@ function getAdminSecret(req) {
     return String(headerSecret);
   }
 
-  const auth = req.headers.authorization;
+  const authorization =
+    req.headers.authorization;
 
-  if (auth && auth.startsWith("Bearer ")) {
-    return auth.slice(7).trim();
+  if (
+    authorization &&
+    authorization.startsWith("Bearer ")
+  ) {
+    return authorization
+      .slice(7)
+      .trim();
   }
 
   if (req.body && req.body.adminSecret) {
@@ -104,11 +145,15 @@ function requireAdmin(req, res, next) {
   if (!ADMIN_SECRET) {
     return res.status(500).json({
       success: false,
-      error: "NOVI_ADMIN_SECRET is not configured."
+      error:
+        "NOVI_ADMIN_SECRET is not configured."
     });
   }
 
-  if (getAdminSecret(req) !== ADMIN_SECRET) {
+  if (
+    getAdminSecret(req) !==
+    ADMIN_SECRET
+  ) {
     return res.status(401).json({
       success: false,
       error: "Invalid admin secret."
@@ -118,17 +163,32 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+/* ============================================================
+   SESSION AUTH
+============================================================ */
+
 function getSessionToken(req) {
-  return (
+  const direct =
     req.headers["x-novi-session"] ||
-    req.headers["x-session-token"] ||
-    (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer ")
-        ? req.headers.authorization.slice(7).trim()
-        : ""
-    )
-  );
+    req.headers["x-session-token"];
+
+  if (direct) {
+    return String(direct);
+  }
+
+  const authorization =
+    req.headers.authorization;
+
+  if (
+    authorization &&
+    authorization.startsWith("Bearer ")
+  ) {
+    return authorization
+      .slice(7)
+      .trim();
+  }
+
+  return "";
 }
 
 function requireSession(req, res, next) {
@@ -141,16 +201,22 @@ function requireSession(req, res, next) {
     });
   }
 
-  const session = sessions.get(token);
+  const session =
+    sessions.get(token);
 
   if (!session) {
     return res.status(401).json({
       success: false,
-      error: "Invalid or expired session."
+      error:
+        "Invalid or expired session."
     });
   }
 
-  if (session.expiresAt && Date.now() > session.expiresAt) {
+  if (
+    session.expiresAt &&
+    Date.now() >
+      Number(session.expiresAt)
+  ) {
     sessions.delete(token);
 
     return res.status(401).json({
@@ -165,21 +231,9 @@ function requireSession(req, res, next) {
   next();
 }
 
-function createToken() {
-  return crypto.randomBytes(32).toString("hex");
-}
-
-function normalizeString(value) {
-  if (value === undefined || value === null) {
-    return "";
-  }
-
-  return String(value).trim();
-}
-
-// ============================================================
-// STOCK HELPERS
-// ============================================================
+/* ============================================================
+   STOCK HELPERS
+============================================================ */
 
 function cleanStockValue(value) {
   if (
@@ -190,16 +244,21 @@ function cleanStockValue(value) {
     return null;
   }
 
-  const result = String(value).trim();
+  const result =
+    String(value).trim();
 
   if (!result) {
     return null;
   }
 
-  // Keep this system for non-sensitive inventory/codes.
-  // Do not use it to store passwords or account credentials.
+  /*
+    Stock is intended for non-sensitive
+    inventory/license/product codes.
+  */
   if (
-    /^[^@\s:]+@[^@\s:]+:[^\s]+$/.test(result)
+    /^[^@\s:]+@[^@\s:]+:[^\s]+$/.test(
+      result
+    )
   ) {
     return null;
   }
@@ -208,18 +267,22 @@ function cleanStockValue(value) {
 }
 
 function extractStockValues(input) {
-  const output = [];
+  const values = [];
 
   function add(value) {
-    const cleaned = cleanStockValue(value);
+    const cleaned =
+      cleanStockValue(value);
 
     if (cleaned) {
-      output.push(cleaned);
+      values.push(cleaned);
     }
   }
 
   function walk(value) {
-    if (value === undefined || value === null) {
+    if (
+      value === undefined ||
+      value === null
+    ) {
       return;
     }
 
@@ -240,8 +303,10 @@ function extractStockValues(input) {
       return;
     }
 
-    if (typeof value === "object") {
-      const preferredFields = [
+    if (
+      typeof value === "object"
+    ) {
+      const fields = [
         "stockId",
         "stock_id",
         "value",
@@ -253,22 +318,25 @@ function extractStockValues(input) {
         "product_code"
       ];
 
-      let foundPreferred = false;
+      let found = false;
 
-      for (const field of preferredFields) {
+      for (const field of fields) {
         if (
-          Object.prototype.hasOwnProperty.call(value, field)
+          Object.prototype.hasOwnProperty.call(
+            value,
+            field
+          )
         ) {
+          found = true;
           walk(value[field]);
-          foundPreferred = true;
         }
       }
 
-      if (foundPreferred) {
+      if (found) {
         return;
       }
 
-      const arrayFields = [
+      const arrays = [
         "stock",
         "stocks",
         "items",
@@ -279,9 +347,12 @@ function extractStockValues(input) {
         "stock_ids"
       ];
 
-      for (const field of arrayFields) {
+      for (const field of arrays) {
         if (
-          Object.prototype.hasOwnProperty.call(value, field)
+          Object.prototype.hasOwnProperty.call(
+            value,
+            field
+          )
         ) {
           walk(value[field]);
         }
@@ -291,32 +362,42 @@ function extractStockValues(input) {
 
   walk(input);
 
-  return [...new Set(output)];
+  return [
+    ...new Set(values)
+  ];
 }
 
-function nextStockId(stock) {
-  if (!stock.length) {
+function getNextStockId(stock) {
+  if (!Array.isArray(stock)) {
     return 1;
   }
 
   const ids = stock
-    .map(item => Number(item.id))
-    .filter(Number.isFinite);
+    .map(item =>
+      Number(item.id)
+    )
+    .filter(id =>
+      Number.isFinite(id)
+    );
 
-  return ids.length ? Math.max(...ids) + 1 : 1;
+  if (!ids.length) {
+    return 1;
+  }
+
+  return Math.max(...ids) + 1;
 }
 
-// ============================================================
-// HEALTH
-// ============================================================
+/* ============================================================
+   WEBSITE
+============================================================ */
 
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    name: "Novi",
-    status: "online"
-  });
-});
+/*
+  IMPORTANT:
+  Do NOT create app.get("/") returning JSON here.
+
+  The static middleware below serves:
+  public/index.html
+*/
 
 app.get("/api/health", (req, res) => {
   res.json({
@@ -326,158 +407,218 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// ============================================================
-// KEY SYSTEM
-// ============================================================
+/* ============================================================
+   KEYS
+============================================================ */
 
-// Create key
-app.post("/api/keys", requireAdmin, (req, res) => {
-  const keys = readJson(KEYS_FILE, []);
+app.post(
+  "/api/keys",
+  requireAdmin,
+  (req, res) => {
+    const keys =
+      readJson(KEYS_FILE, []);
 
-  const key =
-    normalizeString(req.body.key) ||
-    crypto.randomBytes(12).toString("hex").toUpperCase();
+    const key =
+      normalizeString(
+        req.body.key
+      ) ||
+      crypto
+        .randomBytes(12)
+        .toString("hex")
+        .toUpperCase();
 
-  const durationDays = Number(req.body.durationDays);
+    const durationDays =
+      Number(
+        req.body.durationDays
+      );
 
-  let expiresAt = null;
+    let expiresAt = null;
 
-  if (
-    Number.isFinite(durationDays) &&
-    durationDays > 0
-  ) {
-    expiresAt =
-      Date.now() +
-      durationDays * 24 * 60 * 60 * 1000;
-  }
+    if (
+      Number.isFinite(
+        durationDays
+      ) &&
+      durationDays > 0
+    ) {
+      expiresAt =
+        Date.now() +
+        durationDays *
+          24 *
+          60 *
+          60 *
+          1000;
+    }
 
-  const existingIndex = keys.findIndex(
-    item => item.key === key
-  );
+    const existingIndex =
+      keys.findIndex(
+        item =>
+          item.key === key
+      );
 
-  const record = {
-    key,
-    durationDays:
-      Number.isFinite(durationDays) && durationDays > 0
-        ? durationDays
-        : null,
-    expiresAt,
-    createdAt: Date.now()
-  };
-
-  if (existingIndex >= 0) {
-    keys[existingIndex] = {
-      ...keys[existingIndex],
-      ...record
+    const record = {
+      key,
+      durationDays:
+        Number.isFinite(
+          durationDays
+        ) &&
+        durationDays > 0
+          ? durationDays
+          : null,
+      expiresAt,
+      createdAt: Date.now()
     };
-  } else {
-    keys.push(record);
-  }
 
-  writeJson(KEYS_FILE, keys);
+    if (existingIndex >= 0) {
+      keys[existingIndex] = {
+        ...keys[existingIndex],
+        ...record
+      };
+    } else {
+      keys.push(record);
+    }
 
-  res.json({
-    success: true,
-    key,
-    durationDays: record.durationDays,
-    expiresAt
-  });
-});
+    writeJson(
+      KEYS_FILE,
+      keys
+    );
 
-// Get keys
-app.get("/api/keys", requireAdmin, (req, res) => {
-  const keys = readJson(KEYS_FILE, []);
-
-  res.json({
-    success: true,
-    keys
-  });
-});
-
-// Verify key
-app.post("/api/verify", (req, res) => {
-  const suppliedKey = normalizeString(req.body.key);
-  const deviceId = normalizeString(req.body.deviceId);
-
-  if (!suppliedKey) {
-    return res.status(400).json({
-      success: false,
-      error: "Key is required."
+    res.json({
+      success: true,
+      key,
+      durationDays:
+        record.durationDays,
+      expiresAt
     });
   }
+);
 
-  const keys = readJson(KEYS_FILE, []);
+app.get(
+  "/api/keys",
+  requireAdmin,
+  (req, res) => {
+    const keys =
+      readJson(KEYS_FILE, []);
 
-  const keyRecord = keys.find(
-    item => item.key === suppliedKey
-  );
-
-  if (!keyRecord) {
-    return res.status(401).json({
-      success: false,
-      error: "Invalid Novi key."
+    res.json({
+      success: true,
+      keys
     });
   }
+);
 
-  if (
-    keyRecord.expiresAt &&
-    Date.now() > Number(keyRecord.expiresAt)
-  ) {
-    return res.status(401).json({
-      success: false,
-      error: "This key has expired."
+/* ============================================================
+   VERIFY
+============================================================ */
+
+app.post(
+  "/api/verify",
+  (req, res) => {
+    const suppliedKey =
+      normalizeString(
+        req.body.key
+      );
+
+    const deviceId =
+      normalizeString(
+        req.body.deviceId
+      );
+
+    if (!suppliedKey) {
+      return res.status(400).json({
+        success: false,
+        error: "Key is required."
+      });
+    }
+
+    const keys =
+      readJson(KEYS_FILE, []);
+
+    const keyRecord =
+      keys.find(
+        item =>
+          item.key ===
+          suppliedKey
+      );
+
+    if (!keyRecord) {
+      return res.status(401).json({
+        success: false,
+        error:
+          "Invalid Novi key."
+      });
+    }
+
+    if (
+      keyRecord.expiresAt &&
+      Date.now() >
+        Number(
+          keyRecord.expiresAt
+        )
+    ) {
+      return res.status(401).json({
+        success: false,
+        error:
+          "This key has expired."
+      });
+    }
+
+    const token =
+      createToken();
+
+    sessions.set(token, {
+      key: suppliedKey,
+      deviceId,
+      createdAt: Date.now(),
+      expiresAt:
+        keyRecord.expiresAt ||
+        null
+    });
+
+    res.json({
+      success: true,
+      session: token,
+      token,
+      key: suppliedKey,
+      durationDays:
+        keyRecord.durationDays,
+      expiresAt:
+        keyRecord.expiresAt
     });
   }
+);
 
-  const token = createToken();
+/* ============================================================
+   ADD STOCK
+============================================================ */
 
-  const session = {
-    key: suppliedKey,
-    deviceId,
-    createdAt: Date.now(),
-    expiresAt: keyRecord.expiresAt || null
-  };
-
-  sessions.set(token, session);
-
-  res.json({
-    success: true,
-    session: token,
-    token,
-    key: suppliedKey,
-    durationDays: keyRecord.durationDays,
-    expiresAt: keyRecord.expiresAt
-  });
-});
-
-// ============================================================
-// STOCK ADMIN
-// ============================================================
-
-function addStock(req, res) {
-  const values = extractStockValues(
-    req.body && Object.keys(req.body).length
-      ? req.body
-      : req.body
-  );
+function handleAddStock(req, res) {
+  const values =
+    extractStockValues(
+      req.body
+    );
 
   if (!values.length) {
     return res.status(400).json({
       success: false,
       error:
-        "No valid stock found. Add non-sensitive item/code values."
+        "No valid stock found. Use non-sensitive inventory codes/items."
     });
   }
 
-  const stock = readJson(STOCK_FILE, []);
+  const stock =
+    readJson(
+      STOCK_FILE,
+      []
+    );
 
-  let id = nextStockId(stock);
+  let nextId =
+    getNextStockId(stock);
 
   const created = [];
 
   for (const value of values) {
     const item = {
-      id,
+      id: nextId,
       stock_id: value,
       created_at: Date.now()
     };
@@ -485,10 +626,13 @@ function addStock(req, res) {
     stock.push(item);
     created.push(item);
 
-    id++;
+    nextId++;
   }
 
-  writeJson(STOCK_FILE, stock);
+  writeJson(
+    STOCK_FILE,
+    stock
+  );
 
   res.json({
     success: true,
@@ -498,141 +642,227 @@ function addStock(req, res) {
   });
 }
 
-app.post("/api/stock/add", requireAdmin, addStock);
-app.post("/api/add-stock", requireAdmin, addStock);
-app.post("/api/stock", requireAdmin, addStock);
+app.post(
+  "/api/stock/add",
+  requireAdmin,
+  handleAddStock
+);
 
-// ============================================================
-// STOCK VIEW
-// ============================================================
+app.post(
+  "/api/add-stock",
+  requireAdmin,
+  handleAddStock
+);
 
-app.get("/api/stock/count", requireSession, (req, res) => {
-  const stock = readJson(STOCK_FILE, []);
+app.post(
+  "/api/stock",
+  requireAdmin,
+  handleAddStock
+);
 
-  res.json({
-    success: true,
-    count: stock.length
-  });
-});
+/* ============================================================
+   STOCK COUNT
+============================================================ */
 
-app.get("/api/stock", requireSession, (req, res) => {
-  const stock = readJson(STOCK_FILE, []);
+app.get(
+  "/api/stock/count",
+  requireSession,
+  (req, res) => {
+    const stock =
+      readJson(
+        STOCK_FILE,
+        []
+      );
 
-  res.json({
-    success: true,
-    stock,
-    items: stock,
-    count: stock.length
-  });
-});
+    res.json({
+      success: true,
+      count: stock.length
+    });
+  }
+);
 
-// Admin stock view
-app.get("/api/admin/stock", requireAdmin, (req, res) => {
-  const stock = readJson(STOCK_FILE, []);
+/* ============================================================
+   STOCK LIST
+============================================================ */
 
-  res.json({
-    success: true,
-    stock,
-    count: stock.length
-  });
-});
+app.get(
+  "/api/stock",
+  requireSession,
+  (req, res) => {
+    const stock =
+      readJson(
+        STOCK_FILE,
+        []
+      );
 
-// ============================================================
-// GENERATE STOCK
-// ============================================================
+    res.json({
+      success: true,
+      stock,
+      items: stock,
+      accounts: stock,
+      count: stock.length
+    });
+  }
+);
+
+/* ============================================================
+   ADMIN STOCK
+============================================================ */
+
+app.get(
+  "/api/admin/stock",
+  requireAdmin,
+  (req, res) => {
+    const stock =
+      readJson(
+        STOCK_FILE,
+        []
+      );
+
+    res.json({
+      success: true,
+      stock,
+      count: stock.length
+    });
+  }
+);
+
+/* ============================================================
+   GENERATE STOCK
+============================================================ */
 
 app.post(
   "/api/stock/generate",
   requireSession,
   (req, res) => {
-    const requestedAmount = Number(req.body.amount);
+    let amount =
+      Number(
+        req.body.amount
+      );
 
-    const amount =
-      Number.isFinite(requestedAmount)
-        ? Math.max(
-            1,
-            Math.min(100, Math.floor(requestedAmount))
-          )
-        : 1;
+    if (!Number.isFinite(amount)) {
+      amount = 1;
+    }
 
-    const stock = readJson(STOCK_FILE, []);
+    amount = Math.floor(amount);
+
+    amount =
+      Math.max(
+        1,
+        Math.min(
+          100,
+          amount
+        )
+      );
+
+    const stock =
+      readJson(
+        STOCK_FILE,
+        []
+      );
 
     if (!stock.length) {
       return res.status(404).json({
         success: false,
         error: "Out of stock.",
-        count: 0
+        stockRemaining: 0
       });
     }
 
-    const amountToGenerate = Math.min(
-      amount,
-      stock.length
+    const quantity =
+      Math.min(
+        amount,
+        stock.length
+      );
+
+    const generated =
+      stock.splice(
+        0,
+        quantity
+      );
+
+    writeJson(
+      STOCK_FILE,
+      stock
     );
 
-    const generated = stock.splice(
-      0,
-      amountToGenerate
-    );
-
-    writeJson(STOCK_FILE, stock);
-
-    const items = generated.map(item => ({
-      id: item.id,
-      value: item.stock_id,
-      stock_id: item.stock_id,
-      created_at: item.created_at
-    }));
+    const items =
+      generated.map(item => ({
+        id: item.id,
+        value: item.stock_id,
+        stock_id: item.stock_id,
+        created_at:
+          item.created_at
+      }));
 
     res.json({
       success: true,
       requested: amount,
-      generated: items.length,
+      generated:
+        items.length,
       items,
-      stockRemaining: stock.length
+      stockRemaining:
+        stock.length
     });
   }
 );
 
-// ============================================================
-// SAVED NON-SENSITIVE ITEMS
-// ============================================================
+/* ============================================================
+   SAVED ITEMS
+============================================================ */
 
 app.post(
   "/api/saved-items",
   requireSession,
   (req, res) => {
-    const value = cleanStockValue(
-      req.body.value ||
-      req.body.stock_id ||
-      req.body.item
-    );
+    const value =
+      cleanStockValue(
+        req.body.value ||
+        req.body.stock_id ||
+        req.body.item
+      );
 
     if (!value) {
       return res.status(400).json({
         success: false,
-        error: "Invalid item."
+        error:
+          "Invalid item."
       });
     }
 
-    const saved = readJson(SAVED_FILE, []);
+    const saved =
+      readJson(
+        SAVED_FILE,
+        []
+      );
+
+    const ids =
+      saved
+        .map(item =>
+          Number(item.id)
+        )
+        .filter(Number.isFinite);
+
+    const id =
+      ids.length
+        ? Math.max(...ids) + 1
+        : 1;
 
     const item = {
-      id:
-        saved.length > 0
-          ? Math.max(
-              ...saved.map(x => Number(x.id) || 0)
-            ) + 1
-          : 1,
+      id,
       value,
       device_id:
-        req.noviSession.deviceId || "",
+        req.noviSession
+          .deviceId || "",
       created_at: Date.now()
     };
 
     saved.push(item);
 
-    writeJson(SAVED_FILE, saved);
+    writeJson(
+      SAVED_FILE,
+      saved
+    );
 
     res.json({
       success: true,
@@ -645,16 +875,25 @@ app.get(
   "/api/saved-items",
   requireSession,
   (req, res) => {
-    const saved = readJson(SAVED_FILE, []);
+    const saved =
+      readJson(
+        SAVED_FILE,
+        []
+      );
 
     const deviceId =
       req.query.deviceId ||
-      req.noviSession.deviceId ||
+      req.noviSession
+        .deviceId ||
       "";
 
-    const result = saved.filter(
-      item => !deviceId || item.device_id === deviceId
-    );
+    const result =
+      saved.filter(
+        item =>
+          !deviceId ||
+          item.device_id ===
+            deviceId
+      );
 
     res.json({
       success: true,
@@ -667,24 +906,41 @@ app.delete(
   "/api/saved-items/:id",
   requireSession,
   (req, res) => {
-    const saved = readJson(SAVED_FILE, []);
+    const saved =
+      readJson(
+        SAVED_FILE,
+        []
+      );
 
-    const id = Number(req.params.id);
+    const id =
+      Number(
+        req.params.id
+      );
 
-    const index = saved.findIndex(
-      item => Number(item.id) === id
-    );
+    const index =
+      saved.findIndex(
+        item =>
+          Number(item.id) ===
+          id
+      );
 
     if (index === -1) {
       return res.status(404).json({
         success: false,
-        error: "Saved item not found."
+        error:
+          "Saved item not found."
       });
     }
 
-    saved.splice(index, 1);
+    saved.splice(
+      index,
+      1
+    );
 
-    writeJson(SAVED_FILE, saved);
+    writeJson(
+      SAVED_FILE,
+      saved
+    );
 
     res.json({
       success: true
@@ -692,61 +948,114 @@ app.delete(
   }
 );
 
-// ============================================================
-// LOGOUT
-// ============================================================
+/* ============================================================
+   LOGOUT
+============================================================ */
 
-app.post("/api/logout", requireSession, (req, res) => {
-  sessions.delete(req.noviSessionToken);
+app.post(
+  "/api/logout",
+  requireSession,
+  (req, res) => {
+    sessions.delete(
+      req.noviSessionToken
+    );
 
-  res.json({
-    success: true
-  });
-});
+    res.json({
+      success: true
+    });
+  }
+);
 
-// ============================================================
-// STATIC WEBSITE
-// ============================================================
+/* ============================================================
+   STATIC WEBSITE
+============================================================ */
 
-app.use(express.static(PUBLIC_DIR));
+app.use(
+  express.static(
+    PUBLIC_DIR
+  )
+);
 
-// API 404
-app.use("/api", (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: "API endpoint not found."
-  });
-});
+/* ============================================================
+   API 404
+============================================================ */
 
-// Express 5 catch-all
-app.get("/{*splat}", (req, res) => {
-  res.sendFile(
-    path.join(PUBLIC_DIR, "index.html")
-  );
-});
+app.use(
+  "/api",
+  (req, res) => {
+    res.status(404).json({
+      success: false,
+      error:
+        "API endpoint not found."
+    });
+  }
+);
 
-// ============================================================
-// ERROR HANDLER
-// ============================================================
+/* ============================================================
+   WEBSITE FALLBACK
+============================================================ */
 
-app.use((err, req, res, next) => {
-  console.error(err);
+app.get(
+  "/{*splat}",
+  (req, res) => {
+    res.sendFile(
+      path.join(
+        PUBLIC_DIR,
+        "index.html"
+      )
+    );
+  }
+);
 
-  res.status(500).json({
-    success: false,
-    error: "Internal server error."
-  });
-});
+/* ============================================================
+   ERROR HANDLER
+============================================================ */
 
-// ============================================================
-// START
-// ============================================================
+app.use(
+  (err, req, res, next) => {
+    console.error(
+      "Server error:",
+      err
+    );
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("======================================");
-  console.log("             NOVI ONLINE");
-  console.log("======================================");
-  console.log(`Website running on port ${PORT}`);
-  console.log(`Public directory: ${PUBLIC_DIR}`);
-  console.log("======================================");
-});
+    res.status(500).json({
+      success: false,
+      error:
+        "Internal server error."
+    });
+  }
+);
+
+/* ============================================================
+   START SERVER
+============================================================ */
+
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+    console.log(
+      "======================================"
+    );
+
+    console.log(
+      "             NOVI ONLINE"
+    );
+
+    console.log(
+      "======================================"
+    );
+
+    console.log(
+      `Website running on port ${PORT}`
+    );
+
+    console.log(
+      `Public directory: ${PUBLIC_DIR}`
+    );
+
+    console.log(
+      "======================================"
+    );
+  }
+);
