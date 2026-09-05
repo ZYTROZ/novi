@@ -13,41 +13,119 @@
     }
 
     :root {
-      --bg: #060609;
-      --card: rgba(16, 16, 23, 0.82);
-      --border: rgba(255, 255, 255, 0.08);
+      --bg: #08070d;
+      --card: rgba(24, 21, 34, 0.86);
+      --card-hover: rgba(30, 26, 43, 0.92);
+
+      --border: rgba(255, 255, 255, 0.10);
+      --border-bright: rgba(255, 255, 255, 0.14);
+
       --purple: #8b5cf6;
-      --purple-light: #a78bfa;
+      --purple-light: #b794ff;
+      --purple-bright: #c8adff;
       --purple-dark: #6d28d9;
-      --text: #f7f7fb;
-      --muted: #8f8f9d;
+
+      --text: #faf9ff;
+      --muted: #9995a8;
+      --muted-light: #c2bdce;
+
       --green: #4ade80;
       --red: #f87171;
       --orange: #fbbf24;
     }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       min-height: 100vh;
+
       background:
-        radial-gradient(circle at 50% -10%, rgba(124, 58, 237, .20), transparent 35%),
-        radial-gradient(circle at 0% 100%, rgba(91, 33, 182, .10), transparent 30%),
-        var(--bg);
+        radial-gradient(
+          circle at 50% -12%,
+          rgba(139, 92, 246, 0.30),
+          transparent 38%
+        ),
+        radial-gradient(
+          circle at 100% 25%,
+          rgba(124, 58, 237, 0.13),
+          transparent 30%
+        ),
+        radial-gradient(
+          circle at 0% 100%,
+          rgba(109, 40, 217, 0.15),
+          transparent 35%
+        ),
+        linear-gradient(
+          180deg,
+          #0a0910 0%,
+          #07070b 100%
+        );
+
       color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system,
-        BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
       overflow-x: hidden;
     }
 
     body::before {
       content: "";
+
       position: fixed;
       inset: 0;
+
       pointer-events: none;
+
       background-image:
-        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+        linear-gradient(
+          rgba(255,255,255,.024) 1px,
+          transparent 1px
+        ),
+        linear-gradient(
+          90deg,
+          rgba(255,255,255,.024) 1px,
+          transparent 1px
+        );
+
       background-size: 55px 55px;
-      mask-image: linear-gradient(to bottom, black, transparent 80%);
+
+      mask-image:
+        linear-gradient(
+          to bottom,
+          black 0%,
+          rgba(0,0,0,.5) 60%,
+          transparent 100%
+        );
+    }
+
+    body::after {
+      content: "";
+
+      position: fixed;
+
+      width: 500px;
+      height: 500px;
+
+      top: -300px;
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      background:
+        rgba(139,92,246,.13);
+
+      filter: blur(120px);
+
+      pointer-events: none;
     }
 
     button,
@@ -59,84 +137,137 @@
       cursor: pointer;
     }
 
+    /* =====================================================
+       LOGIN
+    ===================================================== */
+
     #loginPage {
       min-height: 100vh;
+
       display: flex;
+
       align-items: center;
       justify-content: center;
+
       padding: 24px;
     }
 
     .login-wrapper {
       width: 100%;
       max-width: 440px;
+
       position: relative;
     }
 
     .login-glow {
       position: absolute;
-      width: 280px;
-      height: 280px;
+
+      width: 330px;
+      height: 330px;
+
       left: 50%;
       top: 20%;
-      transform: translate(-50%, -50%);
-      background: rgba(124, 58, 237, .17);
-      filter: blur(90px);
+
+      transform:
+        translate(-50%, -50%);
+
+      background:
+        rgba(124,58,237,.23);
+
+      filter: blur(100px);
+
       pointer-events: none;
     }
 
     .login-card {
       position: relative;
-      padding: 42px;
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      background: rgba(12, 12, 17, .88);
-      backdrop-filter: blur(24px);
+
+      padding: 44px;
+
+      border:
+        1px solid rgba(255,255,255,.11);
+
+      border-radius: 26px;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(27,24,39,.95),
+          rgba(12,11,17,.92)
+        );
+
+      backdrop-filter: blur(28px);
+
       box-shadow:
-        0 30px 100px rgba(0,0,0,.45),
-        0 0 60px rgba(124,58,237,.06);
+        0 35px 120px rgba(0,0,0,.55),
+        0 0 70px rgba(124,58,237,.10),
+        inset 0 1px 0 rgba(255,255,255,.06);
     }
 
     .brand {
       text-align: center;
+
       margin-bottom: 34px;
     }
 
     .brand-logo {
-      width: 62px;
-      height: 62px;
-      margin: 0 auto 17px;
-      border-radius: 18px;
+      width: 67px;
+      height: 67px;
+
+      margin:
+        0 auto 18px;
+
+      border-radius: 20px;
+
       display: flex;
+
       align-items: center;
       justify-content: center;
-      font-size: 27px;
+
+      font-size: 29px;
       font-weight: 900;
+
       color: white;
-      background: linear-gradient(145deg, #9f67ff, #6422cf);
+
+      background:
+        linear-gradient(
+          145deg,
+          #b084ff,
+          #6422cf
+        );
+
       box-shadow:
-        0 15px 35px rgba(124,58,237,.3),
-        inset 0 1px 0 rgba(255,255,255,.25);
+        0 18px 42px rgba(124,58,237,.38),
+        0 0 35px rgba(139,92,246,.13),
+        inset 0 1px 0 rgba(255,255,255,.3);
     }
 
     .brand h1 {
-      font-size: 30px;
-      font-weight: 800;
-      letter-spacing: -.8px;
+      font-size: 31px;
+
+      font-weight: 850;
+
+      letter-spacing: -1px;
     }
 
     .brand p {
       margin-top: 8px;
+
       color: var(--muted);
+
       font-size: 14px;
     }
 
     .input-label {
       display: block;
+
       margin-bottom: 9px;
-      color: #d8d8df;
+
+      color: #dedbe8;
+
       font-size: 13px;
-      font-weight: 600;
+
+      font-weight: 650;
     }
 
     .input-wrap {
@@ -145,53 +276,98 @@
 
     .input-wrap input {
       width: 100%;
-      height: 52px;
-      border: 1px solid rgba(255,255,255,.09);
+      height: 53px;
+
+      border:
+        1px solid rgba(255,255,255,.11);
+
       border-radius: 13px;
+
       outline: none;
+
       padding: 0 15px;
+
       color: white;
-      background: rgba(255,255,255,.035);
-      transition: .2s ease;
+
+      background:
+        rgba(255,255,255,.045);
+
+      transition:
+        border .2s ease,
+        box-shadow .2s ease,
+        background .2s ease;
     }
 
     .input-wrap input::placeholder {
-      color: #60606b;
+      color: #686474;
     }
 
     .input-wrap input:focus {
-      border-color: rgba(139,92,246,.75);
-      box-shadow: 0 0 0 4px rgba(139,92,246,.09);
-      background: rgba(255,255,255,.045);
+      border-color:
+        rgba(139,92,246,.8);
+
+      box-shadow:
+        0 0 0 4px rgba(139,92,246,.11),
+        0 0 30px rgba(139,92,246,.08);
+
+      background:
+        rgba(139,92,246,.055);
     }
 
     #unlockButton {
       width: 100%;
-      height: 52px;
+      height: 53px;
+
       margin-top: 14px;
+
       border: 0;
+
       border-radius: 13px;
+
       color: white;
+
       font-weight: 750;
-      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-      box-shadow: 0 12px 30px rgba(109,40,217,.25);
-      transition: .2s ease;
+
+      background:
+        linear-gradient(
+          135deg,
+          #9b6cff,
+          #6d28d9
+        );
+
+      box-shadow:
+        0 14px 35px rgba(109,40,217,.30),
+        0 0 25px rgba(139,92,246,.10);
+
+      transition:
+        transform .2s ease,
+        box-shadow .2s ease;
     }
 
     #unlockButton:hover {
-      transform: translateY(-1px);
+      transform:
+        translateY(-2px);
+
+      box-shadow:
+        0 18px 42px rgba(109,40,217,.38),
+        0 0 30px rgba(139,92,246,.16);
     }
 
     #unlockButton:disabled {
       opacity: .6;
+
       cursor: not-allowed;
+
       transform: none;
     }
 
     #verifyResult {
       min-height: 22px;
+
       margin-top: 14px;
+
       text-align: center;
+
       font-size: 13px;
     }
 
@@ -203,248 +379,758 @@
       color: var(--red);
     }
 
+    /* =====================================================
+       DASHBOARD
+    ===================================================== */
+
     #dashboardPage {
       display: none;
+
       min-height: 100vh;
+
+      animation:
+        dashboardEnter .45s ease both;
     }
 
     .dashboard-container {
-      width: min(1120px, calc(100% - 32px));
+      width:
+        min(
+          1160px,
+          calc(100% - 34px)
+        );
+
       margin: 0 auto;
-      padding: 26px 0 70px;
+
+      padding:
+        26px
+        0
+        80px;
     }
 
+    @keyframes dashboardEnter {
+      from {
+        opacity: 0;
+
+        transform:
+          translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+
+        transform:
+          translateY(0);
+      }
+    }
+
+    /* =====================================================
+       TOPBAR
+    ===================================================== */
+
     .topbar {
-      height: 64px;
+      height: 66px;
+
       display: flex;
+
       align-items: center;
       justify-content: space-between;
-      padding: 0 18px;
-      margin-bottom: 34px;
-      border: 1px solid var(--border);
-      border-radius: 17px;
-      background: rgba(13,13,18,.78);
-      backdrop-filter: blur(20px);
+
+      padding:
+        0 18px;
+
+      margin-bottom: 38px;
+
+      border:
+        1px solid rgba(255,255,255,.10);
+
+      border-radius: 18px;
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(30,26,43,.91),
+          rgba(13,12,19,.84)
+        );
+
+      backdrop-filter: blur(24px);
+
+      box-shadow:
+        0 20px 65px rgba(0,0,0,.27),
+        inset 0 1px 0 rgba(255,255,255,.05);
+
+      position: relative;
+
+      overflow: hidden;
+    }
+
+    .topbar::before {
+      content: "";
+
+      position: absolute;
+
+      left: 0;
+      top: 0;
+
+      width: 100%;
+      height: 1px;
+
+      background:
+        linear-gradient(
+          90deg,
+          transparent,
+          rgba(167,139,250,.75),
+          transparent
+        );
+
+      opacity: .55;
     }
 
     .topbar-brand {
       display: flex;
+
       align-items: center;
+
       gap: 11px;
+
+      font-size: 15px;
+
       font-weight: 800;
     }
 
     .small-logo {
-      width: 35px;
-      height: 35px;
+      width: 37px;
+      height: 37px;
+
       display: flex;
+
       align-items: center;
       justify-content: center;
-      border-radius: 10px;
+
+      border-radius: 11px;
+
       font-size: 15px;
+
       font-weight: 900;
-      background: linear-gradient(145deg, #9f67ff, #6422cf);
+
+      background:
+        linear-gradient(
+          145deg,
+          #a879ff,
+          #6422cf
+        );
+
+      box-shadow:
+        0 8px 22px rgba(124,58,237,.32),
+        inset 0 1px 0 rgba(255,255,255,.25);
     }
 
     #logoutButton {
-      border: 1px solid rgba(255,255,255,.08);
+      border:
+        1px solid rgba(255,255,255,.09);
+
       border-radius: 10px;
-      padding: 9px 14px;
-      color: #c7c7d0;
-      background: rgba(255,255,255,.035);
+
+      padding:
+        9px 15px;
+
+      color: #c9c5d5;
+
+      background:
+        rgba(255,255,255,.04);
+
+      transition:
+        .2s ease;
     }
 
+    #logoutButton:hover {
+      color: white;
+
+      border-color:
+        rgba(248,113,113,.27);
+
+      background:
+        rgba(248,113,113,.07);
+    }
+
+    /* =====================================================
+       WELCOME
+    ===================================================== */
+
     .welcome {
-      margin-bottom: 25px;
+      margin-bottom: 27px;
+
+      position: relative;
     }
 
     .welcome h1 {
-      font-size: clamp(27px, 4vw, 38px);
-      letter-spacing: -1.1px;
+      font-size:
+        clamp(30px, 4vw, 43px);
+
+      letter-spacing:
+        -1.6px;
+
+      font-weight: 850;
+
+      background:
+        linear-gradient(
+          135deg,
+          #ffffff 20%,
+          #c9b5ff 100%
+        );
+
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .welcome p {
       color: var(--muted);
-      margin-top: 7px;
+
+      margin-top: 8px;
+
       font-size: 14px;
     }
 
+    /* =====================================================
+       STATS
+    ===================================================== */
+
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
+
+      grid-template-columns:
+        repeat(4, 1fr);
+
+      gap: 15px;
+
       margin-bottom: 18px;
     }
 
     .stat-card {
       position: relative;
+
       overflow: hidden;
-      padding: 21px;
-      border: 1px solid var(--border);
-      border-radius: 17px;
-      background: var(--card);
-      backdrop-filter: blur(16px);
+
+      min-height: 128px;
+
+      padding: 22px;
+
+      border:
+        1px solid rgba(255,255,255,.09);
+
+      border-radius: 19px;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(29,25,42,.91),
+          rgba(17,16,24,.84)
+        );
+
+      backdrop-filter: blur(18px);
+
+      box-shadow:
+        0 15px 50px rgba(0,0,0,.21),
+        inset 0 1px 0 rgba(255,255,255,.035);
+
+      transition:
+        transform .22s ease,
+        border .22s ease,
+        box-shadow .22s ease;
+    }
+
+    .stat-card::before {
+      content: "";
+
+      position: absolute;
+
+      width: 130px;
+      height: 130px;
+
+      right: -65px;
+      top: -65px;
+
+      background:
+        rgba(139,92,246,.18);
+
+      filter: blur(35px);
+
+      pointer-events: none;
+    }
+
+    .stat-card::after {
+      content: "";
+
+      position: absolute;
+
+      left: 0;
+      top: 0;
+
+      width: 100%;
+      height: 1px;
+
+      background:
+        linear-gradient(
+          90deg,
+          transparent,
+          rgba(255,255,255,.08),
+          transparent
+        );
+    }
+
+    .stat-card:hover {
+      transform:
+        translateY(-3px);
+
+      border-color:
+        rgba(139,92,246,.24);
+
+      box-shadow:
+        0 22px 60px rgba(0,0,0,.30),
+        0 0 28px rgba(139,92,246,.07);
     }
 
     .stat-label {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 600;
-      margin-bottom: 9px;
+      color: #9995a8;
+
+      font-size: 11px;
+
+      font-weight: 700;
+
+      margin-bottom: 11px;
+
+      text-transform: uppercase;
+
+      letter-spacing: .65px;
     }
 
     .stat-value {
-      font-size: 23px;
-      font-weight: 800;
-      letter-spacing: -.4px;
+      font-size: 26px;
+
+      font-weight: 850;
+
+      letter-spacing: -.7px;
+
+      color: #faf9ff;
+    }
+
+    #stockCount {
+      color: #c7aaff;
+
+      text-shadow:
+        0 0 25px rgba(139,92,246,.20);
+    }
+
+    #keyDuration {
+      color: #eeeaff;
     }
 
     #keyExpiration {
-      color: var(--purple-light);
-      font-variant-numeric: tabular-nums;
+      color:
+        var(--purple-bright);
+
+      font-variant-numeric:
+        tabular-nums;
+
       white-space: nowrap;
+
       font-size: 20px;
     }
 
     #keyExpiration.expiring {
-      color: var(--orange);
+      color:
+        var(--orange);
+
+      text-shadow:
+        0 0 20px rgba(251,191,36,.15);
     }
 
     #keyExpiration.expired {
-      color: var(--red);
+      color:
+        var(--red);
     }
+
+    #accountStatus {
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 8px;
+
+      color:
+        var(--green);
+
+      font-size: 20px;
+    }
+
+    #accountStatus::before {
+      content: "";
+
+      width: 8px;
+      height: 8px;
+
+      flex-shrink: 0;
+
+      border-radius: 50%;
+
+      background:
+        var(--green);
+
+      box-shadow:
+        0 0 13px rgba(74,222,128,.75);
+    }
+
+    /* =====================================================
+       MAIN CARDS
+    ===================================================== */
 
     .main-card {
       margin-top: 18px;
-      border: 1px solid var(--border);
-      border-radius: 19px;
+
+      border:
+        1px solid rgba(255,255,255,.09);
+
+      border-radius: 20px;
+
       overflow: hidden;
-      background: var(--card);
-      backdrop-filter: blur(20px);
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(28,24,40,.91),
+          rgba(15,14,21,.86)
+        );
+
+      backdrop-filter: blur(22px);
+
+      box-shadow:
+        0 20px 70px rgba(0,0,0,.24),
+        inset 0 1px 0 rgba(255,255,255,.035);
+
+      transition:
+        border .2s ease;
+    }
+
+    .main-card:hover {
+      border-color:
+        rgba(255,255,255,.12);
     }
 
     .card-header {
       display: flex;
+
       align-items: center;
       justify-content: space-between;
+
       gap: 15px;
-      padding: 20px 22px;
-      border-bottom: 1px solid rgba(255,255,255,.06);
+
+      padding:
+        22px 23px;
+
+      border-bottom:
+        1px solid rgba(255,255,255,.065);
+
+      background:
+        rgba(255,255,255,.012);
     }
 
     .card-title h2 {
-      font-size: 16px;
-      font-weight: 750;
+      font-size: 17px;
+
+      font-weight: 800;
+
+      letter-spacing: -.25px;
     }
 
     .card-title p {
       color: var(--muted);
+
       font-size: 12px;
-      margin-top: 4px;
+
+      margin-top: 5px;
     }
+
+    /* =====================================================
+       GENERATE BUTTON
+    ===================================================== */
 
     #generateButton {
       border: 0;
+
       border-radius: 11px;
-      padding: 11px 17px;
+
+      padding:
+        12px 19px;
+
       color: white;
+
       font-size: 13px;
+
       font-weight: 750;
-      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+
+      background:
+        linear-gradient(
+          135deg,
+          #9a6aff,
+          #6d28d9
+        );
+
       white-space: nowrap;
+
+      box-shadow:
+        0 11px 30px rgba(109,40,217,.28);
+
+      transition:
+        transform .2s ease,
+        box-shadow .2s ease,
+        opacity .2s ease;
+    }
+
+    #generateButton:hover:not(:disabled) {
+      transform:
+        translateY(-2px);
+
+      box-shadow:
+        0 15px 38px rgba(109,40,217,.40),
+        0 0 28px rgba(139,92,246,.12);
+    }
+
+    #generateButton:active:not(:disabled) {
+      transform:
+        translateY(0);
     }
 
     #generateButton:disabled {
-      opacity: .55;
+      opacity: .5;
+
       cursor: not-allowed;
     }
 
+    /* =====================================================
+       INVENTORY
+    ===================================================== */
+
     #inventoryResult {
-      padding: 20px 22px;
+      padding:
+        21px 23px;
     }
 
     .empty-state {
-      padding: 34px 15px;
+      padding:
+        40px 15px;
+
       text-align: center;
-      color: #777783;
+
+      color:
+        #777384;
+
       font-size: 13px;
     }
 
     .inventory-item {
-      border: 1px solid rgba(255,255,255,.07);
-      border-radius: 15px;
-      background: rgba(255,255,255,.025);
+      border:
+        1px solid rgba(139,92,246,.20);
+
+      border-radius: 16px;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(139,92,246,.075),
+          rgba(255,255,255,.018)
+        );
+
       overflow: hidden;
+
+      box-shadow:
+        0 12px 40px rgba(0,0,0,.17);
+
+      animation:
+        inventoryEnter .3s ease both;
+    }
+
+    @keyframes inventoryEnter {
+      from {
+        opacity: 0;
+
+        transform:
+          translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+
+        transform:
+          translateY(0);
+      }
     }
 
     .inventory-row {
       display: flex;
+
       align-items: center;
       justify-content: space-between;
+
       gap: 15px;
-      padding: 15px 17px;
-      border-bottom: 1px solid rgba(255,255,255,.055);
+
+      padding:
+        17px 18px;
+
+      border-bottom:
+        1px solid rgba(255,255,255,.055);
     }
 
     .inventory-label {
-      color: #777783;
+      color:
+        #817b91;
+
       font-size: 11px;
+
       text-transform: uppercase;
-      letter-spacing: .7px;
-      font-weight: 700;
+
+      letter-spacing: .8px;
+
+      font-weight: 750;
     }
 
     .inventory-value {
       max-width: 75%;
-      color: #eeeef3;
+
+      color:
+        #f1eff7;
+
       font-size: 13px;
+
       word-break: break-all;
+
       text-align: right;
     }
 
     .inventory-actions {
       display: flex;
+
       gap: 9px;
-      padding: 14px 17px;
+
+      padding:
+        15px 18px;
+
+      background:
+        rgba(255,255,255,.015);
     }
 
     .action-btn {
-      border: 1px solid rgba(255,255,255,.08);
+      border:
+        1px solid rgba(255,255,255,.085);
+
       border-radius: 9px;
-      padding: 9px 12px;
-      color: #d5d5dc;
-      background: rgba(255,255,255,.035);
+
+      padding:
+        9px 13px;
+
+      color:
+        #d2cedc;
+
+      background:
+        rgba(255,255,255,.04);
+
       font-size: 12px;
+
       font-weight: 650;
+
+      transition:
+        .2s ease;
+    }
+
+    .action-btn:hover {
+      color: white;
+
+      border-color:
+        rgba(255,255,255,.15);
+
+      background:
+        rgba(255,255,255,.065);
+
+      transform:
+        translateY(-1px);
     }
 
     .action-btn.primary {
-      border-color: rgba(139,92,246,.28);
-      color: #c4a7ff;
-      background: rgba(139,92,246,.09);
+      border-color:
+        rgba(139,92,246,.32);
+
+      color:
+        #c8aeff;
+
+      background:
+        rgba(139,92,246,.11);
+    }
+
+    .action-btn.primary:hover {
+      border-color:
+        rgba(139,92,246,.50);
+
+      background:
+        rgba(139,92,246,.17);
+
+      box-shadow:
+        0 0 22px rgba(139,92,246,.08);
     }
 
     .dashboard-message {
       min-height: 20px;
-      padding: 0 22px 18px;
+
+      padding:
+        0 23px
+        18px;
+
       font-size: 13px;
     }
 
+    /* =====================================================
+       SAVED LOGINS
+    ===================================================== */
+
     .saved-login-list {
       display: grid;
+
       gap: 10px;
-      padding: 20px 22px;
+
+      padding:
+        21px 23px;
     }
 
     .saved-login {
       display: flex;
+
       align-items: center;
       justify-content: space-between;
+
       gap: 15px;
-      padding: 15px;
-      border: 1px solid rgba(255,255,255,.065);
-      border-radius: 13px;
-      background: rgba(255,255,255,.025);
+
+      padding: 16px;
+
+      border:
+        1px solid rgba(255,255,255,.07);
+
+      border-radius: 14px;
+
+      background:
+        rgba(255,255,255,.025);
+
+      transition:
+        transform .2s ease,
+        border .2s ease,
+        background .2s ease;
+    }
+
+    .saved-login:hover {
+      transform:
+        translateY(-2px);
+
+      border-color:
+        rgba(139,92,246,.20);
+
+      background:
+        rgba(139,92,246,.04);
     }
 
     .saved-info {
@@ -452,61 +1138,151 @@
     }
 
     .saved-email {
-      color: #f0f0f5;
+      color:
+        #f0eef6;
+
       font-size: 13px;
-      font-weight: 650;
+
+      font-weight: 700;
+
       word-break: break-all;
     }
 
     .saved-date {
-      color: #686874;
+      color:
+        #706b7d;
+
       font-size: 11px;
-      margin-top: 4px;
+
+      margin-top: 5px;
     }
 
     .saved-actions {
       display: flex;
+
       gap: 7px;
+
       flex-shrink: 0;
     }
 
     .saved-actions button {
-      border: 1px solid rgba(255,255,255,.08);
+      border:
+        1px solid rgba(255,255,255,.08);
+
       border-radius: 8px;
-      padding: 8px 10px;
-      color: #aaaab5;
-      background: rgba(255,255,255,.035);
+
+      padding:
+        8px 11px;
+
+      color:
+        #aaa5b7;
+
+      background:
+        rgba(255,255,255,.035);
+
       font-size: 11px;
+
+      transition:
+        .2s ease;
     }
+
+    .saved-actions button:hover {
+      color: white;
+
+      background:
+        rgba(255,255,255,.065);
+    }
+
+    .saved-actions .delete-btn:hover {
+      color:
+        #ff9b9b;
+
+      border-color:
+        rgba(248,113,113,.22);
+
+      background:
+        rgba(248,113,113,.06);
+    }
+
+    /* =====================================================
+       MODAL
+    ===================================================== */
 
     .modal-overlay {
       position: fixed;
+
       inset: 0;
+
       z-index: 100;
+
       display: none;
+
       align-items: center;
       justify-content: center;
+
       padding: 20px;
-      background: rgba(0,0,0,.7);
-      backdrop-filter: blur(9px);
+
+      background:
+        rgba(3,2,7,.76);
+
+      backdrop-filter:
+        blur(12px);
     }
 
     .modal {
-      width: min(430px, 100%);
-      border: 1px solid rgba(255,255,255,.09);
-      border-radius: 19px;
-      padding: 24px;
-      background: #101016;
-      box-shadow: 0 30px 100px rgba(0,0,0,.55);
+      width:
+        min(430px, 100%);
+
+      border:
+        1px solid rgba(255,255,255,.10);
+
+      border-radius: 20px;
+
+      padding: 25px;
+
+      background:
+        linear-gradient(
+          145deg,
+          #1b1825,
+          #101016
+        );
+
+      box-shadow:
+        0 35px 120px rgba(0,0,0,.65),
+        0 0 50px rgba(139,92,246,.08);
+
+      animation:
+        modalEnter .25s ease both;
+    }
+
+    @keyframes modalEnter {
+      from {
+        opacity: 0;
+
+        transform:
+          scale(.97)
+          translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+
+        transform:
+          scale(1)
+          translateY(0);
+      }
     }
 
     .modal h3 {
-      font-size: 18px;
+      font-size: 19px;
     }
 
     .modal p {
-      color: var(--muted);
+      color:
+        var(--muted);
+
       font-size: 12px;
+
       margin-top: 6px;
     }
 
@@ -516,93 +1292,164 @@
 
     .modal-field label {
       display: block;
+
       margin-bottom: 7px;
-      color: #c8c8d0;
+
+      color:
+        #c9c4d5;
+
       font-size: 12px;
+
       font-weight: 650;
     }
 
     .modal-field input {
       width: 100%;
       height: 46px;
-      border: 1px solid rgba(255,255,255,.08);
+
+      border:
+        1px solid rgba(255,255,255,.08);
+
       border-radius: 10px;
+
       outline: none;
-      padding: 0 12px;
+
+      padding:
+        0 12px;
+
       color: white;
-      background: rgba(255,255,255,.035);
+
+      background:
+        rgba(255,255,255,.04);
     }
 
     .modal-buttons {
       display: flex;
+
       gap: 9px;
+
       margin-top: 20px;
     }
 
     .modal-buttons button {
       flex: 1;
+
       height: 45px;
+
       border-radius: 10px;
+
       font-size: 12px;
+
       font-weight: 700;
     }
 
     #cancelSaveButton {
-      border: 1px solid rgba(255,255,255,.08);
-      color: #aaaab4;
-      background: rgba(255,255,255,.035);
+      border:
+        1px solid rgba(255,255,255,.08);
+
+      color:
+        #aaaab4;
+
+      background:
+        rgba(255,255,255,.035);
     }
 
     #confirmSaveButton {
       border: 0;
+
       color: white;
-      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+
+      background:
+        linear-gradient(
+          135deg,
+          #9868ff,
+          #6d28d9
+        );
+
+      box-shadow:
+        0 8px 25px rgba(109,40,217,.22);
     }
+
+    /* =====================================================
+       LOADING
+    ===================================================== */
 
     .loading {
       display: inline-flex;
+
       align-items: center;
+
       gap: 8px;
     }
 
     .spinner {
       width: 14px;
       height: 14px;
-      border: 2px solid rgba(255,255,255,.25);
-      border-top-color: white;
+
+      border:
+        2px solid rgba(255,255,255,.25);
+
+      border-top-color:
+        white;
+
       border-radius: 50%;
-      animation: spin .7s linear infinite;
+
+      animation:
+        spin .7s linear infinite;
     }
 
     @keyframes spin {
       to {
-        transform: rotate(360deg);
+        transform:
+          rotate(360deg);
       }
     }
 
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
     @media (max-width: 900px) {
+
       .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns:
+          repeat(2, 1fr);
       }
     }
 
     @media (max-width: 700px) {
-      .login-card {
-        padding: 30px 22px;
-      }
 
-      .stats-grid {
-        grid-template-columns: 1fr;
+      .login-card {
+        padding:
+          30px 22px;
       }
 
       .dashboard-container {
-        width: min(100% - 20px, 1120px);
+        width:
+          calc(100% - 20px);
+
         padding-top: 10px;
       }
 
+      .topbar {
+        margin-bottom: 28px;
+      }
+
+      .welcome h1 {
+        font-size: 31px;
+      }
+
+      .stats-grid {
+        grid-template-columns:
+          1fr;
+      }
+
       .card-header {
-        align-items: flex-start;
-        flex-direction: column;
+        align-items:
+          flex-start;
+
+        flex-direction:
+          column;
       }
 
       #generateButton {
@@ -610,18 +1457,26 @@
       }
 
       .inventory-row {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 6px;
+        align-items:
+          flex-start;
+
+        flex-direction:
+          column;
+
+        gap: 7px;
       }
 
       .inventory-value {
-        max-width: 100%;
-        text-align: left;
+        max-width:
+          100%;
+
+        text-align:
+          left;
       }
 
       .inventory-actions {
-        flex-wrap: wrap;
+        flex-wrap:
+          wrap;
       }
 
       .action-btn {
@@ -629,8 +1484,11 @@
       }
 
       .saved-login {
-        align-items: flex-start;
-        flex-direction: column;
+        align-items:
+          flex-start;
+
+        flex-direction:
+          column;
       }
 
       .saved-actions {
@@ -641,33 +1499,86 @@
         flex: 1;
       }
     }
+
+    @media (max-width: 420px) {
+
+      .dashboard-container {
+        width:
+          calc(100% - 16px);
+      }
+
+      .topbar {
+        padding:
+          0 13px;
+      }
+
+      .stat-card {
+        padding: 18px;
+      }
+
+      .main-card {
+        border-radius: 17px;
+      }
+
+      .card-header,
+      #inventoryResult,
+      .saved-login-list {
+        padding-left: 17px;
+        padding-right: 17px;
+      }
+
+      .dashboard-message {
+        padding-left: 17px;
+        padding-right: 17px;
+      }
+    }
   </style>
 </head>
 
 <body>
 
+<!-- =========================================================
+     LOGIN PAGE
+========================================================= -->
+
 <section id="loginPage">
+
   <div class="login-wrapper">
+
     <div class="login-glow"></div>
 
     <div class="login-card">
+
       <div class="brand">
-        <div class="brand-logo">N</div>
+
+        <div class="brand-logo">
+          N
+        </div>
+
         <h1>Novi</h1>
-        <p>Enter your access key to continue</p>
+
+        <p>
+          Enter your access key to continue
+        </p>
+
       </div>
 
-      <label class="input-label" for="keyInput">
+      <label
+        class="input-label"
+        for="keyInput"
+      >
         Access Key
       </label>
 
       <div class="input-wrap">
+
         <input
           id="keyInput"
           type="text"
           autocomplete="off"
-          placeholder="Novi-XXXXXX-XXXXXX-XXXXXX"
+          placeholder="NOVI-XXXX-XXXX-XXXX-XXXX"
         >
+
       </div>
 
       <button id="unlockButton">
@@ -675,61 +1586,146 @@
       </button>
 
       <div id="verifyResult"></div>
+
     </div>
+
   </div>
+
 </section>
+
+
+<!-- =========================================================
+     DASHBOARD
+========================================================= -->
 
 <section id="dashboardPage">
 
   <div class="dashboard-container">
 
+    <!-- TOPBAR -->
+
     <header class="topbar">
+
       <div class="topbar-brand">
-        <div class="small-logo">N</div>
-        <span>Novi</span>
+
+        <div class="small-logo">
+          N
+        </div>
+
+        <span>
+          Novi
+        </span>
+
       </div>
 
       <button id="logoutButton">
         Logout
       </button>
+
     </header>
 
+
+    <!-- WELCOME -->
+
     <div class="welcome">
-      <h1>Dashboard</h1>
-      <p>Manage your inventory and saved logins.</p>
+
+      <h1>
+        Dashboard
+      </h1>
+
+      <p>
+        Manage your inventory and saved logins.
+      </p>
+
     </div>
+
+
+    <!-- STATS -->
 
     <div class="stats-grid">
 
       <div class="stat-card">
-        <div class="stat-label">Available Stock</div>
-        <div class="stat-value" id="stockCount">—</div>
+
+        <div class="stat-label">
+          Available Stock
+        </div>
+
+        <div
+          class="stat-value"
+          id="stockCount"
+        >
+          —
+        </div>
+
       </div>
 
-      <div class="stat-card">
-        <div class="stat-label">Key Duration</div>
-        <div class="stat-value" id="keyDuration">—</div>
-      </div>
 
       <div class="stat-card">
-        <div class="stat-label">Time Remaining</div>
-        <div class="stat-value" id="keyExpiration">—</div>
+
+        <div class="stat-label">
+          Key Duration
+        </div>
+
+        <div
+          class="stat-value"
+          id="keyDuration"
+        >
+          —
+        </div>
+
       </div>
 
+
       <div class="stat-card">
-        <div class="stat-label">Account Status</div>
-        <div class="stat-value" id="accountStatus">Active</div>
+
+        <div class="stat-label">
+          Time Remaining
+        </div>
+
+        <div
+          class="stat-value"
+          id="keyExpiration"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="stat-card">
+
+        <div class="stat-label">
+          Account Status
+        </div>
+
+        <div
+          class="stat-value"
+          id="accountStatus"
+        >
+          Active
+        </div>
+
       </div>
 
     </div>
+
+
+    <!-- INVENTORY -->
 
     <div class="main-card">
 
       <div class="card-header">
 
         <div class="card-title">
-          <h2>Inventory</h2>
-          <p>Generate an account from the available stock.</p>
+
+          <h2>
+            Inventory
+          </h2>
+
+          <p>
+            Generate an account from available stock.
+          </p>
+
         </div>
 
         <button id="generateButton">
@@ -739,30 +1735,44 @@
       </div>
 
       <div id="inventoryResult">
+
         <div class="empty-state">
           No account generated yet.
         </div>
+
       </div>
 
       <div id="dashboardMessage"></div>
 
     </div>
 
+
+    <!-- SAVED LOGINS -->
+
     <div class="main-card">
 
       <div class="card-header">
 
         <div class="card-title">
-          <h2>Saved Logins</h2>
-          <p>Logins saved to your Novi account.</p>
+
+          <h2>
+            Saved Logins
+          </h2>
+
+          <p>
+            Logins saved to your Novi account.
+          </p>
+
         </div>
 
       </div>
 
       <div id="savedLoginResult">
+
         <div class="empty-state">
           No saved logins.
         </div>
+
       </div>
 
     </div>
@@ -771,27 +1781,56 @@
 
 </section>
 
-<div class="modal-overlay" id="saveModal">
+
+<!-- =========================================================
+     SAVE MODAL
+========================================================= -->
+
+<div
+  class="modal-overlay"
+  id="saveModal"
+>
 
   <div class="modal">
 
-    <h3>Save Login</h3>
+    <h3>
+      Save Login
+    </h3>
 
     <p>
       Save this generated login to your Novi account.
     </p>
 
     <div class="modal-field">
-      <label>Email</label>
-      <input id="saveEmail" type="text" readonly>
+
+      <label>
+        Email
+      </label>
+
+      <input
+        id="saveEmail"
+        type="text"
+        readonly
+      >
+
     </div>
 
     <div class="modal-field">
-      <label>Password</label>
-      <input id="savePassword" type="password" readonly>
+
+      <label>
+        Password
+      </label>
+
+      <input
+        id="savePassword"
+        type="password"
+        readonly
+      >
+
     </div>
 
     <div class="modal-buttons">
+
       <button id="cancelSaveButton">
         Cancel
       </button>
@@ -799,11 +1838,13 @@
       <button id="confirmSaveButton">
         Save Login
       </button>
+
     </div>
 
   </div>
 
 </div>
+
 
 <script>
 "use strict";
@@ -812,87 +1853,143 @@
    CONFIG
 ========================================================= */
 
-const API_URL = "https://novi-1.onrender.com";
+const API_URL =
+  "https://novi-1.onrender.com";
 
-const SESSION_KEY = "noviSessionToken";
-const DEVICE_KEY = "noviDeviceId";
-const EXPIRATION_KEY = "noviKeyExpiration";
-const DURATION_KEY = "noviKeyDuration";
+const SESSION_KEY =
+  "noviSessionToken";
+
+const DEVICE_KEY =
+  "noviDeviceId";
+
+const EXPIRATION_KEY =
+  "noviKeyExpiration";
+
+const DURATION_KEY =
+  "noviKeyDuration";
+
 
 /* =========================================================
    STATE
 ========================================================= */
 
 let currentSession =
-  sessionStorage.getItem(SESSION_KEY) || "";
+  sessionStorage.getItem(
+    SESSION_KEY
+  ) || "";
 
-let currentGeneratedLogin = null;
+let currentGeneratedLogin =
+  null;
 
-let expirationTimer = null;
-let stockRefreshTimer = null;
+let expirationTimer =
+  null;
 
-let isGenerating = false;
+let stockRefreshTimer =
+  null;
+
+let isGenerating =
+  false;
+
 
 /* =========================================================
    ELEMENTS
 ========================================================= */
 
 const loginPage =
-  document.getElementById("loginPage");
+  document.getElementById(
+    "loginPage"
+  );
 
 const dashboardPage =
-  document.getElementById("dashboardPage");
+  document.getElementById(
+    "dashboardPage"
+  );
 
 const keyInput =
-  document.getElementById("keyInput");
+  document.getElementById(
+    "keyInput"
+  );
 
 const unlockButton =
-  document.getElementById("unlockButton");
+  document.getElementById(
+    "unlockButton"
+  );
 
 const verifyResult =
-  document.getElementById("verifyResult");
+  document.getElementById(
+    "verifyResult"
+  );
 
 const logoutButton =
-  document.getElementById("logoutButton");
+  document.getElementById(
+    "logoutButton"
+  );
 
 const stockCount =
-  document.getElementById("stockCount");
+  document.getElementById(
+    "stockCount"
+  );
 
 const keyDuration =
-  document.getElementById("keyDuration");
+  document.getElementById(
+    "keyDuration"
+  );
 
 const keyExpiration =
-  document.getElementById("keyExpiration");
+  document.getElementById(
+    "keyExpiration"
+  );
 
 const accountStatus =
-  document.getElementById("accountStatus");
+  document.getElementById(
+    "accountStatus"
+  );
 
 const generateButton =
-  document.getElementById("generateButton");
+  document.getElementById(
+    "generateButton"
+  );
 
 const inventoryResult =
-  document.getElementById("inventoryResult");
+  document.getElementById(
+    "inventoryResult"
+  );
 
 const dashboardMessage =
-  document.getElementById("dashboardMessage");
+  document.getElementById(
+    "dashboardMessage"
+  );
 
 const savedLoginResult =
-  document.getElementById("savedLoginResult");
+  document.getElementById(
+    "savedLoginResult"
+  );
 
 const saveModal =
-  document.getElementById("saveModal");
+  document.getElementById(
+    "saveModal"
+  );
 
 const saveEmail =
-  document.getElementById("saveEmail");
+  document.getElementById(
+    "saveEmail"
+  );
 
 const savePassword =
-  document.getElementById("savePassword");
+  document.getElementById(
+    "savePassword"
+  );
 
 const cancelSaveButton =
-  document.getElementById("cancelSaveButton");
+  document.getElementById(
+    "cancelSaveButton"
+  );
 
 const confirmSaveButton =
-  document.getElementById("confirmSaveButton");
+  document.getElementById(
+    "confirmSaveButton"
+  );
+
 
 /* =========================================================
    DEVICE ID
@@ -901,19 +1998,28 @@ const confirmSaveButton =
 function getDeviceId() {
 
   let deviceId =
-    localStorage.getItem(DEVICE_KEY);
+    localStorage.getItem(
+      DEVICE_KEY
+    );
 
   if (!deviceId) {
 
     if (
       window.crypto &&
-      typeof crypto.randomUUID === "function"
+      typeof crypto.randomUUID ===
+        "function"
     ) {
-      deviceId = crypto.randomUUID();
+
+      deviceId =
+        crypto.randomUUID();
+
     } else {
+
       deviceId =
         Date.now().toString(36) +
-        Math.random().toString(36).slice(2);
+        Math.random()
+          .toString(36)
+          .slice(2);
     }
 
     localStorage.setItem(
@@ -925,11 +2031,14 @@ function getDeviceId() {
   return deviceId;
 }
 
+
 /* =========================================================
    API HELPERS
 ========================================================= */
 
-async function parseResponse(response) {
+async function parseResponse(
+  response
+) {
 
   const text =
     await response.text();
@@ -939,8 +2048,13 @@ async function parseResponse(response) {
   }
 
   try {
-    return JSON.parse(text);
+
+    return JSON.parse(
+      text
+    );
+
   } catch {
+
     return {
       success: false,
       error: text
@@ -948,20 +2062,25 @@ async function parseResponse(response) {
   }
 }
 
+
 async function authenticatedFetch(
   url,
   options = {}
 ) {
 
   if (!currentSession) {
+
     throw new Error(
       "Your session has expired."
     );
   }
 
   const headers = {
+
     ...(options.headers || {}),
-    "x-novi-session": currentSession
+
+    "x-novi-session":
+      currentSession
   };
 
   return fetch(
@@ -973,7 +2092,10 @@ async function authenticatedFetch(
   );
 }
 
-function isSessionError(result) {
+
+function isSessionError(
+  result
+) {
 
   const message =
     String(
@@ -988,6 +2110,7 @@ function isSessionError(result) {
     message.includes("invalid")
   );
 }
+
 
 /* =========================================================
    VERIFY
@@ -1008,7 +2131,8 @@ async function unlock() {
     return;
   }
 
-  unlockButton.disabled = true;
+  unlockButton.disabled =
+    true;
 
   unlockButton.innerHTML = `
     <span class="loading">
@@ -1030,15 +2154,19 @@ async function unlock() {
               "application/json"
           },
 
-          body: JSON.stringify({
-            key,
-            deviceId: getDeviceId()
-          })
+          body:
+            JSON.stringify({
+              key,
+              deviceId:
+                getDeviceId()
+            })
         }
       );
 
     const result =
-      await parseResponse(response);
+      await parseResponse(
+        response
+      );
 
     if (
       !response.ok ||
@@ -1096,7 +2224,9 @@ async function unlock() {
     }
 
     keyDuration.textContent =
-      formatDuration(duration);
+      formatDuration(
+        duration
+      );
 
     accountStatus.textContent =
       "Active";
@@ -1111,15 +2241,19 @@ async function unlock() {
     dashboardPage.style.display =
       "block";
 
-    verifyResult.textContent = "";
+    verifyResult.textContent =
+      "";
 
     await loadStock();
+
     startLiveStock();
+
     await loadSavedLogins();
 
   } catch (error) {
 
-    currentSession = "";
+    currentSession =
+      "";
 
     sessionStorage.removeItem(
       SESSION_KEY
@@ -1141,11 +2275,14 @@ async function unlock() {
 
   } finally {
 
-    unlockButton.disabled = false;
+    unlockButton.disabled =
+      false;
+
     unlockButton.textContent =
       "Unlock Dashboard";
   }
 }
+
 
 function showVerify(
   message,
@@ -1160,6 +2297,7 @@ function showVerify(
       ? "success"
       : "error";
 }
+
 
 /* =========================================================
    DURATION
@@ -1189,8 +2327,10 @@ function formatDuration(
   if (value === "lifetime")
     return "Lifetime";
 
-  return duration || "Active";
+  return duration ||
+    "Active";
 }
+
 
 /* =========================================================
    EXPIRATION
@@ -1218,16 +2358,24 @@ function normalizeExpiration(
   const stringValue =
     String(value).trim();
 
-  if (/^[0-9]+$/.test(stringValue)) {
+  if (
+    /^[0-9]+$/.test(
+      stringValue
+    )
+  ) {
 
     const numeric =
-      Number(stringValue);
+      Number(
+        stringValue
+      );
 
     if (!Number.isFinite(numeric)) {
       return null;
     }
 
-    if (numeric < 100000000000) {
+    if (
+      numeric < 100000000000
+    ) {
       return numeric * 1000;
     }
 
@@ -1235,12 +2383,15 @@ function normalizeExpiration(
   }
 
   const parsed =
-    Date.parse(stringValue);
+    Date.parse(
+      stringValue
+    );
 
   return Number.isFinite(parsed)
     ? parsed
     : null;
 }
+
 
 function startExpirationTimer(
   expiresAt
@@ -1252,7 +2403,8 @@ function startExpirationTimer(
       expirationTimer
     );
 
-    expirationTimer = null;
+    expirationTimer =
+      null;
   }
 
   if (
@@ -1277,7 +2429,11 @@ function startExpirationTimer(
       expiresAt
     );
 
-  if (!Number.isFinite(expirationTime)) {
+  if (
+    !Number.isFinite(
+      expirationTime
+    )
+  ) {
 
     keyExpiration.textContent =
       "Active";
@@ -1313,14 +2469,20 @@ function startExpirationTimer(
           expirationTimer
         );
 
-        expirationTimer = null;
+        expirationTimer =
+          null;
       }
 
-      setTimeout(() => {
-        forceLogout(
-          "Your key has expired."
-        );
-      }, 1000);
+      setTimeout(
+        () => {
+
+          forceLogout(
+            "Your key has expired."
+          );
+
+        },
+        1000
+      );
 
       return;
     }
@@ -1363,6 +2525,7 @@ function startExpirationTimer(
     );
 }
 
+
 function formatRemaining(
   milliseconds
 ) {
@@ -1380,14 +2543,16 @@ function formatRemaining(
       totalSeconds / 86400
     );
 
-  totalSeconds %= 86400;
+  totalSeconds %=
+    86400;
 
   const hours =
     Math.floor(
       totalSeconds / 3600
     );
 
-  totalSeconds %= 3600;
+  totalSeconds %=
+    3600;
 
   const minutes =
     Math.floor(
@@ -1398,20 +2563,25 @@ function formatRemaining(
     totalSeconds % 60;
 
   const hh =
-    String(hours).padStart(2, "0");
+    String(hours)
+      .padStart(2, "0");
 
   const mm =
-    String(minutes).padStart(2, "0");
+    String(minutes)
+      .padStart(2, "0");
 
   const ss =
-    String(seconds).padStart(2, "0");
+    String(seconds)
+      .padStart(2, "0");
 
   if (days > 0) {
+
     return `${days}d ${hh}h ${mm}m`;
   }
 
   return `${hh}h ${mm}m ${ss}s`;
 }
+
 
 function restoreExpirationTimer() {
 
@@ -1457,6 +2627,7 @@ function restoreExpirationTimer() {
   }
 }
 
+
 /* =========================================================
    STOCK
 ========================================================= */
@@ -1475,11 +2646,19 @@ async function loadStock() {
       );
 
     const result =
-      await parseResponse(response);
+      await parseResponse(
+        response
+      );
 
-    if (response.status === 401) {
+    if (
+      response.status === 401
+    ) {
 
-      if (isSessionError(result)) {
+      if (
+        isSessionError(
+          result
+        )
+      ) {
 
         forceLogout(
           result.message ||
@@ -1520,14 +2699,16 @@ async function loadStock() {
 
       if (count <= 0) {
 
-        generateButton.disabled = true;
+        generateButton.disabled =
+          true;
 
         generateButton.textContent =
           "Out of Stock";
 
       } else {
 
-        generateButton.disabled = false;
+        generateButton.disabled =
+          false;
 
         generateButton.textContent =
           "Generate Account";
@@ -1543,6 +2724,7 @@ async function loadStock() {
   }
 }
 
+
 function startLiveStock() {
 
   stopLiveStock();
@@ -1554,9 +2736,11 @@ function startLiveStock() {
       () => {
 
         if (
-          dashboardPage.style.display !== "none" &&
+          dashboardPage.style.display !==
+            "none" &&
           currentSession
         ) {
+
           loadStock();
         }
 
@@ -1564,6 +2748,7 @@ function startLiveStock() {
       2000
     );
 }
+
 
 function stopLiveStock() {
 
@@ -1573,9 +2758,11 @@ function stopLiveStock() {
       stockRefreshTimer
     );
 
-    stockRefreshTimer = null;
+    stockRefreshTimer =
+      null;
   }
 }
+
 
 /* =========================================================
    GENERATE
@@ -1596,9 +2783,11 @@ async function generateInventory() {
     return;
   }
 
-  isGenerating = true;
+  isGenerating =
+    true;
 
-  generateButton.disabled = true;
+  generateButton.disabled =
+    true;
 
   generateButton.innerHTML = `
     <span class="loading">
@@ -1607,7 +2796,8 @@ async function generateInventory() {
     </span>
   `;
 
-  dashboardMessage.textContent = "";
+  dashboardMessage.textContent =
+    "";
 
   try {
 
@@ -1616,6 +2806,7 @@ async function generateInventory() {
         `${API_URL}/api/stock/generate`,
         {
           method: "POST",
+
           headers: {
             "Content-Type":
               "application/json"
@@ -1624,11 +2815,19 @@ async function generateInventory() {
       );
 
     const result =
-      await parseResponse(response);
+      await parseResponse(
+        response
+      );
 
-    if (response.status === 401) {
+    if (
+      response.status === 401
+    ) {
 
-      if (isSessionError(result)) {
+      if (
+        isSessionError(
+          result
+        )
+      ) {
 
         forceLogout(
           result.message ||
@@ -1664,7 +2863,9 @@ async function generateInventory() {
       result;
 
     currentGeneratedLogin =
-      normalizeLogin(item);
+      normalizeLogin(
+        item
+      );
 
     renderInventoryItem(
       currentGeneratedLogin
@@ -1689,11 +2890,13 @@ async function generateInventory() {
 
   } finally {
 
-    isGenerating = false;
+    isGenerating =
+      false;
 
     await loadStock();
   }
 }
+
 
 function normalizeLogin(
   item
@@ -1716,11 +2919,16 @@ function normalizeLogin(
   ) {
 
     return {
+
       email:
-        String(item.email || ""),
+        String(
+          item.email || ""
+        ),
 
       password:
-        String(item.password || "")
+        String(
+          item.password || ""
+        )
     };
   }
 
@@ -1734,6 +2942,7 @@ function normalizeLogin(
     if (separator !== -1) {
 
       return {
+
         email:
           item.slice(
             0,
@@ -1759,6 +2968,7 @@ function normalizeLogin(
   };
 }
 
+
 /* =========================================================
    INVENTORY UI
 ========================================================= */
@@ -1767,7 +2977,8 @@ function renderInventoryItem(
   item
 ) {
 
-  inventoryResult.innerHTML = "";
+  inventoryResult.innerHTML =
+    "";
 
   const wrapper =
     document.createElement(
@@ -1786,7 +2997,10 @@ function renderInventoryItem(
     "inventory-row";
 
   emailRow.innerHTML = `
-    <span class="inventory-label">Email</span>
+    <span class="inventory-label">
+      Email
+    </span>
+
     <span class="inventory-value"></span>
   `;
 
@@ -1797,6 +3011,7 @@ function renderInventoryItem(
     .textContent =
       item.email || "—";
 
+
   const passwordRow =
     document.createElement(
       "div"
@@ -1806,7 +3021,10 @@ function renderInventoryItem(
     "inventory-row";
 
   passwordRow.innerHTML = `
-    <span class="inventory-label">Password</span>
+    <span class="inventory-label">
+      Password
+    </span>
+
     <span class="inventory-value"></span>
   `;
 
@@ -1817,6 +3035,7 @@ function renderInventoryItem(
     .textContent =
       item.password || "—";
 
+
   const actions =
     document.createElement(
       "div"
@@ -1824,6 +3043,7 @@ function renderInventoryItem(
 
   actions.className =
     "inventory-actions";
+
 
   const copyEmail =
     document.createElement(
@@ -1837,10 +3057,12 @@ function renderInventoryItem(
     "Copy Email";
 
   copyEmail.onclick =
-    () => copyText(
-      item.email,
-      "Email copied."
-    );
+    () =>
+      copyText(
+        item.email,
+        "Email copied."
+      );
+
 
   const copyPassword =
     document.createElement(
@@ -1854,10 +3076,12 @@ function renderInventoryItem(
     "Copy Password";
 
   copyPassword.onclick =
-    () => copyText(
-      item.password,
-      "Password copied."
-    );
+    () =>
+      copyText(
+        item.password,
+        "Password copied."
+      );
+
 
   const saveButton =
     document.createElement(
@@ -1871,18 +3095,42 @@ function renderInventoryItem(
     "Save Login";
 
   saveButton.onclick =
-    () => openSaveModal(item);
+    () =>
+      openSaveModal(
+        item
+      );
 
-  actions.appendChild(copyEmail);
-  actions.appendChild(copyPassword);
-  actions.appendChild(saveButton);
 
-  wrapper.appendChild(emailRow);
-  wrapper.appendChild(passwordRow);
-  wrapper.appendChild(actions);
+  actions.appendChild(
+    copyEmail
+  );
 
-  inventoryResult.appendChild(wrapper);
+  actions.appendChild(
+    copyPassword
+  );
+
+  actions.appendChild(
+    saveButton
+  );
+
+
+  wrapper.appendChild(
+    emailRow
+  );
+
+  wrapper.appendChild(
+    passwordRow
+  );
+
+  wrapper.appendChild(
+    actions
+  );
+
+  inventoryResult.appendChild(
+    wrapper
+  );
 }
+
 
 /* =========================================================
    COPY
@@ -1909,9 +3157,15 @@ async function copyText(
     dashboardMessage.className =
       "dashboard-message success";
 
-    setTimeout(() => {
-      dashboardMessage.textContent = "";
-    }, 1800);
+    setTimeout(
+      () => {
+
+        dashboardMessage.textContent =
+          "";
+
+      },
+      1800
+    );
 
   } catch {
 
@@ -1922,6 +3176,7 @@ async function copyText(
       "dashboard-message error";
   }
 }
+
 
 /* =========================================================
    SAVE MODAL
@@ -1944,14 +3199,19 @@ function openSaveModal(
     "flex";
 }
 
+
 function closeSaveModal() {
 
   saveModal.style.display =
     "none";
 
-  saveEmail.value = "";
-  savePassword.value = "";
+  saveEmail.value =
+    "";
+
+  savePassword.value =
+    "";
 }
+
 
 /* =========================================================
    SAVE LOGIN
@@ -1985,7 +3245,8 @@ async function saveCurrentLogin() {
     return;
   }
 
-  confirmSaveButton.disabled = true;
+  confirmSaveButton.disabled =
+    true;
 
   confirmSaveButton.textContent =
     "Saving...";
@@ -1993,16 +3254,13 @@ async function saveCurrentLogin() {
   try {
 
     const payload = {
+
       email:
         currentGeneratedLogin.email,
 
       password:
         currentGeneratedLogin.password
     };
-
-    console.log(
-      "Saving login..."
-    );
 
     const response =
       await authenticatedFetch(
@@ -2016,22 +3274,26 @@ async function saveCurrentLogin() {
           },
 
           body:
-            JSON.stringify(payload)
+            JSON.stringify(
+              payload
+            )
         }
       );
 
     const result =
-      await parseResponse(response);
+      await parseResponse(
+        response
+      );
 
-    console.log(
-      "Save login response:",
-      response.status,
-      result
-    );
+    if (
+      response.status === 401
+    ) {
 
-    if (response.status === 401) {
-
-      if (isSessionError(result)) {
+      if (
+        isSessionError(
+          result
+        )
+      ) {
 
         closeSaveModal();
 
@@ -2103,6 +3365,7 @@ async function saveCurrentLogin() {
   }
 }
 
+
 /* =========================================================
    SAVED LOGINS
 ========================================================= */
@@ -2121,11 +3384,19 @@ async function loadSavedLogins() {
       );
 
     const result =
-      await parseResponse(response);
+      await parseResponse(
+        response
+      );
 
-    if (response.status === 401) {
+    if (
+      response.status === 401
+    ) {
 
-      if (isSessionError(result)) {
+      if (
+        isSessionError(
+          result
+        )
+      ) {
 
         forceLogout(
           result.message ||
@@ -2161,7 +3432,9 @@ async function loadSavedLogins() {
             []
           );
 
-    renderSavedLogins(logins);
+    renderSavedLogins(
+      logins
+    );
 
   } catch (error) {
 
@@ -2170,7 +3443,8 @@ async function loadSavedLogins() {
       error
     );
 
-    savedLoginResult.innerHTML = "";
+    savedLoginResult.innerHTML =
+      "";
 
     const errorDiv =
       document.createElement(
@@ -2189,6 +3463,7 @@ async function loadSavedLogins() {
     );
   }
 }
+
 
 function renderSavedLogins(
   logins
@@ -2227,6 +3502,7 @@ function renderSavedLogins(
       row.className =
         "saved-login";
 
+
       const info =
         document.createElement(
           "div"
@@ -2234,6 +3510,7 @@ function renderSavedLogins(
 
       info.className =
         "saved-info";
+
 
       const email =
         document.createElement(
@@ -2247,6 +3524,7 @@ function renderSavedLogins(
         login.email ||
         "Unknown";
 
+
       const date =
         document.createElement(
           "div"
@@ -2254,6 +3532,7 @@ function renderSavedLogins(
 
       date.className =
         "saved-date";
+
 
       const created =
         login.createdAt ??
@@ -2264,8 +3543,15 @@ function renderSavedLogins(
           ? `Saved ${formatDate(created)}`
           : "Saved login";
 
-      info.appendChild(email);
-      info.appendChild(date);
+
+      info.appendChild(
+        email
+      );
+
+      info.appendChild(
+        date
+      );
+
 
       const actions =
         document.createElement(
@@ -2274,6 +3560,7 @@ function renderSavedLogins(
 
       actions.className =
         "saved-actions";
+
 
       const copy =
         document.createElement(
@@ -2288,6 +3575,7 @@ function renderSavedLogins(
           revealAndCopy(
             login.id
           );
+
 
       const deleteButton =
         document.createElement(
@@ -2306,22 +3594,39 @@ function renderSavedLogins(
             login.id
           );
 
-      actions.appendChild(copy);
-      actions.appendChild(deleteButton);
 
-      row.appendChild(info);
-      row.appendChild(actions);
+      actions.appendChild(
+        copy
+      );
 
-      list.appendChild(row);
+      actions.appendChild(
+        deleteButton
+      );
+
+
+      row.appendChild(
+        info
+      );
+
+      row.appendChild(
+        actions
+      );
+
+      list.appendChild(
+        row
+      );
     }
   );
 
-  savedLoginResult.innerHTML = "";
+
+  savedLoginResult.innerHTML =
+    "";
 
   savedLoginResult.appendChild(
     list
   );
 }
+
 
 /* =========================================================
    REVEAL + COPY
@@ -2343,11 +3648,19 @@ async function revealAndCopy(
       );
 
     const result =
-      await parseResponse(response);
+      await parseResponse(
+        response
+      );
 
-    if (response.status === 401) {
+    if (
+      response.status === 401
+    ) {
 
-      if (isSessionError(result)) {
+      if (
+        isSessionError(
+          result
+        )
+      ) {
 
         forceLogout(
           result.message ||
@@ -2395,9 +3708,15 @@ async function revealAndCopy(
     dashboardMessage.className =
       "dashboard-message success";
 
-    setTimeout(() => {
-      dashboardMessage.textContent = "";
-    }, 1800);
+    setTimeout(
+      () => {
+
+        dashboardMessage.textContent =
+          "";
+
+      },
+      1800
+    );
 
   } catch (error) {
 
@@ -2409,6 +3728,7 @@ async function revealAndCopy(
       "dashboard-message error";
   }
 }
+
 
 /* =========================================================
    DELETE
@@ -2433,11 +3753,19 @@ async function deleteSavedLogin(
       );
 
     const result =
-      await parseResponse(response);
+      await parseResponse(
+        response
+      );
 
-    if (response.status === 401) {
+    if (
+      response.status === 401
+    ) {
 
-      if (isSessionError(result)) {
+      if (
+        isSessionError(
+          result
+        )
+      ) {
 
         forceLogout(
           result.message ||
@@ -2475,9 +3803,15 @@ async function deleteSavedLogin(
     dashboardMessage.className =
       "dashboard-message success";
 
-    setTimeout(() => {
-      dashboardMessage.textContent = "";
-    }, 1800);
+    setTimeout(
+      () => {
+
+        dashboardMessage.textContent =
+          "";
+
+      },
+      1800
+    );
 
   } catch (error) {
 
@@ -2489,6 +3823,7 @@ async function deleteSavedLogin(
       "dashboard-message error";
   }
 }
+
 
 /* =========================================================
    LOGOUT
@@ -2515,6 +3850,7 @@ async function logout() {
   forceLogout();
 }
 
+
 function forceLogout(
   message = ""
 ) {
@@ -2527,10 +3863,12 @@ function forceLogout(
       expirationTimer
     );
 
-    expirationTimer = null;
+    expirationTimer =
+      null;
   }
 
-  currentSession = "";
+  currentSession =
+    "";
 
   sessionStorage.removeItem(
     SESSION_KEY
@@ -2550,7 +3888,8 @@ function forceLogout(
   loginPage.style.display =
     "flex";
 
-  keyInput.value = "";
+  keyInput.value =
+    "";
 
   verifyResult.textContent =
     message;
@@ -2572,9 +3911,14 @@ function forceLogout(
     </div>
   `;
 
-  stockCount.textContent = "—";
-  keyDuration.textContent = "—";
-  keyExpiration.textContent = "—";
+  stockCount.textContent =
+    "—";
+
+  keyDuration.textContent =
+    "—";
+
+  keyExpiration.textContent =
+    "—";
 
   keyExpiration.classList.remove(
     "expiring",
@@ -2584,9 +3928,13 @@ function forceLogout(
   accountStatus.textContent =
     "Active";
 
-  currentGeneratedLogin = null;
-  isGenerating = false;
+  currentGeneratedLogin =
+    null;
+
+  isGenerating =
+    false;
 }
+
 
 /* =========================================================
    EXISTING SESSION
@@ -2608,7 +3956,9 @@ async function verifyCurrentSession() {
       );
 
     const result =
-      await parseResponse(response);
+      await parseResponse(
+        response
+      );
 
     if (!response.ok) {
 
@@ -2626,7 +3976,9 @@ async function verifyCurrentSession() {
       "block";
 
     await loadStock();
+
     startLiveStock();
+
     await loadSavedLogins();
 
   } catch (error) {
@@ -2637,6 +3989,7 @@ async function verifyCurrentSession() {
     );
   }
 }
+
 
 /* =========================================================
    HELPERS
@@ -2649,7 +4002,11 @@ function formatDate(
   const date =
     new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return "";
   }
 
@@ -2661,6 +4018,7 @@ function formatDate(
     }
   );
 }
+
 
 /* =========================================================
    EVENTS
@@ -2675,7 +4033,10 @@ keyInput.addEventListener(
   "keydown",
   event => {
 
-    if (event.key === "Enter") {
+    if (
+      event.key === "Enter"
+    ) {
+
       unlock();
     }
   }
@@ -2705,11 +4066,16 @@ saveModal.addEventListener(
   "click",
   event => {
 
-    if (event.target === saveModal) {
+    if (
+      event.target ===
+      saveModal
+    ) {
+
       closeSaveModal();
     }
   }
 );
+
 
 /* =========================================================
    START
