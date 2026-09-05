@@ -78,63 +78,6 @@ if (!ADMIN_SECRET) {
 }
 
 /* =========================================================
-   DISCORD GATEWAY CONNECTION TEST
-   This does NOT use the bot token.
-========================================================= */
-
-console.log(
-    "Testing Discord Gateway connectivity..."
-);
-
-const gatewayTest = new WebSocket(
-    "wss://gateway.discord.gg/?v=10&encoding=json"
-);
-
-const gatewayTimeout = setTimeout(() => {
-
-    console.error(
-        "❌ DISCORD GATEWAY TEST TIMED OUT"
-    );
-
-    try {
-        gatewayTest.close();
-    } catch {}
-
-}, 10000);
-
-gatewayTest.on("open", () => {
-
-    clearTimeout(gatewayTimeout);
-
-    console.log(
-        "✅ DISCORD GATEWAY CONNECTION WORKS"
-    );
-
-    try {
-        gatewayTest.close();
-    } catch {}
-});
-
-gatewayTest.on("error", error => {
-
-    clearTimeout(gatewayTimeout);
-
-    console.error(
-        "❌ DISCORD GATEWAY CONNECTION FAILED:",
-        error?.message || error
-    );
-});
-
-gatewayTest.on("close", (code, reason) => {
-
-    console.log(
-        "Gateway test closed:",
-        code,
-        reason?.toString() || ""
-    );
-});
-
-/* =========================================================
    DISCORD CLIENT
 ========================================================= */
 
@@ -164,7 +107,6 @@ const ALLOWED_ROLE_IDS = [
 ========================================================= */
 
 function hasPermission(message) {
-
     if (!message.member) {
         return false;
     }
@@ -180,7 +122,6 @@ function hasPermission(message) {
 ========================================================= */
 
 function adminHeaders() {
-
     return {
         "Content-Type": "application/json",
         "x-novi-admin-secret": ADMIN_SECRET
@@ -188,11 +129,10 @@ function adminHeaders() {
 }
 
 /* =========================================================
-   READY
+   DISCORD EVENTS
 ========================================================= */
 
 client.once("ready", () => {
-
     console.log("");
     console.log("========================================");
     console.log("✅ DISCORD BOT IS ONLINE");
@@ -217,12 +157,7 @@ client.once("ready", () => {
     console.log("");
 });
 
-/* =========================================================
-   DISCORD EVENTS
-========================================================= */
-
 client.on("error", error => {
-
     console.error("");
     console.error("========================================");
     console.error("❌ DISCORD CLIENT ERROR");
@@ -236,7 +171,6 @@ client.on("error", error => {
 });
 
 client.on("shardError", error => {
-
     console.error("");
     console.error("========================================");
     console.error("❌ DISCORD GATEWAY ERROR");
@@ -250,14 +184,13 @@ client.on("shardError", error => {
 });
 
 client.on("shardDisconnect", event => {
-
     console.error("");
     console.error("========================================");
     console.error("⚠️ DISCORD DISCONNECTED");
     console.error("========================================");
 
     console.error(
-        "Code:",
+        "Close code:",
         event?.code || "Unknown"
     );
 
@@ -270,14 +203,12 @@ client.on("shardDisconnect", event => {
 });
 
 client.on("shardReconnecting", () => {
-
     console.log(
         "🔄 Discord Gateway reconnecting..."
     );
 });
 
 client.on("shardResume", shardId => {
-
     console.log(
         `✅ Discord Gateway resumed on shard ${shardId}.`
     );
@@ -441,7 +372,7 @@ client.on(
                 let items = [];
 
                 /* ---------------------------------------------
-                   ITEMS TYPED AFTER !ADD
+                   ITEMS AFTER !ADD
                 --------------------------------------------- */
 
                 const typedItems =
@@ -459,7 +390,7 @@ client.on(
                 );
 
                 /* ---------------------------------------------
-                   TXT ATTACHMENT
+                   TXT FILE
                 --------------------------------------------- */
 
                 if (
@@ -530,7 +461,7 @@ client.on(
                 }
 
                 /* ---------------------------------------------
-                   NOTHING PROVIDED
+                   NOTHING TO ADD
                 --------------------------------------------- */
 
                 if (
@@ -546,7 +477,7 @@ client.on(
                 }
 
                 /* ---------------------------------------------
-                   REMOVE DUPLICATES FROM INPUT
+                   REMOVE DUPLICATES
                 --------------------------------------------- */
 
                 items =
@@ -557,7 +488,7 @@ client.on(
                 let failed = 0;
 
                 /* ---------------------------------------------
-                   ADD EACH ITEM
+                   ADD ITEMS
                 --------------------------------------------- */
 
                 for (
@@ -612,7 +543,7 @@ client.on(
                 }
 
                 /* ---------------------------------------------
-                   GET TOTAL STOCK
+                   TOTAL STOCK
                 --------------------------------------------- */
 
                 let totalStock =
@@ -650,7 +581,7 @@ client.on(
                 }
 
                 /* ---------------------------------------------
-                   SEND RESULT
+                   RESULT
                 --------------------------------------------- */
 
                 let result =
@@ -711,48 +642,394 @@ process.on(
 );
 
 /* =========================================================
-   DISCORD LOGIN
+   GATEWAY + TOKEN TEST
 ========================================================= */
 
-console.log(
-    "Connecting to Discord Gateway..."
-);
+async function testDiscordGateway() {
 
-console.log(
-    "Discord client starting..."
-);
+    return new Promise(resolve => {
 
-client.login(TOKEN)
-    .then(() => {
+        console.log("");
+        console.log("========================================");
+        console.log("TESTING DISCORD GATEWAY");
+        console.log("========================================");
 
-        console.log(
-            "Discord login request completed."
-        );
+        const socket =
+            new WebSocket(
+                "wss://gateway.discord.gg/?v=10&encoding=json"
+            );
 
-    })
-    .catch(error => {
+        let finished = false;
+
+        let heartbeatTimer = null;
+
+        const timeout =
+            setTimeout(() => {
+
+                if (finished) {
+                    return;
+                }
+
+                finished = true;
+
+                if (heartbeatTimer) {
+                    clearInterval(
+                        heartbeatTimer
+                    );
+                }
+
+                console.error(
+                    "❌ DISCORD GATEWAY TEST TIMED OUT"
+                );
+
+                try {
+                    socket.close();
+                } catch {}
+
+                resolve(false);
+
+            }, 15000);
+
+        function finish(result) {
+
+            if (finished) {
+                return;
+            }
+
+            finished = true;
+
+            clearTimeout(timeout);
+
+            if (heartbeatTimer) {
+                clearInterval(
+                    heartbeatTimer
+                );
+            }
+
+            try {
+                socket.close();
+            } catch {}
+
+            resolve(result);
+        }
+
+        socket.on("open", () => {
+
+            console.log(
+                "✅ Discord Gateway connection opened."
+            );
+        });
+
+        socket.on("message", data => {
+
+            try {
+
+                const payload =
+                    JSON.parse(
+                        data.toString()
+                    );
+
+                /*
+                 * Opcode 10 = HELLO
+                 */
+
+                if (payload.op === 10) {
+
+                    console.log(
+                        "✅ Discord Gateway HELLO received."
+                    );
+
+                    const interval =
+                        payload.d?.heartbeat_interval;
+
+                    /*
+                     * Opcode 2 = IDENTIFY
+                     */
+
+                    socket.send(
+                        JSON.stringify({
+                            op: 2,
+
+                            d: {
+                                token: TOKEN,
+
+                                intents:
+                                    GatewayIntentBits.Guilds |
+                                    GatewayIntentBits.GuildMessages |
+                                    GatewayIntentBits.MessageContent,
+
+                                properties: {
+                                    os: "linux",
+                                    browser: "novi",
+                                    device: "novi"
+                                }
+                            }
+                        })
+                    );
+
+                    console.log(
+                        "Bot identification sent."
+                    );
+
+                    /*
+                     * Heartbeat
+                     */
+
+                    if (interval) {
+
+                        heartbeatTimer =
+                            setInterval(() => {
+
+                                if (
+                                    socket.readyState ===
+                                    WebSocket.OPEN
+                                ) {
+
+                                    socket.send(
+                                        JSON.stringify({
+                                            op: 1,
+                                            d: null
+                                        })
+                                    );
+                                }
+
+                            }, interval);
+                    }
+
+                    return;
+                }
+
+                /*
+                 * Opcode 0 = DISPATCH
+                 */
+
+                if (
+                    payload.op === 0 &&
+                    payload.t === "READY"
+                ) {
+
+                    console.log("");
+                    console.log(
+                        "========================================"
+                    );
+                    console.log(
+                        "✅ BOT TOKEN IS VALID"
+                    );
+                    console.log(
+                        "========================================"
+                    );
+
+                    console.log(
+                        "Bot ID:",
+                        payload.d?.user?.id ||
+                        "Unknown"
+                    );
+
+                    console.log(
+                        "Bot:",
+                        payload.d?.user?.username ||
+                        "Unknown"
+                    );
+
+                    console.log(
+                        "Guilds:",
+                        payload.d?.guilds?.length ??
+                        "Unknown"
+                    );
+
+                    console.log(
+                        "========================================"
+                    );
+
+                    finish(true);
+
+                    return;
+                }
+
+                /*
+                 * Opcode 9 = INVALID SESSION
+                 */
+
+                if (payload.op === 9) {
+
+                    console.error("");
+                    console.error(
+                        "========================================"
+                    );
+                    console.error(
+                        "❌ DISCORD REJECTED THE BOT SESSION"
+                    );
+                    console.error(
+                        "========================================"
+                    );
+
+                    console.error(
+                        "Discord returned an invalid session."
+                    );
+
+                    console.error(
+                        "The bot token or session configuration may be invalid."
+                    );
+
+                    console.error(
+                        "========================================"
+                    );
+
+                    finish(false);
+
+                    return;
+                }
+
+                /*
+                 * Authentication / gateway error
+                 */
+
+                if (
+                    payload.op === 0 &&
+                    payload.t === "RESUMED"
+                ) {
+
+                    console.log(
+                        "Discord session resumed."
+                    );
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Gateway message error:",
+                    error.message
+                );
+            }
+        });
+
+        socket.on("error", error => {
+
+            console.error("");
+            console.error(
+                "❌ DISCORD GATEWAY ERROR:"
+            );
+
+            console.error(
+                error?.message ||
+                error
+            );
+
+            finish(false);
+        });
+
+        socket.on("close", (code, reason) => {
+
+            if (!finished) {
+
+                console.error("");
+                console.error(
+                    "========================================"
+                );
+                console.error(
+                    "❌ DISCORD GATEWAY CLOSED"
+                );
+                console.error(
+                    "========================================"
+                );
+
+                console.error(
+                    "Close code:",
+                    code
+                );
+
+                console.error(
+                    "Reason:",
+                    reason?.toString() ||
+                    "None"
+                );
+
+                console.error(
+                    "========================================"
+                );
+
+                finish(false);
+            }
+        });
+    });
+}
+
+/* =========================================================
+   START DISCORD
+========================================================= */
+
+async function startDiscord() {
+
+    const gatewayWorks =
+        await testDiscordGateway();
+
+    if (!gatewayWorks) {
 
         console.error("");
-        console.error("========================================");
-        console.error("❌ DISCORD LOGIN FAILED");
-        console.error("========================================");
+        console.error(
+            "❌ Discord bot startup stopped because the Gateway/token test failed."
+        );
+
+        /*
+         * Keep the web server alive so Render
+         * can still serve Novi.
+         */
+
+        return;
+    }
+
+    console.log("");
+    console.log(
+        "Starting Discord.js..."
+    );
+
+    console.log(
+        "Connecting Discord.js to Discord..."
+    );
+
+    try {
+
+        await client.login(TOKEN);
+
+        console.log(
+            "Discord.js login request completed."
+        );
+
+    } catch (error) {
+
+        console.error("");
+        console.error(
+            "========================================"
+        );
+        console.error(
+            "❌ DISCORD.JS LOGIN FAILED"
+        );
+        console.error(
+            "========================================"
+        );
 
         console.error(
             "Name:",
-            error?.name || "Unknown"
+            error?.name ||
+            "Unknown"
         );
 
         console.error(
             "Code:",
-            error?.code || "Unknown"
+            error?.code ||
+            "Unknown"
         );
 
         console.error(
             "Message:",
-            error?.message || error
+            error?.message ||
+            error
         );
 
-        console.error("========================================");
+        console.error(
+            "========================================"
+        );
+    }
+}
 
-        process.exit(1);
-    });
+startDiscord();
