@@ -1,18 +1,26 @@
 const { spawn } = require("child_process");
 
-const server = spawn("node", ["server.js"], {
-    stdio: "inherit"
+console.log("======================================");
+console.log("           STARTING NOVI");
+console.log("======================================");
+
+const bot = spawn(process.execPath, ["index.js"], {
+  stdio: "inherit",
+  env: process.env,
 });
 
-const bot = spawn("node", ["index.js"], {
-    stdio: "inherit"
+bot.on("error", (err) => {
+  console.error("Failed to start index.js:");
+  console.error(err);
+  process.exit(1);
 });
 
-server.on("exit", (code) => {
-    console.log(`Server exited with code ${code}`);
-    process.exit(code ?? 1);
-});
+bot.on("exit", (code, signal) => {
+  if (signal) {
+    console.log(`Novi stopped because of signal: ${signal}`);
+  } else {
+    console.log(`Novi exited with code: ${code}`);
+  }
 
-bot.on("exit", (code) => {
-    console.log(`Bot exited with code ${code}`);
+  process.exit(code ?? 1);
 });
