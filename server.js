@@ -1,874 +1,968 @@
 require("dotenv").config();
-require("./server.js");
 
-const {
-    Client,
-    GatewayIntentBits
-} = require("discord.js");
+const express = require("express");
+const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
 
-const axios = require("axios");
+const app = express();
 
 /* =========================================================
    CONFIG
 ========================================================= */
 
 const PORT = Number(process.env.PORT) || 10000;
-const API_URL = `http://127.0.0.1:${PORT}`;
 
-const TOKEN = String(
-    process.env.DISCORD_TOKEN || ""
-).trim();
+const PUBLIC_DIR = path.join(__dirname, "public");
+const KEY_FILE = path.join(__dirname, "keys.json");
+const STOCK_FILE = path.join(__dirname, "epicgames-stock.json");
 
 const ADMIN_SECRET = String(
     process.env.NOVI_ADMIN_SECRET || ""
 ).trim();
 
-/* =========================================================
-   ALLOWED ROLES
-========================================================= */
-
-const ALLOWED_ROLE_IDS = [
-    "1529705570209366167",
-    "1378500563456626719"
-];
+/* Sessions last 30 minutes */
+const SESSION_DURATION = 30 * 60 * 1000;
 
 /* =========================================================
-   STARTUP
+   MIDDLEWARE
 ========================================================= */
 
-console.log("");
-console.log("========================================");
-console.log("             NOVI DISCORD BOT");
-console.log("========================================");
+app.use(cors());
 
-console.log(
-    "Discord token:",
-    TOKEN ? "FOUND" : "MISSING"
-);
+app.use(express.json({
+    limit: "1mb"
+}));
 
-console.log(
-    "Admin secret:",
-    ADMIN_SECRET ? "FOUND" : "MISSING"
-);
+app.use(express.urlencoded({
+    extended: true,
+    limit: "1mb"
+}));
 
-console.log(
-    "API:",
-    API_URL
-);
+/* =========================================================
+   FILE HELPERS
+========================================================= */
 
-console.log("========================================");
-console.log("");
-
-if (!TOKEN) {
-    console.error("❌ DISCORD_TOKEN is missing.");
-    process.exit(1);
+function ensureFile(filePath, defaultValue) {
+    try {
+        if (!fs.existsSync(filePath)) {
+            fs.writeFileSync(
+                filePath,
+                JSON.stringify(defaultValue, null, 2),
+                "utf8"
+            );
+        }
+    } catch (error) {
+        console.error("[FILE] Failed to create:", filePath);
+        console.error(error);
+    }
 }
 
-if (!ADMIN_SECRET) {
-    console.error("❌ NOVI_ADMIN_SECRET is missing.");
-    process.exit(1);
+ensureFile(KEY_FILE, []);
+ensureFile(STOCK_FILE, []);
+
+/* =========================================================
+   KEY STORAGE
+========================================================= */
+
+function readKeys() {
+    try {
+        ensureFile(KEY_FILE, []);
+
+        const raw = fs.readFileSync(KEY_FILE, "utf8").trim();
+
+        if (!raw) {
+            return [];
+        }
+
+        const data = JSON.parse(raw);
+
+        /*
+         * Supports:
+         * []
+         * { "keys": [] }
+         * old object-based key storage
+         */
+
+        if (Array.isArray(data)) {
+            return data;
+        }
+
+        if (data && Array.isArray(data.keys)) {
+            return data.keys;
+        }
+
+        if (data && typeof data === "object") {
+            return Object.entries(data).map(([key, value]) => {
+                if (value && typeof value === "object") {
+                    return {
+                        key,
+                        ...value
+                    };
+                }
+
+                return {
+                    key,
+                    duration: String(value || "lifetime")
+                };
+            });
+        }
+
+        return [];
+    } catch (error) {
+        console.error("[KEYS] Failed to read keys.json:", error);
+        return [];
+    }
+}
+
+function saveKeys(keys) {
+    try {
+        fs.writeFileSync(
+            KEY_FILE,
+            JSON.stringify(keys, null, 2),
+            "utf8"
+        );
+
+        return true;
+    } catch (error) {
+        console.error("[KEYS] Failed to save keys.json:", error);
+        return false;
+    }
 }
 
 /* =========================================================
-   DISCORD CLIENT
+   STOCK STORAGE
 ========================================================= */
 
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
-});
+function readStock() {
+    try {
+        ensureFile(STOCK_FILE, []);
+
+        const raw = fs.readFileSync(STOCK_FILE, "utf8").trim();
+
+        if (!raw) {
+            return [];
+        }
+
+        const data = JSON.parse(raw);
+
+        if (Array.isArray(data)) {
+            return data;
+        }
+
+        if (data && Array.isArray(data.stock)) {
+            return data.stock;
+        }
+
+        return [];
+    } catch (error) {
+        console.error("[STOCK] Failed to read stock:", error);
+        return [];
+    }
+}
+
+function saveStock(stock) {
+    try {
+        fs.writeFileSync(
+            STOCK_FILE,
+            JSON.stringify(stock, null, 2),
+            "utf8"
+        );
+
+        return true;
+    } catch (error) {
+        console.error("[STOCK] Failed to save stock:", error);
+        return false;
+    }
+}
 
 /* =========================================================
-   ADMIN HEADERS
+   ADMIN AUTHENTICATION
 ========================================================= */
 
-function adminHeaders() {
+function requireAdmin(req, res, next) {
+    if (!ADMIN_SECRET) {
+        console.error(
+            "[ADMIN] NOVI_ADMIN_SECRET is missing from environment variables."
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Admin secret is not configured."
+        });
+    }
+
+    const provided = String(
+        req.headers["x-novi-admin-secret"] || ""
+    ).trim();
+
+    if (!provided) {
+        return res.status(401).json({
+            success: false,
+            message: "Missing admin secret."
+        });
+    }
+
+    try {
+        const expectedBuffer = Buffer.from(ADMIN_SECRET);
+        const providedBuffer = Buffer.from(provided);
+
+        if (
+            expectedBuffer.length !== providedBuffer.length ||
+            !crypto.timingSafeEqual(
+                expectedBuffer,
+                providedBuffer
+            )
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: "Invalid admin secret."
+            });
+        }
+    } catch (error) {
+        console.error("[ADMIN] Authentication error:", error);
+
+        return res.status(403).json({
+            success: false,
+            message: "Invalid admin secret."
+        });
+    }
+
+    next();
+}
+
+/* =========================================================
+   KEY HELPERS
+========================================================= */
+
+const DURATIONS = {
+    "1d": {
+        name: "1 Day",
+        milliseconds: 24 * 60 * 60 * 1000
+    },
+
+    "3d": {
+        name: "3 Days",
+        milliseconds: 3 * 24 * 60 * 60 * 1000
+    },
+
+    "1week": {
+        name: "1 Week",
+        milliseconds: 7 * 24 * 60 * 60 * 1000
+    },
+
+    "1month": {
+        name: "1 Month",
+        milliseconds: 30 * 24 * 60 * 60 * 1000
+    },
+
+    "lifetime": {
+        name: "Lifetime",
+        milliseconds: null
+    }
+};
+
+function generateKey() {
+    const part1 = crypto
+        .randomBytes(3)
+        .toString("hex")
+        .toUpperCase();
+
+    const part2 = crypto
+        .randomBytes(3)
+        .toString("hex")
+        .toUpperCase();
+
+    const part3 = crypto
+        .randomBytes(3)
+        .toString("hex")
+        .toUpperCase();
+
+    return `NOVI-${part1}-${part2}-${part3}`;
+}
+
+function createKeyRecord(duration) {
+    const durationInfo = DURATIONS[duration];
+
+    const now = Date.now();
+
+    const expiresAt =
+        durationInfo.milliseconds === null
+            ? null
+            : new Date(
+                now + durationInfo.milliseconds
+            ).toISOString();
+
     return {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "x-novi-admin-secret": ADMIN_SECRET
+        key: generateKey(),
+
+        duration,
+
+        durationName: durationInfo.name,
+
+        createdAt: new Date(now).toISOString(),
+
+        expiresAt,
+
+        activatedAt: null,
+
+        deviceId: null
     };
 }
 
-/* =========================================================
-   ROLE CHECK
-========================================================= */
+function findKey(keys, key) {
+    const normalized = String(key || "")
+        .trim()
+        .toUpperCase();
 
-function hasPermission(message) {
+    return keys.find(
+        item =>
+            String(item?.key || "")
+                .trim()
+                .toUpperCase() === normalized
+    );
+}
 
-    if (!message.member) {
-        console.log(
-            "[PERMISSION] No member object."
-        );
+function isKeyExpired(keyRecord) {
+    if (!keyRecord) {
+        return true;
+    }
 
+    if (!keyRecord.expiresAt) {
         return false;
     }
 
-    const roles =
-        message.member.roles.cache;
+    const expires = new Date(
+        keyRecord.expiresAt
+    ).getTime();
 
-    console.log(
-        "[PERMISSION] User roles:",
-        [...roles.keys()].join(", ") || "none"
-    );
+    if (!Number.isFinite(expires)) {
+        return true;
+    }
 
-    const allowed =
-        ALLOWED_ROLE_IDS.some(
-            roleId =>
-                roles.has(roleId)
-        );
-
-    console.log(
-        "[PERMISSION] Allowed:",
-        allowed
-    );
-
-    return allowed;
+    return Date.now() >= expires;
 }
 
 /* =========================================================
-   READY
+   SESSION STORAGE
 ========================================================= */
 
-client.once(
-    "ready",
-    () => {
+const sessions = new Map();
 
-        console.log("");
-        console.log("========================================");
-        console.log("✅ NOVI BOT IS ONLINE");
-        console.log("========================================");
+function createSession(keyRecord) {
+    const token = crypto.randomBytes(32).toString("hex");
 
-        console.log(
-            "Bot:",
-            client.user.tag
-        );
+    const expiresAt =
+        Date.now() + SESSION_DURATION;
 
-        console.log(
-            "Bot ID:",
-            client.user.id
-        );
+    sessions.set(token, {
+        key: keyRecord.key,
+        deviceId: keyRecord.deviceId,
+        expiresAt
+    });
 
-        console.log(
-            "Servers:",
-            client.guilds.cache.size
-        );
+    return {
+        token,
+        expiresAt
+    };
+}
 
-        console.log("========================================");
-        console.log("");
+function getSession(token) {
+    if (!token) {
+        return null;
     }
-);
 
-/* =========================================================
-   MESSAGE EVENT
-========================================================= */
+    const session = sessions.get(token);
 
-client.on(
-    "messageCreate",
-    async message => {
+    if (!session) {
+        return null;
+    }
 
-        try {
+    if (Date.now() >= session.expiresAt) {
+        sessions.delete(token);
+        return null;
+    }
 
-            /*
-             * IMPORTANT:
-             * This proves whether Discord is actually
-             * sending messages to the bot.
-             */
+    return session;
+}
 
-            console.log("");
-            console.log(
-                "========================================"
-            );
-            console.log(
-                "[MESSAGE RECEIVED]"
-            );
-            console.log(
-                "Author:",
-                message.author?.tag || "Unknown"
-            );
-            console.log(
-                "Guild:",
-                message.guild?.name || "DM"
-            );
-            console.log(
-                "Content:",
-                message.content || "(EMPTY)"
-            );
-            console.log(
-                "========================================"
-            );
+/* Clean expired sessions */
+setInterval(() => {
+    const now = Date.now();
 
-            /* Ignore bots */
-
-            if (message.author.bot) {
-                return;
-            }
-
-            /* Ignore DMs */
-
-            if (!message.guild) {
-                return;
-            }
-
-            const content =
-                String(
-                    message.content || ""
-                ).trim();
-
-            if (!content) {
-                console.log(
-                    "[MESSAGE] Empty content."
-                );
-
-                return;
-            }
-
-            const args =
-                content.split(/\s+/);
-
-            const command =
-                args[0].toLowerCase();
-
-            console.log(
-                "[COMMAND]:",
-                command
-            );
-
-            /* =================================================
-               !GEN
-            ================================================= */
-
-            if (command === "!gen") {
-
-                console.log(
-                    "[GEN] !gen detected."
-                );
-
-                /* Permission */
-
-                if (!hasPermission(message)) {
-
-                    console.log(
-                        "[GEN] ❌ Permission denied."
-                    );
-
-                    await message.reply(
-                        "❌ You don't have permission to use this command."
-                    );
-
-                    return;
-                }
-
-                console.log(
-                    "[GEN] ✅ Permission accepted."
-                );
-
-                /* Duration */
-
-                const duration =
-                    String(
-                        args[1] || ""
-                    )
-                        .trim()
-                        .toLowerCase();
-
-                const validDurations = [
-                    "1d",
-                    "3d",
-                    "1week",
-                    "1month",
-                    "lifetime"
-                ];
-
-                if (
-                    !validDurations.includes(
-                        duration
-                    )
-                ) {
-
-                    console.log(
-                        "[GEN] Invalid duration:",
-                        duration
-                    );
-
-                    await message.reply(
-                        "❌ Invalid duration.\n\n" +
-                        "Use:\n" +
-                        "`!gen 1d`\n" +
-                        "`!gen 3d`\n" +
-                        "`!gen 1week`\n" +
-                        "`!gen 1month`\n" +
-                        "`!gen lifetime`"
-                    );
-
-                    return;
-                }
-
-                console.log(
-                    `[GEN] Requesting ${duration} key...`
-                );
-
-                try {
-
-                    /*
-                     * Call the local Novi server.
-                     */
-
-                    const response =
-                        await axios.post(
-                            `${API_URL}/api/keys`,
-                            {
-                                duration: duration
-                            },
-                            {
-                                headers:
-                                    adminHeaders(),
-
-                                timeout: 15000,
-
-                                validateStatus:
-                                    () => true
-                            }
-                        );
-
-                    console.log(
-                        "[GEN] HTTP:",
-                        response.status
-                    );
-
-                    console.log(
-                        "[GEN] Response:",
-                        response.data
-                    );
-
-                    /* Server rejected request */
-
-                    if (
-                        response.status < 200 ||
-                        response.status >= 300
-                    ) {
-
-                        const errorMessage =
-                            response.data?.message ||
-                            `Novi server returned HTTP ${response.status}.`;
-
-                        console.error(
-                            "[GEN] ❌",
-                            errorMessage
-                        );
-
-                        await message.reply(
-                            `❌ ${errorMessage}`
-                        );
-
-                        return;
-                    }
-
-                    /* No success */
-
-                    if (
-                        response.data?.success !== true
-                    ) {
-
-                        const errorMessage =
-                            response.data?.message ||
-                            "The server did not generate a key.";
-
-                        console.error(
-                            "[GEN] ❌",
-                            errorMessage
-                        );
-
-                        await message.reply(
-                            `❌ ${errorMessage}`
-                        );
-
-                        return;
-                    }
-
-                    /* Get key */
-
-                    const key =
-                        String(
-                            response.data?.key || ""
-                        ).trim();
-
-                    if (!key) {
-
-                        console.error(
-                            "[GEN] ❌ Server returned no key."
-                        );
-
-                        await message.reply(
-                            "❌ Novi generated the request but didn't return a key."
-                        );
-
-                        return;
-                    }
-
-                    const durationName =
-                        response.data?.durationName ||
-                        duration;
-
-                    console.log(
-                        "[GEN] ✅ KEY GENERATED"
-                    );
-
-                    /*
-                     * Send the generated key to Discord.
-                     */
-
-                    await message.reply(
-                        "🔑 **Novi Key Generated**\n\n" +
-                        `\`${key}\`\n\n` +
-                        `⏱️ **Duration:** ${durationName}`
-                    );
-
-                    console.log(
-                        "[GEN] ✅ Discord reply sent."
-                    );
-
-                } catch (error) {
-
-                    console.error("");
-                    console.error(
-                        "========================================"
-                    );
-                    console.error(
-                        "[GEN] ❌ REQUEST FAILED"
-                    );
-                    console.error(
-                        "========================================"
-                    );
-
-                    console.error(
-                        "Message:",
-                        error?.message
-                    );
-
-                    console.error(
-                        "Code:",
-                        error?.code
-                    );
-
-                    console.error(
-                        "Status:",
-                        error?.response?.status
-                    );
-
-                    console.error(
-                        "Response:",
-                        error?.response?.data
-                    );
-
-                    console.error(
-                        "========================================"
-                    );
-
-                    try {
-
-                        await message.reply(
-                            "❌ Novi couldn't generate the key. Check the Render logs."
-                        );
-
-                    } catch (replyError) {
-
-                        console.error(
-                            "[GEN] Could not send error reply:",
-                            replyError?.message
-                        );
-                    }
-                }
-
-                return;
-            }
-
-            /* =================================================
-               !ADD
-            ================================================= */
-
-            if (command === "!add") {
-
-                console.log(
-                    "[ADD] !add detected."
-                );
-
-                if (!hasPermission(message)) {
-
-                    await message.reply(
-                        "❌ You don't have permission to use this command."
-                    );
-
-                    return;
-                }
-
-                let items = [];
-
-                /*
-                 * Items typed after !add
-                 */
-
-                const typedItems =
-                    args
-                        .slice(1)
-                        .map(
-                            item =>
-                                item.trim()
-                        )
-                        .filter(
-                            item =>
-                                item.length > 0
-                        );
-
-                items.push(
-                    ...typedItems
-                );
-
-                /*
-                 * TXT attachment
-                 */
-
-                if (
-                    message.attachments.size > 0
-                ) {
-
-                    const attachment =
-                        message.attachments.first();
-
-                    const filename =
-                        String(
-                            attachment.name || ""
-                        ).toLowerCase();
-
-                    if (
-                        !filename.endsWith(".txt")
-                    ) {
-
-                        await message.reply(
-                            "❌ Please attach a `.txt` file."
-                        );
-
-                        return;
-                    }
-
-                    try {
-
-                        const response =
-                            await axios.get(
-                                attachment.url,
-                                {
-                                    responseType:
-                                        "text",
-
-                                    timeout:
-                                        15000
-                                }
-                            );
-
-                        const fileItems =
-                            String(
-                                response.data || ""
-                            )
-                                .split(/\r?\n/)
-                                .map(
-                                    line =>
-                                        line.trim()
-                                )
-                                .filter(
-                                    line =>
-                                        line.length > 0
-                                );
-
-                        items.push(
-                            ...fileItems
-                        );
-
-                    } catch (error) {
-
-                        console.error(
-                            "[ADD] TXT ERROR:",
-                            error?.message
-                        );
-
-                        await message.reply(
-                            "❌ I couldn't read the TXT file."
-                        );
-
-                        return;
-                    }
-                }
-
-                if (
-                    items.length === 0
-                ) {
-
-                    await message.reply(
-                        "❌ Nothing to add.\n\n" +
-                        "Use `!add ITEM` or attach a `.txt` file."
-                    );
-
-                    return;
-                }
-
-                /*
-                 * Remove duplicates.
-                 */
-
-                items =
-                    [...new Set(items)];
-
-                let added = 0;
-                let duplicates = 0;
-                let failed = 0;
-
-                /*
-                 * Add each item.
-                 */
-
-                for (
-                    const item of items
-                ) {
-
-                    try {
-
-                        const response =
-                            await axios.post(
-                                `${API_URL}/api/stock/add`,
-                                {
-                                    item
-                                },
-                                {
-                                    headers:
-                                        adminHeaders(),
-
-                                    timeout:
-                                        15000,
-
-                                    validateStatus:
-                                        () => true
-                                }
-                            );
-
-                        if (
-                            response.status >= 200 &&
-                            response.status < 300 &&
-                            response.data?.success
-                        ) {
-
-                            added +=
-                                Number(
-                                    response.data.added || 0
-                                );
-
-                            duplicates +=
-                                Number(
-                                    response.data.duplicates || 0
-                                );
-
-                        } else {
-
-                            failed++;
-
-                            console.error(
-                                "[ADD] Failed:",
-                                response.status,
-                                response.data
-                            );
-                        }
-
-                    } catch (error) {
-
-                        failed++;
-
-                        console.error(
-                            "[ADD] Error:",
-                            error?.message
-                        );
-                    }
-                }
-
-                /*
-                 * Get stock count.
-                 */
-
-                let totalStock =
-                    "Unknown";
-
-                try {
-
-                    const response =
-                        await axios.get(
-                            `${API_URL}/api/admin/stock`,
-                            {
-                                headers:
-                                    adminHeaders(),
-
-                                timeout:
-                                    10000,
-
-                                validateStatus:
-                                    () => true
-                            }
-                        );
-
-                    if (
-                        typeof response.data?.count ===
-                        "number"
-                    ) {
-
-                        totalStock =
-                            response.data.count;
-                    }
-
-                } catch (error) {
-
-                    console.error(
-                        "[ADD] Stock count error:",
-                        error?.message
-                    );
-                }
-
-                let result =
-                    "📦 **Stock Updated**\n\n" +
-                    `✅ **Added:** ${added}\n` +
-                    `♻️ **Duplicates:** ${duplicates}\n` +
-                    `📊 **Total Stock:** ${totalStock}`;
-
-                if (failed > 0) {
-
-                    result +=
-                        `\n❌ **Failed:** ${failed}`;
-                }
-
-                await message.reply(
-                    result
-                );
-
-                return;
-            }
-
-        } catch (error) {
-
-            console.error(
-                "[MESSAGE HANDLER ERROR]",
-                error
-            );
+    for (const [token, session] of sessions.entries()) {
+        if (now >= session.expiresAt) {
+            sessions.delete(token);
         }
     }
-);
+}, 5 * 60 * 1000);
 
 /* =========================================================
-   DISCORD ERRORS
+   HEALTH CHECK
 ========================================================= */
 
-client.on(
-    "error",
-    error => {
-
-        console.error(
-            "[DISCORD ERROR]",
-            error
-        );
-    }
-);
-
-client.on(
-    "shardError",
-    error => {
-
-        console.error(
-            "[DISCORD SHARD ERROR]",
-            error
-        );
-    }
-);
-
-client.on(
-    "shardReconnecting",
-    () => {
-
-        console.log(
-            "[DISCORD] Reconnecting..."
-        );
-    }
-);
-
-client.on(
-    "shardResume",
-    shardId => {
-
-        console.log(
-            `[DISCORD] Resumed shard ${shardId}`
-        );
-    }
-);
-
-client.on(
-    "shardDisconnect",
-    event => {
-
-        console.log(
-            `[DISCORD] Disconnected: ${event?.code || "unknown"}`
-        );
-    }
-);
+app.get("/health", (req, res) => {
+    res.json({
+        success: true,
+        status: "online",
+        service: "Novi",
+        timestamp: new Date().toISOString()
+    });
+});
 
 /* =========================================================
-   PROCESS ERRORS
+   BASIC API INFO
 ========================================================= */
 
-process.on(
-    "unhandledRejection",
-    error => {
-
-        console.error(
-            "[UNHANDLED REJECTION]",
-            error
-        );
-    }
-);
-
-process.on(
-    "uncaughtException",
-    error => {
-
-        console.error(
-            "[UNCAUGHT EXCEPTION]",
-            error
-        );
-    }
-);
+app.get("/api", (req, res) => {
+    res.json({
+        success: true,
+        name: "Novi API",
+        status: "online"
+    });
+});
 
 /* =========================================================
-   LOGIN
+   GENERATE KEY
+   POST /api/keys
 ========================================================= */
 
-async function startBot() {
-
-    console.log(
-        "[BOT] Connecting to Discord..."
-    );
-
+app.post("/api/keys", requireAdmin, (req, res) => {
     try {
-
-        await client.login(TOKEN);
+        const duration = String(
+            req.body?.duration || ""
+        )
+            .trim()
+            .toLowerCase();
 
         console.log(
-            "[BOT] Login request completed."
+            `[API/KEYS] Generating key: ${duration}`
         );
 
-    } catch (error) {
+        if (!DURATIONS[duration]) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Invalid duration. Use 1d, 3d, 1week, 1month, or lifetime."
+            });
+        }
 
+        const keys = readKeys();
+
+        const keyRecord =
+            createKeyRecord(duration);
+
+        keys.push(keyRecord);
+
+        const saved = saveKeys(keys);
+
+        if (!saved) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to save generated key."
+            });
+        }
+
+        console.log(
+            `[API/KEYS] Generated: ${keyRecord.key}`
+        );
+
+        return res.status(201).json({
+            success: true,
+
+            key: keyRecord.key,
+
+            duration: keyRecord.duration,
+
+            durationName:
+                keyRecord.durationName,
+
+            createdAt:
+                keyRecord.createdAt,
+
+            expiresAt:
+                keyRecord.expiresAt
+        });
+    } catch (error) {
         console.error(
-            "[BOT] Login failed:",
+            "[API/KEYS] ERROR:",
             error
         );
 
-        process.exit(1);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to generate key.",
+            error: error.message
+        });
     }
+});
+
+/* =========================================================
+   GET ALL KEYS
+   ADMIN ONLY
+========================================================= */
+
+app.get("/api/keys", requireAdmin, (req, res) => {
+    try {
+        const keys = readKeys();
+
+        res.json({
+            success: true,
+            count: keys.length,
+            keys
+        });
+    } catch (error) {
+        console.error(
+            "[API/KEYS GET] ERROR:",
+            error
+        );
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to read keys."
+        });
+    }
+});
+
+/* =========================================================
+   DELETE KEY
+   ADMIN ONLY
+========================================================= */
+
+app.delete("/api/keys/:key", requireAdmin, (req, res) => {
+    try {
+        const key = String(
+            req.params.key || ""
+        )
+            .trim()
+            .toUpperCase();
+
+        const keys = readKeys();
+
+        const originalLength = keys.length;
+
+        const filtered = keys.filter(
+            item =>
+                String(item?.key || "")
+                    .trim()
+                    .toUpperCase() !== key
+        );
+
+        if (filtered.length === originalLength) {
+            return res.status(404).json({
+                success: false,
+                message: "Key not found."
+            });
+        }
+
+        saveKeys(filtered);
+
+        res.json({
+            success: true,
+            message: "Key deleted."
+        });
+    } catch (error) {
+        console.error(
+            "[API/KEYS DELETE] ERROR:",
+            error
+        );
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to delete key."
+        });
+    }
+});
+
+/* =========================================================
+   VERIFY KEY
+   POST /api/verify
+========================================================= */
+
+app.post("/api/verify", (req, res) => {
+    try {
+        const key = String(
+            req.body?.key || ""
+        )
+            .trim()
+            .toUpperCase();
+
+        const deviceId = String(
+            req.body?.deviceId || ""
+        ).trim();
+
+        if (!key) {
+            return res.status(400).json({
+                success: false,
+                valid: false,
+                message: "Key is required."
+            });
+        }
+
+        if (!deviceId) {
+            return res.status(400).json({
+                success: false,
+                valid: false,
+                message: "Device ID is required."
+            });
+        }
+
+        const keys = readKeys();
+
+        const keyRecord =
+            findKey(keys, key);
+
+        if (!keyRecord) {
+            return res.status(404).json({
+                success: false,
+                valid: false,
+                message: "Invalid key."
+            });
+        }
+
+        if (isKeyExpired(keyRecord)) {
+            return res.status(403).json({
+                success: false,
+                valid: false,
+                message: "This key has expired."
+            });
+        }
+
+        /*
+         * First activation binds the key to the device.
+         */
+
+        if (!keyRecord.deviceId) {
+            keyRecord.deviceId = deviceId;
+
+            keyRecord.activatedAt =
+                new Date().toISOString();
+
+            saveKeys(keys);
+        } else if (
+            String(keyRecord.deviceId) !==
+            deviceId
+        ) {
+            return res.status(403).json({
+                success: false,
+                valid: false,
+                message:
+                    "This key is already linked to another device."
+            });
+        }
+
+        const session =
+            createSession(keyRecord);
+
+        return res.json({
+            success: true,
+            valid: true,
+
+            sessionToken:
+                session.token,
+
+            expiresAt:
+                session.expiresAt,
+
+            key: {
+                key: keyRecord.key,
+                duration:
+                    keyRecord.duration,
+                durationName:
+                    keyRecord.durationName,
+                createdAt:
+                    keyRecord.createdAt,
+                expiresAt:
+                    keyRecord.expiresAt,
+                activatedAt:
+                    keyRecord.activatedAt
+            }
+        });
+    } catch (error) {
+        console.error(
+            "[API/VERIFY] ERROR:",
+            error
+        );
+
+        res.status(500).json({
+            success: false,
+            valid: false,
+            message: "Verification failed."
+        });
+    }
+});
+
+/* =========================================================
+   SESSION CHECK
+========================================================= */
+
+app.get("/api/session", (req, res) => {
+    try {
+        const authHeader = String(
+            req.headers.authorization || ""
+        );
+
+        const token = authHeader.startsWith("Bearer ")
+            ? authHeader.slice(7).trim()
+            : "";
+
+        const session =
+            getSession(token);
+
+        if (!session) {
+            return res.status(401).json({
+                success: false,
+                valid: false,
+                message: "Invalid or expired session."
+            });
+        }
+
+        const keys = readKeys();
+
+        const keyRecord =
+            findKey(keys, session.key);
+
+        if (!keyRecord) {
+            sessions.delete(token);
+
+            return res.status(401).json({
+                success: false,
+                valid: false,
+                message: "Key no longer exists."
+            });
+        }
+
+        if (isKeyExpired(keyRecord)) {
+            sessions.delete(token);
+
+            return res.status(401).json({
+                success: false,
+                valid: false,
+                message: "Key has expired."
+            });
+        }
+
+        res.json({
+            success: true,
+            valid: true,
+            expiresAt: session.expiresAt,
+            key: keyRecord
+        });
+    } catch (error) {
+        console.error(
+            "[API/SESSION] ERROR:",
+            error
+        );
+
+        res.status(500).json({
+            success: false,
+            valid: false,
+            message: "Session check failed."
+        });
+    }
+});
+
+/* =========================================================
+   STOCK - ADD
+   ADMIN ONLY
+========================================================= */
+
+app.post("/api/stock/add", requireAdmin, (req, res) => {
+    try {
+        const item = String(
+            req.body?.item || ""
+        ).trim();
+
+        if (!item) {
+            return res.status(400).json({
+                success: false,
+                message: "Stock item is required."
+            });
+        }
+
+        const stock = readStock();
+
+        const exists = stock.some(
+            existing =>
+                String(existing).trim() === item
+        );
+
+        if (exists) {
+            return res.json({
+                success: true,
+                added: 0,
+                duplicates: 1,
+                count: stock.length
+            });
+        }
+
+        stock.push(item);
+
+        const saved = saveStock(stock);
+
+        if (!saved) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to save stock."
+            });
+        }
+
+        return res.json({
+            success: true,
+            added: 1,
+            duplicates: 0,
+            count: stock.length
+        });
+    } catch (error) {
+        console.error(
+            "[API/STOCK/ADD] ERROR:",
+            error
+        );
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to add stock."
+        });
+    }
+});
+
+/* =========================================================
+   STOCK - GET
+   ADMIN ONLY
+========================================================= */
+
+app.get("/api/admin/stock", requireAdmin, (req, res) => {
+    try {
+        const stock = readStock();
+
+        res.json({
+            success: true,
+            count: stock.length,
+            stock
+        });
+    } catch (error) {
+        console.error(
+            "[API/STOCK] ERROR:",
+            error
+        );
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to read stock."
+        });
+    }
+});
+
+/* =========================================================
+   STOCK - PUBLIC COUNT
+========================================================= */
+
+app.get("/api/stock/count", (req, res) => {
+    try {
+        const stock = readStock();
+
+        res.json({
+            success: true,
+            count: stock.length
+        });
+    } catch (error) {
+        console.error(
+            "[API/STOCK/COUNT] ERROR:",
+            error
+        );
+
+        res.status(500).json({
+            success: false,
+            count: 0
+        });
+    }
+});
+
+/* =========================================================
+   STATIC WEBSITE
+========================================================= */
+
+if (fs.existsSync(PUBLIC_DIR)) {
+    app.use(express.static(PUBLIC_DIR));
+
+    app.get("*", (req, res, next) => {
+        /*
+         * Don't send index.html for API requests.
+         */
+        if (req.path.startsWith("/api/")) {
+            return next();
+        }
+
+        const indexPath =
+            path.join(PUBLIC_DIR, "index.html");
+
+        if (fs.existsSync(indexPath)) {
+            return res.sendFile(indexPath);
+        }
+
+        next();
+    });
 }
 
-startBot();
+/* =========================================================
+   404 HANDLER
+========================================================= */
+
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: "Route not found."
+    });
+});
+
+/* =========================================================
+   ERROR HANDLER
+========================================================= */
+
+app.use((error, req, res, next) => {
+    console.error(
+        "[SERVER ERROR]",
+        error
+    );
+
+    res.status(500).json({
+        success: false,
+        message: "Internal server error."
+    });
+});
+
+/* =========================================================
+   START SERVER
+========================================================= */
+
+const server = app.listen(
+    PORT,
+    "0.0.0.0",
+    () => {
+        console.log("");
+        console.log("========================================");
+        console.log("           NOVI SERVER ONLINE");
+        console.log("========================================");
+        console.log(`Port: ${PORT}`);
+        console.log(`API: http://127.0.0.1:${PORT}`);
+        console.log("Health: /health");
+        console.log("Key API: POST /api/keys");
+        console.log("Verify API: POST /api/verify");
+        console.log("Stock API: POST /api/stock/add");
+        console.log("========================================");
+        console.log("");
+    }
+);
+
+server.on("error", error => {
+    console.error(
+        "[SERVER] Failed to start:",
+        error
+    );
+});
+
+module.exports = {
+    app,
+    server
+};
