@@ -15,7 +15,6 @@
     :root {
       --bg: #060609;
       --card: rgba(16, 16, 23, 0.82);
-      --card-2: rgba(22, 22, 31, 0.9);
       --border: rgba(255, 255, 255, 0.08);
       --purple: #8b5cf6;
       --purple-light: #a78bfa;
@@ -34,7 +33,8 @@
         radial-gradient(circle at 0% 100%, rgba(91, 33, 182, .10), transparent 30%),
         var(--bg);
       color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+        BlinkMacSystemFont, "Segoe UI", sans-serif;
       overflow-x: hidden;
     }
 
@@ -58,10 +58,6 @@
     button {
       cursor: pointer;
     }
-
-    /* =========================
-       LOGIN
-    ========================== */
 
     #loginPage {
       min-height: 100vh;
@@ -184,7 +180,6 @@
 
     #unlockButton:hover {
       transform: translateY(-1px);
-      box-shadow: 0 15px 35px rgba(109,40,217,.35);
     }
 
     #unlockButton:disabled {
@@ -207,10 +202,6 @@
     .error {
       color: var(--red);
     }
-
-    /* =========================
-       DASHBOARD
-    ========================== */
 
     #dashboardPage {
       display: none;
@@ -241,7 +232,6 @@
       align-items: center;
       gap: 11px;
       font-weight: 800;
-      letter-spacing: -.3px;
     }
 
     .small-logo {
@@ -254,7 +244,6 @@
       font-size: 15px;
       font-weight: 900;
       background: linear-gradient(145deg, #9f67ff, #6422cf);
-      box-shadow: 0 7px 20px rgba(124,58,237,.25);
     }
 
     #logoutButton {
@@ -263,13 +252,6 @@
       padding: 9px 14px;
       color: #c7c7d0;
       background: rgba(255,255,255,.035);
-      transition: .2s ease;
-    }
-
-    #logoutButton:hover {
-      color: white;
-      border-color: rgba(255,255,255,.15);
-      background: rgba(255,255,255,.06);
     }
 
     .welcome {
@@ -286,10 +268,6 @@
       margin-top: 7px;
       font-size: 14px;
     }
-
-    /* =========================
-       STATS
-    ========================== */
 
     .stats-grid {
       display: grid;
@@ -308,17 +286,6 @@
       backdrop-filter: blur(16px);
     }
 
-    .stat-card::after {
-      content: "";
-      position: absolute;
-      width: 90px;
-      height: 90px;
-      right: -35px;
-      bottom: -45px;
-      background: rgba(139,92,246,.12);
-      filter: blur(35px);
-    }
-
     .stat-label {
       color: var(--muted);
       font-size: 12px;
@@ -330,8 +297,6 @@
       font-size: 23px;
       font-weight: 800;
       letter-spacing: -.4px;
-      position: relative;
-      z-index: 1;
     }
 
     #keyExpiration {
@@ -348,15 +313,6 @@
     #keyExpiration.expired {
       color: var(--red);
     }
-
-    #stockCount {
-      font-variant-numeric: tabular-nums;
-      transition: opacity .15s ease;
-    }
-
-    /* =========================
-       CARDS
-    ========================== */
 
     .main-card {
       margin-top: 18px;
@@ -395,19 +351,12 @@
       font-size: 13px;
       font-weight: 750;
       background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-      box-shadow: 0 8px 25px rgba(109,40,217,.22);
-      transition: .2s ease;
       white-space: nowrap;
-    }
-
-    #generateButton:hover {
-      transform: translateY(-1px);
     }
 
     #generateButton:disabled {
       opacity: .55;
       cursor: not-allowed;
-      transform: none;
     }
 
     #inventoryResult {
@@ -437,17 +386,12 @@
       border-bottom: 1px solid rgba(255,255,255,.055);
     }
 
-    .inventory-row:last-child {
-      border-bottom: 0;
-    }
-
     .inventory-label {
       color: #777783;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: .7px;
       font-weight: 700;
-      flex-shrink: 0;
     }
 
     .inventory-value {
@@ -462,7 +406,6 @@
       display: flex;
       gap: 9px;
       padding: 14px 17px;
-      border-top: 1px solid rgba(255,255,255,.055);
     }
 
     .action-btn {
@@ -473,12 +416,6 @@
       background: rgba(255,255,255,.035);
       font-size: 12px;
       font-weight: 650;
-      transition: .2s ease;
-    }
-
-    .action-btn:hover {
-      color: white;
-      background: rgba(255,255,255,.07);
     }
 
     .action-btn.primary {
@@ -487,19 +424,11 @@
       background: rgba(139,92,246,.09);
     }
 
-    .action-btn.primary:hover {
-      background: rgba(139,92,246,.16);
-    }
-
     .dashboard-message {
       min-height: 20px;
       padding: 0 22px 18px;
       font-size: 13px;
     }
-
-    /* =========================
-       SAVED LOGINS
-    ========================== */
 
     .saved-login-list {
       display: grid;
@@ -548,22 +477,7 @@
       color: #aaaab5;
       background: rgba(255,255,255,.035);
       font-size: 11px;
-      transition: .2s;
     }
-
-    .saved-actions button:hover {
-      color: white;
-      background: rgba(255,255,255,.07);
-    }
-
-    .saved-actions .delete-btn:hover {
-      color: #fca5a5;
-      border-color: rgba(248,113,113,.2);
-    }
-
-    /* =========================
-       MODAL
-    ========================== */
 
     .modal-overlay {
       position: fixed;
@@ -594,7 +508,6 @@
       color: var(--muted);
       font-size: 12px;
       margin-top: 6px;
-      line-height: 1.5;
     }
 
     .modal-field {
@@ -618,10 +531,6 @@
       padding: 0 12px;
       color: white;
       background: rgba(255,255,255,.035);
-    }
-
-    .modal-field input:focus {
-      border-color: rgba(139,92,246,.65);
     }
 
     .modal-buttons {
@@ -650,10 +559,6 @@
       background: linear-gradient(135deg, #8b5cf6, #6d28d9);
     }
 
-    /* =========================
-       LOADING
-    ========================== */
-
     .loading {
       display: inline-flex;
       align-items: center;
@@ -675,10 +580,6 @@
       }
     }
 
-    /* =========================
-       RESPONSIVE
-    ========================== */
-
     @media (max-width: 900px) {
       .stats-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -692,10 +593,6 @@
 
       .stats-grid {
         grid-template-columns: 1fr;
-      }
-
-      .topbar {
-        margin-bottom: 25px;
       }
 
       .dashboard-container {
@@ -749,2914 +646,2077 @@
 
 <body>
 
-  <!-- =========================
-       LOGIN PAGE
-  ========================== -->
+<section id="loginPage">
+  <div class="login-wrapper">
+    <div class="login-glow"></div>
 
-  <section id="loginPage">
-
-    <div class="login-wrapper">
-
-      <div class="login-glow"></div>
-
-      <div class="login-card">
-
-        <div class="brand">
-
-          <div class="brand-logo">
-            N
-          </div>
-
-          <h1>Novi</h1>
-
-          <p>
-            Enter your access key to continue
-          </p>
-
-        </div>
-
-        <label
-          class="input-label"
-          for="keyInput"
-        >
-          Access Key
-        </label>
-
-        <div class="input-wrap">
-
-          <input
-            id="keyInput"
-            type="text"
-            autocomplete="off"
-            placeholder="Novi-XXXXXX-XXXXXX-XXXXXX"
-          >
-
-        </div>
-
-        <button id="unlockButton">
-          Unlock Dashboard
-        </button>
-
-        <div id="verifyResult"></div>
-
+    <div class="login-card">
+      <div class="brand">
+        <div class="brand-logo">N</div>
+        <h1>Novi</h1>
+        <p>Enter your access key to continue</p>
       </div>
 
-    </div>
-
-  </section>
-
-
-  <!-- =========================
-       DASHBOARD
-  ========================== -->
-
-  <section id="dashboardPage">
-
-    <div class="dashboard-container">
-
-      <header class="topbar">
-
-        <div class="topbar-brand">
-
-          <div class="small-logo">
-            N
-          </div>
-
-          <span>Novi</span>
-
-        </div>
-
-        <button id="logoutButton">
-          Logout
-        </button>
-
-      </header>
-
-
-      <div class="welcome">
-
-        <h1>Dashboard</h1>
-
-        <p>
-          Manage your inventory and saved logins.
-        </p>
-
-      </div>
-
-
-      <!-- =========================
-           STATS
-      ========================== -->
-
-      <div class="stats-grid">
-
-        <div class="stat-card">
-
-          <div class="stat-label">
-            Available Stock
-          </div>
-
-          <div
-            class="stat-value"
-            id="stockCount"
-          >
-            —
-          </div>
-
-        </div>
-
-
-        <div class="stat-card">
-
-          <div class="stat-label">
-            Key Duration
-          </div>
-
-          <div
-            class="stat-value"
-            id="keyDuration"
-          >
-            —
-          </div>
-
-        </div>
-
-
-        <div class="stat-card">
-
-          <div class="stat-label">
-            Time Remaining
-          </div>
-
-          <div
-            class="stat-value"
-            id="keyExpiration"
-          >
-            —
-          </div>
-
-        </div>
-
-
-        <div class="stat-card">
-
-          <div class="stat-label">
-            Account Status
-          </div>
-
-          <div
-            class="stat-value"
-            id="accountStatus"
-          >
-            Active
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- =========================
-           GENERATOR
-      ========================== -->
-
-      <div class="main-card">
-
-        <div class="card-header">
-
-          <div class="card-title">
-
-            <h2>Inventory</h2>
-
-            <p>
-              Generate an account from the available stock.
-            </p>
-
-          </div>
-
-          <button id="generateButton">
-            Generate Account
-          </button>
-
-        </div>
-
-
-        <div id="inventoryResult">
-
-          <div class="empty-state">
-            No account generated yet.
-          </div>
-
-        </div>
-
-
-        <div id="dashboardMessage"></div>
-
-      </div>
-
-
-      <!-- =========================
-           SAVED LOGINS
-      ========================== -->
-
-      <div class="main-card">
-
-        <div class="card-header">
-
-          <div class="card-title">
-
-            <h2>Saved Logins</h2>
-
-            <p>
-              Logins saved to your Novi account.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div id="savedLoginResult">
-
-          <div class="empty-state">
-            No saved logins.
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <!-- =========================
-       SAVE LOGIN MODAL
-  ========================== -->
-
-  <div
-    class="modal-overlay"
-    id="saveModal"
-  >
-
-    <div class="modal">
-
-      <h3>Save Login</h3>
-
-      <p>
-        Save this generated login to your Novi account.
-      </p>
-
-
-      <div class="modal-field">
-
-        <label>
-          Email
-        </label>
-
+      <label class="input-label" for="keyInput">
+        Access Key
+      </label>
+
+      <div class="input-wrap">
         <input
-          id="saveEmail"
+          id="keyInput"
           type="text"
-          readonly
+          autocomplete="off"
+          placeholder="Novi-XXXXXX-XXXXXX-XXXXXX"
         >
+      </div>
+
+      <button id="unlockButton">
+        Unlock Dashboard
+      </button>
+
+      <div id="verifyResult"></div>
+    </div>
+  </div>
+</section>
+
+<section id="dashboardPage">
+
+  <div class="dashboard-container">
+
+    <header class="topbar">
+      <div class="topbar-brand">
+        <div class="small-logo">N</div>
+        <span>Novi</span>
+      </div>
+
+      <button id="logoutButton">
+        Logout
+      </button>
+    </header>
+
+    <div class="welcome">
+      <h1>Dashboard</h1>
+      <p>Manage your inventory and saved logins.</p>
+    </div>
+
+    <div class="stats-grid">
+
+      <div class="stat-card">
+        <div class="stat-label">Available Stock</div>
+        <div class="stat-value" id="stockCount">—</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Key Duration</div>
+        <div class="stat-value" id="keyDuration">—</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Time Remaining</div>
+        <div class="stat-value" id="keyExpiration">—</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Account Status</div>
+        <div class="stat-value" id="accountStatus">Active</div>
+      </div>
+
+    </div>
+
+    <div class="main-card">
+
+      <div class="card-header">
+
+        <div class="card-title">
+          <h2>Inventory</h2>
+          <p>Generate an account from the available stock.</p>
+        </div>
+
+        <button id="generateButton">
+          Generate Account
+        </button>
 
       </div>
 
+      <div id="inventoryResult">
+        <div class="empty-state">
+          No account generated yet.
+        </div>
+      </div>
 
-      <div class="modal-field">
+      <div id="dashboardMessage"></div>
 
-        <label>
-          Password
-        </label>
+    </div>
 
-        <input
-          id="savePassword"
-          type="password"
-          readonly
-        >
+    <div class="main-card">
+
+      <div class="card-header">
+
+        <div class="card-title">
+          <h2>Saved Logins</h2>
+          <p>Logins saved to your Novi account.</p>
+        </div>
 
       </div>
 
-
-      <div class="modal-buttons">
-
-        <button id="cancelSaveButton">
-          Cancel
-        </button>
-
-        <button id="confirmSaveButton">
-          Save Login
-        </button>
-
+      <div id="savedLoginResult">
+        <div class="empty-state">
+          No saved logins.
+        </div>
       </div>
 
     </div>
 
   </div>
 
+</section>
 
-  <script>
-    "use strict";
+<div class="modal-overlay" id="saveModal">
 
+  <div class="modal">
 
-    /* =========================
-       CONFIG
-    ========================== */
+    <h3>Save Login</h3>
 
-    const API_URL =
-      "https://novi-1.onrender.com";
+    <p>
+      Save this generated login to your Novi account.
+    </p>
 
-    const SESSION_KEY =
-      "noviSessionToken";
+    <div class="modal-field">
+      <label>Email</label>
+      <input id="saveEmail" type="text" readonly>
+    </div>
 
-    const DEVICE_KEY =
-      "noviDeviceId";
+    <div class="modal-field">
+      <label>Password</label>
+      <input id="savePassword" type="password" readonly>
+    </div>
 
-    const EXPIRATION_KEY =
-      "noviKeyExpiration";
+    <div class="modal-buttons">
+      <button id="cancelSaveButton">
+        Cancel
+      </button>
 
-    const DURATION_KEY =
-      "noviKeyDuration";
+      <button id="confirmSaveButton">
+        Save Login
+      </button>
+    </div>
 
+  </div>
 
-    /* =========================
-       STATE
-    ========================== */
+</div>
 
-    let currentSession =
-      sessionStorage.getItem(
-        SESSION_KEY
-      ) || "";
+<script>
+"use strict";
 
-    let currentGeneratedLogin =
-      null;
+/* =========================================================
+   CONFIG
+========================================================= */
 
-    let expirationTimer =
-      null;
+const API_URL = "https://novi-1.onrender.com";
 
-    let stockRefreshTimer =
-      null;
+const SESSION_KEY = "noviSessionToken";
+const DEVICE_KEY = "noviDeviceId";
+const EXPIRATION_KEY = "noviKeyExpiration";
+const DURATION_KEY = "noviKeyDuration";
 
-    let isGenerating =
-      false;
+/* =========================================================
+   STATE
+========================================================= */
 
+let currentSession =
+  sessionStorage.getItem(SESSION_KEY) || "";
 
-    /* =========================
-       ELEMENTS
-    ========================== */
+let currentGeneratedLogin = null;
 
-    const loginPage =
-      document.getElementById(
-        "loginPage"
-      );
+let expirationTimer = null;
+let stockRefreshTimer = null;
 
-    const dashboardPage =
-      document.getElementById(
-        "dashboardPage"
-      );
+let isGenerating = false;
 
-    const keyInput =
-      document.getElementById(
-        "keyInput"
-      );
+/* =========================================================
+   ELEMENTS
+========================================================= */
 
-    const unlockButton =
-      document.getElementById(
-        "unlockButton"
-      );
+const loginPage =
+  document.getElementById("loginPage");
 
-    const verifyResult =
-      document.getElementById(
-        "verifyResult"
-      );
+const dashboardPage =
+  document.getElementById("dashboardPage");
 
-    const logoutButton =
-      document.getElementById(
-        "logoutButton"
-      );
+const keyInput =
+  document.getElementById("keyInput");
 
-    const stockCount =
-      document.getElementById(
-        "stockCount"
-      );
+const unlockButton =
+  document.getElementById("unlockButton");
 
-    const keyDuration =
-      document.getElementById(
-        "keyDuration"
-      );
+const verifyResult =
+  document.getElementById("verifyResult");
 
-    const keyExpiration =
-      document.getElementById(
-        "keyExpiration"
-      );
+const logoutButton =
+  document.getElementById("logoutButton");
 
-    const accountStatus =
-      document.getElementById(
-        "accountStatus"
-      );
+const stockCount =
+  document.getElementById("stockCount");
 
-    const generateButton =
-      document.getElementById(
-        "generateButton"
-      );
+const keyDuration =
+  document.getElementById("keyDuration");
 
-    const inventoryResult =
-      document.getElementById(
-        "inventoryResult"
-      );
+const keyExpiration =
+  document.getElementById("keyExpiration");
 
-    const dashboardMessage =
-      document.getElementById(
-        "dashboardMessage"
-      );
+const accountStatus =
+  document.getElementById("accountStatus");
 
-    const savedLoginResult =
-      document.getElementById(
-        "savedLoginResult"
-      );
+const generateButton =
+  document.getElementById("generateButton");
 
-    const saveModal =
-      document.getElementById(
-        "saveModal"
-      );
+const inventoryResult =
+  document.getElementById("inventoryResult");
 
-    const saveEmail =
-      document.getElementById(
-        "saveEmail"
-      );
+const dashboardMessage =
+  document.getElementById("dashboardMessage");
 
-    const savePassword =
-      document.getElementById(
-        "savePassword"
-      );
+const savedLoginResult =
+  document.getElementById("savedLoginResult");
 
-    const cancelSaveButton =
-      document.getElementById(
-        "cancelSaveButton"
-      );
+const saveModal =
+  document.getElementById("saveModal");
 
-    const confirmSaveButton =
-      document.getElementById(
-        "confirmSaveButton"
-      );
+const saveEmail =
+  document.getElementById("saveEmail");
 
+const savePassword =
+  document.getElementById("savePassword");
 
-    /* =========================
-       DEVICE ID
-    ========================== */
+const cancelSaveButton =
+  document.getElementById("cancelSaveButton");
 
-    function getDeviceId() {
+const confirmSaveButton =
+  document.getElementById("confirmSaveButton");
 
-      let deviceId =
-        localStorage.getItem(
-          DEVICE_KEY
-        );
+/* =========================================================
+   DEVICE ID
+========================================================= */
 
-      if (!deviceId) {
+function getDeviceId() {
 
-        deviceId =
-          crypto.randomUUID
-            ? crypto.randomUUID()
-            : (
-                Date.now().toString(36) +
-                Math.random()
-                  .toString(36)
-                  .slice(2)
-              );
+  let deviceId =
+    localStorage.getItem(DEVICE_KEY);
 
-        localStorage.setItem(
-          DEVICE_KEY,
-          deviceId
-        );
-      }
+  if (!deviceId) {
 
-      return deviceId;
+    if (
+      window.crypto &&
+      typeof crypto.randomUUID === "function"
+    ) {
+      deviceId = crypto.randomUUID();
+    } else {
+      deviceId =
+        Date.now().toString(36) +
+        Math.random().toString(36).slice(2);
     }
 
+    localStorage.setItem(
+      DEVICE_KEY,
+      deviceId
+    );
+  }
 
-    /* =========================
-       API
-    ========================== */
+  return deviceId;
+}
 
-    async function authenticatedFetch(
-      url,
-      options = {}
-    ) {
+/* =========================================================
+   API HELPERS
+========================================================= */
 
-      if (!currentSession) {
+async function parseResponse(response) {
 
-        throw new Error(
-          "Your session has expired."
-        );
-      }
+  const text =
+    await response.text();
 
-      const headers = {
+  if (!text) {
+    return {};
+  }
 
-        ...(options.headers || {}),
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {
+      success: false,
+      error: text
+    };
+  }
+}
 
-        "x-novi-session":
-          currentSession
+async function authenticatedFetch(
+  url,
+  options = {}
+) {
 
-      };
+  if (!currentSession) {
+    throw new Error(
+      "Your session has expired."
+    );
+  }
 
-      return fetch(
-        url,
+  const headers = {
+    ...(options.headers || {}),
+    "x-novi-session": currentSession
+  };
+
+  return fetch(
+    url,
+    {
+      ...options,
+      headers
+    }
+  );
+}
+
+function isSessionError(result) {
+
+  const message =
+    String(
+      result?.message ||
+      result?.error ||
+      ""
+    ).toLowerCase();
+
+  return (
+    message.includes("session") ||
+    message.includes("expired") ||
+    message.includes("invalid")
+  );
+}
+
+/* =========================================================
+   VERIFY
+========================================================= */
+
+async function unlock() {
+
+  const key =
+    keyInput.value.trim();
+
+  if (!key) {
+
+    showVerify(
+      "Please enter your access key.",
+      false
+    );
+
+    return;
+  }
+
+  unlockButton.disabled = true;
+
+  unlockButton.innerHTML = `
+    <span class="loading">
+      <span class="spinner"></span>
+      Verifying...
+    </span>
+  `;
+
+  try {
+
+    const response =
+      await fetch(
+        `${API_URL}/api/verify`,
         {
-          ...options,
-          headers
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            key,
+            deviceId: getDeviceId()
+          })
         }
       );
-    }
 
+    const result =
+      await parseResponse(response);
 
-    /* =========================
-       VERIFY KEY
-    ========================== */
-
-    async function unlock() {
-
-      const key =
-        keyInput.value.trim();
-
-      if (!key) {
-
-        showVerify(
-          "Please enter your access key.",
-          false
-        );
-
-        return;
-      }
-
-      unlockButton.disabled =
-        true;
-
-      unlockButton.innerHTML = `
-        <span class="loading">
-          <span class="spinner"></span>
-          Verifying...
-        </span>
-      `;
-
-      showVerify(
-        "",
-        true
-      );
-
-
-      try {
-
-        const response =
-          await fetch(
-            `${API_URL}/api/verify`,
-            {
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-
-              body:
-                JSON.stringify({
-                  key,
-
-                  deviceId:
-                    getDeviceId()
-                })
-            }
-          );
-
-
-        const result =
-          await response
-            .json()
-            .catch(
-              () => ({})
-            );
-
-
-        if (
-          !response.ok ||
-          !result.success ||
-          !result.sessionToken
-        ) {
-
-          throw new Error(
-            result.message ||
-            result.error ||
-            "Invalid or expired key."
-          );
-        }
-
-
-        currentSession =
-          result.sessionToken;
-
-
-        sessionStorage.setItem(
-          SESSION_KEY,
-          currentSession
-        );
-
-
-        /* =========================
-           SAVE KEY INFO
-        ========================== */
-
-        const duration =
-          result.key?.duration ||
-          result.duration ||
-          "Active";
-
-
-        const expiresAt =
-          result.key?.keyExpiresAt ??
-          result.key?.expiresAt ??
-          result.expiresAt ??
-          null;
-
-
-        keyDuration.textContent =
-          formatDuration(
-            duration
-          );
-
-
-        accountStatus.textContent =
-          "Active";
-
-
-        sessionStorage.setItem(
-          DURATION_KEY,
-          duration
-        );
-
-
-        if (
-          expiresAt !== null &&
-          expiresAt !== undefined &&
-          expiresAt !== ""
-        ) {
-
-          sessionStorage.setItem(
-            EXPIRATION_KEY,
-            String(expiresAt)
-          );
-
-        } else {
-
-          sessionStorage.removeItem(
-            EXPIRATION_KEY
-          );
-        }
-
-
-        /* =========================
-           START TIMER
-        ========================== */
-
-        startExpirationTimer(
-          expiresAt
-        );
-
-
-        /* =========================
-           SHOW DASHBOARD
-        ========================== */
-
-        loginPage.style.display =
-          "none";
-
-        dashboardPage.style.display =
-          "block";
-
-        verifyResult.textContent =
-          "";
-
-
-        await loadStock();
-
-        startLiveStock();
-
-        await loadSavedLogins();
-
-
-      } catch (error) {
-
-        showVerify(
-          error.message ||
-          "Unable to verify key.",
-          false
-        );
-
-
-        currentSession =
-          "";
-
-        sessionStorage.removeItem(
-          SESSION_KEY
-        );
-
-        sessionStorage.removeItem(
-          EXPIRATION_KEY
-        );
-
-        sessionStorage.removeItem(
-          DURATION_KEY
-        );
-
-
-      } finally {
-
-        unlockButton.disabled =
-          false;
-
-        unlockButton.textContent =
-          "Unlock Dashboard";
-      }
-    }
-
-
-    function showVerify(
-      message,
-      success
+    if (
+      !response.ok ||
+      !result.success ||
+      !result.sessionToken
     ) {
 
-      verifyResult.textContent =
-        message;
-
-      verifyResult.className =
-        success
-          ? "success"
-          : "error";
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Invalid or expired key."
+      );
     }
 
+    currentSession =
+      result.sessionToken;
 
-    /* =========================
-       FORMAT DURATION
-    ========================== */
+    sessionStorage.setItem(
+      SESSION_KEY,
+      currentSession
+    );
 
-    function formatDuration(
+    const duration =
+      result.key?.duration ||
+      result.duration ||
+      "Active";
+
+    const expiresAt =
+      result.key?.keyExpiresAt ??
+      result.key?.expiresAt ??
+      result.expiresAt ??
+      null;
+
+    sessionStorage.setItem(
+      DURATION_KEY,
       duration
+    );
+
+    if (
+      expiresAt !== null &&
+      expiresAt !== undefined &&
+      expiresAt !== ""
     ) {
-
-      const value =
-        String(
-          duration || ""
-        ).toLowerCase();
-
-
-      if (value === "1d")
-        return "1 Day";
-
-
-      if (value === "3d")
-        return "3 Days";
-
-
-      if (
-        value === "1w" ||
-        value === "1week"
-      )
-        return "1 Week";
-
-
-      if (
-        value === "1mo" ||
-        value === "1month"
-      )
-        return "1 Month";
-
-
-      if (value === "lifetime")
-        return "Lifetime";
-
-
-      return duration ||
-        "Active";
-    }
-
-
-    /* =========================
-       EXPIRATION TIMER
-    ========================== */
-
-    function normalizeExpiration(
-      value
-    ) {
-
-      if (
-        value === null ||
-        value === undefined ||
-        value === ""
-      ) {
-
-        return null;
-      }
-
-
-      /*
-        If backend sends a numeric
-        Unix timestamp in milliseconds.
-      */
-
-      if (
-        typeof value === "number" &&
-        Number.isFinite(value)
-      ) {
-
-        return value;
-      }
-
-
-      const stringValue =
-        String(value).trim();
-
-
-      /*
-        Numeric timestamp.
-      */
-
-      if (
-        /^[0-9]+$/.test(
-          stringValue
-        )
-      ) {
-
-        const numeric =
-          Number(
-            stringValue
-          );
-
-        if (
-          Number.isFinite(
-            numeric
-          )
-        ) {
-
-          /*
-            If seconds were ever returned,
-            convert them to milliseconds.
-          */
-
-          if (
-            numeric < 100000000000
-          ) {
-
-            return numeric * 1000;
-          }
-
-          return numeric;
-        }
-      }
-
-
-      /*
-        ISO / PostgreSQL timestamp.
-      */
-
-      const parsed =
-        Date.parse(
-          stringValue
-        );
-
-
-      if (
-        Number.isFinite(
-          parsed
-        )
-      ) {
-
-        return parsed;
-      }
-
-
-      return null;
-    }
-
-
-    function startExpirationTimer(
-      expiresAt
-    ) {
-
-      if (expirationTimer) {
-
-        clearInterval(
-          expirationTimer
-        );
-
-        expirationTimer =
-          null;
-      }
-
-
-      /*
-        Lifetime key.
-      */
-
-      if (
-        expiresAt === null ||
-        expiresAt === undefined ||
-        expiresAt === ""
-      ) {
-
-        keyExpiration.textContent =
-          "Never Expires";
-
-        keyExpiration.classList.remove(
-          "expiring",
-          "expired"
-        );
-
-        return;
-      }
-
-
-      const expirationTime =
-        normalizeExpiration(
-          expiresAt
-        );
-
-
-      if (
-        !Number.isFinite(
-          expirationTime
-        )
-      ) {
-
-        /*
-          Do NOT log the user out just
-          because the timer cannot parse
-          the date.
-        */
-
-        keyExpiration.textContent =
-          "Active";
-
-        keyExpiration.classList.remove(
-          "expiring",
-          "expired"
-        );
-
-        return;
-      }
-
 
       sessionStorage.setItem(
         EXPIRATION_KEY,
-        String(
-          expiresAt
-        )
+        String(expiresAt)
       );
 
-
-      function updateTimer() {
-
-        const remaining =
-          expirationTime -
-          Date.now();
-
-
-        if (remaining <= 0) {
-
-          keyExpiration.textContent =
-            "Expired";
-
-
-          keyExpiration.classList.remove(
-            "expiring"
-          );
-
-
-          keyExpiration.classList.add(
-            "expired"
-          );
-
-
-          accountStatus.textContent =
-            "Expired";
-
-
-          if (expirationTimer) {
-
-            clearInterval(
-              expirationTimer
-            );
-
-            expirationTimer =
-              null;
-          }
-
-
-          setTimeout(
-            () => {
-
-              forceLogout(
-                "Your key has expired."
-              );
-
-            },
-            1000
-          );
-
-
-          return;
-        }
-
-
-        keyExpiration.textContent =
-          formatRemaining(
-            remaining
-          );
-
-
-        if (
-          remaining <=
-          60 * 60 * 1000
-        ) {
-
-          keyExpiration.classList.add(
-            "expiring"
-          );
-
-        } else {
-
-          keyExpiration.classList.remove(
-            "expiring"
-          );
-        }
-
-
-        keyExpiration.classList.remove(
-          "expired"
-        );
-
-        accountStatus.textContent =
-          "Active";
-      }
-
-
-      updateTimer();
-
-
-      expirationTimer =
-        setInterval(
-          updateTimer,
-          1000
-        );
-    }
-
-
-    function formatRemaining(
-      milliseconds
-    ) {
-
-      let totalSeconds =
-        Math.max(
-          0,
-          Math.floor(
-            milliseconds /
-            1000
-          )
-        );
-
-
-      const days =
-        Math.floor(
-          totalSeconds /
-          86400
-        );
-
-
-      totalSeconds %=
-        86400;
-
-
-      const hours =
-        Math.floor(
-          totalSeconds /
-          3600
-        );
-
-
-      totalSeconds %=
-        3600;
-
-
-      const minutes =
-        Math.floor(
-          totalSeconds /
-          60
-        );
-
-
-      const seconds =
-        totalSeconds %
-        60;
-
-
-      const hh =
-        String(hours)
-          .padStart(
-            2,
-            "0"
-          );
-
-
-      const mm =
-        String(minutes)
-          .padStart(
-            2,
-            "0"
-          );
-
-
-      const ss =
-        String(seconds)
-          .padStart(
-            2,
-            "0"
-          );
-
-
-      if (days > 0) {
-
-        return `${days}d ${hh}h ${mm}m`;
-      }
-
-
-      return `${hh}h ${mm}m ${ss}s`;
-    }
-
-
-    /* =========================
-       RESTORE TIMER
-    ========================== */
-
-    function restoreExpirationTimer() {
-
-      const duration =
-        sessionStorage.getItem(
-          DURATION_KEY
-        );
-
-
-      const expiresAt =
-        sessionStorage.getItem(
-          EXPIRATION_KEY
-        );
-
-
-      if (duration) {
-
-        keyDuration.textContent =
-          formatDuration(
-            duration
-          );
-      }
-
-
-      if (
-        expiresAt !== null &&
-        expiresAt !== ""
-      ) {
-
-        startExpirationTimer(
-          expiresAt
-        );
-
-      } else if (
-        String(duration)
-          .toLowerCase() ===
-        "lifetime"
-      ) {
-
-        keyExpiration.textContent =
-          "Never Expires";
-
-      } else {
-
-        keyExpiration.textContent =
-          "—";
-      }
-    }
-
-
-    /* =========================
-       STOCK
-    ========================== */
-
-    async function loadStock() {
-
-      try {
-
-        const response =
-          await authenticatedFetch(
-            `${API_URL}/api/stock`
-          );
-
-
-        if (
-          response.status ===
-          401
-        ) {
-
-          const errorResult =
-            await response
-              .json()
-              .catch(
-                () => ({})
-              );
-
-
-          const errorMessage =
-            errorResult.message ||
-            errorResult.error ||
-            "";
-
-
-          /*
-            Only logout when the backend
-            actually says the session is
-            expired/invalid.
-          */
-
-          if (
-            errorMessage
-              .toLowerCase()
-              .includes("expired") ||
-            errorMessage
-              .toLowerCase()
-              .includes("session") ||
-            errorMessage
-              .toLowerCase()
-              .includes("invalid")
-          ) {
-
-            return forceLogout(
-              errorMessage ||
-              "Your session has expired."
-            );
-          }
-
-
-          throw new Error(
-            errorMessage ||
-            "Could not load stock."
-          );
-        }
-
-
-        const result =
-          await response
-            .json()
-            .catch(
-              () => ({})
-            );
-
-
-        if (!response.ok) {
-
-          throw new Error(
-            result.message ||
-            result.error ||
-            "Could not load stock."
-          );
-        }
-
-
-        const count =
-          Number(
-            result.count ??
-            result.stockCount ??
-            0
-          );
-
-
-        stockCount.textContent =
-          count;
-
-
-        if (!isGenerating) {
-
-          if (count <= 0) {
-
-            generateButton.disabled =
-              true;
-
-            generateButton.textContent =
-              "Out of Stock";
-
-          } else {
-
-            generateButton.disabled =
-              false;
-
-            generateButton.textContent =
-              "Generate Account";
-          }
-        }
-
-
-      } catch (error) {
-
-        if (
-          stockCount.textContent ===
-          "—"
-        ) {
-
-          stockCount.textContent =
-            "—";
-        }
-
-      }
-    }
-
-
-    /* =========================
-       LIVE STOCK
-    ========================== */
-
-    function startLiveStock() {
-
-      stopLiveStock();
-
-
-      loadStock();
-
-
-      stockRefreshTimer =
-        setInterval(
-          () => {
-
-            if (
-              dashboardPage.style.display !==
-                "none" &&
-              currentSession
-            ) {
-
-              loadStock();
-            }
-
-          },
-          2000
-        );
-    }
-
-
-    function stopLiveStock() {
-
-      if (stockRefreshTimer) {
-
-        clearInterval(
-          stockRefreshTimer
-        );
-
-        stockRefreshTimer =
-          null;
-      }
-    }
-
-
-    /* =========================
-       GENERATE
-    ========================== */
-
-    async function generateInventory() {
-
-      if (isGenerating) {
-        return;
-      }
-
-
-      if (!currentSession) {
-
-        return forceLogout(
-          "Your session has expired."
-        );
-      }
-
-
-      isGenerating =
-        true;
-
-
-      generateButton.disabled =
-        true;
-
-
-      generateButton.innerHTML = `
-        <span class="loading">
-          <span class="spinner"></span>
-          Generating...
-        </span>
-      `;
-
-
-      dashboardMessage.textContent =
-        "";
-
-      dashboardMessage.className =
-        "dashboard-message";
-
-
-      try {
-
-        const response =
-          await authenticatedFetch(
-            `${API_URL}/api/stock/generate`,
-            {
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              }
-            }
-          );
-
-
-        /*
-          IMPORTANT:
-          A 401 does NOT automatically mean
-          the key expired.
-
-          Read the backend message first.
-        */
-
-        if (
-          response.status ===
-          401
-        ) {
-
-          const errorResult =
-            await response
-              .json()
-              .catch(
-                () => ({})
-              );
-
-
-          const errorMessage =
-            errorResult.message ||
-            errorResult.error ||
-            "Generation request was rejected.";
-
-
-          const lowerMessage =
-            errorMessage.toLowerCase();
-
-
-          if (
-            lowerMessage.includes("expired") ||
-            lowerMessage.includes("session") ||
-            lowerMessage.includes("invalid")
-          ) {
-
-            return forceLogout(
-              errorMessage
-            );
-          }
-
-
-          throw new Error(
-            errorMessage
-          );
-        }
-
-
-        const result =
-          await response
-            .json()
-            .catch(
-              () => ({})
-            );
-
-
-        if (
-          !response.ok ||
-          !result.success
-        ) {
-
-          throw new Error(
-            result.message ||
-            result.error ||
-            "No stock available."
-          );
-        }
-
-
-        const item =
-          result.item ||
-          result.account ||
-          result;
-
-
-        currentGeneratedLogin =
-          normalizeLogin(
-            item
-          );
-
-
-        renderInventoryItem(
-          currentGeneratedLogin
-        );
-
-
-        dashboardMessage.textContent =
-          "Account generated successfully.";
-
-        dashboardMessage.className =
-          "dashboard-message success";
-
-
-        await loadStock();
-
-
-      } catch (error) {
-
-        dashboardMessage.textContent =
-          error.message ||
-          "Generation failed.";
-
-        dashboardMessage.className =
-          "dashboard-message error";
-
-
-      } finally {
-
-        isGenerating =
-          false;
-
-
-        await loadStock();
-
-      }
-    }
-
-
-    function normalizeLogin(
-      item
-    ) {
-
-      if (!item) {
-
-        return {
-          email: "",
-          password: ""
-        };
-      }
-
-
-      if (
-        typeof item === "object" &&
-        (
-          "email" in item ||
-          "password" in item
-        )
-      ) {
-
-        return {
-
-          email:
-            item.email || "",
-
-          password:
-            item.password || ""
-
-        };
-      }
-
-
-      if (
-        typeof item ===
-        "string"
-      ) {
-
-        const separator =
-          item.indexOf(":");
-
-
-        if (
-          separator !== -1
-        ) {
-
-          return {
-
-            email:
-              item.slice(
-                0,
-                separator
-              ),
-
-            password:
-              item.slice(
-                separator + 1
-              )
-
-          };
-        }
-
-
-        return {
-
-          email:
-            item,
-
-          password:
-            ""
-
-        };
-      }
-
-
-      return {
-
-        email: "",
-        password: ""
-
-      };
-    }
-
-
-    function renderInventoryItem(
-      item
-    ) {
-
-      inventoryResult.innerHTML =
-        "";
-
-
-      const wrapper =
-        document.createElement(
-          "div"
-        );
-
-
-      wrapper.className =
-        "inventory-item";
-
-
-      wrapper.innerHTML = `
-
-        <div class="inventory-row">
-
-          <span class="inventory-label">
-            Email
-          </span>
-
-          <span class="inventory-value"></span>
-
-        </div>
-
-
-        <div class="inventory-row">
-
-          <span class="inventory-label">
-            Password
-          </span>
-
-          <span class="inventory-value"></span>
-
-        </div>
-
-
-        <div class="inventory-actions">
-
-          <button
-            class="action-btn"
-            id="copyEmailButton"
-          >
-            Copy Email
-          </button>
-
-
-          <button
-            class="action-btn"
-            id="copyPasswordButton"
-          >
-            Copy Password
-          </button>
-
-
-          <button
-            class="action-btn primary"
-            id="saveLoginButton"
-          >
-            Save Login
-          </button>
-
-        </div>
-      `;
-
-
-      const values =
-        wrapper.querySelectorAll(
-          ".inventory-value"
-        );
-
-
-      values[0].textContent =
-        item.email ||
-        "—";
-
-
-      values[1].textContent =
-        item.password ||
-        "—";
-
-
-      inventoryResult.appendChild(
-        wrapper
-      );
-
-
-      document
-        .getElementById(
-          "copyEmailButton"
-        )
-        .addEventListener(
-          "click",
-          () => {
-
-            copyText(
-              item.email,
-              "Email copied."
-            );
-
-          }
-        );
-
-
-      document
-        .getElementById(
-          "copyPasswordButton"
-        )
-        .addEventListener(
-          "click",
-          () => {
-
-            copyText(
-              item.password,
-              "Password copied."
-            );
-
-          }
-        );
-
-
-      document
-        .getElementById(
-          "saveLoginButton"
-        )
-        .addEventListener(
-          "click",
-          () => {
-
-            openSaveModal(
-              item
-            );
-
-          }
-        );
-    }
-
-
-    /* =========================
-       COPY
-    ========================== */
-
-    async function copyText(
-      text,
-      message
-    ) {
-
-      if (!text)
-        return;
-
-
-      try {
-
-        await navigator
-          .clipboard
-          .writeText(
-            text
-          );
-
-
-        dashboardMessage.textContent =
-          message;
-
-
-        dashboardMessage.className =
-          "dashboard-message success";
-
-
-        setTimeout(
-          () => {
-
-            dashboardMessage.textContent =
-              "";
-
-          },
-          1800
-        );
-
-
-      } catch {
-
-        dashboardMessage.textContent =
-          "Copy failed. Please copy it manually.";
-
-
-        dashboardMessage.className =
-          "dashboard-message error";
-      }
-    }
-
-
-    /* =========================
-       SAVE LOGIN MODAL
-    ========================== */
-
-    function openSaveModal(
-      item
-    ) {
-
-      currentGeneratedLogin =
-        item;
-
-
-      saveEmail.value =
-        item.email ||
-        "";
-
-
-      savePassword.value =
-        item.password ||
-        "";
-
-
-      saveModal.style.display =
-        "flex";
-    }
-
-
-    function closeSaveModal() {
-
-      saveModal.style.display =
-        "none";
-
-
-      saveEmail.value =
-        "";
-
-
-      savePassword.value =
-        "";
-    }
-
-
-    /* =========================
-       SAVE LOGIN
-    ========================== */
-
-    async function saveCurrentLogin() {
-
-      if (
-        !currentGeneratedLogin ||
-        !currentGeneratedLogin.email ||
-        !currentGeneratedLogin.password
-      ) {
-
-        return;
-      }
-
-
-      confirmSaveButton.disabled =
-        true;
-
-
-      confirmSaveButton.textContent =
-        "Saving...";
-
-
-      try {
-
-        const response =
-          await authenticatedFetch(
-            `${API_URL}/api/saved-logins`,
-            {
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-
-              body:
-                JSON.stringify({
-
-                  email:
-                    currentGeneratedLogin.email,
-
-                  password:
-                    currentGeneratedLogin.password
-
-                })
-            }
-          );
-
-
-        if (
-          response.status ===
-          401
-        ) {
-
-          const errorResult =
-            await response
-              .json()
-              .catch(
-                () => ({})
-              );
-
-
-          const errorMessage =
-            errorResult.message ||
-            errorResult.error ||
-            "Your session is no longer valid.";
-
-
-          if (
-            errorMessage
-              .toLowerCase()
-              .includes("expired") ||
-            errorMessage
-              .toLowerCase()
-              .includes("session") ||
-            errorMessage
-              .toLowerCase()
-              .includes("invalid")
-          ) {
-
-            closeSaveModal();
-
-            return forceLogout(
-              errorMessage
-            );
-          }
-
-
-          throw new Error(
-            errorMessage
-          );
-        }
-
-
-        const result =
-          await response
-            .json()
-            .catch(
-              () => ({})
-            );
-
-
-        if (
-          !response.ok ||
-          !result.success
-        ) {
-
-          throw new Error(
-            result.message ||
-            result.error ||
-            "Could not save login."
-          );
-        }
-
-
-        closeSaveModal();
-
-
-        dashboardMessage.textContent =
-          "Login saved successfully.";
-
-
-        dashboardMessage.className =
-          "dashboard-message success";
-
-
-        await loadSavedLogins();
-
-
-      } catch (error) {
-
-        dashboardMessage.textContent =
-          error.message ||
-          "Could not save login.";
-
-
-        dashboardMessage.className =
-          "dashboard-message error";
-
-
-      } finally {
-
-        confirmSaveButton.disabled =
-          false;
-
-
-        confirmSaveButton.textContent =
-          "Save Login";
-      }
-    }
-
-
-    /* =========================
-       SAVED LOGINS
-    ========================== */
-
-    async function loadSavedLogins() {
-
-      try {
-
-        const response =
-          await authenticatedFetch(
-            `${API_URL}/api/saved-logins`
-          );
-
-
-        if (
-          response.status ===
-          401
-        ) {
-
-          const errorResult =
-            await response
-              .json()
-              .catch(
-                () => ({})
-              );
-
-
-          const errorMessage =
-            errorResult.message ||
-            errorResult.error ||
-            "Your session is no longer valid.";
-
-
-          if (
-            errorMessage
-              .toLowerCase()
-              .includes("expired") ||
-            errorMessage
-              .toLowerCase()
-              .includes("session") ||
-            errorMessage
-              .toLowerCase()
-              .includes("invalid")
-          ) {
-
-            return forceLogout(
-              errorMessage
-            );
-          }
-
-
-          throw new Error(
-            errorMessage
-          );
-        }
-
-
-        const result =
-          await response
-            .json()
-            .catch(
-              () => ({})
-            );
-
-
-        if (!response.ok) {
-
-          throw new Error(
-            result.message ||
-            result.error ||
-            "Could not load saved logins."
-          );
-        }
-
-
-        const logins =
-          result.logins ||
-          result.savedLogins ||
-          [];
-
-
-        renderSavedLogins(
-          logins
-        );
-
-
-      } catch (error) {
-
-        savedLoginResult.innerHTML = `
-
-          <div class="empty-state error">
-
-            ${escapeHtml(
-              error.message ||
-              "Could not load saved logins."
-            )}
-
-          </div>
-
-        `;
-      }
-    }
-
-
-    function renderSavedLogins(
-      logins
-    ) {
-
-      if (
-        !Array.isArray(
-          logins
-        ) ||
-        logins.length === 0
-      ) {
-
-        savedLoginResult.innerHTML = `
-
-          <div class="empty-state">
-            No saved logins.
-          </div>
-
-        `;
-
-        return;
-      }
-
-
-      const list =
-        document.createElement(
-          "div"
-        );
-
-
-      list.className =
-        "saved-login-list";
-
-
-      logins.forEach(
-        login => {
-
-          const row =
-            document.createElement(
-              "div"
-            );
-
-
-          row.className =
-            "saved-login";
-
-
-          const info =
-            document.createElement(
-              "div"
-            );
-
-
-          info.className =
-            "saved-info";
-
-
-          const email =
-            document.createElement(
-              "div"
-            );
-
-
-          email.className =
-            "saved-email";
-
-
-          email.textContent =
-            login.email ||
-            "Unknown";
-
-
-          const date =
-            document.createElement(
-              "div"
-            );
-
-
-          date.className =
-            "saved-date";
-
-
-          date.textContent =
-            login.createdAt
-              ? `Saved ${formatDate(
-                  login.createdAt
-                )}`
-              : "Saved login";
-
-
-          info.appendChild(
-            email
-          );
-
-
-          info.appendChild(
-            date
-          );
-
-
-          const actions =
-            document.createElement(
-              "div"
-            );
-
-
-          actions.className =
-            "saved-actions";
-
-
-          const copy =
-            document.createElement(
-              "button"
-            );
-
-
-          copy.textContent =
-            "Copy";
-
-
-          copy.addEventListener(
-            "click",
-            () =>
-              revealAndCopy(
-                login.id
-              )
-          );
-
-
-          const deleteButton =
-            document.createElement(
-              "button"
-            );
-
-
-          deleteButton.textContent =
-            "Delete";
-
-
-          deleteButton.className =
-            "delete-btn";
-
-
-          deleteButton.addEventListener(
-            "click",
-            () =>
-              deleteSavedLogin(
-                login.id
-              )
-          );
-
-
-          actions.appendChild(
-            copy
-          );
-
-
-          actions.appendChild(
-            deleteButton
-          );
-
-
-          row.appendChild(
-            info
-          );
-
-
-          row.appendChild(
-            actions
-          );
-
-
-          list.appendChild(
-            row
-          );
-
-        }
-      );
-
-
-      savedLoginResult.innerHTML =
-        "";
-
-
-      savedLoginResult.appendChild(
-        list
-      );
-    }
-
-
-    /* =========================
-       REVEAL + COPY SAVED LOGIN
-    ========================== */
-
-    async function revealAndCopy(
-      id
-    ) {
-
-      if (!id)
-        return;
-
-
-      try {
-
-        const response =
-          await authenticatedFetch(
-            `${API_URL}/api/saved-logins/${encodeURIComponent(
-              id
-            )}`
-          );
-
-
-        if (
-          response.status ===
-          401
-        ) {
-
-          const errorResult =
-            await response
-              .json()
-              .catch(
-                () => ({})
-              );
-
-
-          const errorMessage =
-            errorResult.message ||
-            errorResult.error ||
-            "Your session is no longer valid.";
-
-
-          if (
-            errorMessage
-              .toLowerCase()
-              .includes("expired") ||
-            errorMessage
-              .toLowerCase()
-              .includes("session") ||
-            errorMessage
-              .toLowerCase()
-              .includes("invalid")
-          ) {
-
-            return forceLogout(
-              errorMessage
-            );
-          }
-
-
-          throw new Error(
-            errorMessage
-          );
-        }
-
-
-        const result =
-          await response
-            .json()
-            .catch(
-              () => ({})
-            );
-
-
-        if (
-          !response.ok ||
-          !result.success
-        ) {
-
-          throw new Error(
-            result.message ||
-            result.error ||
-            "Could not retrieve login."
-          );
-        }
-
-
-        const login =
-          result.login ||
-          result;
-
-
-        const text =
-          `${login.email || ""}:${login.password || ""}`;
-
-
-        await navigator
-          .clipboard
-          .writeText(
-            text
-          );
-
-
-        dashboardMessage.textContent =
-          "Saved login copied.";
-
-
-        dashboardMessage.className =
-          "dashboard-message success";
-
-
-        setTimeout(
-          () => {
-
-            dashboardMessage.textContent =
-              "";
-
-          },
-          1800
-        );
-
-
-      } catch (error) {
-
-        dashboardMessage.textContent =
-          error.message ||
-          "Could not copy saved login.";
-
-
-        dashboardMessage.className =
-          "dashboard-message error";
-      }
-    }
-
-
-    /* =========================
-       DELETE SAVED LOGIN
-    ========================== */
-
-    async function deleteSavedLogin(
-      id
-    ) {
-
-      if (!id)
-        return;
-
-
-      try {
-
-        const response =
-          await authenticatedFetch(
-            `${API_URL}/api/saved-logins/${encodeURIComponent(
-              id
-            )}`,
-            {
-              method:
-                "DELETE"
-            }
-          );
-
-
-        if (
-          response.status ===
-          401
-        ) {
-
-          const errorResult =
-            await response
-              .json()
-              .catch(
-                () => ({})
-              );
-
-
-          const errorMessage =
-            errorResult.message ||
-            errorResult.error ||
-            "Your session is no longer valid.";
-
-
-          if (
-            errorMessage
-              .toLowerCase()
-              .includes("expired") ||
-            errorMessage
-              .toLowerCase()
-              .includes("session") ||
-            errorMessage
-              .toLowerCase()
-              .includes("invalid")
-          ) {
-
-            return forceLogout(
-              errorMessage
-            );
-          }
-
-
-          throw new Error(
-            errorMessage
-          );
-        }
-
-
-        const result =
-          await response
-            .json()
-            .catch(
-              () => ({})
-            );
-
-
-        if (
-          !response.ok ||
-          !result.success
-        ) {
-
-          throw new Error(
-            result.message ||
-            result.error ||
-            "Could not delete login."
-          );
-        }
-
-
-        await loadSavedLogins();
-
-
-        dashboardMessage.textContent =
-          "Saved login deleted.";
-
-
-        dashboardMessage.className =
-          "dashboard-message success";
-
-
-        setTimeout(
-          () => {
-
-            dashboardMessage.textContent =
-              "";
-
-          },
-          1800
-        );
-
-
-      } catch (error) {
-
-        dashboardMessage.textContent =
-          error.message ||
-          "Could not delete saved login.";
-
-
-        dashboardMessage.className =
-          "dashboard-message error";
-      }
-    }
-
-
-    /* =========================
-       LOGOUT
-    ========================== */
-
-    async function logout() {
-
-      try {
-
-        if (currentSession) {
-
-          await authenticatedFetch(
-            `${API_URL}/api/logout`,
-            {
-              method:
-                "POST"
-            }
-          );
-        }
-
-      } catch {
-        // Ignore logout request errors.
-      }
-
-
-      forceLogout();
-    }
-
-
-    function forceLogout(
-      message = ""
-    ) {
-
-      stopLiveStock();
-
-
-      if (expirationTimer) {
-
-        clearInterval(
-          expirationTimer
-        );
-
-        expirationTimer =
-          null;
-      }
-
-
-      currentSession =
-        "";
-
-
-      sessionStorage.removeItem(
-        SESSION_KEY
-      );
-
+    } else {
 
       sessionStorage.removeItem(
         EXPIRATION_KEY
       );
+    }
 
+    keyDuration.textContent =
+      formatDuration(duration);
 
-      sessionStorage.removeItem(
-        DURATION_KEY
-      );
+    accountStatus.textContent =
+      "Active";
 
+    startExpirationTimer(
+      expiresAt
+    );
 
-      dashboardPage.style.display =
-        "none";
+    loginPage.style.display =
+      "none";
 
+    dashboardPage.style.display =
+      "block";
 
-      loginPage.style.display =
-        "flex";
+    verifyResult.textContent = "";
 
+    await loadStock();
+    startLiveStock();
+    await loadSavedLogins();
 
-      keyInput.value =
-        "";
+  } catch (error) {
 
+    currentSession = "";
 
-      verifyResult.textContent =
-        message;
+    sessionStorage.removeItem(
+      SESSION_KEY
+    );
 
+    sessionStorage.removeItem(
+      EXPIRATION_KEY
+    );
 
-      verifyResult.className =
-        message
-          ? "error"
-          : "";
+    sessionStorage.removeItem(
+      DURATION_KEY
+    );
 
+    showVerify(
+      error.message ||
+      "Unable to verify key.",
+      false
+    );
 
-      inventoryResult.innerHTML = `
+  } finally {
 
-        <div class="empty-state">
-          No account generated yet.
-        </div>
+    unlockButton.disabled = false;
+    unlockButton.textContent =
+      "Unlock Dashboard";
+  }
+}
 
-      `;
+function showVerify(
+  message,
+  success
+) {
 
+  verifyResult.textContent =
+    message;
 
-      savedLoginResult.innerHTML = `
+  verifyResult.className =
+    success
+      ? "success"
+      : "error";
+}
 
-        <div class="empty-state">
-          No saved logins.
-        </div>
+/* =========================================================
+   DURATION
+========================================================= */
 
-      `;
+function formatDuration(
+  duration
+) {
 
+  const value =
+    String(
+      duration || ""
+    ).toLowerCase();
 
-      stockCount.textContent =
-        "—";
+  if (value === "1d")
+    return "1 Day";
 
+  if (value === "3d")
+    return "3 Days";
 
-      keyDuration.textContent =
-        "—";
+  if (value === "1w")
+    return "1 Week";
 
+  if (value === "1mo")
+    return "1 Month";
+
+  if (value === "lifetime")
+    return "Lifetime";
+
+  return duration || "Active";
+}
+
+/* =========================================================
+   EXPIRATION
+========================================================= */
+
+function normalizeExpiration(
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  if (
+    typeof value === "number" &&
+    Number.isFinite(value)
+  ) {
+    return value;
+  }
+
+  const stringValue =
+    String(value).trim();
+
+  if (/^[0-9]+$/.test(stringValue)) {
+
+    const numeric =
+      Number(stringValue);
+
+    if (!Number.isFinite(numeric)) {
+      return null;
+    }
+
+    if (numeric < 100000000000) {
+      return numeric * 1000;
+    }
+
+    return numeric;
+  }
+
+  const parsed =
+    Date.parse(stringValue);
+
+  return Number.isFinite(parsed)
+    ? parsed
+    : null;
+}
+
+function startExpirationTimer(
+  expiresAt
+) {
+
+  if (expirationTimer) {
+
+    clearInterval(
+      expirationTimer
+    );
+
+    expirationTimer = null;
+  }
+
+  if (
+    expiresAt === null ||
+    expiresAt === undefined ||
+    expiresAt === ""
+  ) {
+
+    keyExpiration.textContent =
+      "Never Expires";
+
+    keyExpiration.classList.remove(
+      "expiring",
+      "expired"
+    );
+
+    return;
+  }
+
+  const expirationTime =
+    normalizeExpiration(
+      expiresAt
+    );
+
+  if (!Number.isFinite(expirationTime)) {
+
+    keyExpiration.textContent =
+      "Active";
+
+    return;
+  }
+
+  function updateTimer() {
+
+    const remaining =
+      expirationTime -
+      Date.now();
+
+    if (remaining <= 0) {
 
       keyExpiration.textContent =
-        "—";
-
+        "Expired";
 
       keyExpiration.classList.remove(
-        "expiring",
+        "expiring"
+      );
+
+      keyExpiration.classList.add(
         "expired"
       );
 
-
       accountStatus.textContent =
-        "Active";
+        "Expired";
 
+      if (expirationTimer) {
 
-      currentGeneratedLogin =
-        null;
+        clearInterval(
+          expirationTimer
+        );
 
+        expirationTimer = null;
+      }
 
-      isGenerating =
-        false;
+      setTimeout(() => {
+        forceLogout(
+          "Your key has expired."
+        );
+      }, 1000);
+
+      return;
     }
 
+    keyExpiration.textContent =
+      formatRemaining(
+        remaining
+      );
 
-    /* =========================
-       EXISTING SESSION
-    ========================== */
+    if (
+      remaining <=
+      60 * 60 * 1000
+    ) {
 
-    async function verifyCurrentSession() {
+      keyExpiration.classList.add(
+        "expiring"
+      );
 
-      if (!currentSession) {
+    } else {
+
+      keyExpiration.classList.remove(
+        "expiring"
+      );
+    }
+
+    keyExpiration.classList.remove(
+      "expired"
+    );
+
+    accountStatus.textContent =
+      "Active";
+  }
+
+  updateTimer();
+
+  expirationTimer =
+    setInterval(
+      updateTimer,
+      1000
+    );
+}
+
+function formatRemaining(
+  milliseconds
+) {
+
+  let totalSeconds =
+    Math.max(
+      0,
+      Math.floor(
+        milliseconds / 1000
+      )
+    );
+
+  const days =
+    Math.floor(
+      totalSeconds / 86400
+    );
+
+  totalSeconds %= 86400;
+
+  const hours =
+    Math.floor(
+      totalSeconds / 3600
+    );
+
+  totalSeconds %= 3600;
+
+  const minutes =
+    Math.floor(
+      totalSeconds / 60
+    );
+
+  const seconds =
+    totalSeconds % 60;
+
+  const hh =
+    String(hours).padStart(2, "0");
+
+  const mm =
+    String(minutes).padStart(2, "0");
+
+  const ss =
+    String(seconds).padStart(2, "0");
+
+  if (days > 0) {
+    return `${days}d ${hh}h ${mm}m`;
+  }
+
+  return `${hh}h ${mm}m ${ss}s`;
+}
+
+function restoreExpirationTimer() {
+
+  const duration =
+    sessionStorage.getItem(
+      DURATION_KEY
+    );
+
+  const expiresAt =
+    sessionStorage.getItem(
+      EXPIRATION_KEY
+    );
+
+  if (duration) {
+
+    keyDuration.textContent =
+      formatDuration(
+        duration
+      );
+  }
+
+  if (
+    expiresAt !== null &&
+    expiresAt !== ""
+  ) {
+
+    startExpirationTimer(
+      expiresAt
+    );
+
+  } else if (
+    String(duration).toLowerCase() ===
+    "lifetime"
+  ) {
+
+    keyExpiration.textContent =
+      "Never Expires";
+
+  } else {
+
+    keyExpiration.textContent =
+      "—";
+  }
+}
+
+/* =========================================================
+   STOCK
+========================================================= */
+
+async function loadStock() {
+
+  if (!currentSession) {
+    return;
+  }
+
+  try {
+
+    const response =
+      await authenticatedFetch(
+        `${API_URL}/api/stock`
+      );
+
+    const result =
+      await parseResponse(response);
+
+    if (response.status === 401) {
+
+      if (isSessionError(result)) {
+
+        forceLogout(
+          result.message ||
+          result.error ||
+          "Your session has expired."
+        );
 
         return;
       }
 
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Could not load stock."
+      );
+    }
 
-      restoreExpirationTimer();
+    if (!response.ok) {
 
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Could not load stock."
+      );
+    }
 
-      try {
+    const count =
+      Number(
+        result.count ??
+        result.stockCount ??
+        0
+      );
 
-        const response =
-          await authenticatedFetch(
-            `${API_URL}/api/stock`
-          );
+    stockCount.textContent =
+      count;
 
+    if (!isGenerating) {
 
-        if (!response.ok) {
+      if (count <= 0) {
 
-          const result =
-            await response
-              .json()
-              .catch(
-                () => ({})
-              );
+        generateButton.disabled = true;
 
+        generateButton.textContent =
+          "Out of Stock";
 
-          throw new Error(
-            result.message ||
-            result.error ||
-            "Session expired."
-          );
+      } else {
+
+        generateButton.disabled = false;
+
+        generateButton.textContent =
+          "Generate Account";
+      }
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Stock error:",
+      error
+    );
+  }
+}
+
+function startLiveStock() {
+
+  stopLiveStock();
+
+  loadStock();
+
+  stockRefreshTimer =
+    setInterval(
+      () => {
+
+        if (
+          dashboardPage.style.display !== "none" &&
+          currentSession
+        ) {
+          loadStock();
         }
 
+      },
+      2000
+    );
+}
 
-        loginPage.style.display =
-          "none";
+function stopLiveStock() {
 
+  if (stockRefreshTimer) {
 
-        dashboardPage.style.display =
-          "block";
+    clearInterval(
+      stockRefreshTimer
+    );
 
+    stockRefreshTimer = null;
+  }
+}
 
-        await loadStock();
+/* =========================================================
+   GENERATE
+========================================================= */
 
-        startLiveStock();
+async function generateInventory() {
 
-        await loadSavedLogins();
+  if (isGenerating) {
+    return;
+  }
 
+  if (!currentSession) {
 
-      } catch {
+    forceLogout(
+      "Your session has expired."
+    );
+
+    return;
+  }
+
+  isGenerating = true;
+
+  generateButton.disabled = true;
+
+  generateButton.innerHTML = `
+    <span class="loading">
+      <span class="spinner"></span>
+      Generating...
+    </span>
+  `;
+
+  dashboardMessage.textContent = "";
+
+  try {
+
+    const response =
+      await authenticatedFetch(
+        `${API_URL}/api/stock/generate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          }
+        }
+      );
+
+    const result =
+      await parseResponse(response);
+
+    if (response.status === 401) {
+
+      if (isSessionError(result)) {
 
         forceLogout(
-          "Your key has expired or the session is no longer valid."
+          result.message ||
+          result.error ||
+          "Your session has expired."
         );
+
+        return;
       }
+
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Generation request was rejected."
+      );
     }
 
-
-    /* =========================
-       HELPERS
-    ========================== */
-
-    function formatDate(
-      value
+    if (
+      !response.ok ||
+      !result.success
     ) {
 
-      try {
-
-        return new Date(
-          value
-        ).toLocaleString(
-          undefined,
-          {
-            dateStyle:
-              "medium",
-
-            timeStyle:
-              "short"
-          }
-        );
-
-      } catch {
-
-        return "";
-      }
+      throw new Error(
+        result.message ||
+        result.error ||
+        "No stock available."
+      );
     }
 
+    const item =
+      result.item ||
+      result.account ||
+      result;
 
-    function escapeHtml(
-      value
+    currentGeneratedLogin =
+      normalizeLogin(item);
+
+    renderInventoryItem(
+      currentGeneratedLogin
+    );
+
+    dashboardMessage.textContent =
+      "Account generated successfully.";
+
+    dashboardMessage.className =
+      "dashboard-message success";
+
+    await loadStock();
+
+  } catch (error) {
+
+    dashboardMessage.textContent =
+      error.message ||
+      "Generation failed.";
+
+    dashboardMessage.className =
+      "dashboard-message error";
+
+  } finally {
+
+    isGenerating = false;
+
+    await loadStock();
+  }
+}
+
+function normalizeLogin(
+  item
+) {
+
+  if (!item) {
+
+    return {
+      email: "",
+      password: ""
+    };
+  }
+
+  if (
+    typeof item === "object" &&
+    (
+      "email" in item ||
+      "password" in item
+    )
+  ) {
+
+    return {
+      email:
+        String(item.email || ""),
+
+      password:
+        String(item.password || "")
+    };
+  }
+
+  if (
+    typeof item === "string"
+  ) {
+
+    const separator =
+      item.indexOf(":");
+
+    if (separator !== -1) {
+
+      return {
+        email:
+          item.slice(
+            0,
+            separator
+          ),
+
+        password:
+          item.slice(
+            separator + 1
+          )
+      };
+    }
+
+    return {
+      email: item,
+      password: ""
+    };
+  }
+
+  return {
+    email: "",
+    password: ""
+  };
+}
+
+/* =========================================================
+   INVENTORY UI
+========================================================= */
+
+function renderInventoryItem(
+  item
+) {
+
+  inventoryResult.innerHTML = "";
+
+  const wrapper =
+    document.createElement(
+      "div"
+    );
+
+  wrapper.className =
+    "inventory-item";
+
+  const emailRow =
+    document.createElement(
+      "div"
+    );
+
+  emailRow.className =
+    "inventory-row";
+
+  emailRow.innerHTML = `
+    <span class="inventory-label">Email</span>
+    <span class="inventory-value"></span>
+  `;
+
+  emailRow
+    .querySelector(
+      ".inventory-value"
+    )
+    .textContent =
+      item.email || "—";
+
+  const passwordRow =
+    document.createElement(
+      "div"
+    );
+
+  passwordRow.className =
+    "inventory-row";
+
+  passwordRow.innerHTML = `
+    <span class="inventory-label">Password</span>
+    <span class="inventory-value"></span>
+  `;
+
+  passwordRow
+    .querySelector(
+      ".inventory-value"
+    )
+    .textContent =
+      item.password || "—";
+
+  const actions =
+    document.createElement(
+      "div"
+    );
+
+  actions.className =
+    "inventory-actions";
+
+  const copyEmail =
+    document.createElement(
+      "button"
+    );
+
+  copyEmail.className =
+    "action-btn";
+
+  copyEmail.textContent =
+    "Copy Email";
+
+  copyEmail.onclick =
+    () => copyText(
+      item.email,
+      "Email copied."
+    );
+
+  const copyPassword =
+    document.createElement(
+      "button"
+    );
+
+  copyPassword.className =
+    "action-btn";
+
+  copyPassword.textContent =
+    "Copy Password";
+
+  copyPassword.onclick =
+    () => copyText(
+      item.password,
+      "Password copied."
+    );
+
+  const saveButton =
+    document.createElement(
+      "button"
+    );
+
+  saveButton.className =
+    "action-btn primary";
+
+  saveButton.textContent =
+    "Save Login";
+
+  saveButton.onclick =
+    () => openSaveModal(item);
+
+  actions.appendChild(copyEmail);
+  actions.appendChild(copyPassword);
+  actions.appendChild(saveButton);
+
+  wrapper.appendChild(emailRow);
+  wrapper.appendChild(passwordRow);
+  wrapper.appendChild(actions);
+
+  inventoryResult.appendChild(wrapper);
+}
+
+/* =========================================================
+   COPY
+========================================================= */
+
+async function copyText(
+  text,
+  message
+) {
+
+  if (!text) {
+    return;
+  }
+
+  try {
+
+    await navigator.clipboard.writeText(
+      text
+    );
+
+    dashboardMessage.textContent =
+      message;
+
+    dashboardMessage.className =
+      "dashboard-message success";
+
+    setTimeout(() => {
+      dashboardMessage.textContent = "";
+    }, 1800);
+
+  } catch {
+
+    dashboardMessage.textContent =
+      "Copy failed.";
+
+    dashboardMessage.className =
+      "dashboard-message error";
+  }
+}
+
+/* =========================================================
+   SAVE MODAL
+========================================================= */
+
+function openSaveModal(
+  item
+) {
+
+  currentGeneratedLogin =
+    item;
+
+  saveEmail.value =
+    item.email || "";
+
+  savePassword.value =
+    item.password || "";
+
+  saveModal.style.display =
+    "flex";
+}
+
+function closeSaveModal() {
+
+  saveModal.style.display =
+    "none";
+
+  saveEmail.value = "";
+  savePassword.value = "";
+}
+
+/* =========================================================
+   SAVE LOGIN
+========================================================= */
+
+async function saveCurrentLogin() {
+
+  if (
+    !currentGeneratedLogin ||
+    !currentGeneratedLogin.email ||
+    !currentGeneratedLogin.password
+  ) {
+
+    dashboardMessage.textContent =
+      "The generated login is incomplete.";
+
+    dashboardMessage.className =
+      "dashboard-message error";
+
+    return;
+  }
+
+  if (!currentSession) {
+
+    closeSaveModal();
+
+    forceLogout(
+      "Your session has expired."
+    );
+
+    return;
+  }
+
+  confirmSaveButton.disabled = true;
+
+  confirmSaveButton.textContent =
+    "Saving...";
+
+  try {
+
+    const payload = {
+      email:
+        currentGeneratedLogin.email,
+
+      password:
+        currentGeneratedLogin.password
+    };
+
+    console.log(
+      "Saving login..."
+    );
+
+    const response =
+      await authenticatedFetch(
+        `${API_URL}/api/saved-logins`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(payload)
+        }
+      );
+
+    const result =
+      await parseResponse(response);
+
+    console.log(
+      "Save login response:",
+      response.status,
+      result
+    );
+
+    if (response.status === 401) {
+
+      if (isSessionError(result)) {
+
+        closeSaveModal();
+
+        forceLogout(
+          result.message ||
+          result.error ||
+          "Your session has expired."
+        );
+
+        return;
+      }
+
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Unauthorized."
+      );
+    }
+
+    if (!response.ok) {
+
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Could not save login."
+      );
+    }
+
+    if (!result.success) {
+
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Could not save login."
+      );
+    }
+
+    closeSaveModal();
+
+    dashboardMessage.textContent =
+      "Login saved successfully.";
+
+    dashboardMessage.className =
+      "dashboard-message success";
+
+    await loadSavedLogins();
+
+  } catch (error) {
+
+    console.error(
+      "Save login error:",
+      error
+    );
+
+    dashboardMessage.textContent =
+      error.message ||
+      "Could not save login.";
+
+    dashboardMessage.className =
+      "dashboard-message error";
+
+  } finally {
+
+    confirmSaveButton.disabled =
+      false;
+
+    confirmSaveButton.textContent =
+      "Save Login";
+  }
+}
+
+/* =========================================================
+   SAVED LOGINS
+========================================================= */
+
+async function loadSavedLogins() {
+
+  if (!currentSession) {
+    return;
+  }
+
+  try {
+
+    const response =
+      await authenticatedFetch(
+        `${API_URL}/api/saved-logins`
+      );
+
+    const result =
+      await parseResponse(response);
+
+    if (response.status === 401) {
+
+      if (isSessionError(result)) {
+
+        forceLogout(
+          result.message ||
+          result.error ||
+          "Your session has expired."
+        );
+
+        return;
+      }
+
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Could not load saved logins."
+      );
+    }
+
+    if (!response.ok) {
+
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Could not load saved logins."
+      );
+    }
+
+    const logins =
+      Array.isArray(result)
+        ? result
+        : (
+            result.logins ||
+            result.savedLogins ||
+            []
+          );
+
+    renderSavedLogins(logins);
+
+  } catch (error) {
+
+    console.error(
+      "Load saved logins error:",
+      error
+    );
+
+    savedLoginResult.innerHTML = "";
+
+    const errorDiv =
+      document.createElement(
+        "div"
+      );
+
+    errorDiv.className =
+      "empty-state error";
+
+    errorDiv.textContent =
+      error.message ||
+      "Could not load saved logins.";
+
+    savedLoginResult.appendChild(
+      errorDiv
+    );
+  }
+}
+
+function renderSavedLogins(
+  logins
+) {
+
+  if (
+    !Array.isArray(logins) ||
+    logins.length === 0
+  ) {
+
+    savedLoginResult.innerHTML = `
+      <div class="empty-state">
+        No saved logins.
+      </div>
+    `;
+
+    return;
+  }
+
+  const list =
+    document.createElement(
+      "div"
+    );
+
+  list.className =
+    "saved-login-list";
+
+  logins.forEach(
+    login => {
+
+      const row =
+        document.createElement(
+          "div"
+        );
+
+      row.className =
+        "saved-login";
+
+      const info =
+        document.createElement(
+          "div"
+        );
+
+      info.className =
+        "saved-info";
+
+      const email =
+        document.createElement(
+          "div"
+        );
+
+      email.className =
+        "saved-email";
+
+      email.textContent =
+        login.email ||
+        "Unknown";
+
+      const date =
+        document.createElement(
+          "div"
+        );
+
+      date.className =
+        "saved-date";
+
+      const created =
+        login.createdAt ??
+        login.created_at;
+
+      date.textContent =
+        created
+          ? `Saved ${formatDate(created)}`
+          : "Saved login";
+
+      info.appendChild(email);
+      info.appendChild(date);
+
+      const actions =
+        document.createElement(
+          "div"
+        );
+
+      actions.className =
+        "saved-actions";
+
+      const copy =
+        document.createElement(
+          "button"
+        );
+
+      copy.textContent =
+        "Copy";
+
+      copy.onclick =
+        () =>
+          revealAndCopy(
+            login.id
+          );
+
+      const deleteButton =
+        document.createElement(
+          "button"
+        );
+
+      deleteButton.textContent =
+        "Delete";
+
+      deleteButton.className =
+        "delete-btn";
+
+      deleteButton.onclick =
+        () =>
+          deleteSavedLogin(
+            login.id
+          );
+
+      actions.appendChild(copy);
+      actions.appendChild(deleteButton);
+
+      row.appendChild(info);
+      row.appendChild(actions);
+
+      list.appendChild(row);
+    }
+  );
+
+  savedLoginResult.innerHTML = "";
+
+  savedLoginResult.appendChild(
+    list
+  );
+}
+
+/* =========================================================
+   REVEAL + COPY
+========================================================= */
+
+async function revealAndCopy(
+  id
+) {
+
+  if (!id) {
+    return;
+  }
+
+  try {
+
+    const response =
+      await authenticatedFetch(
+        `${API_URL}/api/saved-logins/${encodeURIComponent(id)}`
+      );
+
+    const result =
+      await parseResponse(response);
+
+    if (response.status === 401) {
+
+      if (isSessionError(result)) {
+
+        forceLogout(
+          result.message ||
+          result.error ||
+          "Your session has expired."
+        );
+
+        return;
+      }
+
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Unauthorized."
+      );
+    }
+
+    if (
+      !response.ok ||
+      !result.success
     ) {
 
-      return String(
-        value
-      )
-        .replaceAll(
-          "&",
-          "&amp;"
-        )
-        .replaceAll(
-          "<",
-          "&lt;"
-        )
-        .replaceAll(
-          ">",
-          "&gt;"
-        )
-        .replaceAll(
-          '"',
-          "&quot;"
-        )
-        .replaceAll(
-          "'",
-          "&#039;"
-        );
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Could not retrieve login."
+      );
     }
 
+    const login =
+      result.login ||
+      result.item ||
+      result;
 
-    /* =========================
-       EVENTS
-    ========================== */
+    const text =
+      `${login.email || ""}:${login.password || ""}`;
 
-    unlockButton.addEventListener(
-      "click",
-      unlock
+    await navigator.clipboard.writeText(
+      text
     );
 
+    dashboardMessage.textContent =
+      "Saved login copied.";
 
-    keyInput.addEventListener(
-      "keydown",
-      event => {
+    dashboardMessage.className =
+      "dashboard-message success";
 
-        if (
-          event.key ===
-          "Enter"
-        ) {
+    setTimeout(() => {
+      dashboardMessage.textContent = "";
+    }, 1800);
 
-          unlock();
+  } catch (error) {
+
+    dashboardMessage.textContent =
+      error.message ||
+      "Could not copy saved login.";
+
+    dashboardMessage.className =
+      "dashboard-message error";
+  }
+}
+
+/* =========================================================
+   DELETE
+========================================================= */
+
+async function deleteSavedLogin(
+  id
+) {
+
+  if (!id) {
+    return;
+  }
+
+  try {
+
+    const response =
+      await authenticatedFetch(
+        `${API_URL}/api/saved-logins/${encodeURIComponent(id)}`,
+        {
+          method: "DELETE"
         }
+      );
+
+    const result =
+      await parseResponse(response);
+
+    if (response.status === 401) {
+
+      if (isSessionError(result)) {
+
+        forceLogout(
+          result.message ||
+          result.error ||
+          "Your session has expired."
+        );
+
+        return;
       }
-    );
 
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Unauthorized."
+      );
+    }
 
-    generateButton.addEventListener(
-      "click",
-      generateInventory
-    );
+    if (
+      !response.ok ||
+      !result.success
+    ) {
 
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Could not delete login."
+      );
+    }
 
-    logoutButton.addEventListener(
-      "click",
-      logout
-    );
+    await loadSavedLogins();
 
+    dashboardMessage.textContent =
+      "Saved login deleted.";
 
-    cancelSaveButton.addEventListener(
-      "click",
-      closeSaveModal
-    );
+    dashboardMessage.className =
+      "dashboard-message success";
 
+    setTimeout(() => {
+      dashboardMessage.textContent = "";
+    }, 1800);
 
-    confirmSaveButton.addEventListener(
-      "click",
-      saveCurrentLogin
-    );
+  } catch (error) {
 
+    dashboardMessage.textContent =
+      error.message ||
+      "Could not delete saved login.";
 
-    saveModal.addEventListener(
-      "click",
-      event => {
+    dashboardMessage.className =
+      "dashboard-message error";
+  }
+}
 
-        if (
-          event.target ===
-          saveModal
-        ) {
+/* =========================================================
+   LOGOUT
+========================================================= */
 
-          closeSaveModal();
+async function logout() {
+
+  try {
+
+    if (currentSession) {
+
+      await authenticatedFetch(
+        `${API_URL}/api/logout`,
+        {
+          method: "POST"
         }
-      }
+      );
+    }
+
+  } catch {
+    // Ignore logout errors.
+  }
+
+  forceLogout();
+}
+
+function forceLogout(
+  message = ""
+) {
+
+  stopLiveStock();
+
+  if (expirationTimer) {
+
+    clearInterval(
+      expirationTimer
     );
 
+    expirationTimer = null;
+  }
 
-    /* =========================
-       START
-    ========================== */
+  currentSession = "";
 
-    verifyCurrentSession();
+  sessionStorage.removeItem(
+    SESSION_KEY
+  );
 
-  </script>
+  sessionStorage.removeItem(
+    EXPIRATION_KEY
+  );
+
+  sessionStorage.removeItem(
+    DURATION_KEY
+  );
+
+  dashboardPage.style.display =
+    "none";
+
+  loginPage.style.display =
+    "flex";
+
+  keyInput.value = "";
+
+  verifyResult.textContent =
+    message;
+
+  verifyResult.className =
+    message
+      ? "error"
+      : "";
+
+  inventoryResult.innerHTML = `
+    <div class="empty-state">
+      No account generated yet.
+    </div>
+  `;
+
+  savedLoginResult.innerHTML = `
+    <div class="empty-state">
+      No saved logins.
+    </div>
+  `;
+
+  stockCount.textContent = "—";
+  keyDuration.textContent = "—";
+  keyExpiration.textContent = "—";
+
+  keyExpiration.classList.remove(
+    "expiring",
+    "expired"
+  );
+
+  accountStatus.textContent =
+    "Active";
+
+  currentGeneratedLogin = null;
+  isGenerating = false;
+}
+
+/* =========================================================
+   EXISTING SESSION
+========================================================= */
+
+async function verifyCurrentSession() {
+
+  if (!currentSession) {
+    return;
+  }
+
+  restoreExpirationTimer();
+
+  try {
+
+    const response =
+      await authenticatedFetch(
+        `${API_URL}/api/stock`
+      );
+
+    const result =
+      await parseResponse(response);
+
+    if (!response.ok) {
+
+      throw new Error(
+        result.message ||
+        result.error ||
+        "Session expired."
+      );
+    }
+
+    loginPage.style.display =
+      "none";
+
+    dashboardPage.style.display =
+      "block";
+
+    await loadStock();
+    startLiveStock();
+    await loadSavedLogins();
+
+  } catch (error) {
+
+    forceLogout(
+      error.message ||
+      "Your session is no longer valid."
+    );
+  }
+}
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function formatDate(
+  value
+) {
+
+  const date =
+    new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toLocaleString(
+    undefined,
+    {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }
+  );
+}
+
+/* =========================================================
+   EVENTS
+========================================================= */
+
+unlockButton.addEventListener(
+  "click",
+  unlock
+);
+
+keyInput.addEventListener(
+  "keydown",
+  event => {
+
+    if (event.key === "Enter") {
+      unlock();
+    }
+  }
+);
+
+generateButton.addEventListener(
+  "click",
+  generateInventory
+);
+
+logoutButton.addEventListener(
+  "click",
+  logout
+);
+
+cancelSaveButton.addEventListener(
+  "click",
+  closeSaveModal
+);
+
+confirmSaveButton.addEventListener(
+  "click",
+  saveCurrentLogin
+);
+
+saveModal.addEventListener(
+  "click",
+  event => {
+
+    if (event.target === saveModal) {
+      closeSaveModal();
+    }
+  }
+);
+
+/* =========================================================
+   START
+========================================================= */
+
+verifyCurrentSession();
+</script>
 
 </body>
 </html>
