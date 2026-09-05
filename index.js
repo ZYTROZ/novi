@@ -37,13 +37,25 @@ const DURATIONS = {
   "lifetime": "Lifetime"
 };
 
+
+/* =========================
+   PERMISSIONS
+========================= */
+
 function hasPermission(member) {
-  if (!member || !member.roles) return false;
+  if (!member || !member.roles) {
+    return false;
+  }
 
   return member.roles.cache.some(role =>
     ALLOWED_ROLES.includes(role.id)
   );
 }
+
+
+/* =========================
+   ADMIN HEADERS
+========================= */
 
 function adminHeaders() {
   return {
@@ -51,6 +63,41 @@ function adminHeaders() {
     "Content-Type": "application/json"
   };
 }
+
+
+/* =========================
+   CLEAN API ERROR
+========================= */
+
+function getApiError(data) {
+  if (!data) {
+    return "Unknown API error.";
+  }
+
+  if (typeof data === "string") {
+    return data
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 1000);
+  }
+
+  if (typeof data === "object") {
+    return (
+      data.error ||
+      data.message ||
+      data.details ||
+      JSON.stringify(data)
+    );
+  }
+
+  return "Unknown API error.";
+}
+
+
+/* =========================
+   BOT READY
+========================= */
 
 client.once("ready", () => {
   console.log("========================================");
@@ -61,13 +108,20 @@ client.once("ready", () => {
   console.log("========================================");
 });
 
+
+/* =========================
+   !GEN
+========================= */
+
 client.on("messageCreate", async (message) => {
   try {
     if (message.author.bot) return;
 
     const content = message.content.trim();
 
-    if (!content.toLowerCase().startsWith("!gen")) return;
+    if (!content.toLowerCase().startsWith("!gen")) {
+      return;
+    }
 
     console.log("");
     console.log("========================================");
@@ -85,7 +139,9 @@ client.on("messageCreate", async (message) => {
     }
 
     const args = content.split(/\s+/);
-    const duration = (args[1] || "1d").toLowerCase();
+
+    const duration =
+      (args[1] || "1d").toLowerCase();
 
     if (!DURATIONS[duration]) {
       return message.reply({
@@ -97,8 +153,14 @@ client.on("messageCreate", async (message) => {
     }
 
     console.log("[GEN] Duration:", duration);
-    console.log("[GEN] API URL:", `${API_URL}/api/keys`);
-    console.log("[GEN] Admin secret exists:", Boolean(NOVI_ADMIN_SECRET));
+    console.log(
+      "[GEN] API URL:",
+      `${API_URL}/api/keys`
+    );
+    console.log(
+      "[GEN] Admin secret exists:",
+      Boolean(NOVI_ADMIN_SECRET)
+    );
 
     await message.channel.sendTyping();
 
@@ -113,28 +175,27 @@ client.on("messageCreate", async (message) => {
       validateStatus: () => true
     });
 
-    console.log("[GEN] HTTP STATUS:", response.status);
-    console.log("[GEN] RESPONSE TYPE:", typeof response.data);
-    console.log("[GEN] RESPONSE DATA:", response.data);
+    console.log(
+      "[GEN] HTTP STATUS:",
+      response.status
+    );
 
-    // Anything other than 2xx is an API failure
-    if (response.status < 200 || response.status >= 300) {
-      let errorMessage = "Unknown API error.";
+    console.log(
+      "[GEN] RESPONSE:",
+      response.data
+    );
 
-      if (typeof response.data === "string") {
-        errorMessage = response.data
-          .replace(/<[^>]*>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim()
-          .slice(0, 1000);
-      } else if (response.data && typeof response.data === "object") {
-        errorMessage =
-          response.data.error ||
-          response.data.message ||
-          JSON.stringify(response.data);
-      }
+    if (
+      response.status < 200 ||
+      response.status >= 300
+    ) {
+      const errorMessage =
+        getApiError(response.data);
 
-      console.log("[GEN] API ERROR:", errorMessage);
+      console.log(
+        "[GEN] API ERROR:",
+        errorMessage
+      );
 
       return message.reply({
         content:
@@ -145,8 +206,15 @@ client.on("messageCreate", async (message) => {
 
     const data = response.data;
 
-    if (!data || !data.success || !data.key) {
-      console.log("[GEN] Invalid API response:", data);
+    if (
+      !data ||
+      !data.success ||
+      !data.key
+    ) {
+      console.log(
+        "[GEN] Invalid API response:",
+        data
+      );
 
       return message.reply({
         content:
@@ -155,8 +223,9 @@ client.on("messageCreate", async (message) => {
       });
     }
 
-    console.log("[GEN] KEY GENERATED SUCCESSFULLY");
-    console.log("[GEN] Duration:", duration);
+    console.log(
+      "[GEN] KEY GENERATED SUCCESSFULLY"
+    );
 
     const embed = new EmbedBuilder()
       .setTitle("🔑 Novi Key Generated")
@@ -185,6 +254,7 @@ client.on("messageCreate", async (message) => {
     });
 
   } catch (error) {
+
     console.log("");
     console.log("========================================");
     console.log("[GEN] UNEXPECTED ERROR");
@@ -193,8 +263,15 @@ client.on("messageCreate", async (message) => {
     console.log("Code:", error.code);
 
     if (error.response) {
-      console.log("HTTP STATUS:", error.response.status);
-      console.log("HTTP DATA:", error.response.data);
+      console.log(
+        "HTTP STATUS:",
+        error.response.status
+      );
+
+      console.log(
+        "HTTP DATA:",
+        error.response.data
+      );
     }
 
     console.log("========================================");
@@ -207,93 +284,212 @@ client.on("messageCreate", async (message) => {
   }
 });
 
+
+/* =========================
+   !ADD
+========================= */
+
 client.on("messageCreate", async (message) => {
+
   try {
-    if (message.author.bot) return;
 
-    const content = message.content.trim();
+    if (message.author.bot) {
+      return;
+    }
 
-    if (!content.toLowerCase().startsWith("!add")) return;
+    const content =
+      message.content.trim();
+
+    if (!content.toLowerCase().startsWith("!add")) {
+      return;
+    }
+
+    console.log("");
+    console.log("========================================");
+    console.log("[ADD] COMMAND RECEIVED");
+    console.log("========================================");
+    console.log("User:", message.author.tag);
+    console.log("Message:", content);
+
+
+    /* -------------------------
+       PERMISSION
+    ------------------------- */
 
     if (!hasPermission(message.member)) {
+
+      console.log(
+        "[ADD] Permission denied"
+      );
+
       return message.reply({
-        content: "❌ You do not have permission to add stock."
+        content:
+          "❌ You do not have permission to add stock."
       });
     }
 
-    const args = content.split(/\s+/).slice(1);
+
+    /* -------------------------
+       GET TYPED ITEMS
+    ------------------------- */
+
+    const args =
+      content
+        .split(/\s+/)
+        .slice(1);
+
     let items = [];
 
-    // Typed items
+
     if (args.length > 0) {
-      items = args;
+      items.push(...args);
     }
 
-    // TXT attachment
-    const attachment = message.attachments.first();
+
+    /* -------------------------
+       GET TXT ATTACHMENT
+    ------------------------- */
+
+    const attachment =
+      message.attachments.first();
+
 
     if (
       attachment &&
       attachment.name &&
-      attachment.name.toLowerCase().endsWith(".txt")
+      attachment.name
+        .toLowerCase()
+        .endsWith(".txt")
     ) {
-      try {
-        const fileResponse = await axios.get(attachment.url, {
-          responseType: "text",
-          timeout: 15000
-        });
 
-        const fileItems = String(fileResponse.data)
-          .split(/\r?\n/)
-          .map(x => x.trim())
-          .filter(Boolean);
+      console.log(
+        "[ADD] TXT attachment detected:",
+        attachment.name
+      );
+
+      try {
+
+        const fileResponse =
+          await axios.get(
+            attachment.url,
+            {
+              responseType: "text",
+              timeout: 15000
+            }
+          );
+
+        const fileItems =
+          String(fileResponse.data)
+            .split(/\r?\n/)
+            .map(item => item.trim())
+            .filter(Boolean);
 
         items.push(...fileItems);
+
+        console.log(
+          "[ADD] TXT items:",
+          fileItems.length
+        );
+
       } catch (error) {
-        console.error("[ADD] Failed to download TXT:", error.message);
+
+        console.error(
+          "[ADD] Failed to download TXT:",
+          error.message
+        );
 
         return message.reply({
-          content: "❌ Failed to read the TXT attachment."
+          content:
+            "❌ Failed to read the TXT attachment."
         });
       }
     }
 
+
+    /* -------------------------
+       CLEAN ITEMS
+    ------------------------- */
+
+    items = items
+      .map(item => String(item).trim())
+      .filter(Boolean);
+
+
+    /* -------------------------
+       REMOVE DUPLICATES
+    ------------------------- */
+
+    items = [
+      ...new Set(items)
+    ];
+
+
+    /* -------------------------
+       EMPTY CHECK
+    ------------------------- */
+
     if (items.length === 0) {
+
       return message.reply({
         content:
           "❌ Please provide stock items or attach a `.txt` file."
       });
     }
 
-    const response = await axios({
-      method: "POST",
-      url: `${API_URL}/api/stock/add`,
-      headers: adminHeaders(),
-      data: {
-        items
-      },
-      timeout: 15000,
-      validateStatus: () => true
-    });
 
-    console.log("[ADD] HTTP STATUS:", response.status);
-    console.log("[ADD] RESPONSE:", response.data);
+    console.log(
+      "[ADD] Items to add:",
+      items.length
+    );
 
-    if (response.status < 200 || response.status >= 300) {
-      let errorMessage = "Unknown API error.";
 
-      if (typeof response.data === "string") {
-        errorMessage = response.data
-          .replace(/<[^>]*>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim()
-          .slice(0, 1000);
-      } else if (response.data && typeof response.data === "object") {
-        errorMessage =
-          response.data.error ||
-          response.data.message ||
-          JSON.stringify(response.data);
-      }
+    /* -------------------------
+       SEND TO API
+    ------------------------- */
+
+    const response =
+      await axios({
+        method: "POST",
+        url: `${API_URL}/api/stock/add`,
+        headers: adminHeaders(),
+
+        data: {
+          items
+        },
+
+        timeout: 15000,
+
+        validateStatus: () => true
+      });
+
+
+    console.log(
+      "[ADD] HTTP STATUS:",
+      response.status
+    );
+
+    console.log(
+      "[ADD] RESPONSE:",
+      response.data
+    );
+
+
+    /* -------------------------
+       API ERROR
+    ------------------------- */
+
+    if (
+      response.status < 200 ||
+      response.status >= 300
+    ) {
+
+      const errorMessage =
+        getApiError(response.data);
+
+      console.log(
+        "[ADD] API ERROR:",
+        errorMessage
+      );
 
       return message.reply({
         content:
@@ -302,35 +498,81 @@ client.on("messageCreate", async (message) => {
       });
     }
 
+
+    /* -------------------------
+       SUCCESS
+    ------------------------- */
+
+    const added =
+      response.data?.added ??
+      items.length;
+
+
     let stockCount = "?";
 
+
+    /* -------------------------
+       GET STOCK COUNT
+    ------------------------- */
+
     try {
-      const stockResponse = await axios.get(
-        `${API_URL}/api/admin/stock`,
-        {
-          headers: adminHeaders(),
-          timeout: 15000
-        }
+
+      const stockResponse =
+        await axios.get(
+          `${API_URL}/api/admin/stock`,
+          {
+            headers: adminHeaders(),
+            timeout: 15000,
+            validateStatus: () => true
+          }
+        );
+
+
+      console.log(
+        "[ADD] STOCK RESPONSE:",
+        stockResponse.data
       );
 
+
       if (
+        stockResponse.status >= 200 &&
+        stockResponse.status < 300 &&
         stockResponse.data &&
-        typeof stockResponse.data.count !== "undefined"
+        typeof stockResponse.data.count !==
+          "undefined"
       ) {
-        stockCount = stockResponse.data.count;
+
+        stockCount =
+          stockResponse.data.count;
       }
+
     } catch (error) {
-      console.log("[ADD] Could not get stock count:", error.message);
+
+      console.log(
+        "[ADD] Could not get stock count:",
+        error.message
+      );
     }
+
+
+    console.log(
+      `[ADD] Successfully added ${added} item(s).`
+    );
+
 
     return message.reply({
       content:
-        `✅ Added **${items.length}** stock item(s).\n` +
+        `✅ Added **${added}** stock item(s).\n` +
         `📦 Total stock: **${stockCount}**`
     });
 
+
   } catch (error) {
-    console.error("[ADD] Error:", error);
+
+    console.error(
+      "[ADD] Error:",
+      error
+    );
 
     return message.reply({
       content:
@@ -338,33 +580,92 @@ client.on("messageCreate", async (message) => {
         `API: ${error.message || "Unknown API error."}`
     }).catch(() => {});
   }
+
 });
+
+
+/* =========================
+   DISCORD ERRORS
+========================= */
 
 client.on("error", error => {
-  console.error("[DISCORD ERROR]", error);
+  console.error(
+    "[DISCORD ERROR]",
+    error
+  );
 });
 
-process.on("unhandledRejection", error => {
-  console.error("[UNHANDLED REJECTION]", error);
-});
 
-process.on("uncaughtException", error => {
-  console.error("[UNCAUGHT EXCEPTION]", error);
-});
+process.on(
+  "unhandledRejection",
+  error => {
+    console.error(
+      "[UNHANDLED REJECTION]",
+      error
+    );
+  }
+);
+
+
+process.on(
+  "uncaughtException",
+  error => {
+    console.error(
+      "[UNCAUGHT EXCEPTION]",
+      error
+    );
+  }
+);
+
+
+/* =========================
+   ENV CHECK
+========================= */
 
 if (!DISCORD_TOKEN) {
-  console.error("❌ DISCORD_TOKEN is missing.");
+
+  console.error(
+    "❌ DISCORD_TOKEN is missing."
+  );
+
   process.exit(1);
 }
+
 
 if (!NOVI_ADMIN_SECRET) {
-  console.error("❌ NOVI_ADMIN_SECRET is missing.");
+
+  console.error(
+    "❌ NOVI_ADMIN_SECRET is missing."
+  );
+
   process.exit(1);
 }
 
-console.log("[BOT] Starting Discord login...");
 
-client.login(DISCORD_TOKEN).catch(error => {
-  console.error("❌ Discord login failed:");
-  console.error(error);
-});
+/* =========================
+   START BOT
+========================= */
+
+console.log(
+  "[BOT] Starting Discord login..."
+);
+
+
+client
+  .login(DISCORD_TOKEN)
+  .then(() => {
+
+    console.log(
+      "[BOT] Discord login successful."
+    );
+
+  })
+  .catch(error => {
+
+    console.error(
+      "❌ Discord login failed:"
+    );
+
+    console.error(error);
+
+  });
