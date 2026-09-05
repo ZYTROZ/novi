@@ -1,1412 +1,2301 @@
-<style>
-/* =========================================================
-   NOVI — PREMIUM DASHBOARD UI
-   DESIGN ONLY — JAVASCRIPT UNCHANGED
-========================================================= */
+<!DOCTYPE html>
+<html lang="{{ lang | default('en') }}" dir="{{ dir | default('ltr') }}">
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-:root {
-  --bg: #050507;
-  --panel: rgba(12, 12, 17, .82);
-  --panel-2: rgba(16, 16, 22, .9);
+  <title>Novi</title>
 
-  --border: rgba(255, 255, 255, .07);
-  --border-hover: rgba(167, 139, 250, .22);
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  --text: #fff;
-  --soft: #c9c6d3;
-  --muted: #777583;
+    :root {
+      --bg: #050507;
+      --panel: rgba(12, 12, 17, .82);
+      --panel-2: rgba(16, 16, 22, .9);
+      --border: rgba(255, 255, 255, .07);
+      --text: #fff;
+      --muted: #777583;
+      --purple: #8b5cf6;
+      --purple-light: #b79aff;
+      --purple-dark: #6d28d9;
+      --green: #22c55e;
+    }
 
-  --purple: #8b5cf6;
-  --purple-light: #b79aff;
-  --purple-dark: #6d28d9;
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(139,92,246,.45) transparent;
+    }
 
-  --green: #22c55e;
-  --red: #ef4444;
+    html {
+      scroll-behavior: smooth;
+    }
 
-  --radius: 20px;
-}
+    body {
+      min-height: 100vh;
+      color: var(--text);
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
 
-html {
-  scroll-behavior: smooth;
-}
+      background:
+        radial-gradient(
+          700px 450px at 50% -10%,
+          rgba(124,58,237,.18),
+          transparent 70%
+        ),
+        radial-gradient(
+          500px 500px at 100% 75%,
+          rgba(109,40,217,.08),
+          transparent 70%
+        ),
+        radial-gradient(
+          450px 450px at 0% 45%,
+          rgba(139,92,246,.055),
+          transparent 70%
+        ),
+        #050507;
 
-body {
-  min-height: 100vh;
-  color: var(--text);
+      overflow-x: hidden;
+    }
 
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
 
-  background:
-    radial-gradient(
-      700px 450px at 50% -10%,
-      rgba(124, 58, 237, .18),
-      transparent 70%
-    ),
-    radial-gradient(
-      500px 500px at 100% 75%,
-      rgba(109, 40, 217, .08),
-      transparent 70%
-    ),
-    radial-gradient(
-      450px 450px at 0% 45%,
-      rgba(139, 92, 246, .055),
-      transparent 70%
-    ),
-    #050507;
+      background-image:
+        linear-gradient(
+          rgba(255,255,255,.018) 1px,
+          transparent 1px
+        ),
+        linear-gradient(
+          90deg,
+          rgba(255,255,255,.018) 1px,
+          transparent 1px
+        );
 
-  overflow-x: hidden;
-}
+      background-size: 70px 70px;
 
-body::before {
-  content: "";
+      mask-image:
+        linear-gradient(
+          to bottom,
+          black,
+          transparent 85%
+        );
 
-  position: fixed;
-  inset: 0;
+      opacity: .32;
+    }
 
-  pointer-events: none;
+    body::after {
+      content: "";
+      position: fixed;
+      width: 550px;
+      height: 550px;
+      left: 50%;
+      top: 55%;
+      transform: translate(-50%, -50%);
+      background: rgba(124,58,237,.025);
+      filter: blur(130px);
+      border-radius: 50%;
+      pointer-events: none;
+    }
 
-  background-image:
-    linear-gradient(
-      rgba(255,255,255,.018) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      rgba(255,255,255,.018) 1px,
-      transparent 1px
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================
+       LOGIN PAGE
+    ========================= */
+
+    #loginPage {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      position: relative;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 430px;
+      position: relative;
+      z-index: 2;
+      animation: loginEnter .65s ease both;
+    }
+
+    @keyframes loginEnter {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .login-wrapper::before {
+      content: "";
+      position: absolute;
+      width: 350px;
+      height: 350px;
+      left: 50%;
+      top: 60px;
+      transform: translateX(-50%);
+      background: rgba(124,58,237,.15);
+      filter: blur(110px);
+      border-radius: 50%;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .brand {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .brand-logo {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 19px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 22px;
+
+      color: white;
+      font-size: 27px;
+      font-weight: 900;
+      letter-spacing: -2px;
+
+      background:
+        linear-gradient(
+          145deg,
+          #b79aff,
+          #7c3aed 55%,
+          #5b21b6
+        );
+
+      border: 1px solid rgba(255,255,255,.16);
+
+      box-shadow:
+        0 25px 70px rgba(109,40,217,.35),
+        inset 0 1px 1px rgba(255,255,255,.4);
+
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand-logo::before {
+      content: "";
+      position: absolute;
+      width: 150px;
+      height: 35px;
+      left: -45px;
+      top: -10px;
+      transform: rotate(-35deg);
+      background: rgba(255,255,255,.18);
+      filter: blur(7px);
+    }
+
+    .brand h1 {
+      font-size: 38px;
+      font-weight: 850;
+      letter-spacing: -2px;
+
+      background:
+        linear-gradient(
+          180deg,
+          #fff,
+          #d4d0df
+        );
+
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .brand p {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .login-card {
+      position: relative;
+      padding: 31px;
+
+      border: 1px solid var(--border);
+      border-radius: 24px;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(18,18,24,.94),
+          rgba(8,8,11,.93)
+        );
+
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+
+      box-shadow:
+        0 40px 100px rgba(0,0,0,.55),
+        inset 0 1px 0 rgba(255,255,255,.035);
+
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 15%;
+      right: 15%;
+      height: 1px;
+
+      background:
+        linear-gradient(
+          90deg,
+          transparent,
+          rgba(167,139,250,.8),
+          transparent
+        );
+
+      box-shadow:
+        0 0 20px rgba(139,92,246,.4);
+    }
+
+    .login-heading {
+      margin-bottom: 25px;
+    }
+
+    .login-title {
+      color: #f8f8fb;
+      font-size: 20px;
+      font-weight: 780;
+      letter-spacing: -.5px;
+    }
+
+    .login-description {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .input-group {
+      position: relative;
+    }
+
+    .input-label {
+      display: block;
+      margin-bottom: 9px;
+      color: #9997a5;
+      font-size: 10px;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+    }
+
+    .key-input {
+      width: 100%;
+      height: 55px;
+      padding: 0 16px;
+
+      outline: none;
+
+      border: 1px solid rgba(255,255,255,.075);
+      border-radius: 13px;
+
+      color: white;
+      background: rgba(255,255,255,.035);
+
+      font-size: 13px;
+
+      transition:
+        border-color .2s ease,
+        background .2s ease,
+        box-shadow .2s ease,
+        transform .2s ease;
+    }
+
+    .key-input:hover {
+      border-color: rgba(255,255,255,.12);
+    }
+
+    .key-input:focus {
+      border-color: rgba(139,92,246,.7);
+      background: rgba(139,92,246,.045);
+
+      box-shadow:
+        0 0 0 4px rgba(139,92,246,.08);
+    }
+
+    .key-input::placeholder {
+      color: #50505a;
+    }
+
+    .unlock-button {
+      width: 100%;
+      height: 55px;
+      margin-top: 12px;
+
+      border: 0;
+      border-radius: 13px;
+
+      color: white;
+
+      font-size: 12px;
+      font-weight: 800;
+
+      background:
+        linear-gradient(
+          135deg,
+          #a17aff,
+          #7c3aed,
+          #6424c7
+        );
+
+      box-shadow:
+        0 15px 40px rgba(109,40,217,.28),
+        inset 0 1px 0 rgba(255,255,255,.23);
+
+      transition:
+        transform .2s ease,
+        filter .2s ease,
+        box-shadow .2s ease;
+    }
+
+    .unlock-button:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.05);
+
+      box-shadow:
+        0 20px 48px rgba(109,40,217,.38);
+    }
+
+    .unlock-button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #verifyResult {
+      margin-top: 13px;
+      padding: 12px;
+      border-radius: 11px;
+
+      font-size: 11px;
+      line-height: 1.5;
+
+      display: none;
+    }
+
+    #verifyResult.error {
+      display: block;
+      color: #fca5a5;
+      background: rgba(239,68,68,.055);
+      border: 1px solid rgba(239,68,68,.13);
+    }
+
+    #verifyResult.success {
+      display: block;
+      color: #86efac;
+      background: rgba(34,197,94,.055);
+      border: 1px solid rgba(34,197,94,.13);
+    }
+
+    .server-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+
+      margin-top: 19px;
+
+      color: #62616c;
+      font-size: 10px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+
+      background: var(--green);
+
+      box-shadow:
+        0 0 0 4px rgba(34,197,94,.055),
+        0 0 14px rgba(34,197,94,.65);
+
+      animation: statusPulse 2s infinite;
+    }
+
+    @keyframes statusPulse {
+      0%,100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: .5;
+      }
+    }
+
+    /* =========================
+       DASHBOARD
+    ========================= */
+
+    #dashboardPage {
+      min-height: 100vh;
+      padding: 22px 24px 60px;
+      position: relative;
+    }
+
+    .dashboard-container {
+      width: 100%;
+      max-width: 1240px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    .topbar {
+      height: 68px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 0 10px 0 16px;
+      margin-bottom: 55px;
+
+      border: 1px solid rgba(255,255,255,.065);
+      border-radius: 18px;
+
+      background: rgba(9,9,13,.72);
+
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+
+      box-shadow:
+        0 20px 60px rgba(0,0,0,.3),
+        inset 0 1px 0 rgba(255,255,255,.035);
+
+      position: relative;
+    }
+
+    .topbar::after {
+      content: "";
+
+      position: absolute;
+      left: 22%;
+      right: 22%;
+      bottom: -1px;
+      height: 1px;
+
+      background:
+        linear-gradient(
+          90deg,
+          transparent,
+          rgba(139,92,246,.4),
+          transparent
+        );
+    }
+
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      color: white;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -.3px;
+    }
+
+    .small-logo {
+      width: 39px;
+      height: 39px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 12px;
+
+      color: white;
+
+      background:
+        linear-gradient(
+          135deg,
+          #a78bfa,
+          #6d28d9
+        );
+
+      border: 1px solid rgba(255,255,255,.15);
+
+      box-shadow:
+        0 8px 28px rgba(109,40,217,.3),
+        inset 0 1px 0 rgba(255,255,255,.25);
+
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .logout-button {
+      height: 39px;
+      padding: 0 16px;
+
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 11px;
+
+      color: #858390;
+      background: rgba(255,255,255,.025);
+
+      font-size: 10px;
+      font-weight: 750;
+
+      transition: .2s ease;
+    }
+
+    .logout-button:hover {
+      color: white;
+      border-color: rgba(255,255,255,.14);
+      background: rgba(255,255,255,.055);
+      transform: translateY(-1px);
+    }
+
+    .welcome {
+      margin-bottom: 28px;
+      position: relative;
+      padding-left: 3px;
+    }
+
+    .welcome::before {
+      content: "SECURE CONTROL CENTER";
+
+      display: block;
+      margin-bottom: 10px;
+
+      color: #9675e9;
+
+      font-size: 9px;
+      font-weight: 850;
+      letter-spacing: 1.8px;
+    }
+
+    .welcome h2 {
+      font-size: 43px;
+      line-height: 1;
+
+      font-weight: 850;
+      letter-spacing: -2.2px;
+
+      background:
+        linear-gradient(
+          180deg,
+          #fff 0%,
+          #cbc6d7 100%
+        );
+
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .welcome p {
+      margin-top: 11px;
+      color: #6e6c79;
+      font-size: 12px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      min-height: 145px;
+      padding: 23px;
+
+      border: 1px solid rgba(255,255,255,.065);
+      border-radius: 18px;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(17,17,23,.9),
+          rgba(9,9,13,.86)
+        );
+
+      position: relative;
+      overflow: hidden;
+
+      transition:
+        transform .22s ease,
+        border-color .22s ease,
+        box-shadow .22s ease;
+    }
+
+    .stat-card::before {
+      content: "";
+
+      position: absolute;
+
+      width: 190px;
+      height: 190px;
+
+      right: -115px;
+      bottom: -125px;
+
+      border-radius: 50%;
+
+      background: rgba(124,58,237,.14);
+      filter: blur(45px);
+    }
+
+    .stat-card::after {
+      content: "";
+
+      position: absolute;
+
+      top: 0;
+      left: 20px;
+      right: 20px;
+
+      height: 2px;
+
+      background:
+        linear-gradient(
+          90deg,
+          transparent,
+          rgba(139,92,246,.4),
+          transparent
+        );
+
+      opacity: .5;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+
+      border-color:
+        rgba(139,92,246,.2);
+
+      box-shadow:
+        0 20px 45px rgba(0,0,0,.28);
+    }
+
+    .stat-label {
+      color: #686673;
+
+      font-size: 9px;
+      font-weight: 800;
+
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stat-value {
+      margin-top: 17px;
+
+      color: #f6f5f9;
+
+      font-size: 31px;
+      line-height: 1;
+
+      font-weight: 850;
+      letter-spacing: -1.3px;
+    }
+
+    #stockCount {
+      background:
+        linear-gradient(
+          135deg,
+          #fff,
+          #a78bfa
+        );
+
+      -webkit-background-clip: text;
+      background-clip: text;
+
+      color: transparent;
+    }
+
+    #keyDuration {
+      color: #ddd9e8;
+    }
+
+    #accountStatus {
+      color: #86efac;
+      font-size: 27px;
+    }
+
+    .main-card {
+      position: relative;
+
+      padding: 27px;
+
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 21px;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(17,17,23,.94),
+          rgba(8,8,12,.9)
+        );
+
+      box-shadow:
+        0 30px 90px rgba(0,0,0,.3),
+        inset 0 1px 0 rgba(255,255,255,.035);
+
+      overflow: hidden;
+    }
+
+    .main-card::before {
+      content: "";
+
+      position: absolute;
+
+      width: 300px;
+      height: 180px;
+
+      top: -130px;
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      background: rgba(124,58,237,.12);
+      filter: blur(60px);
+
+      border-radius: 50%;
+    }
+
+    .main-card::after {
+      content: "";
+
+      position: absolute;
+
+      top: 0;
+      left: 12%;
+      right: 12%;
+
+      height: 1px;
+
+      background:
+        linear-gradient(
+          90deg,
+          transparent,
+          rgba(167,139,250,.45),
+          transparent
+        );
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 25px;
+      margin-bottom: 22px;
+
+      position: relative;
+      z-index: 1;
+    }
+
+    .card-header h3 {
+      color: #f5f4f8;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -.45px;
+    }
+
+    .card-header p {
+      margin-top: 6px;
+      color: #6e6c78;
+      font-size: 11px;
+    }
+
+    .generate-button {
+      height: 46px;
+      min-width: 165px;
+      padding: 0 20px;
+
+      border: 0;
+      border-radius: 12px;
+
+      color: white;
+
+      font-size: 11px;
+      font-weight: 800;
+
+      background:
+        linear-gradient(
+          135deg,
+          #a17aff,
+          #7c3aed 55%,
+          #6325c9
+        );
+
+      box-shadow:
+        0 12px 32px rgba(109,40,217,.3),
+        inset 0 1px 0 rgba(255,255,255,.23);
+
+      transition: .2s ease;
+
+      position: relative;
+      overflow: hidden;
+    }
+
+    .generate-button::before {
+      content: "";
+
+      position: absolute;
+
+      top: 0;
+      bottom: 0;
+
+      left: -80%;
+      width: 55%;
+
+      transform: skewX(-20deg);
+
+      background: rgba(255,255,255,.18);
+
+      transition: left .55s ease;
+    }
+
+    .generate-button:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.06);
+
+      box-shadow:
+        0 18px 42px rgba(109,40,217,.4);
+    }
+
+    .generate-button:hover::before {
+      left: 140%;
+    }
+
+    .generate-button:active {
+      transform: translateY(0);
+    }
+
+    .generate-button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .inventory-result {
+      min-height: 145px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 25px;
+
+      border: 1px dashed rgba(255,255,255,.08);
+      border-radius: 15px;
+
+      color: #5e5d69;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255,255,255,.018),
+          rgba(255,255,255,.008)
+        );
+
+      text-align: center;
+      font-size: 11px;
+
+      position: relative;
+      overflow: hidden;
+    }
+
+    .inventory-result::before {
+      content: "";
+
+      position: absolute;
+      inset: 0;
+
+      background-image:
+        radial-gradient(
+          rgba(139,92,246,.16) 1px,
+          transparent 1px
+        );
+
+      background-size: 22px 22px;
+      opacity: .08;
+
+      pointer-events: none;
+    }
+
+    .inventory-result:has(.item-box) {
+      border-style: solid;
+      border-color: rgba(139,92,246,.16);
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(139,92,246,.035),
+          rgba(255,255,255,.01)
+        );
+    }
+
+    .item-box {
+      width: 100%;
+      position: relative;
+      z-index: 1;
+    }
+
+    .item-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 11px;
+    }
+
+    .item-field {
+      padding: 15px;
+
+      text-align: left;
+
+      border: 1px solid rgba(255,255,255,.055);
+      border-radius: 12px;
+
+      background: rgba(255,255,255,.022);
+
+      transition: .2s ease;
+    }
+
+    .item-field:hover {
+      border-color: rgba(139,92,246,.2);
+      background: rgba(139,92,246,.035);
+      transform: translateY(-1px);
+    }
+
+    .item-field span {
+      display: block;
+
+      margin-bottom: 7px;
+
+      color: #5f5d6a;
+
+      font-size: 8px;
+      font-weight: 800;
+
+      text-transform: uppercase;
+      letter-spacing: .9px;
+    }
+
+    .item-field strong {
+      display: block;
+
+      word-break: break-word;
+
+      color: #e5e2eb;
+
+      font-size: 11px;
+      font-weight: 600;
+
+      line-height: 1.5;
+    }
+
+    .message {
+      margin-top: 13px;
+      padding: 12px 14px;
+
+      border-radius: 11px;
+
+      display: none;
+
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .message.error {
+      display: block;
+      color: #fca5a5;
+
+      background: rgba(239,68,68,.055);
+      border: 1px solid rgba(239,68,68,.12);
+    }
+
+    .message.success {
+      display: block;
+      color: #86efac;
+
+      background: rgba(34,197,94,.055);
+      border: 1px solid rgba(34,197,94,.12);
+    }
+
+    /* =========================
+       MOBILE
+    ========================= */
+
+    @media (max-width: 700px) {
+
+      #loginPage {
+        padding: 25px 14px;
+      }
+
+      .brand {
+        margin-bottom: 23px;
+      }
+
+      .brand-logo {
+        width: 61px;
+        height: 61px;
+        border-radius: 18px;
+        margin-bottom: 16px;
+      }
+
+      .brand h1 {
+        font-size: 32px;
+      }
+
+      .login-card {
+        padding: 22px;
+        border-radius: 20px;
+      }
+
+      #dashboardPage {
+        padding: 12px 12px 40px;
+      }
+
+      .topbar {
+        height: 61px;
+        margin-bottom: 38px;
+        border-radius: 15px;
+      }
+
+      .small-logo {
+        width: 35px;
+        height: 35px;
+        border-radius: 10px;
+      }
+
+      .welcome::before {
+        font-size: 8px;
+      }
+
+      .welcome h2 {
+        font-size: 34px;
+        letter-spacing: -1.7px;
+      }
+
+      .welcome p {
+        font-size: 11px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 9px;
+      }
+
+      .stat-card {
+        min-height: 105px;
+        padding: 19px;
+      }
+
+      .stat-value {
+        margin-top: 13px;
+        font-size: 27px;
+      }
+
+      .main-card {
+        padding: 18px;
+        border-radius: 17px;
+      }
+
+      .card-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+      }
+
+      .generate-button {
+        width: 100%;
+      }
+
+      .inventory-result {
+        min-height: 115px;
+        padding: 17px;
+      }
+
+      .item-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 420px) {
+
+      #dashboardPage {
+        padding: 9px;
+      }
+
+      .topbar {
+        margin-bottom: 31px;
+      }
+
+      .welcome h2 {
+        font-size: 30px;
+      }
+
+      .welcome p {
+        line-height: 1.6;
+      }
+
+      .main-card {
+        padding: 15px;
+      }
+
+      .card-header h3 {
+        font-size: 16px;
+      }
+
+      .generate-button {
+        height: 45px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =========================
+       LOGIN / HOME
+  ========================== -->
+
+  <section id="loginPage">
+
+    <div class="login-wrapper">
+
+      <div class="brand">
+
+        <div class="brand-logo">
+          N
+        </div>
+
+        <h1>Novi</h1>
+
+        <p>
+          Secure inventory access
+        </p>
+
+      </div>
+
+      <div class="login-card">
+
+        <div class="login-heading">
+
+          <div class="login-title">
+            Welcome to Novi
+          </div>
+
+          <div class="login-description">
+            Enter your access key below to securely unlock your Novi dashboard.
+          </div>
+
+        </div>
+
+        <div class="input-group">
+
+          <label
+            class="input-label"
+            for="keyInput"
+          >
+            Access Key
+          </label>
+
+          <input
+            id="keyInput"
+            class="key-input"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="NOVI-XXXXXX-XXXXXX-XXXXXX"
+          >
+
+        </div>
+
+        <button
+          id="unlockButton"
+          class="unlock-button"
+          type="button"
+        >
+          Unlock Novi
+        </button>
+
+        <div id="verifyResult"></div>
+
+        <div class="server-status">
+
+          <span class="status-dot"></span>
+
+          <span>
+            Novi servers operational
+          </span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       DASHBOARD
+  ========================== -->
+
+  <section
+    id="dashboardPage"
+    class="hidden"
+  >
+
+    <div class="dashboard-container">
+
+      <header class="topbar">
+
+        <div class="topbar-brand">
+
+          <div class="small-logo">
+            N
+          </div>
+
+          <span>
+            Novi
+          </span>
+
+        </div>
+
+        <button
+          id="logoutButton"
+          class="logout-button"
+          type="button"
+        >
+          Logout
+        </button>
+
+      </header>
+
+
+      <div class="welcome">
+
+        <h2>
+          Dashboard
+        </h2>
+
+        <p>
+          Your Novi access is active and ready to use.
+        </p>
+
+      </div>
+
+
+      <div class="stats-grid">
+
+        <div class="stat-card">
+
+          <div class="stat-label">
+            Inventory Available
+          </div>
+
+          <div
+            id="stockCount"
+            class="stat-value"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+          <div class="stat-label">
+            Key Duration
+          </div>
+
+          <div
+            id="keyDuration"
+            class="stat-value"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+          <div class="stat-label">
+            Status
+          </div>
+
+          <div
+            id="accountStatus"
+            class="stat-value"
+          >
+            Active
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="main-card">
+
+        <div class="card-header">
+
+          <div>
+
+            <h3>
+              Inventory
+            </h3>
+
+            <p>
+              Generate the next available inventory item.
+            </p>
+
+          </div>
+
+          <button
+            id="generateButton"
+            class="generate-button"
+            type="button"
+          >
+            Generate Item
+          </button>
+
+        </div>
+
+
+        <div
+          id="inventoryResult"
+          class="inventory-result"
+        >
+          Click "Generate Item" to retrieve inventory.
+        </div>
+
+
+        <div
+          id="dashboardMessage"
+          class="message"
+        ></div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================
+       JAVASCRIPT
+       FUNCTIONALITY UNCHANGED
+  ========================== -->
+
+  <script>
+    "use strict";
+
+    const API_URL = "https://novi-1.onrender.com";
+
+    let sessionToken =
+      sessionStorage.getItem("noviSessionToken") || "";
+
+    let currentKey = "";
+
+    let currentDeviceId =
+      localStorage.getItem("noviDeviceId") || "";
+
+    let unlocked = false;
+
+
+    function getDeviceId() {
+
+      if (currentDeviceId) {
+        return currentDeviceId;
+      }
+
+      if (
+        window.crypto &&
+        typeof window.crypto.randomUUID === "function"
+      ) {
+
+        currentDeviceId =
+          window.crypto.randomUUID();
+
+      } else {
+
+        currentDeviceId =
+          "novi-" +
+          Date.now().toString(36) +
+          "-" +
+          Math.random().toString(36).slice(2);
+
+      }
+
+      localStorage.setItem(
+        "noviDeviceId",
+        currentDeviceId
+      );
+
+      return currentDeviceId;
+    }
+
+
+    const loginPage =
+      document.getElementById("loginPage");
+
+    const dashboardPage =
+      document.getElementById("dashboardPage");
+
+    const keyInput =
+      document.getElementById("keyInput");
+
+    const unlockButton =
+      document.getElementById("unlockButton");
+
+    const verifyResult =
+      document.getElementById("verifyResult");
+
+    const logoutButton =
+      document.getElementById("logoutButton");
+
+    const stockCount =
+      document.getElementById("stockCount");
+
+    const keyDuration =
+      document.getElementById("keyDuration");
+
+    const accountStatus =
+      document.getElementById("accountStatus");
+
+    const generateButton =
+      document.getElementById("generateButton");
+
+    const inventoryResult =
+      document.getElementById("inventoryResult");
+
+    const dashboardMessage =
+      document.getElementById("dashboardMessage");
+
+
+    function showVerifyMessage(
+      message,
+      type = "error"
+    ) {
+
+      verifyResult.textContent =
+        message;
+
+      verifyResult.className = "";
+
+      verifyResult.classList.add(type);
+    }
+
+
+    function clearVerifyMessage() {
+
+      verifyResult.textContent = "";
+
+      verifyResult.className = "";
+    }
+
+
+    function showDashboardMessage(
+      message,
+      type = "error"
+    ) {
+
+      dashboardMessage.textContent =
+        message;
+
+      dashboardMessage.className =
+        "message " + type;
+    }
+
+
+    function clearDashboardMessage() {
+
+      dashboardMessage.textContent = "";
+
+      dashboardMessage.className =
+        "message";
+    }
+
+
+    function showLogin() {
+
+      loginPage.classList.remove("hidden");
+
+      dashboardPage.classList.add("hidden");
+
+      unlocked = false;
+    }
+
+
+    function showDashboard() {
+
+      loginPage.classList.add("hidden");
+
+      dashboardPage.classList.remove("hidden");
+
+      unlocked = true;
+    }
+
+
+    function clearSession() {
+
+      sessionToken = "";
+
+      currentKey = "";
+
+      unlocked = false;
+
+      sessionStorage.removeItem(
+        "noviSessionToken"
+      );
+
+      showLogin();
+    }
+
+
+    async function authenticatedFetch(
+      endpoint,
+      options = {}
+    ) {
+
+      if (!sessionToken) {
+        throw new Error("NO_SESSION");
+      }
+
+      const headers = {
+        ...(options.headers || {}),
+        "x-novi-session": sessionToken
+      };
+
+      const response =
+        await fetch(
+          API_URL + endpoint,
+          {
+            ...options,
+            headers,
+            cache: "no-store"
+          }
+        );
+
+      if (
+        response.status === 401 ||
+        response.status === 403
+      ) {
+
+        clearSession();
+
+        throw new Error(
+          "Your session has expired."
+        );
+      }
+
+      return response;
+    }
+
+
+    async function unlock() {
+
+      const key =
+        keyInput.value.trim();
+
+      if (!key) {
+
+        showVerifyMessage(
+          "Please enter your Novi key."
+        );
+
+        keyInput.focus();
+
+        return;
+      }
+
+      unlockButton.disabled = true;
+
+      unlockButton.textContent =
+        "Verifying...";
+
+      clearVerifyMessage();
+
+      try {
+
+        const response =
+          await fetch(
+            API_URL + "/api/verify",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                "Accept":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                key: key,
+                deviceId: getDeviceId()
+              }),
+
+              cache: "no-store"
+            }
+          );
+
+
+        let result = {};
+
+        const contentType =
+          response.headers.get(
+            "content-type"
+          ) || "";
+
+
+        if (
+          contentType.includes(
+            "application/json"
+          )
+        ) {
+
+          result =
+            await response.json();
+
+        } else {
+
+          const text =
+            await response.text();
+
+          throw new Error(
+            text ||
+            "The server returned an invalid response."
+          );
+        }
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            result.message ||
+            "Invalid key."
+          );
+        }
+
+
+        if (
+          result.success !== true ||
+          result.valid !== true
+        ) {
+
+          throw new Error(
+            result.message ||
+            "Invalid or expired key."
+          );
+        }
+
+
+        if (!result.sessionToken) {
+
+          throw new Error(
+            "The server did not return a session."
+          );
+        }
+
+
+        sessionToken =
+          result.sessionToken;
+
+        currentKey =
+          key;
+
+
+        sessionStorage.setItem(
+          "noviSessionToken",
+          sessionToken
+        );
+
+
+        unlocked = true;
+
+
+        if (
+          result.key &&
+          result.key.duration
+        ) {
+
+          keyDuration.textContent =
+            formatDuration(
+              result.key.duration
+            );
+
+        } else {
+
+          keyDuration.textContent =
+            "Active";
+        }
+
+
+        showVerifyMessage(
+          "Access granted.",
+          "success"
+        );
+
+
+        showDashboard();
+
+
+        await loadStock();
+
+
+      } catch (error) {
+
+        console.error(
+          "Novi verification error:",
+          error
+        );
+
+
+        sessionStorage.removeItem(
+          "noviSessionToken"
+        );
+
+
+        sessionToken = "";
+
+
+        showVerifyMessage(
+          error.message ||
+          "Could not connect to the Novi server."
+        );
+
+
+      } finally {
+
+        unlockButton.disabled = false;
+
+        unlockButton.textContent =
+          "Unlock Novi";
+      }
+    }
+
+
+    function formatDuration(
+      duration
+    ) {
+
+      const values = {
+
+        "1d": "1 Day",
+        "3d": "3 Days",
+        "1week": "1 Week",
+        "1month": "1 Month",
+        "1year": "1 Year",
+        "lifetime": "Lifetime"
+
+      };
+
+      return (
+        values[duration] ||
+        duration ||
+        "Active"
+      );
+    }
+
+
+    async function loadStock() {
+
+      try {
+
+        const response =
+          await authenticatedFetch(
+            "/api/stock",
+            {
+              method: "GET"
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            result.message ||
+            "Failed to load inventory."
+          );
+        }
+
+
+        stockCount.textContent =
+          typeof result.count === "number"
+            ? result.count
+            : "0";
+
+
+        accountStatus.textContent =
+          "Active";
+
+
+      } catch (error) {
+
+        if (
+          error.message ===
+          "Your session has expired."
+        ) {
+          return;
+        }
+
+
+        console.error(
+          "Stock error:",
+          error
+        );
+
+
+        stockCount.textContent =
+          "Error";
+      }
+    }
+
+
+    async function generateInventory() {
+
+      if (!sessionToken) {
+
+        clearSession();
+
+        return;
+      }
+
+
+      generateButton.disabled = true;
+
+      generateButton.textContent =
+        "Generating...";
+
+      clearDashboardMessage();
+
+
+      try {
+
+        const response =
+          await authenticatedFetch(
+            "/api/stock/generate",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                "Accept":
+                  "application/json"
+              },
+
+              body: JSON.stringify({})
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            result.message ||
+            "Unable to generate inventory."
+          );
+        }
+
+
+        if (
+          result.success !== true
+        ) {
+
+          throw new Error(
+            result.message ||
+            "Unable to generate inventory."
+          );
+        }
+
+
+        const item =
+          result.item;
+
+
+        if (!item) {
+
+          inventoryResult.innerHTML =
+            "No inventory is currently available.";
+
+        } else {
+
+          renderInventoryItem(item);
+        }
+
+
+        if (
+          typeof result.remaining ===
+          "number"
+        ) {
+
+          stockCount.textContent =
+            result.remaining;
+
+        } else {
+
+          await loadStock();
+        }
+
+
+        showDashboardMessage(
+          "Inventory generated successfully.",
+          "success"
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "Generate error:",
+          error
+        );
+
+
+        if (
+          error.message ===
+          "Your session has expired."
+        ) {
+          return;
+        }
+
+
+        showDashboardMessage(
+          error.message ||
+          "Something went wrong."
+        );
+
+
+      } finally {
+
+        generateButton.disabled = false;
+
+        generateButton.textContent =
+          "Generate Item";
+      }
+    }
+
+
+    function renderInventoryItem(
+      item
+    ) {
+
+      if (
+        typeof item !== "object" ||
+        item === null
+      ) {
+
+        inventoryResult.textContent =
+          String(item);
+
+        return;
+      }
+
+
+      const entries =
+        Object.entries(item);
+
+
+      if (!entries.length) {
+
+        inventoryResult.textContent =
+          "The generated item is empty.";
+
+        return;
+      }
+
+
+      const fields =
+        entries.map(
+          ([key, value]) => {
+
+            let displayValue =
+              value;
+
+
+            if (
+              typeof value ===
+              "object"
+            ) {
+
+              try {
+
+                displayValue =
+                  JSON.stringify(
+                    value
+                  );
+
+              } catch {
+
+                displayValue =
+                  String(value);
+              }
+            }
+
+
+            return `
+              <div class="item-field">
+                <span>${escapeHtml(key)}</span>
+                <strong>${escapeHtml(String(displayValue))}</strong>
+              </div>
+            `;
+
+          }
+        ).join("");
+
+
+      inventoryResult.innerHTML = `
+        <div class="item-box">
+          <div class="item-row">
+            ${fields}
+          </div>
+        </div>
+      `;
+    }
+
+
+    function escapeHtml(
+      value
+    ) {
+
+      return value
+        .replace(
+          /&/g,
+          "&amp;"
+        )
+        .replace(
+          /</g,
+          "&lt;"
+        )
+        .replace(
+          />/g,
+          "&gt;"
+        )
+        .replace(
+          /"/g,
+          "&quot;"
+        )
+        .replace(
+          /'/g,
+          "&#039;"
+        );
+    }
+
+
+    async function logout() {
+
+      try {
+
+        if (sessionToken) {
+
+          await fetch(
+            API_URL + "/api/logout",
+            {
+              method: "POST",
+
+              headers: {
+                "x-novi-session":
+                  sessionToken
+              },
+
+              cache: "no-store"
+            }
+          );
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Logout error:",
+          error
+        );
+
+      } finally {
+
+        clearSession();
+
+        keyInput.value = "";
+
+        clearVerifyMessage();
+
+        inventoryResult.textContent =
+          'Click "Generate Item" to retrieve inventory.';
+
+        clearDashboardMessage();
+      }
+    }
+
+
+    async function verifyCurrentSession() {
+
+      if (!sessionToken) {
+
+        showLogin();
+
+        return;
+      }
+
+
+      try {
+
+        const response =
+          await fetch(
+            API_URL + "/api/stock",
+            {
+              method: "GET",
+
+              headers: {
+                "x-novi-session":
+                  sessionToken,
+
+                "Accept":
+                  "application/json"
+              },
+
+              cache: "no-store"
+            }
+          );
+
+
+        if (
+          response.status === 401 ||
+          response.status === 403
+        ) {
+
+          clearSession();
+
+          return;
+        }
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            "Session verification failed."
+          );
+        }
+
+
+        const result =
+          await response.json();
+
+
+        stockCount.textContent =
+          typeof result.count === "number"
+            ? result.count
+            : "0";
+
+
+        unlocked = true;
+
+        showDashboard();
+
+
+      } catch (error) {
+
+        console.error(
+          "Session check failed:",
+          error
+        );
+
+        clearSession();
+      }
+    }
+
+
+    unlockButton.addEventListener(
+      "click",
+      unlock
     );
 
-  background-size: 70px 70px;
 
-  mask-image:
-    linear-gradient(
-      to bottom,
-      black,
-      transparent 85%
+    keyInput.addEventListener(
+      "keydown",
+      function(event) {
+
+        if (
+          event.key === "Enter"
+        ) {
+
+          unlock();
+        }
+      }
     );
 
-  opacity: .32;
-}
 
-body::after {
-  content: "";
-
-  position: fixed;
-
-  width: 550px;
-  height: 550px;
-
-  left: 50%;
-  top: 55%;
-
-  transform: translate(-50%, -50%);
-
-  background:
-    rgba(124, 58, 237, .025);
-
-  filter: blur(130px);
-
-  border-radius: 50%;
-
-  pointer-events: none;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-.hidden {
-  display: none !important;
-}
-
-
-/* =========================================================
-   LOGIN
-========================================================= */
-
-#loginPage {
-  min-height: 100vh;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 40px 20px;
-
-  position: relative;
-}
-
-.login-wrapper {
-  width: 100%;
-  max-width: 430px;
-
-  position: relative;
-  z-index: 2;
-
-  animation: loginEnter .65s ease both;
-}
-
-@keyframes loginEnter {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.login-wrapper::before {
-  content: "";
-
-  position: absolute;
-
-  width: 350px;
-  height: 350px;
-
-  left: 50%;
-  top: 60px;
-
-  transform: translateX(-50%);
-
-  background:
-    rgba(124, 58, 237, .15);
-
-  filter: blur(110px);
-
-  border-radius: 50%;
-
-  z-index: -1;
-}
-
-
-/* =========================================================
-   BRAND
-========================================================= */
-
-.brand {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.brand-logo {
-  width: 72px;
-  height: 72px;
-
-  margin: 0 auto 19px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 22px;
-
-  color: white;
-
-  font-size: 27px;
-  font-weight: 900;
-
-  letter-spacing: -2px;
-
-  background:
-    linear-gradient(
-      145deg,
-      #b79aff,
-      #7c3aed 55%,
-      #5b21b6
+    logoutButton.addEventListener(
+      "click",
+      logout
     );
 
-  border: 1px solid rgba(255,255,255,.16);
 
-  box-shadow:
-    0 25px 70px rgba(109,40,217,.35),
-    inset 0 1px 1px rgba(255,255,255,.4);
-
-  position: relative;
-  overflow: hidden;
-}
-
-.brand-logo::before {
-  content: "";
-
-  position: absolute;
-
-  width: 150px;
-  height: 35px;
-
-  left: -45px;
-  top: -10px;
-
-  transform: rotate(-35deg);
-
-  background: rgba(255,255,255,.18);
-
-  filter: blur(7px);
-}
-
-.brand h1 {
-  font-size: 38px;
-  font-weight: 850;
-
-  letter-spacing: -2px;
-
-  background:
-    linear-gradient(
-      180deg,
-      #fff,
-      #d4d0df
+    generateButton.addEventListener(
+      "click",
+      generateInventory
     );
 
-  -webkit-background-clip: text;
-  background-clip: text;
 
-  color: transparent;
-}
+    getDeviceId();
 
-.brand p {
-  margin-top: 9px;
+    verifyCurrentSession();
 
-  color: var(--muted);
+  </script>
 
-  font-size: 12px;
-}
-
-
-/* =========================================================
-   LOGIN CARD
-========================================================= */
-
-.login-card {
-  position: relative;
-
-  padding: 31px;
-
-  border:
-    1px solid var(--border);
-
-  border-radius: 24px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(18,18,24,.94),
-      rgba(8,8,11,.93)
-    );
-
-  backdrop-filter: blur(30px);
-
-  box-shadow:
-    0 40px 100px rgba(0,0,0,.55),
-    inset 0 1px 0 rgba(255,255,255,.035);
-
-  overflow: hidden;
-}
-
-.login-card::before {
-  content: "";
-
-  position: absolute;
-
-  top: 0;
-  left: 15%;
-  right: 15%;
-
-  height: 1px;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(167,139,250,.8),
-      transparent
-    );
-
-  box-shadow:
-    0 0 20px rgba(139,92,246,.4);
-}
-
-.login-heading {
-  margin-bottom: 25px;
-}
-
-.login-title {
-  color: #f8f8fb;
-
-  font-size: 20px;
-  font-weight: 780;
-
-  letter-spacing: -.5px;
-}
-
-.login-description {
-  margin-top: 8px;
-
-  color: var(--muted);
-
-  font-size: 12px;
-  line-height: 1.7;
-}
-
-
-/* =========================================================
-   INPUT
-========================================================= */
-
-.input-group {
-  position: relative;
-}
-
-.input-label {
-  display: block;
-
-  margin-bottom: 9px;
-
-  color: #9997a5;
-
-  font-size: 10px;
-  font-weight: 750;
-
-  text-transform: uppercase;
-
-  letter-spacing: .8px;
-}
-
-.key-input {
-  width: 100%;
-  height: 55px;
-
-  padding: 0 16px;
-
-  outline: none;
-
-  border:
-    1px solid rgba(255,255,255,.075);
-
-  border-radius: 13px;
-
-  color: white;
-
-  background:
-    rgba(255,255,255,.035);
-
-  font-size: 13px;
-
-  transition: .2s ease;
-}
-
-.key-input:focus {
-  border-color:
-    rgba(139,92,246,.7);
-
-  background:
-    rgba(139,92,246,.045);
-
-  box-shadow:
-    0 0 0 4px rgba(139,92,246,.08);
-}
-
-.key-input::placeholder {
-  color: #50505a;
-}
-
-
-/* =========================================================
-   BUTTON
-========================================================= */
-
-.unlock-button {
-  width: 100%;
-  height: 55px;
-
-  margin-top: 12px;
-
-  border: 0;
-  border-radius: 13px;
-
-  color: white;
-
-  font-size: 12px;
-  font-weight: 800;
-
-  background:
-    linear-gradient(
-      135deg,
-      #a17aff,
-      #7c3aed,
-      #6424c7
-    );
-
-  box-shadow:
-    0 15px 40px rgba(109,40,217,.28),
-    inset 0 1px 0 rgba(255,255,255,.23);
-
-  transition: .2s ease;
-}
-
-.unlock-button:hover {
-  transform: translateY(-2px);
-
-  filter: brightness(1.05);
-
-  box-shadow:
-    0 20px 48px rgba(109,40,217,.38);
-}
-
-.unlock-button:disabled {
-  opacity: .6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-
-/* =========================================================
-   VERIFY
-========================================================= */
-
-#verifyResult {
-  margin-top: 13px;
-
-  padding: 12px;
-
-  border-radius: 11px;
-
-  font-size: 11px;
-  line-height: 1.5;
-
-  display: none;
-}
-
-#verifyResult.error {
-  display: block;
-
-  color: #fca5a5;
-
-  background:
-    rgba(239,68,68,.055);
-
-  border:
-    1px solid rgba(239,68,68,.13);
-}
-
-#verifyResult.success {
-  display: block;
-
-  color: #86efac;
-
-  background:
-    rgba(34,197,94,.055);
-
-  border:
-    1px solid rgba(34,197,94,.13);
-}
-
-
-/* =========================================================
-   SERVER STATUS
-========================================================= */
-
-.server-status {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  gap: 8px;
-
-  margin-top: 19px;
-
-  color: #62616c;
-
-  font-size: 10px;
-}
-
-.status-dot {
-  width: 6px;
-  height: 6px;
-
-  border-radius: 50%;
-
-  background: var(--green);
-
-  box-shadow:
-    0 0 0 4px rgba(34,197,94,.055),
-    0 0 14px rgba(34,197,94,.65);
-
-  animation: statusPulse 2s infinite;
-}
-
-@keyframes statusPulse {
-  0%,100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: .5;
-  }
-}
-
-
-/* =========================================================
-   =================== DASHBOARD ===========================
-========================================================= */
-
-#dashboardPage {
-  min-height: 100vh;
-
-  padding:
-    22px 24px 60px;
-
-  position: relative;
-}
-
-.dashboard-container {
-  width: 100%;
-  max-width: 1240px;
-
-  margin: 0 auto;
-
-  position: relative;
-  z-index: 2;
-}
-
-
-/* =========================================================
-   TOP NAV
-========================================================= */
-
-.topbar {
-  height: 68px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 0 10px 0 16px;
-
-  margin-bottom: 55px;
-
-  border:
-    1px solid rgba(255,255,255,.065);
-
-  border-radius: 18px;
-
-  background:
-    rgba(9,9,13,.72);
-
-  backdrop-filter: blur(28px);
-
-  box-shadow:
-    0 20px 60px rgba(0,0,0,.3),
-    inset 0 1px 0 rgba(255,255,255,.035);
-
-  position: relative;
-}
-
-.topbar::after {
-  content: "";
-
-  position: absolute;
-
-  left: 22%;
-  right: 22%;
-  bottom: -1px;
-
-  height: 1px;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(139,92,246,.4),
-      transparent
-    );
-}
-
-.topbar-brand {
-  display: flex;
-  align-items: center;
-
-  gap: 12px;
-
-  color: white;
-
-  font-size: 15px;
-  font-weight: 800;
-
-  letter-spacing: -.3px;
-}
-
-.small-logo {
-  width: 39px;
-  height: 39px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 12px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #a78bfa,
-      #6d28d9
-    );
-
-  border:
-    1px solid rgba(255,255,255,.15);
-
-  box-shadow:
-    0 8px 28px rgba(109,40,217,.3),
-    inset 0 1px 0 rgba(255,255,255,.25);
-
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.logout-button {
-  height: 39px;
-
-  padding: 0 16px;
-
-  border:
-    1px solid rgba(255,255,255,.07);
-
-  border-radius: 11px;
-
-  color: #858390;
-
-  background:
-    rgba(255,255,255,.025);
-
-  font-size: 10px;
-  font-weight: 750;
-
-  transition: .2s ease;
-}
-
-.logout-button:hover {
-  color: white;
-
-  border-color:
-    rgba(255,255,255,.14);
-
-  background:
-    rgba(255,255,255,.055);
-
-  transform: translateY(-1px);
-}
-
-
-/* =========================================================
-   HERO / WELCOME
-========================================================= */
-
-.welcome {
-  margin-bottom: 28px;
-
-  position: relative;
-
-  padding-left: 3px;
-}
-
-.welcome::before {
-  content: "SECURE CONTROL CENTER";
-
-  display: block;
-
-  margin-bottom: 10px;
-
-  color:
-    #9675e9;
-
-  font-size: 9px;
-  font-weight: 850;
-
-  letter-spacing: 1.8px;
-}
-
-.welcome h2 {
-  font-size: 43px;
-
-  line-height: 1;
-
-  font-weight: 850;
-
-  letter-spacing: -2.2px;
-
-  background:
-    linear-gradient(
-      180deg,
-      #fff 0%,
-      #cbc6d7 100%
-    );
-
-  -webkit-background-clip: text;
-  background-clip: text;
-
-  color: transparent;
-}
-
-.welcome p {
-  margin-top: 11px;
-
-  color: #6e6c79;
-
-  font-size: 12px;
-}
-
-
-/* =========================================================
-   STAT CARDS
-========================================================= */
-
-.stats-grid {
-  display: grid;
-
-  grid-template-columns:
-    repeat(3, 1fr);
-
-  gap: 14px;
-
-  margin-bottom: 16px;
-}
-
-.stat-card {
-  min-height: 145px;
-
-  padding: 23px;
-
-  border:
-    1px solid rgba(255,255,255,.065);
-
-  border-radius: 18px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(17,17,23,.9),
-      rgba(9,9,13,.86)
-    );
-
-  position: relative;
-
-  overflow: hidden;
-
-  transition:
-    transform .22s ease,
-    border-color .22s ease,
-    box-shadow .22s ease;
-}
-
-.stat-card::before {
-  content: "";
-
-  position: absolute;
-
-  width: 190px;
-  height: 190px;
-
-  right: -115px;
-  bottom: -125px;
-
-  border-radius: 50%;
-
-  background:
-    rgba(124,58,237,.14);
-
-  filter: blur(45px);
-}
-
-.stat-card::after {
-  content: "";
-
-  position: absolute;
-
-  top: 0;
-  left: 20px;
-  right: 20px;
-
-  height: 2px;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(139,92,246,.4),
-      transparent
-    );
-
-  opacity: .5;
-}
-
-.stat-card:hover {
-  transform: translateY(-4px);
-
-  border-color:
-    rgba(139,92,246,.2);
-
-  box-shadow:
-    0 20px 45px rgba(0,0,0,.28);
-}
-
-.stat-label {
-  color: #686673;
-
-  font-size: 9px;
-  font-weight: 800;
-
-  text-transform: uppercase;
-
-  letter-spacing: 1px;
-}
-
-.stat-value {
-  margin-top: 17px;
-
-  color: #f6f5f9;
-
-  font-size: 31px;
-
-  line-height: 1;
-
-  font-weight: 850;
-
-  letter-spacing: -1.3px;
-}
-
-#stockCount {
-  background:
-    linear-gradient(
-      135deg,
-      #fff,
-      #a78bfa
-    );
-
-  -webkit-background-clip: text;
-  background-clip: text;
-
-  color: transparent;
-}
-
-#keyDuration {
-  color: #ddd9e8;
-}
-
-#accountStatus {
-  color: #86efac;
-
-  font-size: 27px;
-}
-
-
-/* =========================================================
-   MAIN INVENTORY PANEL
-========================================================= */
-
-.main-card {
-  position: relative;
-
-  padding: 27px;
-
-  border:
-    1px solid rgba(255,255,255,.07);
-
-  border-radius: 21px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(17,17,23,.94),
-      rgba(8,8,12,.9)
-    );
-
-  box-shadow:
-    0 30px 90px rgba(0,0,0,.3),
-    inset 0 1px 0 rgba(255,255,255,.035);
-
-  overflow: hidden;
-}
-
-.main-card::before {
-  content: "";
-
-  position: absolute;
-
-  width: 300px;
-  height: 180px;
-
-  top: -130px;
-  left: 50%;
-
-  transform: translateX(-50%);
-
-  background:
-    rgba(124,58,237,.12);
-
-  filter: blur(60px);
-
-  border-radius: 50%;
-}
-
-.main-card::after {
-  content: "";
-
-  position: absolute;
-
-  top: 0;
-  left: 12%;
-  right: 12%;
-
-  height: 1px;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(167,139,250,.45),
-      transparent
-    );
-}
-
-
-/* =========================================================
-   CARD HEADER
-========================================================= */
-
-.card-header {
-  display: flex;
-
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 25px;
-
-  margin-bottom: 22px;
-
-  position: relative;
-  z-index: 1;
-}
-
-.card-header h3 {
-  color: #f5f4f8;
-
-  font-size: 18px;
-  font-weight: 800;
-
-  letter-spacing: -.45px;
-}
-
-.card-header p {
-  margin-top: 6px;
-
-  color: #6e6c78;
-
-  font-size: 11px;
-}
-
-
-/* =========================================================
-   GENERATE BUTTON
-========================================================= */
-
-.generate-button {
-  height: 46px;
-
-  min-width: 165px;
-
-  padding: 0 20px;
-
-  border: 0;
-  border-radius: 12px;
-
-  color: white;
-
-  font-size: 11px;
-  font-weight: 800;
-
-  background:
-    linear-gradient(
-      135deg,
-      #a17aff,
-      #7c3aed 55%,
-      #6325c9
-    );
-
-  box-shadow:
-    0 12px 32px rgba(109,40,217,.3),
-    inset 0 1px 0 rgba(255,255,255,.23);
-
-  transition: .2s ease;
-
-  position: relative;
-  overflow: hidden;
-}
-
-.generate-button::before {
-  content: "";
-
-  position: absolute;
-
-  top: 0;
-  bottom: 0;
-
-  left: -80%;
-
-  width: 55%;
-
-  transform: skewX(-20deg);
-
-  background:
-    rgba(255,255,255,.18);
-
-  transition: left .55s ease;
-}
-
-.generate-button:hover {
-  transform: translateY(-2px);
-
-  filter: brightness(1.06);
-
-  box-shadow:
-    0 18px 42px rgba(109,40,217,.4);
-}
-
-.generate-button:hover::before {
-  left: 140%;
-}
-
-.generate-button:active {
-  transform: translateY(0);
-}
-
-.generate-button:disabled {
-  opacity: .55;
-
-  cursor: not-allowed;
-
-  transform: none;
-}
-
-
-/* =========================================================
-   INVENTORY RESULT
-========================================================= */
-
-.inventory-result {
-  min-height: 145px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 25px;
-
-  border:
-    1px dashed rgba(255,255,255,.08);
-
-  border-radius: 15px;
-
-  color: #5e5d69;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.018),
-      rgba(255,255,255,.008)
-    );
-
-  text-align: center;
-
-  font-size: 11px;
-
-  position: relative;
-
-  overflow: hidden;
-}
-
-.inventory-result::before {
-  content: "";
-
-  position: absolute;
-  inset: 0;
-
-  background-image:
-    radial-gradient(
-      rgba(139,92,246,.16) 1px,
-      transparent 1px
-    );
-
-  background-size: 22px 22px;
-
-  opacity: .08;
-
-  pointer-events: none;
-}
-
-.inventory-result:has(.item-box) {
-  border-style: solid;
-
-  border-color:
-    rgba(139,92,246,.16);
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(139,92,246,.035),
-      rgba(255,255,255,.01)
-    );
-}
-
-.item-box {
-  width: 100%;
-
-  position: relative;
-  z-index: 1;
-}
-
-.item-row {
-  display: grid;
-
-  grid-template-columns:
-    repeat(2, 1fr);
-
-  gap: 11px;
-}
-
-.item-field {
-  padding: 15px;
-
-  text-align: left;
-
-  border:
-    1px solid rgba(255,255,255,.055);
-
-  border-radius: 12px;
-
-  background:
-    rgba(255,255,255,.022);
-
-  transition: .2s ease;
-}
-
-.item-field:hover {
-  border-color:
-    rgba(139,92,246,.2);
-
-  background:
-    rgba(139,92,246,.035);
-
-  transform: translateY(-1px);
-}
-
-.item-field span {
-  display: block;
-
-  margin-bottom: 7px;
-
-  color: #5f5d6a;
-
-  font-size: 8px;
-  font-weight: 800;
-
-  text-transform: uppercase;
-
-  letter-spacing: .9px;
-}
-
-.item-field strong {
-  display: block;
-
-  word-break: break-word;
-
-  color: #e5e2eb;
-
-  font-size: 11px;
-  font-weight: 600;
-
-  line-height: 1.5;
-}
-
-
-/* =========================================================
-   DASHBOARD MESSAGE
-========================================================= */
-
-.message {
-  margin-top: 13px;
-
-  padding: 12px 14px;
-
-  border-radius: 11px;
-
-  display: none;
-
-  font-size: 10px;
-
-  line-height: 1.5;
-}
-
-.message.error {
-  display: block;
-
-  color: #fca5a5;
-
-  background:
-    rgba(239,68,68,.055);
-
-  border:
-    1px solid rgba(239,68,68,.12);
-}
-
-.message.success {
-  display: block;
-
-  color: #86efac;
-
-  background:
-    rgba(34,197,94,.055);
-
-  border:
-    1px solid rgba(34,197,94,.12);
-}
-
-
-/* =========================================================
-   MOBILE
-========================================================= */
-
-@media (max-width: 700px) {
-
-  #dashboardPage {
-    padding:
-      12px 12px 40px;
-  }
-
-  .topbar {
-    height: 61px;
-
-    margin-bottom: 38px;
-
-    border-radius: 15px;
-  }
-
-  .small-logo {
-    width: 35px;
-    height: 35px;
-
-    border-radius: 10px;
-  }
-
-  .welcome::before {
-    font-size: 8px;
-  }
-
-  .welcome h2 {
-    font-size: 34px;
-
-    letter-spacing: -1.7px;
-  }
-
-  .welcome p {
-    font-size: 11px;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
-
-    gap: 9px;
-  }
-
-  .stat-card {
-    min-height: 105px;
-
-    padding: 19px;
-  }
-
-  .stat-value {
-    margin-top: 13px;
-
-    font-size: 27px;
-  }
-
-  .main-card {
-    padding: 18px;
-
-    border-radius: 17px;
-  }
-
-  .card-header {
-    flex-direction: column;
-
-    align-items: stretch;
-
-    gap: 15px;
-  }
-
-  .generate-button {
-    width: 100%;
-  }
-
-  .inventory-result {
-    min-height: 115px;
-
-    padding: 17px;
-  }
-
-  .item-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-
-@media (max-width: 420px) {
-
-  #dashboardPage {
-    padding: 9px;
-  }
-
-  .topbar {
-    margin-bottom: 31px;
-  }
-
-  .welcome h2 {
-    font-size: 30px;
-  }
-
-  .welcome p {
-    line-height: 1.6;
-  }
-
-  .main-card {
-    padding: 15px;
-  }
-
-  .card-header h3 {
-    font-size: 16px;
-  }
-
-  .generate-button {
-    height: 45px;
-  }
-}
-</style>
+</body>
+</html>
