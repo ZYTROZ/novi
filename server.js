@@ -16,7 +16,9 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 const KEY_FILE = path.join(__dirname, "keys.json");
 const STOCK_FILE = path.join(__dirname, "epicgames-stock.json");
 
-const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET || "";
+const ADMIN_SECRET = String(
+    process.env.NOVI_ADMIN_SECRET || ""
+).trim();
 
 const SESSION_DURATION = 30 * 60 * 1000;
 
@@ -66,7 +68,10 @@ function ensureFile(file, defaultValue) {
             );
         }
     } catch (error) {
-        console.error("FAILED TO CREATE FILE:", file);
+        console.error(
+            "FAILED TO CREATE FILE:",
+            file
+        );
         console.error(error);
     }
 }
@@ -77,15 +82,23 @@ function readJSON(file, fallback) {
             return fallback;
         }
 
-        const raw = fs.readFileSync(file, "utf8");
+        const raw = fs.readFileSync(
+            file,
+            "utf8"
+        );
 
         if (!raw.trim()) {
             return fallback;
         }
 
         return JSON.parse(raw);
+
     } catch (error) {
-        console.error("FAILED TO READ JSON:", file);
+        console.error(
+            "FAILED TO READ JSON:",
+            file
+        );
+
         console.error(error);
 
         return fallback;
@@ -94,23 +107,47 @@ function readJSON(file, fallback) {
 
 function writeJSON(file, data) {
     try {
+        const tempFile =
+            `${file}.tmp`;
+
         fs.writeFileSync(
-            file,
-            JSON.stringify(data, null, 2),
+            tempFile,
+            JSON.stringify(
+                data,
+                null,
+                2
+            ),
             "utf8"
         );
 
+        fs.renameSync(
+            tempFile,
+            file
+        );
+
         return true;
+
     } catch (error) {
-        console.error("FAILED TO WRITE JSON:", file);
+        console.error(
+            "FAILED TO WRITE JSON:",
+            file
+        );
+
         console.error(error);
 
         return false;
     }
 }
 
-ensureFile(KEY_FILE, []);
-ensureFile(STOCK_FILE, []);
+ensureFile(
+    KEY_FILE,
+    []
+);
+
+ensureFile(
+    STOCK_FILE,
+    []
+);
 
 /* =========================================================
    KEY HELPERS
@@ -124,7 +161,8 @@ function normalizeKey(value) {
 }
 
 function normalizeDeviceId(value) {
-    return String(value || "").trim();
+    return String(value || "")
+        .trim();
 }
 
 function generateKey() {
@@ -134,15 +172,27 @@ function generateKey() {
             .toString("hex")
             .toUpperCase();
 
-    return `NOVI-${part()}-${part()}-${part()}`;
+    return (
+        `NOVI-${part()}-${part()}-${part()}`
+    );
 }
 
 function safeEqual(a, b) {
     try {
-        const aBuffer = Buffer.from(String(a));
-        const bBuffer = Buffer.from(String(b));
+        const aBuffer =
+            Buffer.from(
+                String(a)
+            );
 
-        if (aBuffer.length !== bBuffer.length) {
+        const bBuffer =
+            Buffer.from(
+                String(b)
+            );
+
+        if (
+            aBuffer.length !==
+            bBuffer.length
+        ) {
             return false;
         }
 
@@ -150,6 +200,7 @@ function safeEqual(a, b) {
             aBuffer,
             bBuffer
         );
+
     } catch {
         return false;
     }
@@ -160,11 +211,35 @@ function safeEqual(a, b) {
 ========================================================= */
 
 const DURATIONS = {
-    "1d": 24 * 60 * 60 * 1000,
-    "3d": 3 * 24 * 60 * 60 * 1000,
-    "1week": 7 * 24 * 60 * 60 * 1000,
-    "1month": 30 * 24 * 60 * 60 * 1000,
-    "lifetime": null
+    "1d":
+        24 *
+        60 *
+        60 *
+        1000,
+
+    "3d":
+        3 *
+        24 *
+        60 *
+        60 *
+        1000,
+
+    "1week":
+        7 *
+        24 *
+        60 *
+        60 *
+        1000,
+
+    "1month":
+        30 *
+        24 *
+        60 *
+        60 *
+        1000,
+
+    "lifetime":
+        null
 };
 
 const DURATION_NAMES = {
@@ -185,13 +260,17 @@ function calculateExpiration(duration) {
         return null;
     }
 
-    const durationLength = DURATIONS[duration];
+    const length =
+        DURATIONS[duration];
 
-    if (durationLength === null) {
+    if (length === null) {
         return null;
     }
 
-    return Date.now() + durationLength;
+    return (
+        Date.now() +
+        length
+    );
 }
 
 /* =========================================================
@@ -199,53 +278,162 @@ function calculateExpiration(duration) {
 ========================================================= */
 
 function readKeys() {
-    const data = readJSON(KEY_FILE, []);
-
-    if (!Array.isArray(data)) {
-        console.error(
-            "keys.json is not an array. Using empty key list."
+    const data =
+        readJSON(
+            KEY_FILE,
+            []
         );
 
-        return [];
+    /*
+     * Normal format:
+     *
+     * [
+     *   {
+     *      key: "NOVI-...",
+     *      duration: "1d"
+     *   }
+     * ]
+     */
+
+    if (Array.isArray(data)) {
+        return data;
     }
 
-    return data;
+    /*
+     * Also support:
+     *
+     * {
+     *    "keys": [...]
+     * }
+     */
+
+    if (
+        data &&
+        Array.isArray(data.keys)
+    ) {
+        return data.keys;
+    }
+
+    /*
+     * Also support an old object
+     * containing key records.
+     */
+
+    if (
+        data &&
+        typeof data === "object"
+    ) {
+        const values =
+            Object.values(data);
+
+        const possibleKeys =
+            values.filter(
+                value =>
+                    typeof value ===
+                    "string" ||
+                    (
+                        value &&
+                        typeof value ===
+                        "object" &&
+                        typeof value.key ===
+                        "string"
+                    )
+            );
+
+        if (
+            possibleKeys.length > 0
+        ) {
+            return possibleKeys;
+        }
+    }
+
+    /*
+     * Empty {} is treated as an
+     * empty key database.
+     */
+
+    return [];
 }
 
 function saveKeys(keys) {
-    return writeJSON(KEY_FILE, keys);
+    /*
+     * Always save keys in the
+     * correct array format.
+     */
+
+    return writeJSON(
+        KEY_FILE,
+        Array.isArray(keys)
+            ? keys
+            : []
+    );
 }
 
 function createKeyRecord(duration) {
     return {
         key: generateKey(),
+
         duration,
-        durationName: DURATION_NAMES[duration],
-        createdAt: Date.now(),
-        expiresAt: calculateExpiration(duration),
+
+        durationName:
+            DURATION_NAMES[
+                duration
+            ],
+
+        createdAt:
+            Date.now(),
+
+        expiresAt:
+            calculateExpiration(
+                duration
+            ),
+
         deviceId: null,
+
         activatedAt: null
     };
 }
 
+/* =========================================================
+   FIND KEY
+========================================================= */
+
 function findKey(rawKey) {
-    const key = normalizeKey(rawKey);
+    const key =
+        normalizeKey(rawKey);
 
     if (!key) {
         return null;
     }
 
-    const keys = readKeys();
+    const keys =
+        readKeys();
 
-    for (let i = 0; i < keys.length; i++) {
-        const record = keys[i];
+    for (
+        let i = 0;
+        i < keys.length;
+        i++
+    ) {
+        const record =
+            keys[i];
 
         const storedKey =
-            typeof record === "string"
-                ? normalizeKey(record)
-                : normalizeKey(record?.key);
+            typeof record ===
+            "string"
+                ? normalizeKey(
+                    record
+                )
+                : normalizeKey(
+                    record?.key
+                );
 
-        if (safeEqual(storedKey, key)) {
+        if (
+            storedKey &&
+            safeEqual(
+                storedKey,
+                key
+            )
+        ) {
             return {
                 record,
                 index: i
@@ -260,15 +448,24 @@ function findKey(rawKey) {
    VERIFY KEY
 ========================================================= */
 
-function verifyKey(rawKey, rawDeviceId) {
-    const key = normalizeKey(rawKey);
-    const deviceId = normalizeDeviceId(rawDeviceId);
+function verifyKey(
+    rawKey,
+    rawDeviceId
+) {
+    const key =
+        normalizeKey(rawKey);
+
+    const deviceId =
+        normalizeDeviceId(
+            rawDeviceId
+        );
 
     if (!key) {
         return {
             success: false,
             valid: false,
-            message: "Please enter a key."
+            message:
+                "Please enter a key."
         };
     }
 
@@ -276,98 +473,200 @@ function verifyKey(rawKey, rawDeviceId) {
         return {
             success: false,
             valid: false,
-            message: "Device ID is required."
+            message:
+                "Device ID is required."
         };
     }
 
-    const keys = readKeys();
+    const keys =
+        readKeys();
 
     let found = null;
     let foundIndex = -1;
 
-    for (let i = 0; i < keys.length; i++) {
-        const record = keys[i];
+    for (
+        let i = 0;
+        i < keys.length;
+        i++
+    ) {
+        const record =
+            keys[i];
 
         const storedKey =
-            typeof record === "string"
-                ? normalizeKey(record)
-                : normalizeKey(record?.key);
+            typeof record ===
+            "string"
+                ? normalizeKey(
+                    record
+                )
+                : normalizeKey(
+                    record?.key
+                );
 
-        if (safeEqual(storedKey, key)) {
-            found = record;
-            foundIndex = i;
+        if (
+            storedKey &&
+            safeEqual(
+                storedKey,
+                key
+            )
+        ) {
+            found =
+                record;
+
+            foundIndex =
+                i;
+
             break;
         }
     }
 
-    if (!found) {
+    if (
+        found === null ||
+        foundIndex === -1
+    ) {
+        console.log(
+            `[VERIFY] Invalid key attempt`
+        );
+
         return {
             success: false,
             valid: false,
-            message: "Invalid key."
+            message:
+                "Invalid key."
         };
     }
 
-    /* -------------------------------------------------------
-       Convert old string keys
-    ------------------------------------------------------- */
-
-    if (typeof found === "string") {
-        found = {
-            key: normalizeKey(found),
-            duration: "lifetime",
-            durationName: "Lifetime",
-            createdAt: Date.now(),
-            expiresAt: null,
-            deviceId: null,
-            activatedAt: null
-        };
-
-        keys[foundIndex] = found;
-    }
-
-    /* -------------------------------------------------------
-       Check expiration
-    ------------------------------------------------------- */
+    /* =====================================================
+       CONVERT OLD STRING KEY
+    ===================================================== */
 
     if (
-        found.expiresAt !== null &&
-        found.expiresAt !== undefined &&
-        Number(found.expiresAt) <= Date.now()
+        typeof found ===
+        "string"
     ) {
+        found = {
+            key:
+                normalizeKey(
+                    found
+                ),
+
+            duration:
+                "lifetime",
+
+            durationName:
+                "Lifetime",
+
+            createdAt:
+                Date.now(),
+
+            expiresAt:
+                null,
+
+            deviceId:
+                null,
+
+            activatedAt:
+                null
+        };
+
+        keys[foundIndex] =
+            found;
+    }
+
+    /* =====================================================
+       FIX MISSING DURATION
+    ===================================================== */
+
+    if (
+        !found.duration ||
+        !Object.prototype.hasOwnProperty.call(
+            DURATIONS,
+            found.duration
+        )
+    ) {
+        found.duration =
+            "lifetime";
+    }
+
+    if (
+        !found.durationName
+    ) {
+        found.durationName =
+            DURATION_NAMES[
+                found.duration
+            ] ||
+            "Lifetime";
+    }
+
+    /* =====================================================
+       EXPIRATION
+    ===================================================== */
+
+    if (
+        found.expiresAt !==
+            null &&
+        found.expiresAt !==
+            undefined &&
+        Number(
+            found.expiresAt
+        ) <= Date.now()
+    ) {
+        console.log(
+            `[VERIFY] Expired key`
+        );
+
         return {
             success: false,
             valid: false,
-            message: "This key has expired."
+            message:
+                "This key has expired."
         };
     }
 
-    /* -------------------------------------------------------
-       Bind key to device
-    ------------------------------------------------------- */
+    /* =====================================================
+       DEVICE BINDING
+    ===================================================== */
 
     if (!found.deviceId) {
-        found.deviceId = deviceId;
-        found.activatedAt = Date.now();
 
-        keys[foundIndex] = found;
+        found.deviceId =
+            deviceId;
 
-        const saved = saveKeys(keys);
+        found.activatedAt =
+            Date.now();
+
+        keys[foundIndex] =
+            found;
+
+        const saved =
+            saveKeys(keys);
 
         if (!saved) {
             return {
                 success: false,
                 valid: false,
-                message: "Could not save key activation."
+                message:
+                    "Could not save key activation."
             };
         }
+
+        console.log(
+            `[VERIFY] Key activated successfully`
+        );
+
     } else {
+
         if (
             !safeEqual(
-                normalizeDeviceId(found.deviceId),
+                normalizeDeviceId(
+                    found.deviceId
+                ),
                 deviceId
             )
         ) {
+            console.log(
+                `[VERIFY] Device mismatch`
+            );
+
             return {
                 success: false,
                 valid: false,
@@ -388,19 +687,35 @@ function verifyKey(rawKey, rawDeviceId) {
    SESSIONS
 ========================================================= */
 
-function createSession(key, deviceId) {
-    const token = crypto
-        .randomBytes(32)
-        .toString("hex");
+function createSession(
+    key,
+    deviceId
+) {
+    const token =
+        crypto
+            .randomBytes(32)
+            .toString("hex");
 
     const expiresAt =
-        Date.now() + SESSION_DURATION;
+        Date.now() +
+        SESSION_DURATION;
 
-    sessions.set(token, {
-        key: normalizeKey(key),
-        deviceId: normalizeDeviceId(deviceId),
-        expiresAt
-    });
+    sessions.set(
+        token,
+        {
+            key:
+                normalizeKey(
+                    key
+                ),
+
+            deviceId:
+                normalizeDeviceId(
+                    deviceId
+                ),
+
+            expiresAt
+        }
+    );
 
     return {
         token,
@@ -413,67 +728,101 @@ function getSession(token) {
         return null;
     }
 
-    const session = sessions.get(token);
+    const session =
+        sessions.get(token);
 
     if (!session) {
         return null;
     }
 
-    if (session.expiresAt <= Date.now()) {
-        sessions.delete(token);
+    if (
+        session.expiresAt <=
+        Date.now()
+    ) {
+        sessions.delete(
+            token
+        );
+
         return null;
     }
 
-    /* -------------------------------------------------------
-       Re-check key
-    ------------------------------------------------------- */
-
-    const result = findKey(session.key);
+    const result =
+        findKey(
+            session.key
+        );
 
     if (!result) {
-        sessions.delete(token);
+        sessions.delete(
+            token
+        );
+
         return null;
     }
 
-    let keyRecord = result.record;
+    let keyRecord =
+        result.record;
 
-    if (typeof keyRecord === "string") {
+    if (
+        typeof keyRecord ===
+        "string"
+    ) {
         keyRecord = {
-            key: normalizeKey(keyRecord),
-            duration: "lifetime",
-            durationName: "Lifetime",
-            createdAt: Date.now(),
-            expiresAt: null,
-            deviceId: null,
-            activatedAt: null
+            key:
+                normalizeKey(
+                    keyRecord
+                ),
+
+            duration:
+                "lifetime",
+
+            durationName:
+                "Lifetime",
+
+            createdAt:
+                Date.now(),
+
+            expiresAt:
+                null,
+
+            deviceId:
+                null,
+
+            activatedAt:
+                null
         };
     }
 
-    /* -------------------------------------------------------
-       Re-check expiration
-    ------------------------------------------------------- */
-
     if (
-        keyRecord.expiresAt !== null &&
-        keyRecord.expiresAt !== undefined &&
-        Number(keyRecord.expiresAt) <= Date.now()
+        keyRecord.expiresAt !==
+            null &&
+        keyRecord.expiresAt !==
+            undefined &&
+        Number(
+            keyRecord.expiresAt
+        ) <= Date.now()
     ) {
-        sessions.delete(token);
+        sessions.delete(
+            token
+        );
+
         return null;
     }
-
-    /* -------------------------------------------------------
-       Re-check device binding
-    ------------------------------------------------------- */
 
     if (
         keyRecord.deviceId &&
         !safeEqual(
-            normalizeDeviceId(keyRecord.deviceId),
-            normalizeDeviceId(session.deviceId)
+            normalizeDeviceId(
+                keyRecord.deviceId
+            ),
+            normalizeDeviceId(
+                session.deviceId
+            )
         )
     ) {
-        sessions.delete(token);
+        sessions.delete(
+            token
+        );
+
         return null;
     }
 
@@ -484,47 +833,70 @@ function getSession(token) {
    AUTH MIDDLEWARE
 ========================================================= */
 
-function requireSession(req, res, next) {
+function requireSession(
+    req,
+    res,
+    next
+) {
     const token =
-        req.headers["x-novi-session"];
+        req.headers[
+            "x-novi-session"
+        ];
 
     const session =
         getSession(token);
 
     if (!session) {
-        return res.status(401).json({
-            success: false,
-            message: "Authentication required."
-        });
+        return res
+            .status(401)
+            .json({
+                success: false,
+                message:
+                    "Authentication required."
+            });
     }
 
-    req.noviSession = session;
+    req.noviSession =
+        session;
 
     next();
 }
 
-function requireAdmin(req, res, next) {
+function requireAdmin(
+    req,
+    res,
+    next
+) {
     if (!ADMIN_SECRET) {
-        return res.status(503).json({
-            success: false,
-            message:
-                "Admin secret is not configured."
-        });
+        return res
+            .status(503)
+            .json({
+                success: false,
+                message:
+                    "Admin secret is not configured."
+            });
     }
 
     const supplied =
-        req.headers["x-novi-admin-secret"];
+        String(
+            req.headers[
+                "x-novi-admin-secret"
+            ] || ""
+        );
 
     if (
         !safeEqual(
-            supplied || "",
+            supplied,
             ADMIN_SECRET
         )
     ) {
-        return res.status(403).json({
-            success: false,
-            message: "Admin access denied."
-        });
+        return res
+            .status(403)
+            .json({
+                success: false,
+                message:
+                    "Admin access denied."
+            });
     }
 
     next();
@@ -536,35 +908,47 @@ function requireAdmin(req, res, next) {
 
 function getClientIP(req) {
     const forwarded =
-        req.headers["x-forwarded-for"];
+        req.headers[
+            "x-forwarded-for"
+        ];
 
     if (forwarded) {
         return String(
             forwarded
-        ).split(",")[0].trim();
+        )
+            .split(",")[0]
+            .trim();
     }
 
     return (
-        req.socket?.remoteAddress ||
+        req.socket
+            ?.remoteAddress ||
         "unknown"
     );
 }
 
-function checkVerifyRateLimit(ip) {
-    const now = Date.now();
+function checkVerifyRateLimit(
+    ip
+) {
+    const now =
+        Date.now();
 
     const WINDOW =
         5 * 60 * 1000;
 
-    const MAX_ATTEMPTS = 10;
+    const MAX_ATTEMPTS =
+        10;
 
     let data =
-        verifyAttempts.get(ip);
+        verifyAttempts.get(
+            ip
+        );
 
     if (!data) {
         data = {
             count: 0,
-            resetAt: now + WINDOW
+            resetAt:
+                now + WINDOW
         };
 
         verifyAttempts.set(
@@ -573,8 +957,12 @@ function checkVerifyRateLimit(ip) {
         );
     }
 
-    if (now >= data.resetAt) {
+    if (
+        now >=
+        data.resetAt
+    ) {
         data.count = 0;
+
         data.resetAt =
             now + WINDOW;
     }
@@ -587,10 +975,13 @@ function checkVerifyRateLimit(ip) {
     ) {
         return {
             allowed: false,
+
             retryAfter:
                 Math.ceil(
-                    (data.resetAt - now) /
-                    1000
+                    (
+                        data.resetAt -
+                        now
+                    ) / 1000
                 )
         };
     }
@@ -611,12 +1002,16 @@ function readStock() {
             []
         );
 
-    return Array.isArray(data)
+    return Array.isArray(
+        data
+    )
         ? data
         : [];
 }
 
-function saveStock(stock) {
+function saveStock(
+    stock
+) {
     return writeJSON(
         STOCK_FILE,
         stock
@@ -648,7 +1043,9 @@ app.get(
         res.json({
             success: true,
             adminConfigured:
-                Boolean(ADMIN_SECRET)
+                Boolean(
+                    ADMIN_SECRET
+                )
         });
     }
 );
@@ -674,25 +1071,34 @@ app.get(
 app.post(
     "/api/verify",
     (req, res) => {
+
         try {
+
             const ip =
                 getClientIP(req);
 
             const rate =
-                checkVerifyRateLimit(ip);
+                checkVerifyRateLimit(
+                    ip
+                );
 
-            if (!rate.allowed) {
+            if (
+                !rate.allowed
+            ) {
+
                 res.setHeader(
                     "Retry-After",
                     rate.retryAfter
                 );
 
-                return res.status(429).json({
-                    success: false,
-                    valid: false,
-                    message:
-                        "Too many verification attempts. Please try again later."
-                });
+                return res
+                    .status(429)
+                    .json({
+                        success: false,
+                        valid: false,
+                        message:
+                            "Too many verification attempts. Please try again later."
+                    });
             }
 
             const key =
@@ -707,10 +1113,14 @@ app.post(
                     deviceId
                 );
 
-            if (!result.success) {
+            if (
+                !result.success
+            ) {
                 return res
                     .status(401)
-                    .json(result);
+                    .json(
+                        result
+                    );
             }
 
             const session =
@@ -721,39 +1131,45 @@ app.post(
 
             return res.json({
                 success: true,
+
                 valid: true,
+
                 sessionToken:
                     session.token,
+
                 expiresAt:
                     session.expiresAt,
 
                 key: {
                     duration:
-                        result.key.duration,
+                        result.key
+                            .duration,
 
                     durationName:
-                        result.key.durationName ||
-                        DURATION_NAMES[
-                            result.key.duration
-                        ] ||
-                        "Lifetime",
+                        result.key
+                            .durationName,
 
                     expiresAt:
-                        result.key.expiresAt
+                        result.key
+                            .expiresAt
                 }
             });
+
         } catch (error) {
+
             console.error(
                 "VERIFY ERROR:",
                 error
             );
 
-            return res.status(500).json({
-                success: false,
-                valid: false,
-                message:
-                    "Internal server error."
-            });
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    valid: false,
+                    message:
+                        "Internal server error."
+                });
         }
     }
 );
@@ -766,10 +1182,15 @@ app.post(
     "/api/logout",
     requireSession,
     (req, res) => {
-        const token =
-            req.headers["x-novi-session"];
 
-        sessions.delete(token);
+        const token =
+            req.headers[
+                "x-novi-session"
+            ];
+
+        sessions.delete(
+            token
+        );
 
         return res.json({
             success: true
@@ -785,12 +1206,14 @@ app.get(
     "/api/stock",
     requireSession,
     (req, res) => {
+
         const stock =
             readStock();
 
         return res.json({
             success: true,
-            count: stock.length
+            count:
+                stock.length
         });
     }
 );
@@ -803,30 +1226,40 @@ app.post(
     "/api/stock/generate",
     requireSession,
     (req, res) => {
+
         try {
+
             const stock =
                 readStock();
 
-            if (stock.length === 0) {
-                return res.status(404).json({
-                    success: false,
-                    message:
-                        "No inventory is currently available."
-                });
+            if (
+                stock.length === 0
+            ) {
+                return res
+                    .status(404)
+                    .json({
+                        success: false,
+                        message:
+                            "No inventory is currently available."
+                    });
             }
 
             const item =
                 stock.shift();
 
             const saved =
-                saveStock(stock);
+                saveStock(
+                    stock
+                );
 
             if (!saved) {
-                return res.status(500).json({
-                    success: false,
-                    message:
-                        "Failed to save inventory."
-                });
+                return res
+                    .status(500)
+                    .json({
+                        success: false,
+                        message:
+                            "Failed to save inventory."
+                    });
             }
 
             return res.json({
@@ -835,17 +1268,21 @@ app.post(
                 remaining:
                     stock.length
             });
+
         } catch (error) {
+
             console.error(
                 "STOCK GENERATE ERROR:",
                 error
             );
 
-            return res.status(500).json({
-                success: false,
-                message:
-                    "Failed to generate inventory."
-            });
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        "Failed to generate inventory."
+                });
         }
     }
 );
@@ -858,7 +1295,9 @@ app.post(
     "/api/keys",
     requireAdmin,
     (req, res) => {
+
         try {
+
             const duration =
                 String(
                     req.body?.duration ||
@@ -873,11 +1312,13 @@ app.post(
                     duration
                 )
             ) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Invalid duration. Use 1d, 3d, 1week, 1month, or lifetime."
-                });
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Invalid duration. Use 1d, 3d, 1week, 1month, or lifetime."
+                    });
             }
 
             const keys =
@@ -888,49 +1329,72 @@ app.post(
                     duration
                 );
 
-            keys.push(record);
+            keys.push(
+                record
+            );
 
             const saved =
-                saveKeys(keys);
+                saveKeys(
+                    keys
+                );
 
             if (!saved) {
-                return res.status(500).json({
-                    success: false,
-                    message:
-                        "Failed to save key."
-                });
+                return res
+                    .status(500)
+                    .json({
+                        success: false,
+                        message:
+                            "Failed to save key."
+                    });
             }
 
             console.log(
-                "Generated key:",
-                record.key,
-                "| Duration:",
-                record.duration
+                `[KEY CREATED] ${record.durationName}`
             );
 
-            return res.status(201).json({
-                success: true,
-                key: record.key,
-                duration:
-                    record.duration,
-                durationName:
-                    record.durationName,
-                expiresAt:
-                    record.expiresAt,
-                createdAt:
-                    record.createdAt
-            });
+            console.log(
+                `[KEY COUNT] ${keys.length}`
+            );
+
+            /*
+             * Do not log the actual key.
+             */
+
+            return res
+                .status(201)
+                .json({
+                    success: true,
+
+                    key:
+                        record.key,
+
+                    duration:
+                        record.duration,
+
+                    durationName:
+                        record.durationName,
+
+                    expiresAt:
+                        record.expiresAt,
+
+                    createdAt:
+                        record.createdAt
+                });
+
         } catch (error) {
+
             console.error(
                 "CREATE KEY ERROR:",
                 error
             );
 
-            return res.status(500).json({
-                success: false,
-                message:
-                    "Failed to create key."
-            });
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        "Failed to create key."
+                });
         }
     }
 );
@@ -943,7 +1407,9 @@ app.post(
     "/api/stock/add",
     requireAdmin,
     (req, res) => {
+
         try {
+
             const item =
                 req.body?.item;
 
@@ -951,35 +1417,39 @@ app.post(
                 item === undefined ||
                 item === null
             ) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Missing inventory item."
-                });
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Missing inventory item."
+                    });
+            }
+
+            const normalizedItem =
+                String(item).trim();
+
+            if (
+                !normalizedItem
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Inventory item cannot be empty."
+                    });
             }
 
             const stock =
                 readStock();
 
-            const normalizedItem =
-                String(item).trim();
-
-            if (!normalizedItem) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Inventory item cannot be empty."
-                });
-            }
-
-            /* ------------------------------------------------
-               Duplicate check
-            ------------------------------------------------ */
-
             const duplicate =
                 stock.some(
-                    (existing) =>
-                        String(existing).trim() ===
+                    existing =>
+                        String(
+                            existing
+                        ).trim() ===
                         normalizedItem
                 );
 
@@ -988,7 +1458,8 @@ app.post(
                     success: true,
                     added: 0,
                     duplicates: 1,
-                    count: stock.length
+                    count:
+                        stock.length
                 });
             }
 
@@ -997,33 +1468,42 @@ app.post(
             );
 
             const saved =
-                saveStock(stock);
+                saveStock(
+                    stock
+                );
 
             if (!saved) {
-                return res.status(500).json({
-                    success: false,
-                    message:
-                        "Failed to save inventory."
-                });
+                return res
+                    .status(500)
+                    .json({
+                        success: false,
+                        message:
+                            "Failed to save inventory."
+                    });
             }
 
             return res.json({
                 success: true,
                 added: 1,
                 duplicates: 0,
-                count: stock.length
+                count:
+                    stock.length
             });
+
         } catch (error) {
+
             console.error(
                 "ADD STOCK ERROR:",
                 error
             );
 
-            return res.status(500).json({
-                success: false,
-                message:
-                    "Failed to add inventory."
-            });
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        "Failed to add inventory."
+                });
         }
     }
 );
@@ -1036,25 +1516,32 @@ app.get(
     "/api/admin/stock",
     requireAdmin,
     (req, res) => {
+
         try {
+
             const stock =
                 readStock();
 
             return res.json({
                 success: true,
-                count: stock.length
+                count:
+                    stock.length
             });
+
         } catch (error) {
+
             console.error(
                 "ADMIN STOCK COUNT ERROR:",
                 error
             );
 
-            return res.status(500).json({
-                success: false,
-                message:
-                    "Failed to read inventory."
-            });
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        "Failed to read inventory."
+                });
         }
     }
 );
@@ -1064,8 +1551,11 @@ app.get(
 ========================================================= */
 
 if (
-    fs.existsSync(PUBLIC_DIR)
+    fs.existsSync(
+        PUBLIC_DIR
+    )
 ) {
+
     app.use(
         express.static(
             PUBLIC_DIR
@@ -1075,6 +1565,7 @@ if (
     app.get(
         "/",
         (req, res) => {
+
             const indexFile =
                 path.join(
                     PUBLIC_DIR,
@@ -1107,11 +1598,14 @@ if (
 app.use(
     "/api",
     (req, res) => {
-        return res.status(404).json({
-            success: false,
-            message:
-                "API endpoint not found."
-        });
+
+        return res
+            .status(404)
+            .json({
+                success: false,
+                message:
+                    "API endpoint not found."
+            });
     }
 );
 
@@ -1121,16 +1615,19 @@ app.use(
 
 app.use(
     (error, req, res, next) => {
+
         console.error(
             "SERVER ERROR:",
             error
         );
 
-        return res.status(500).json({
-            success: false,
-            message:
-                "Internal server error."
-        });
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message:
+                    "Internal server error."
+            });
     }
 );
 
@@ -1142,8 +1639,9 @@ app.listen(
     PORT,
     "0.0.0.0",
     () => {
+
         console.log(
-            "=============================="
+            "========================================"
         );
 
         console.log(
@@ -1171,7 +1669,7 @@ app.listen(
         );
 
         console.log(
-            "=============================="
+            "========================================"
         );
     }
 );
