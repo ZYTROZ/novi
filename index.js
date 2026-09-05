@@ -23,11 +23,14 @@ const DATABASE_URL = process.env.DATABASE_URL;
 const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET;
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
-// ONLY THESE TWO DISCORD ROLES CAN USE BOT COMMANDS
 const ALLOWED_ROLE_IDS = [
   "1529705570209366167",
   "1378500563456626719",
 ];
+
+// ============================================================
+// REQUIRED ENVIRONMENT VARIABLES
+// ============================================================
 
 if (!DATABASE_URL) {
   console.error("❌ DATABASE_URL is missing.");
@@ -58,7 +61,7 @@ app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 
 // ============================================================
-// SESSION STORAGE
+// SESSION SYSTEM
 // ============================================================
 
 const sessions = new Map();
@@ -112,12 +115,11 @@ function requireSession(req, res, next) {
   }
 
   req.noviSession = session;
-
   next();
 }
 
 // ============================================================
-// HELPERS
+// GENERAL HELPERS
 // ============================================================
 
 function generateKey() {
@@ -153,45 +155,17 @@ function normalizeLogin(item) {
   const value = String(item);
   const separator = value.indexOf(":");
 
-  if (separator !== -1) {
+  if (separator === -1) {
     return {
-      email: value.slice(0, separator),
-      password: value.slice(separator + 1),
+      email: value,
+      password: "",
     };
   }
 
   return {
-    email: value,
-    password: "",
+    email: value.slice(0, separator),
+    password: value.slice(separator + 1),
   };
-}
-
-// ============================================================
-// DURATION
-// ============================================================
-
-const DURATION_MS = {
-  "1d": 24 * 60 * 60 * 1000,
-  "3d": 3 * 24 * 60 * 60 * 1000,
-  "1w": 7 * 24 * 60 * 60 * 1000,
-  "1mo": 30 * 24 * 60 * 60 * 1000,
-  "lifetime": null,
-};
-
-function normalizeDuration(input) {
-  if (!input) return null;
-
-  const value = String(input)
-    .toLowerCase()
-    .trim();
-
-  if (value === "1d") return "1d";
-  if (value === "3d") return "3d";
-  if (value === "1w" || value === "1week") return "1w";
-  if (value === "1mo" || value === "1month") return "1mo";
-  if (value === "lifetime") return "lifetime";
-
-  return null;
 }
 
 function isExpired(expiresAt) {
@@ -211,78 +185,233 @@ function isExpired(expiresAt) {
   return Date.now() >= timestamp;
 }
 
-function isAdmin(req) {
-  const provided =
-    req.headers["x-admin-secret"] ||
-    req.body?.adminSecret ||
-    req.query?.adminSecret;
+// ============================================================
+// DURATIONS
+// ============================================================
 
-  return Boolean(
-    provided &&
-    provided === ADMIN_SECRET
-  );
+const DURATION_MS = {
+  "1d": 24 * 60 * 60 * 1000,
+  "3d": 3 * 24 * 60 * 60 * 1000,
+  "1w": 7 * 24 * 60 * 60 * 1000,
+  "1mo": 30 * 24 * 60 * 60 * 1000,
+  "lifetime": null,
+};
+
+function normalizeDuration(input) {
+  if (!input) {
+    return null;
+  }
+
+  const value = String(input)
+    .toLowerCase()
+    .trim();
+
+  if (value === "1d") {
+    return "1d";
+  }
+
+  if (value === "3d") {
+    return "3d";
+  }
+
+  if (
+    value === "1w" ||
+    value === "1week"
+  ) {
+    return "1w";
+  }
+
+  if (
+    value === "1mo" ||
+    value === "1month"
+  ) {
+    return "1mo";
+  }
+
+  if (value === "lifetime") {
+    return "lifetime";
+  }
+
+  return null;
 }
 
 // ============================================================
-// DATABASE TYPE DETECTION
+// DATABASE TYPE VARIABLES
 // ============================================================
 
 let stockCreatedAtType = "timestamp";
 let savedCreatedAtType = "timestamp";
 
-async function detectDatabaseTypes() {
-  try {
-    const result = await pool.query(`
-      SELECT
-        table_name,
-        column_name,
-        data_type
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-      AND table_name IN (
-        'novi_stock_items',
-        'novi_saved_items'
-      )
-      AND column_name = 'created_at'
+// ============================================================
+// DATABASE CLEANUP
+// ============================================================
+
+async function cleanSavedLoginTable() {
+  console.log(
+    "🧹 Cleaning novi_saved_items..."
+  );
+
+  // ----------------------------------------------------------
+  // Make sure the table exists.
+  // ----------------------------------------------------------
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS novi_saved_items (
+      id SERIAL PRIMARY KEY,
+      email TEXT,
+      password TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `);
+
+  // ----------------------------------------------------------
+  // IMPORTANT:
+  //
+  // The old novi_saved_items table has leftover columns such as:
+  //
+  // stock_id
+  // device_id
+  // etc.
+  //
+  // Instead of guessing which old columns exist, we inspect the
+  // actual table and remove EVERY column that isn't needed.
+  //
+  // This leaves ONLY:
+  //
+  // id
+  // email
+  // password
+  // created_at
+  //
+  // This fixes future "null value in column X" errors caused by
+  // old NOT NULL columns.
+  // ----------------------------------------------------------
+
+  const allowedColumns = new Set([
+    "id",
+    "email",
+    "password",
+    "created_at",
+  ]);
+
+  const columnsResult = await pool.query(`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'novi_saved_items'
+    ORDER BY ordinal_position
+  `);
+
+  const columnsToRemove =
+    columnsResult.rows
+      .map(row => row.column_name)
+      .filter(
+        column =>
+          !allowedColumns.has(column)
+      );
+
+  for (
+    const column of columnsToRemove
+  ) {
+    // Column names come directly from PostgreSQL's
+    // information_schema, not user input.
+    const safeColumn =
+      `"${column.replace(/"/g, '""')}"`;
+
+    console.log(
+      `🧹 Removing old saved-login column: ${column}`
+    );
+
+    await pool.query(`
+      ALTER TABLE novi_saved_items
+      DROP COLUMN IF EXISTS ${safeColumn}
     `);
+  }
 
-    for (const row of result.rows) {
-      if (
-        row.table_name ===
-        "novi_stock_items"
-      ) {
-        stockCreatedAtType =
-          row.data_type.includes("timestamp")
-            ? "timestamp"
-            : "bigint";
-      }
+  // ----------------------------------------------------------
+  // Make sure email exists.
+  // ----------------------------------------------------------
 
-      if (
-        row.table_name ===
-        "novi_saved_items"
-      ) {
-        savedCreatedAtType =
-          row.data_type.includes("timestamp")
-            ? "timestamp"
-            : "bigint";
-      }
-    }
+  await pool.query(`
+    ALTER TABLE novi_saved_items
+    ADD COLUMN IF NOT EXISTS email TEXT
+  `);
 
-    console.log("📊 Database timestamp types:");
+  // ----------------------------------------------------------
+  // Make sure password exists.
+  // ----------------------------------------------------------
+
+  await pool.query(`
+    ALTER TABLE novi_saved_items
+    ADD COLUMN IF NOT EXISTS password TEXT
+  `);
+
+  // ----------------------------------------------------------
+  // Make sure created_at exists.
+  // ----------------------------------------------------------
+
+  await pool.query(`
+    ALTER TABLE novi_saved_items
+    ADD COLUMN IF NOT EXISTS created_at
+    TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  `);
+
+  // ----------------------------------------------------------
+  // Remove NOT NULL constraints from email/password/created_at
+  // so old malformed rows cannot prevent inserts.
+  // ----------------------------------------------------------
+
+  await pool.query(`
+    ALTER TABLE novi_saved_items
+    ALTER COLUMN email DROP NOT NULL
+  `);
+
+  await pool.query(`
+    ALTER TABLE novi_saved_items
+    ALTER COLUMN password DROP NOT NULL
+  `);
+
+  await pool.query(`
+    ALTER COLUMN created_at DROP NOT NULL
+  `).catch(async () => {
+    // Some PostgreSQL versions/old schemas may require the
+    // table-qualified version.
+    await pool.query(`
+      ALTER TABLE novi_saved_items
+      ALTER COLUMN created_at DROP NOT NULL
+    `);
+  });
+
+  // ----------------------------------------------------------
+  // Show final table.
+  // ----------------------------------------------------------
+
+  const finalResult = await pool.query(`
+    SELECT
+      column_name,
+      data_type,
+      is_nullable
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'novi_saved_items'
+    ORDER BY ordinal_position
+  `);
+
+  console.log(
+    "📋 Final novi_saved_items structure:"
+  );
+
+  for (
+    const row of finalResult.rows
+  ) {
     console.log(
-      "   stock:",
-      stockCreatedAtType
-    );
-    console.log(
-      "   saved:",
-      savedCreatedAtType
-    );
-  } catch (error) {
-    console.error(
-      "❌ Could not detect database types:",
-      error.message
+      `   ${row.column_name} | ${row.data_type} | nullable=${row.is_nullable}`
     );
   }
+
+  console.log(
+    "✅ novi_saved_items cleanup complete."
+  );
 }
 
 // ============================================================
@@ -290,233 +419,131 @@ async function detectDatabaseTypes() {
 // ============================================================
 
 async function fixDurationColumn() {
-  try {
-    const result = await pool.query(`
-      SELECT data_type
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
+  const result = await pool.query(`
+    SELECT data_type
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
       AND table_name = 'novi_keys'
       AND column_name = 'duration'
-      LIMIT 1
+    LIMIT 1
+  `);
+
+  if (result.rows.length === 0) {
+    return;
+  }
+
+  const dataType =
+    result.rows[0].data_type;
+
+  if (
+    dataType === "bigint" ||
+    dataType === "integer" ||
+    dataType === "numeric"
+  ) {
+    console.log(
+      "🔧 Converting old duration values..."
+    );
+
+    await pool.query(`
+      ALTER TABLE novi_keys
+      ALTER COLUMN duration TYPE TEXT
+      USING CASE
+        WHEN duration IS NULL
+          THEN 'lifetime'
+
+        WHEN duration::text = '86400000'
+          THEN '1d'
+
+        WHEN duration::text = '259200000'
+          THEN '3d'
+
+        WHEN duration::text = '604800000'
+          THEN '1w'
+
+        WHEN duration::text = '2592000000'
+          THEN '1mo'
+
+        ELSE duration::text
+      END
     `);
 
-    if (result.rows.length === 0) {
-      console.log(
-        "⚠️ novi_keys.duration was not found."
-      );
-      return;
-    }
+    console.log(
+      "✅ Duration column converted."
+    );
+  }
+}
 
-    const dataType =
-      result.rows[0].data_type;
+// ============================================================
+// DETECT CREATED_AT TYPES
+// ============================================================
+
+async function detectDatabaseTypes() {
+  const result = await pool.query(`
+    SELECT
+      table_name,
+      data_type
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name IN (
+        'novi_stock_items',
+        'novi_saved_items'
+      )
+      AND column_name = 'created_at'
+  `);
+
+  for (
+    const row of result.rows
+  ) {
+    const type =
+      row.data_type.includes(
+        "timestamp"
+      )
+        ? "timestamp"
+        : "bigint";
 
     if (
-      dataType === "bigint" ||
-      dataType === "integer" ||
-      dataType === "numeric"
+      row.table_name ===
+      "novi_stock_items"
     ) {
-      console.log(
-        "🔧 Converting novi_keys.duration to TEXT..."
-      );
-
-      await pool.query(`
-        ALTER TABLE novi_keys
-        ALTER COLUMN duration TYPE TEXT
-        USING CASE
-          WHEN duration IS NULL THEN 'lifetime'
-          WHEN duration::text = '86400000' THEN '1d'
-          WHEN duration::text = '259200000' THEN '3d'
-          WHEN duration::text = '604800000' THEN '1w'
-          WHEN duration::text = '2592000000' THEN '1mo'
-          ELSE duration::text
-        END
-      `);
-
-      console.log(
-        "✅ novi_keys.duration is now TEXT."
-      );
-    } else {
-      console.log(
-        "✅ novi_keys.duration is already TEXT-compatible."
-      );
+      stockCreatedAtType = type;
     }
-  } catch (error) {
-    console.error(
-      "❌ Could not fix duration column:",
-      error.message
-    );
 
-    throw error;
+    if (
+      row.table_name ===
+      "novi_saved_items"
+    ) {
+      savedCreatedAtType = type;
+    }
   }
-}
 
-// ============================================================
-// CLEAN SAVED LOGIN TABLE
-// ============================================================
-
-async function cleanSavedLoginTable() {
   console.log(
-    "🧹 Checking novi_saved_items database structure..."
+    `📊 stock created_at: ${stockCreatedAtType}`
   );
 
-  // ----------------------------------------------------------
-  // Remove the OLD stock_id column.
-  //
-  // This is the specific column causing:
-  //
-  // null value in column "stock_id"
-  //
-  // The stock table keeps its own stock_id.
-  // ----------------------------------------------------------
-
-  const stockColumnCheck = await pool.query(`
-    SELECT column_name
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-    AND table_name = 'novi_saved_items'
-    AND column_name = 'stock_id'
-  `);
-
-  if (stockColumnCheck.rows.length > 0) {
-    console.log(
-      "🧹 Removing old stock_id column from novi_saved_items..."
-    );
-
-    await pool.query(`
-      ALTER TABLE novi_saved_items
-      DROP COLUMN IF EXISTS stock_id
-    `);
-
-    console.log(
-      "✅ Removed old stock_id column."
-    );
-  } else {
-    console.log(
-      "✅ No old stock_id column found."
-    );
-  }
-
-  // ----------------------------------------------------------
-  // Make sure email exists.
-  // ----------------------------------------------------------
-
-  const emailCheck = await pool.query(`
-    SELECT column_name
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-    AND table_name = 'novi_saved_items'
-    AND column_name = 'email'
-  `);
-
-  if (emailCheck.rows.length === 0) {
-    console.log(
-      "🧹 Adding email column..."
-    );
-
-    await pool.query(`
-      ALTER TABLE novi_saved_items
-      ADD COLUMN email TEXT
-    `);
-
-    console.log(
-      "✅ Added email column."
-    );
-  }
-
-  // ----------------------------------------------------------
-  // Make sure password exists.
-  // ----------------------------------------------------------
-
-  const passwordCheck = await pool.query(`
-    SELECT column_name
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-    AND table_name = 'novi_saved_items'
-    AND column_name = 'password'
-  `);
-
-  if (passwordCheck.rows.length === 0) {
-    console.log(
-      "🧹 Adding password column..."
-    );
-
-    await pool.query(`
-      ALTER TABLE novi_saved_items
-      ADD COLUMN password TEXT
-    `);
-
-    console.log(
-      "✅ Added password column."
-    );
-  }
-
-  // ----------------------------------------------------------
-  // Make sure created_at exists.
-  // ----------------------------------------------------------
-
-  const createdAtCheck = await pool.query(`
-    SELECT column_name
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-    AND table_name = 'novi_saved_items'
-    AND column_name = 'created_at'
-  `);
-
-  if (createdAtCheck.rows.length === 0) {
-    console.log(
-      "🧹 Adding created_at column..."
-    );
-
-    await pool.query(`
-      ALTER TABLE novi_saved_items
-      ADD COLUMN created_at
-      TIMESTAMP WITH TIME ZONE
-      DEFAULT NOW()
-    `);
-
-    console.log(
-      "✅ Added created_at column."
-    );
-  }
-
-  // ----------------------------------------------------------
-  // Show final structure.
-  // ----------------------------------------------------------
-
-  const finalColumns = await pool.query(`
-    SELECT
-      column_name,
-      data_type,
-      is_nullable,
-      column_default
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-    AND table_name = 'novi_saved_items'
-    ORDER BY ordinal_position
-  `);
-
   console.log(
-    "📊 Final novi_saved_items structure:"
-  );
-
-  for (const column of finalColumns.rows) {
-    console.log(
-      `   ${column.column_name} | ${column.data_type} | nullable=${column.is_nullable}`
-    );
-  }
-
-  console.log(
-    "✅ Saved-login database cleanup complete."
+    `📊 saved created_at: ${savedCreatedAtType}`
   );
 }
 
 // ============================================================
-// DATABASE INIT
+// DATABASE INITIALIZATION
 // ============================================================
 
 async function initializeDatabase() {
+  console.log(
+    "========================================"
+  );
+
+  console.log(
+    "🔧 INITIALIZING NOVI DATABASE"
+  );
+
+  console.log(
+    "========================================"
+  );
+
   // ----------------------------------------------------------
-  // LICENSE KEYS
+  // KEYS
   // ----------------------------------------------------------
 
   await pool.query(`
@@ -542,7 +569,6 @@ async function initializeDatabase() {
     )
   `);
 
-  // Add missing stock columns if needed.
   await pool.query(`
     ALTER TABLE novi_stock_items
     ADD COLUMN IF NOT EXISTS stock_id TEXT
@@ -558,19 +584,6 @@ async function initializeDatabase() {
   // SAVED LOGINS
   // ----------------------------------------------------------
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS novi_saved_items (
-      id SERIAL PRIMARY KEY,
-      email TEXT,
-      password TEXT,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    )
-  `);
-
-  // ----------------------------------------------------------
-  // CLEAN OLD SAVED LOGIN DATABASE
-  // ----------------------------------------------------------
-
   await cleanSavedLoginTable();
 
   // ----------------------------------------------------------
@@ -578,17 +591,19 @@ async function initializeDatabase() {
   // ----------------------------------------------------------
 
   await pool.query(`
-    CREATE INDEX IF NOT EXISTS novi_keys_key_idx
+    CREATE INDEX IF NOT EXISTS
+    novi_keys_key_idx
     ON novi_keys(key)
   `);
 
   await pool.query(`
-    CREATE INDEX IF NOT EXISTS novi_stock_items_stock_id_idx
+    CREATE INDEX IF NOT EXISTS
+    novi_stock_items_stock_id_idx
     ON novi_stock_items(stock_id)
   `);
 
   // ----------------------------------------------------------
-  // FIX OLD DATABASE
+  // FIX OLD DATA
   // ----------------------------------------------------------
 
   await fixDurationColumn();
@@ -616,19 +631,23 @@ app.get(
   "/api/health",
   async (req, res) => {
     try {
-      await pool.query("SELECT 1");
+      await pool.query(
+        "SELECT 1"
+      );
 
       res.json({
+        success: true,
         ok: true,
         database: true,
       });
     } catch (error) {
       console.error(
-        "❌ /api/health:",
+        "❌ Health check failed:",
         error
       );
 
       res.status(500).json({
+        success: false,
         ok: false,
         database: false,
         error: error.message,
@@ -638,21 +657,23 @@ app.get(
 );
 
 // ============================================================
-// VERIFY LICENSE KEY
+// VERIFY KEY
 // ============================================================
 
 app.post(
   "/api/verify",
   async (req, res) => {
     try {
-      const suppliedKey = String(
-        req.body?.key || ""
-      ).trim();
+      const suppliedKey =
+        String(
+          req.body?.key || ""
+        ).trim();
 
       if (!suppliedKey) {
         return res.status(400).json({
           success: false,
-          error: "Key is required.",
+          error:
+            "Key is required.",
         });
       }
 
@@ -673,10 +694,13 @@ app.post(
           [suppliedKey]
         );
 
-      if (result.rows.length === 0) {
+      if (
+        result.rows.length === 0
+      ) {
         return res.status(404).json({
           success: false,
-          error: "Invalid key.",
+          error:
+            "Invalid key.",
         });
       }
 
@@ -694,7 +718,9 @@ app.post(
       const expiresAt =
         keyRow.expires_at === null
           ? null
-          : Number(keyRow.expires_at);
+          : Number(
+              keyRow.expires_at
+            );
 
       if (isExpired(expiresAt)) {
         return res.status(403).json({
@@ -711,7 +737,9 @@ app.post(
         (
           keyRow.duration === null
             ? "lifetime"
-            : String(keyRow.duration)
+            : String(
+                keyRow.duration
+              )
         );
 
       const sessionToken =
@@ -731,18 +759,16 @@ app.post(
 
       return res.json({
         success: true,
-
         sessionToken,
-
         duration,
-
         expiresAt,
 
         key: {
           key: keyRow.key,
           duration,
           expiresAt,
-          keyExpiresAt: expiresAt,
+          keyExpiresAt:
+            expiresAt,
         },
       });
     } catch (error) {
@@ -751,9 +777,10 @@ app.post(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
-        error: "Server error.",
+        error:
+          "Server error.",
       });
     }
   }
@@ -774,7 +801,7 @@ app.get(
           FROM novi_stock_items
         `);
 
-      res.json({
+      return res.json({
         success: true,
         count: Number(
           result.rows[0].count
@@ -786,7 +813,7 @@ app.get(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error:
           "Could not load stock.",
@@ -796,7 +823,7 @@ app.get(
 );
 
 // ============================================================
-// GENERATE ONE ACCOUNT FROM STOCK
+// GENERATE STOCK ITEM
 // ============================================================
 
 app.post(
@@ -807,7 +834,9 @@ app.post(
       await pool.connect();
 
     try {
-      await client.query("BEGIN");
+      await client.query(
+        "BEGIN"
+      );
 
       const result =
         await client.query(`
@@ -821,8 +850,12 @@ app.post(
           FOR UPDATE SKIP LOCKED
         `);
 
-      if (result.rows.length === 0) {
-        await client.query("ROLLBACK");
+      if (
+        result.rows.length === 0
+      ) {
+        await client.query(
+          "ROLLBACK"
+        );
 
         return res.status(400).json({
           success: false,
@@ -842,7 +875,9 @@ app.post(
         [stockRow.id]
       );
 
-      await client.query("COMMIT");
+      await client.query(
+        "COMMIT"
+      );
 
       const item =
         normalizeLogin(
@@ -856,7 +891,9 @@ app.post(
       });
     } catch (error) {
       try {
-        await client.query("ROLLBACK");
+        await client.query(
+          "ROLLBACK"
+        );
       } catch {}
 
       console.error(
@@ -898,13 +935,18 @@ app.get(
       return res.json({
         success: true,
 
-        logins: result.rows,
-        savedLogins: result.rows,
-        items: result.rows,
+        logins:
+          result.rows,
+
+        savedLogins:
+          result.rows,
+
+        items:
+          result.rows,
       });
     } catch (error) {
       console.error(
-        "❌ GET /api/saved-logins:",
+        "❌ GET saved logins:",
         error
       );
 
@@ -926,16 +968,18 @@ app.post(
   requireSession,
   async (req, res) => {
     try {
+      const email =
+        String(
+          req.body?.email || ""
+        ).trim();
+
+      const password =
+        String(
+          req.body?.password || ""
+        );
+
       console.log(
-        "📥 SAVE LOGIN REQUEST"
-      );
-
-      const email = String(
-        req.body?.email || ""
-      ).trim();
-
-      const password = String(
-        req.body?.password || ""
+        "📥 Save login request received."
       );
 
       if (!email) {
@@ -948,9 +992,9 @@ app.post(
 
       let result;
 
-      // ------------------------------------------------------
-      // TIMESTAMP
-      // ------------------------------------------------------
+      // --------------------------------------------------------
+      // Timestamp database
+      // --------------------------------------------------------
 
       if (
         savedCreatedAtType ===
@@ -984,9 +1028,9 @@ app.post(
           );
       }
 
-      // ------------------------------------------------------
-      // BIGINT / INTEGER / NUMERIC
-      // ------------------------------------------------------
+      // --------------------------------------------------------
+      // Bigint database
+      // --------------------------------------------------------
 
       else {
         result =
@@ -1022,15 +1066,17 @@ app.post(
         result.rows[0];
 
       console.log(
-        "✅ LOGIN SAVED:",
-        savedLogin?.id
+        `✅ Saved login #${savedLogin.id}`
       );
 
       return res.json({
         success: true,
 
-        login: savedLogin,
-        item: savedLogin,
+        login:
+          savedLogin,
+
+        item:
+          savedLogin,
       });
     } catch (error) {
       console.error(
@@ -1038,7 +1084,7 @@ app.post(
       );
 
       console.error(
-        "❌ SAVE LOGIN DATABASE ERROR"
+        "❌ SAVE LOGIN FAILED"
       );
 
       console.error(
@@ -1067,6 +1113,7 @@ app.post(
 
       return res.status(500).json({
         success: false,
+
         error:
           error.message ||
           "Could not save login.",
@@ -1084,9 +1131,10 @@ app.get(
   requireSession,
   async (req, res) => {
     try {
-      const id = Number(
-        req.params.id
-      );
+      const id =
+        Number(
+          req.params.id
+        );
 
       if (
         !Number.isInteger(id)
@@ -1125,12 +1173,14 @@ app.get(
 
       return res.json({
         success: true,
-        login: result.rows[0],
-        item: result.rows[0],
+        login:
+          result.rows[0],
+        item:
+          result.rows[0],
       });
     } catch (error) {
       console.error(
-        "❌ GET /api/saved-logins/:id:",
+        "❌ GET saved login:",
         error
       );
 
@@ -1152,9 +1202,10 @@ app.delete(
   requireSession,
   async (req, res) => {
     try {
-      const id = Number(
-        req.params.id
-      );
+      const id =
+        Number(
+          req.params.id
+        );
 
       if (
         !Number.isInteger(id)
@@ -1191,7 +1242,7 @@ app.delete(
       });
     } catch (error) {
       console.error(
-        "❌ DELETE /api/saved-logins/:id:",
+        "❌ DELETE saved login:",
         error
       );
 
@@ -1212,13 +1263,15 @@ app.post(
   "/api/logout",
   (req, res) => {
     const token =
-      req.headers["x-novi-session"];
+      req.headers[
+        "x-novi-session"
+      ];
 
     if (token) {
       sessions.delete(token);
     }
 
-    res.json({
+    return res.json({
       success: true,
     });
   }
@@ -1256,7 +1309,7 @@ function hasAllowedDiscordRole(
   );
 }
 
-function denyDiscordCommand(
+async function denyDiscordCommand(
   message
 ) {
   return message.reply(
@@ -1373,16 +1426,10 @@ async function handleGen(
     generated.push(key);
   }
 
-  const output =
-    generated
-      .map(
-        key =>
-          `\`${key}\``
-      )
-      .join("\n");
-
   return message.reply(
-    `✅ Generated **${generated.length}** ${duration} key(s):\n${output}`
+    `✅ Generated **${generated.length}** ${duration} key(s):\n${generated
+      .map(key => `\`${key}\``)
+      .join("\n")}`
   );
 }
 
@@ -1418,7 +1465,9 @@ async function handleAdd(
     const stockId =
       String(rawItem).trim();
 
-    if (!stockId) continue;
+    if (!stockId) {
+      continue;
+    }
 
     if (
       stockCreatedAtType ===
@@ -1588,7 +1637,6 @@ discordClient.on(
           message,
           args
         );
-
         return;
       }
 
@@ -1599,7 +1647,6 @@ discordClient.on(
           message,
           args
         );
-
         return;
       }
 
@@ -1609,7 +1656,6 @@ discordClient.on(
         await handleStock(
           message
         );
-
         return;
       }
 
@@ -1619,7 +1665,6 @@ discordClient.on(
         await handleHelp(
           message
         );
-
         return;
       }
     } catch (error) {
@@ -1705,7 +1750,7 @@ app.get(
 );
 
 // ============================================================
-// START SERVER
+// START
 // ============================================================
 
 async function start() {
@@ -1723,7 +1768,10 @@ async function start() {
     );
   } catch (error) {
     console.error(
-      "❌ Failed to start Novi:",
+      "❌ FAILED TO START NOVI"
+    );
+
+    console.error(
       error
     );
 
