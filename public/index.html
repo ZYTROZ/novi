@@ -61,7 +61,7 @@
 
     /* =========================
        LOGIN
-    ========================= */
+    ========================== */
 
     #loginPage {
       min-height: 100vh;
@@ -210,7 +210,7 @@
 
     /* =========================
        DASHBOARD
-    ========================= */
+    ========================== */
 
     #dashboardPage {
       display: none;
@@ -289,7 +289,7 @@
 
     /* =========================
        STATS
-    ========================= */
+    ========================== */
 
     .stats-grid {
       display: grid;
@@ -334,8 +334,6 @@
       z-index: 1;
     }
 
-    /* Expiration timer */
-
     #keyExpiration {
       color: var(--purple-light);
       font-variant-numeric: tabular-nums;
@@ -351,8 +349,6 @@
       color: var(--red);
     }
 
-    /* Live stock */
-
     #stockCount {
       font-variant-numeric: tabular-nums;
       transition: opacity .15s ease;
@@ -360,7 +356,7 @@
 
     /* =========================
        CARDS
-    ========================= */
+    ========================== */
 
     .main-card {
       margin-top: 18px;
@@ -503,11 +499,12 @@
 
     /* =========================
        SAVED LOGINS
-    ========================= */
+    ========================== */
 
     .saved-login-list {
       display: grid;
       gap: 10px;
+      padding: 20px 22px;
     }
 
     .saved-login {
@@ -566,7 +563,7 @@
 
     /* =========================
        MODAL
-    ========================= */
+    ========================== */
 
     .modal-overlay {
       position: fixed;
@@ -655,7 +652,7 @@
 
     /* =========================
        LOADING
-    ========================= */
+    ========================== */
 
     .loading {
       display: inline-flex;
@@ -680,7 +677,7 @@
 
     /* =========================
        RESPONSIVE
-    ========================= */
+    ========================== */
 
     @media (max-width: 900px) {
       .stats-grid {
@@ -770,9 +767,7 @@
             N
           </div>
 
-          <h1>
-            Novi
-          </h1>
+          <h1>Novi</h1>
 
           <p>
             Enter your access key to continue
@@ -827,9 +822,7 @@
             N
           </div>
 
-          <span>
-            Novi
-          </span>
+          <span>Novi</span>
 
         </div>
 
@@ -842,9 +835,7 @@
 
       <div class="welcome">
 
-        <h1>
-          Dashboard
-        </h1>
+        <h1>Dashboard</h1>
 
         <p>
           Manage your inventory and saved logins.
@@ -935,9 +926,7 @@
 
           <div class="card-title">
 
-            <h2>
-              Inventory
-            </h2>
+            <h2>Inventory</h2>
 
             <p>
               Generate an account from the available stock.
@@ -976,9 +965,7 @@
 
           <div class="card-title">
 
-            <h2>
-              Saved Logins
-            </h2>
+            <h2>Saved Logins</h2>
 
             <p>
               Logins saved to your Novi account.
@@ -1015,9 +1002,7 @@
 
     <div class="modal">
 
-      <h3>
-        Save Login
-      </h3>
+      <h3>Save Login</h3>
 
       <p>
         Save this generated login to your Novi account.
@@ -1387,9 +1372,9 @@
 
 
         const expiresAt =
-          result.key?.keyExpiresAt ||
-          result.key?.expiresAt ||
-          result.expiresAt ||
+          result.key?.keyExpiresAt ??
+          result.key?.expiresAt ??
+          result.expiresAt ??
           null;
 
 
@@ -1409,11 +1394,15 @@
         );
 
 
-        if (expiresAt) {
+        if (
+          expiresAt !== null &&
+          expiresAt !== undefined &&
+          expiresAt !== ""
+        ) {
 
           sessionStorage.setItem(
             EXPIRATION_KEY,
-            expiresAt
+            String(expiresAt)
           );
 
         } else {
@@ -1447,9 +1436,6 @@
           "";
 
 
-        /*
-          Start live stock updates.
-        */
         await loadStock();
 
         startLiveStock();
@@ -1468,7 +1454,6 @@
 
         currentSession =
           "";
-
 
         sessionStorage.removeItem(
           SESSION_KEY
@@ -1531,11 +1516,17 @@
         return "3 Days";
 
 
-      if (value === "1week")
+      if (
+        value === "1w" ||
+        value === "1week"
+      )
         return "1 Week";
 
 
-      if (value === "1month")
+      if (
+        value === "1mo" ||
+        value === "1month"
+      )
         return "1 Month";
 
 
@@ -1551,6 +1542,100 @@
     /* =========================
        EXPIRATION TIMER
     ========================== */
+
+    function normalizeExpiration(
+      value
+    ) {
+
+      if (
+        value === null ||
+        value === undefined ||
+        value === ""
+      ) {
+
+        return null;
+      }
+
+
+      /*
+        If backend sends a numeric
+        Unix timestamp in milliseconds.
+      */
+
+      if (
+        typeof value === "number" &&
+        Number.isFinite(value)
+      ) {
+
+        return value;
+      }
+
+
+      const stringValue =
+        String(value).trim();
+
+
+      /*
+        Numeric timestamp.
+      */
+
+      if (
+        /^[0-9]+$/.test(
+          stringValue
+        )
+      ) {
+
+        const numeric =
+          Number(
+            stringValue
+          );
+
+        if (
+          Number.isFinite(
+            numeric
+          )
+        ) {
+
+          /*
+            If seconds were ever returned,
+            convert them to milliseconds.
+          */
+
+          if (
+            numeric < 100000000000
+          ) {
+
+            return numeric * 1000;
+          }
+
+          return numeric;
+        }
+      }
+
+
+      /*
+        ISO / PostgreSQL timestamp.
+      */
+
+      const parsed =
+        Date.parse(
+          stringValue
+        );
+
+
+      if (
+        Number.isFinite(
+          parsed
+        )
+      ) {
+
+        return parsed;
+      }
+
+
+      return null;
+    }
+
 
     function startExpirationTimer(
       expiresAt
@@ -1571,7 +1656,11 @@
         Lifetime key.
       */
 
-      if (!expiresAt) {
+      if (
+        expiresAt === null ||
+        expiresAt === undefined ||
+        expiresAt === ""
+      ) {
 
         keyExpiration.textContent =
           "Never Expires";
@@ -1586,9 +1675,9 @@
 
 
       const expirationTime =
-        new Date(
+        normalizeExpiration(
           expiresAt
-        ).getTime();
+        );
 
 
       if (
@@ -1597,8 +1686,19 @@
         )
       ) {
 
+        /*
+          Do NOT log the user out just
+          because the timer cannot parse
+          the date.
+        */
+
         keyExpiration.textContent =
-          "Unknown";
+          "Active";
+
+        keyExpiration.classList.remove(
+          "expiring",
+          "expired"
+        );
 
         return;
       }
@@ -1606,7 +1706,9 @@
 
       sessionStorage.setItem(
         EXPIRATION_KEY,
-        expiresAt
+        String(
+          expiresAt
+        )
       );
 
 
@@ -1670,10 +1772,6 @@
           );
 
 
-        /*
-          Orange during final hour.
-        */
-
         if (
           remaining <=
           60 * 60 * 1000
@@ -1694,6 +1792,9 @@
         keyExpiration.classList.remove(
           "expired"
         );
+
+        accountStatus.textContent =
+          "Active";
       }
 
 
@@ -1817,7 +1918,10 @@
       }
 
 
-      if (expiresAt) {
+      if (
+        expiresAt !== null &&
+        expiresAt !== ""
+      ) {
 
         startExpirationTimer(
           expiresAt
@@ -1859,8 +1963,48 @@
           401
         ) {
 
-          return forceLogout(
-            "Your key has expired or is no longer valid."
+          const errorResult =
+            await response
+              .json()
+              .catch(
+                () => ({})
+              );
+
+
+          const errorMessage =
+            errorResult.message ||
+            errorResult.error ||
+            "";
+
+
+          /*
+            Only logout when the backend
+            actually says the session is
+            expired/invalid.
+          */
+
+          if (
+            errorMessage
+              .toLowerCase()
+              .includes("expired") ||
+            errorMessage
+              .toLowerCase()
+              .includes("session") ||
+            errorMessage
+              .toLowerCase()
+              .includes("invalid")
+          ) {
+
+            return forceLogout(
+              errorMessage ||
+              "Your session has expired."
+            );
+          }
+
+
+          throw new Error(
+            errorMessage ||
+            "Could not load stock."
           );
         }
 
@@ -1891,18 +2035,9 @@
           );
 
 
-        /*
-          Update the live stock number.
-        */
-
         stockCount.textContent =
           count;
 
-
-        /*
-          Don't change the button while
-          somebody is currently generating.
-        */
 
         if (!isGenerating) {
 
@@ -1927,11 +2062,6 @@
 
       } catch (error) {
 
-        /*
-          Keep the current stock number
-          if one polling request fails.
-        */
-
         if (
           stockCount.textContent ===
           "—"
@@ -1954,16 +2084,8 @@
       stopLiveStock();
 
 
-      /*
-        Update immediately.
-      */
-
       loadStock();
 
-
-      /*
-        Check the server every 2 seconds.
-      */
 
       stockRefreshTimer =
         setInterval(
@@ -2009,6 +2131,14 @@
       }
 
 
+      if (!currentSession) {
+
+        return forceLogout(
+          "Your session has expired."
+        );
+      }
+
+
       isGenerating =
         true;
 
@@ -2048,13 +2178,51 @@
           );
 
 
+        /*
+          IMPORTANT:
+          A 401 does NOT automatically mean
+          the key expired.
+
+          Read the backend message first.
+        */
+
         if (
           response.status ===
           401
         ) {
 
-          return forceLogout(
-            "Your key has expired."
+          const errorResult =
+            await response
+              .json()
+              .catch(
+                () => ({})
+              );
+
+
+          const errorMessage =
+            errorResult.message ||
+            errorResult.error ||
+            "Generation request was rejected.";
+
+
+          const lowerMessage =
+            errorMessage.toLowerCase();
+
+
+          if (
+            lowerMessage.includes("expired") ||
+            lowerMessage.includes("session") ||
+            lowerMessage.includes("invalid")
+          ) {
+
+            return forceLogout(
+              errorMessage
+            );
+          }
+
+
+          throw new Error(
+            errorMessage
           );
         }
 
@@ -2097,10 +2265,12 @@
         );
 
 
-        /*
-          Immediately update the
-          stock count after generation.
-        */
+        dashboardMessage.textContent =
+          "Account generated successfully.";
+
+        dashboardMessage.className =
+          "dashboard-message success";
+
 
         await loadStock();
 
@@ -2120,11 +2290,6 @@
         isGenerating =
           false;
 
-
-        /*
-          Load stock one more time so
-          the button has the correct state.
-        */
 
         await loadStock();
 
@@ -2510,10 +2675,42 @@
           401
         ) {
 
-          closeSaveModal();
+          const errorResult =
+            await response
+              .json()
+              .catch(
+                () => ({})
+              );
 
-          return forceLogout(
-            "Your key has expired."
+
+          const errorMessage =
+            errorResult.message ||
+            errorResult.error ||
+            "Your session is no longer valid.";
+
+
+          if (
+            errorMessage
+              .toLowerCase()
+              .includes("expired") ||
+            errorMessage
+              .toLowerCase()
+              .includes("session") ||
+            errorMessage
+              .toLowerCase()
+              .includes("invalid")
+          ) {
+
+            closeSaveModal();
+
+            return forceLogout(
+              errorMessage
+            );
+          }
+
+
+          throw new Error(
+            errorMessage
           );
         }
 
@@ -2595,8 +2792,40 @@
           401
         ) {
 
-          return forceLogout(
-            "Your key has expired."
+          const errorResult =
+            await response
+              .json()
+              .catch(
+                () => ({})
+              );
+
+
+          const errorMessage =
+            errorResult.message ||
+            errorResult.error ||
+            "Your session is no longer valid.";
+
+
+          if (
+            errorMessage
+              .toLowerCase()
+              .includes("expired") ||
+            errorMessage
+              .toLowerCase()
+              .includes("session") ||
+            errorMessage
+              .toLowerCase()
+              .includes("invalid")
+          ) {
+
+            return forceLogout(
+              errorMessage
+            );
+          }
+
+
+          throw new Error(
+            errorMessage
           );
         }
 
@@ -2864,8 +3093,40 @@
           401
         ) {
 
-          return forceLogout(
-            "Your key has expired."
+          const errorResult =
+            await response
+              .json()
+              .catch(
+                () => ({})
+              );
+
+
+          const errorMessage =
+            errorResult.message ||
+            errorResult.error ||
+            "Your session is no longer valid.";
+
+
+          if (
+            errorMessage
+              .toLowerCase()
+              .includes("expired") ||
+            errorMessage
+              .toLowerCase()
+              .includes("session") ||
+            errorMessage
+              .toLowerCase()
+              .includes("invalid")
+          ) {
+
+            return forceLogout(
+              errorMessage
+            );
+          }
+
+
+          throw new Error(
+            errorMessage
           );
         }
 
@@ -2970,8 +3231,40 @@
           401
         ) {
 
-          return forceLogout(
-            "Your key has expired."
+          const errorResult =
+            await response
+              .json()
+              .catch(
+                () => ({})
+              );
+
+
+          const errorMessage =
+            errorResult.message ||
+            errorResult.error ||
+            "Your session is no longer valid.";
+
+
+          if (
+            errorMessage
+              .toLowerCase()
+              .includes("expired") ||
+            errorMessage
+              .toLowerCase()
+              .includes("session") ||
+            errorMessage
+              .toLowerCase()
+              .includes("invalid")
+          ) {
+
+            return forceLogout(
+              errorMessage
+            );
+          }
+
+
+          throw new Error(
+            errorMessage
           );
         }
 
@@ -3180,10 +3473,6 @@
       }
 
 
-      /*
-        Restore the timer immediately.
-      */
-
       restoreExpirationTimer();
 
 
@@ -3197,7 +3486,17 @@
 
         if (!response.ok) {
 
+          const result =
+            await response
+              .json()
+              .catch(
+                () => ({})
+              );
+
+
           throw new Error(
+            result.message ||
+            result.error ||
             "Session expired."
           );
         }
