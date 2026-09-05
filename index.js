@@ -56,11 +56,20 @@ const SERVER_URL =
 const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET;
 
 // =========================================================
+// CONNECTION STATE
+// =========================================================
+
+let discordLoginStarted = false;
+
+// =========================================================
 // DISCORD ERROR LOGGING
 // =========================================================
 
 client.on("error", (error) => {
-    console.error("Discord client error:", error);
+    console.error("================================");
+    console.error("Discord client error:");
+    console.error(error);
+    console.error("================================");
 });
 
 client.on("warn", (warning) => {
@@ -68,17 +77,45 @@ client.on("warn", (warning) => {
 });
 
 client.on("shardError", (error) => {
-    console.error("Discord gateway error:", error);
+    console.error("================================");
+    console.error("Discord gateway error:");
+    console.error(error);
+    console.error("================================");
 });
 
 client.on("shardDisconnect", (event) => {
-    console.error(
+    console.warn("================================");
+    console.warn(
         `Discord disconnected. Code: ${event.code}`
     );
+
+    if (event.reason) {
+        console.warn(
+            `Reason: ${event.reason}`
+        );
+    }
+
+    console.warn(
+        "discord.js will attempt to reconnect automatically."
+    );
+    console.warn("================================");
 });
 
 client.on("shardReconnecting", () => {
+    console.log("================================");
     console.log("Discord reconnecting...");
+    console.log("================================");
+});
+
+client.on("shardResume", (shardId, replayedEvents) => {
+    console.log("================================");
+    console.log(
+        `Discord connection resumed. Shard: ${shardId}`
+    );
+    console.log(
+        `Replayed events: ${replayedEvents}`
+    );
+    console.log("================================");
 });
 
 // =========================================================
@@ -88,8 +125,18 @@ client.on("shardReconnecting", () => {
 client.once("ready", () => {
     console.log("================================");
     console.log("NOVI DISCORD BOT IS ONLINE");
-    console.log(`Logged in as: ${client.user.tag}`);
-    console.log(`Novi API: ${SERVER_URL}`);
+    console.log(
+        `Logged in as: ${client.user.tag}`
+    );
+    console.log(
+        `Bot ID: ${client.user.id}`
+    );
+    console.log(
+        `Servers: ${client.guilds.cache.size}`
+    );
+    console.log(
+        `Novi API: ${SERVER_URL}`
+    );
     console.log("================================");
 });
 
@@ -98,16 +145,22 @@ client.once("ready", () => {
 // =========================================================
 
 if (!process.env.DISCORD_TOKEN) {
+    console.error("================================");
     console.error(
         "DISCORD_TOKEN is missing from Render Environment Variables."
     );
+    console.error("================================");
+
     process.exit(1);
 }
 
 if (!ADMIN_SECRET) {
+    console.error("================================");
     console.error(
         "NOVI_ADMIN_SECRET is missing from Render Environment Variables."
     );
+    console.error("================================");
+
     process.exit(1);
 }
 
@@ -491,67 +544,116 @@ client.on("messageCreate", async (message) => {
             error
         );
 
-        return message.reply(
-            "Something went wrong while processing that command."
-        );
+        try {
+            await message.reply(
+                "Something went wrong while processing that command."
+            );
+        } catch (replyError) {
+            console.error(
+                "Could not send error reply:",
+                replyError.message
+            );
+        }
     }
 });
 
 // =========================================================
-// LOGIN
+// DISCORD LOGIN
 // =========================================================
 
-console.log("================================");
-console.log("Connecting to Discord...");
-console.log("Token detected: YES");
-console.log("Admin secret detected: YES");
-console.log("================================");
+async function startDiscord() {
 
-// Give Discord 30 seconds to connect.
-// This prevents Render from sitting forever on
-// "Connecting to Discord..." without an explanation.
+    // Prevent duplicate login attempts
+    if (discordLoginStarted) {
+        console.log(
+            "Discord login has already been started."
+        );
+        return;
+    }
 
-const loginTimeout = setTimeout(() => {
+    discordLoginStarted = true;
 
-    console.error(
-        "Discord login timed out after 30 seconds."
-    );
+    console.log("================================");
+    console.log("Connecting to Discord...");
+    console.log("Token detected: YES");
+    console.log("Admin secret detected: YES");
+    console.log("================================");
 
-    console.error(
-        "Check the Discord Developer Portal, bot token, and gateway/intent settings."
-    );
+    try {
 
-    process.exit(1);
+        await client.login(
+            process.env.DISCORD_TOKEN
+        );
 
-}, 30000);
+        console.log("================================");
+        console.log("Discord login successful.");
+        console.log("Waiting for READY event...");
+        console.log("================================");
 
-// =========================================================
-// LOGIN
-// =========================================================
+    } catch (error) {
 
-client.login(process.env.DISCORD_TOKEN)
+        console.error("================================");
+        console.error("Discord login failed.");
 
-    .then(() => {
+        if (error?.code) {
+            console.error(
+                `Discord error code: ${error.code}`
+            );
+        }
 
-        clearTimeout(loginTimeout);
+        console.error(
+            error?.message || error
+        );
+
+        console.error("================================");
+
+        // Reset state so a controlled retry is possible
+        discordLoginStarted = false;
+
+        /*
+         * Do not immediately kill the Render process.
+         *
+         * This keeps the Novi API alive while Discord
+         * is unavailable and prevents a rapid restart loop.
+         */
 
         console.log(
-            "Discord login successful."
+            "Discord login failed. Retrying in 15 seconds..."
         );
 
-    })
+        setTimeout(() => {
 
-    .catch((error) => {
+            startDiscord().catch((retryError) => {
+                console.error(
+                    "Discord retry error:",
+                    retryError
+                );
+            });
 
-        clearTimeout(loginTimeout);
+        }, 15000);
+    }
+}
 
-        console.error(
-            "Discord login failed:"
-        );
+// =========================================================
+// PROCESS ERROR HANDLING
+// =========================================================
 
-        console.error(
-            error
-        );
+process.on("unhandledRejection", (error) => {
+    console.error(
+        "Unhandled promise rejection:",
+        error
+    );
+});
 
-        process.exit(1);
-    });
+process.on("uncaughtException", (error) => {
+    console.error(
+        "Uncaught exception:",
+        error
+    );
+});
+
+// =========================================================
+// START DISCORD
+// =========================================================
+
+startDiscord();
