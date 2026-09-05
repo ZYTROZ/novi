@@ -7,6 +7,7 @@ const {
 } = require("discord.js");
 
 const axios = require("axios");
+const WebSocket = require("ws");
 
 /* =========================================================
    CONFIG
@@ -77,6 +78,63 @@ if (!ADMIN_SECRET) {
 }
 
 /* =========================================================
+   DISCORD GATEWAY CONNECTION TEST
+   This does NOT use the bot token.
+========================================================= */
+
+console.log(
+    "Testing Discord Gateway connectivity..."
+);
+
+const gatewayTest = new WebSocket(
+    "wss://gateway.discord.gg/?v=10&encoding=json"
+);
+
+const gatewayTimeout = setTimeout(() => {
+
+    console.error(
+        "❌ DISCORD GATEWAY TEST TIMED OUT"
+    );
+
+    try {
+        gatewayTest.close();
+    } catch {}
+
+}, 10000);
+
+gatewayTest.on("open", () => {
+
+    clearTimeout(gatewayTimeout);
+
+    console.log(
+        "✅ DISCORD GATEWAY CONNECTION WORKS"
+    );
+
+    try {
+        gatewayTest.close();
+    } catch {}
+});
+
+gatewayTest.on("error", error => {
+
+    clearTimeout(gatewayTimeout);
+
+    console.error(
+        "❌ DISCORD GATEWAY CONNECTION FAILED:",
+        error?.message || error
+    );
+});
+
+gatewayTest.on("close", (code, reason) => {
+
+    console.log(
+        "Gateway test closed:",
+        code,
+        reason?.toString() || ""
+    );
+});
+
+/* =========================================================
    DISCORD CLIENT
 ========================================================= */
 
@@ -106,6 +164,7 @@ const ALLOWED_ROLE_IDS = [
 ========================================================= */
 
 function hasPermission(message) {
+
     if (!message.member) {
         return false;
     }
@@ -121,6 +180,7 @@ function hasPermission(message) {
 ========================================================= */
 
 function adminHeaders() {
+
     return {
         "Content-Type": "application/json",
         "x-novi-admin-secret": ADMIN_SECRET
@@ -128,7 +188,7 @@ function adminHeaders() {
 }
 
 /* =========================================================
-   DISCORD READY
+   READY
 ========================================================= */
 
 client.once("ready", () => {
@@ -158,7 +218,7 @@ client.once("ready", () => {
 });
 
 /* =========================================================
-   LOGIN EVENTS
+   DISCORD EVENTS
 ========================================================= */
 
 client.on("error", error => {
@@ -189,7 +249,7 @@ client.on("shardError", error => {
     console.error("========================================");
 });
 
-client.on("shardDisconnect", (event) => {
+client.on("shardDisconnect", event => {
 
     console.error("");
     console.error("========================================");
@@ -216,7 +276,7 @@ client.on("shardReconnecting", () => {
     );
 });
 
-client.on("shardResume", (shardId) => {
+client.on("shardResume", shardId => {
 
     console.log(
         `✅ Discord Gateway resumed on shard ${shardId}.`
@@ -381,7 +441,7 @@ client.on(
                 let items = [];
 
                 /* ---------------------------------------------
-                   TEXT AFTER !ADD
+                   ITEMS TYPED AFTER !ADD
                 --------------------------------------------- */
 
                 const typedItems =
@@ -470,7 +530,7 @@ client.on(
                 }
 
                 /* ---------------------------------------------
-                   EMPTY
+                   NOTHING PROVIDED
                 --------------------------------------------- */
 
                 if (
@@ -486,7 +546,7 @@ client.on(
                 }
 
                 /* ---------------------------------------------
-                   REMOVE DUPLICATES
+                   REMOVE DUPLICATES FROM INPUT
                 --------------------------------------------- */
 
                 items =
@@ -497,7 +557,7 @@ client.on(
                 let failed = 0;
 
                 /* ---------------------------------------------
-                   ADD STOCK
+                   ADD EACH ITEM
                 --------------------------------------------- */
 
                 for (
@@ -552,7 +612,7 @@ client.on(
                 }
 
                 /* ---------------------------------------------
-                   STOCK COUNT
+                   GET TOTAL STOCK
                 --------------------------------------------- */
 
                 let totalStock =
@@ -590,7 +650,7 @@ client.on(
                 }
 
                 /* ---------------------------------------------
-                   RESULT
+                   SEND RESULT
                 --------------------------------------------- */
 
                 let result =
