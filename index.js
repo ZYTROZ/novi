@@ -90,13 +90,6 @@ async function initDatabase() {
     )
   `);
 
-  /*
-    Separate safe stock table.
-
-    IMPORTANT:
-    This does NOT modify or delete columns from your
-    existing novi_stock table.
-  */
   await pool.query(`
     CREATE TABLE IF NOT EXISTS novi_stock_items (
       id BIGSERIAL PRIMARY KEY,
@@ -106,14 +99,12 @@ async function initDatabase() {
   `);
 
   await pool.query(`
-    CREATE INDEX IF NOT EXISTS
-    novi_stock_items_created_idx
+    CREATE INDEX IF NOT EXISTS novi_stock_items_created_idx
     ON novi_stock_items(created_at)
   `);
 
   await pool.query(`
-    CREATE INDEX IF NOT EXISTS
-    novi_stock_items_stock_id_idx
+    CREATE INDEX IF NOT EXISTS novi_stock_items_stock_id_idx
     ON novi_stock_items(stock_id)
   `);
 
@@ -161,11 +152,15 @@ function getSession(req) {
 
   const token = headerToken || bearer;
 
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
 
   const session = sessions.get(token);
 
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
 
   if (
     session.expiresAt &&
@@ -456,10 +451,8 @@ app.post("/api/verify", async (req, res) => {
     res.json({
       success: true,
       valid: true,
-
       sessionToken,
       token: sessionToken,
-
       key,
       duration: row.duration,
       expiresAt: row.expires_at,
@@ -498,25 +491,13 @@ function cleanStockValue(value) {
     return null;
   }
 
-  const valueClean = value.trim();
+  const cleaned = value.trim();
 
-  if (!valueClean) {
+  if (!cleaned) {
     return null;
   }
 
-  /*
-    Stock entries must be non-sensitive IDs/codes.
-    Reject credential-shaped values.
-  */
-  if (
-    /^[^@\s:]+@[^@\s:]+:[^\s]+$/.test(
-      valueClean
-    )
-  ) {
-    return null;
-  }
-
-  return valueClean;
+  return cleaned;
 }
 
 function extractStockValues(input) {
@@ -587,7 +568,7 @@ function extractStockValues(input) {
             field
           )
         ) {
-          add(value[field]);
+          walk(value[field]);
         }
       }
 
@@ -601,6 +582,7 @@ function extractStockValues(input) {
         "stockIds",
         "stock_ids",
         "entries",
+        "accounts",
       ];
 
       for (const field of arrayFields) {
@@ -628,16 +610,22 @@ function extractStockValues(input) {
 async function stockAddHandler(req, res) {
   try {
     console.log(
-      "STOCK ADD:",
+      "================================"
+    );
+
+    console.log(
+      "STOCK ADD REQUEST:",
       req.method,
       req.originalUrl
     );
 
+    console.log(
+      "CONTENT TYPE:",
+      req.headers["content-type"]
+    );
+
     let body = req.body;
 
-    /*
-      Some older bots send JSON as text.
-    */
     if (typeof body === "string") {
       const trimmed = body.trim();
 
@@ -648,7 +636,7 @@ async function stockAddHandler(req, res) {
         try {
           body = JSON.parse(trimmed);
         } catch {
-          // Keep as text.
+          body = trimmed;
         }
       }
     }
@@ -656,7 +644,7 @@ async function stockAddHandler(req, res) {
     const values = extractStockValues(body);
 
     console.log(
-      "Stock values received:",
+      "STOCK VALUES RECEIVED:",
       values.length
     );
 
@@ -668,32 +656,44 @@ async function stockAddHandler(req, res) {
       });
     }
 
-    let added = 0;
+    const client = await pool.connect();
 
-    for (const stockId of values) {
-      await pool.query(
-        `
-        INSERT INTO novi_stock_items
-          (stock_id, created_at)
-        VALUES
-          ($1, NOW())
-        `,
-        [stockId]
-      );
+    try {
+      await client.query("BEGIN");
 
-      added++;
+      for (const stockId of values) {
+        await client.query(
+          `
+          INSERT INTO novi_stock_items
+            (stock_id, created_at)
+          VALUES
+            ($1, NOW())
+          `,
+          [stockId]
+        );
+      }
+
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
     }
 
     console.log(
-      `Added ${added} stock item(s)`
+      `ADDED ${values.length} STOCK ITEM(S)`
+    );
+
+    console.log(
+      "================================"
     );
 
     return res.json({
       success: true,
-      added,
-      count: added,
-      message:
-        `Added ${added} stock item(s)`,
+      added: values.length,
+      count: values.length,
+      message: `Added ${values.length} stock item(s)`,
     });
   } catch (err) {
     console.error(
@@ -708,20 +708,27 @@ async function stockAddHandler(req, res) {
   }
 }
 
+/* ============================================================
+   STOCK ADD ROUTES
+============================================================ */
+
 app.post(
   "/api/stock/add",
   requireAdmin,
   stockAddHandler
 );
 
-/*
-  Compatibility aliases.
-*/
 app.post(
   "/api/add-stock",
   requireAdmin,
   stockAddHandler
 );
+
+/*
+  IMPORTANT:
+  GET /api/stock is handled below.
+  POST /api/stock is the compatibility add route.
+*/
 
 app.post(
   "/api/stock",
@@ -884,7 +891,6 @@ app.post(
 
       res.json({
         success: true,
-
         item: item.stock_id,
         account: item.stock_id,
         stock: item.stock_id,
@@ -1120,9 +1126,8 @@ if (fs.existsSync(PUBLIC_DIR)) {
   app.use(express.static(PUBLIC_DIR));
 
   /*
-    EXPRESS 5 FIX:
-    Do NOT use app.get("*").
-    Express 5 requires a named wildcard.
+    Express 5 wildcard syntax.
+    Do NOT change this to app.get("*").
   */
   app.get("/{*splat}", (req, res, next) => {
     if (req.path.startsWith("/api/")) {
