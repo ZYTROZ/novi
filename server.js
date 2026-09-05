@@ -123,7 +123,12 @@ function decrypt(data) {
 
   decipher.setAuthTag(Buffer.from(data.authTag, "base64"));
 
-  let decrypted = decipher.update(data.encrypted, "base64", "utf8");
+  let decrypted = decipher.update(
+    data.encrypted,
+    "base64",
+    "utf8"
+  );
+
   decrypted += decipher.final("utf8");
 
   return decrypted;
@@ -137,10 +142,15 @@ function decryptPassword(password) {
   try {
     return decrypt(JSON.parse(password));
   } catch {
-    // Allows old plaintext passwords to continue working
     return password;
   }
 }
+
+// ============================================================
+// SESSIONS
+// ============================================================
+
+const sessions = new Map();
 
 // ============================================================
 // HELPERS
@@ -225,15 +235,6 @@ function getDurationMs(duration) {
 }
 
 // ============================================================
-// SESSIONS
-// ============================================================
-
-// Sessions are intentionally kept in memory.
-// Keys themselves are stored permanently in PostgreSQL.
-
-const sessions = new Map();
-
-// ============================================================
 // HEALTH
 // ============================================================
 
@@ -274,11 +275,10 @@ app.get("/api", (req, res) => {
 // KEYS
 // ============================================================
 
-// CREATE KEYS
-
 app.post("/api/keys", requireAdmin, async (req, res) => {
   try {
     const duration = req.body?.duration;
+
     const amount = Math.min(
       Math.max(Number(req.body?.amount) || 1, 1),
       1000
@@ -307,7 +307,9 @@ app.post("/api/keys", requireAdmin, async (req, res) => {
           [key]
         );
 
-        if (exists.rowCount === 0) break;
+        if (exists.rowCount === 0) {
+          break;
+        }
       }
 
       const expiresAt =
@@ -343,8 +345,6 @@ app.post("/api/keys", requireAdmin, async (req, res) => {
     });
   }
 });
-
-// LIST KEYS
 
 app.get("/api/keys", requireAdmin, async (req, res) => {
   try {
@@ -385,8 +385,6 @@ app.get("/api/keys", requireAdmin, async (req, res) => {
     });
   }
 });
-
-// DELETE KEY
 
 app.delete("/api/keys/:key", requireAdmin, async (req, res) => {
   try {
@@ -452,7 +450,6 @@ app.post("/api/verify", async (req, res) => {
     const row = result.rows[0];
     const now = Date.now();
 
-    // Check expiration
     if (
       row.expires_at !== null &&
       Number(row.expires_at) <= now
@@ -463,7 +460,6 @@ app.post("/api/verify", async (req, res) => {
       });
     }
 
-    // Bind key to first device
     if (row.device_id && row.device_id !== deviceId) {
       return res.status(401).json({
         success: false,
@@ -483,7 +479,9 @@ app.post("/api/verify", async (req, res) => {
       );
     }
 
-    const token = crypto.randomBytes(32).toString("hex");
+    const token = crypto
+      .randomBytes(32)
+      .toString("hex");
 
     sessions.set(token, {
       key,
@@ -518,8 +516,6 @@ app.post("/api/verify", async (req, res) => {
 // ============================================================
 // STOCK
 // ============================================================
-
-// ADD STOCK
 
 app.post("/api/stock/add", requireAdmin, async (req, res) => {
   const client = await pool.connect();
@@ -560,12 +556,13 @@ app.post("/api/stock/add", requireAdmin, async (req, res) => {
         ).trim();
 
         password = String(
-          account.password ||
-          ""
+          account.password || ""
         ).trim();
       }
 
-      if (!username || !password) continue;
+      if (!username || !password) {
+        continue;
+      }
 
       await client.query(
         `
@@ -603,8 +600,6 @@ app.post("/api/stock/add", requireAdmin, async (req, res) => {
   }
 });
 
-// ADMIN STOCK
-
 app.get("/api/admin/stock", requireAdmin, async (req, res) => {
   try {
     const result = await pool.query(`
@@ -634,8 +629,6 @@ app.get("/api/admin/stock", requireAdmin, async (req, res) => {
     });
   }
 });
-
-// GET STOCK
 
 app.get("/api/stock", requireSession, async (req, res) => {
   try {
@@ -667,8 +660,6 @@ app.get("/api/stock", requireSession, async (req, res) => {
   }
 });
 
-// STOCK COUNT
-
 app.get("/api/stock/count", requireSession, async (req, res) => {
   try {
     const result = await pool.query(
@@ -688,8 +679,6 @@ app.get("/api/stock/count", requireSession, async (req, res) => {
     });
   }
 });
-
-// GENERATE / CLAIM STOCK
 
 app.post("/api/stock/generate", requireSession, async (req, res) => {
   const client = await pool.connect();
@@ -764,8 +753,6 @@ app.post("/api/stock/generate", requireSession, async (req, res) => {
 // SAVED LOGINS
 // ============================================================
 
-// SAVE LOGIN
-
 app.post("/api/saved-logins", requireSession, async (req, res) => {
   try {
     const username = String(
@@ -775,8 +762,7 @@ app.post("/api/saved-logins", requireSession, async (req, res) => {
     ).trim();
 
     const password = String(
-      req.body?.password ||
-      ""
+      req.body?.password || ""
     );
 
     if (!username || !password) {
@@ -823,8 +809,6 @@ app.post("/api/saved-logins", requireSession, async (req, res) => {
   }
 });
 
-// GET SAVED LOGINS
-
 app.get("/api/saved-logins", requireSession, async (req, res) => {
   try {
     const result = await pool.query(
@@ -857,8 +841,6 @@ app.get("/api/saved-logins", requireSession, async (req, res) => {
     });
   }
 });
-
-// GET ONE SAVED LOGIN
 
 app.get(
   "/api/saved-logins/:id",
@@ -913,8 +895,6 @@ app.get(
     }
   }
 );
-
-// DELETE SAVED LOGIN
 
 app.delete(
   "/api/saved-logins/:id",
@@ -989,7 +969,8 @@ app.post("/api/logout", requireSession, (req, res) => {
 
 app.use(express.static(PUBLIC_DIR));
 
-app.get("*", (req, res) => {
+// Express 5 requires a named wildcard parameter.
+app.get("/{*splat}", (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
 
@@ -1002,7 +983,9 @@ async function start() {
     await initDatabase();
 
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Novi server running on port ${PORT}`);
+      console.log(
+        `🚀 Novi server running on port ${PORT}`
+      );
     });
   } catch (error) {
     console.error("❌ Failed to start Novi:", error);
