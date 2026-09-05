@@ -50,7 +50,7 @@ const DEFAULT_DATA = {
 };
 
 // ============================================================
-// DATA STORAGE
+// CREATE DATA
 // ============================================================
 
 function createEmptyData() {
@@ -61,6 +61,10 @@ function createEmptyData() {
     sessions: [],
   };
 }
+
+// ============================================================
+// LOAD DATA FROM DISK
+// ============================================================
 
 function loadData() {
   try {
@@ -89,10 +93,6 @@ function loadData() {
       );
 
     if (!raw.trim()) {
-      console.log(
-        "⚠️ novi-data.json was empty. Creating fresh data."
-      );
-
       const fresh =
         createEmptyData();
 
@@ -141,18 +141,88 @@ function loadData() {
     };
   } catch (error) {
     console.error(
-      "❌ Could not load novi-data.json:",
+      "❌ Failed to load novi-data.json:",
       error
     );
 
-    process.exit(1);
+    return createEmptyData();
   }
 }
 
-let data = loadData();
+let data =
+  loadData();
 
 // ============================================================
-// SAVE DATA SAFELY
+// REFRESH DATA
+// ============================================================
+//
+// IMPORTANT:
+//
+// This fixes the "Invalid key" problem when
+// another Node process (such as the Discord bot)
+// changes novi-data.json.
+//
+// The website reloads the latest file before
+// checking keys/sessions/stock.
+// ============================================================
+
+function refreshData() {
+  try {
+    if (!fs.existsSync(DATA_FILE)) {
+      saveData();
+      return;
+    }
+
+    const raw =
+      fs.readFileSync(
+        DATA_FILE,
+        "utf8"
+      );
+
+    if (!raw.trim()) {
+      return;
+    }
+
+    const parsed =
+      JSON.parse(raw);
+
+    data = {
+      nextStockId:
+        Number(
+          parsed.nextStockId
+        ) || 1,
+
+      keys:
+        Array.isArray(
+          parsed.keys
+        )
+          ? parsed.keys
+          : [],
+
+      stock:
+        Array.isArray(
+          parsed.stock
+        )
+          ? parsed.stock
+          : [],
+
+      sessions:
+        Array.isArray(
+          parsed.sessions
+        )
+          ? parsed.sessions
+          : [],
+    };
+  } catch (error) {
+    console.error(
+      "❌ Could not refresh novi-data.json:",
+      error
+    );
+  }
+}
+
+// ============================================================
+// SAVE DATA
 // ============================================================
 
 function saveData() {
@@ -254,13 +324,12 @@ function appendCookie(
       "Set-Cookie"
     );
 
-  let cookies = [];
-
-  if (existing) {
-    cookies = Array.isArray(existing)
-      ? existing
-      : [existing];
-  }
+  const cookies =
+    existing
+      ? Array.isArray(existing)
+        ? existing
+        : [existing]
+      : [];
 
   cookies.push(cookie);
 
@@ -271,18 +340,7 @@ function appendCookie(
 }
 
 // ============================================================
-// BROWSER ID
-// ============================================================
-//
-// This identifies the browser.
-//
-// Closing the website does NOT remove it.
-//
-// The cookie lasts for one year.
-//
-// IMPORTANT:
-// This is a browser identifier,
-// not a physical hardware fingerprint.
+// DEVICE COOKIE
 // ============================================================
 
 function getOrCreateDeviceId(
@@ -424,7 +482,7 @@ function normalizeDuration(
 }
 
 // ============================================================
-// KEY GENERATION
+// KEY HELPERS
 // ============================================================
 
 function generateKey() {
@@ -462,9 +520,7 @@ function isExpired(
     Number(expiresAt);
 
   if (
-    !Number.isFinite(
-      timestamp
-    )
+    !Number.isFinite(timestamp)
   ) {
     return false;
   }
@@ -475,7 +531,7 @@ function isExpired(
 }
 
 // ============================================================
-// SESSION SYSTEM
+// SESSION
 // ============================================================
 
 function generateSessionToken() {
@@ -510,6 +566,10 @@ function createSession(
 function getSession(
   req
 ) {
+  // Always get latest data.
+
+  refreshData();
+
   const headerToken =
     req.headers[
       "x-novi-session"
@@ -565,7 +625,6 @@ function getSession(
     return null;
   }
 
-  // Make sure the key still exists.
   const key =
     data.keys.find(
       item =>
@@ -577,9 +636,6 @@ function getSession(
     return null;
   }
 
-  // Make sure the key is still owned
-  // by this browser.
-
   if (
     key.deviceId &&
     key.deviceId !==
@@ -587,8 +643,6 @@ function getSession(
   ) {
     return null;
   }
-
-  // Make sure the key has not expired.
 
   if (
     isExpired(
@@ -680,48 +734,21 @@ function requireSession(
 }
 
 // ============================================================
-// CLEAN EXPIRED SESSIONS
-// ============================================================
-
-function cleanExpiredSessions() {
-  const before =
-    data.sessions.length;
-
-  data.sessions =
-    data.sessions.filter(
-      session =>
-        !isExpired(
-          session.expiresAt
-        )
-    );
-
-  if (
-    data.sessions.length !==
-    before
-  ) {
-    saveData();
-  }
-}
-
-setInterval(
-  cleanExpiredSessions,
-  60 * 1000
-);
-
-// ============================================================
 // HEALTH
 // ============================================================
 
 app.get(
   "/api/health",
   (req, res) => {
-    res.json({
+    refreshData();
+
+    return res.json({
       success: true,
       ok: true,
-      storage: "json",
       database: false,
+      storage: "json",
       keyLocking:
-        "browser-cookie",
+        "browser",
       keys:
         data.keys.length,
       stock:
@@ -738,6 +765,13 @@ app.post(
   "/api/verify",
   (req, res) => {
     try {
+      // ======================================================
+      // CRITICAL:
+      // Reload latest keys from disk.
+      // ======================================================
+
+      refreshData();
+
       const suppliedKey =
         String(
           req.body?.key || ""
@@ -751,7 +785,13 @@ app.post(
         });
       }
 
-      // Case-insensitive lookup.
+      console.log(
+        `🔎 Checking key: ${suppliedKey}`
+      );
+
+      console.log(
+        `🔑 Keys currently loaded: ${data.keys.length}`
+      );
 
       const keyRow =
         data.keys.find(
@@ -761,14 +801,15 @@ app.post(
             )
               .trim()
               .toUpperCase() ===
-            suppliedKey.toUpperCase()
+            suppliedKey
+              .toUpperCase()
         );
 
-      // ------------------------------------------------------
-      // INVALID KEY
-      // ------------------------------------------------------
-
       if (!keyRow) {
+        console.log(
+          `❌ Key not found: ${suppliedKey}`
+        );
+
         return res.status(404).json({
           success: false,
           error:
@@ -776,9 +817,13 @@ app.post(
         });
       }
 
-      // ------------------------------------------------------
+      console.log(
+        `✅ Key found: ${keyRow.key}`
+      );
+
+      // ======================================================
       // EXPIRATION
-      // ------------------------------------------------------
+      // ======================================================
 
       const expiresAt =
         keyRow.expiresAt ===
@@ -802,16 +847,12 @@ app.post(
         });
       }
 
-      // ------------------------------------------------------
-      // CURRENT BROWSER
-      // ------------------------------------------------------
+      // ======================================================
+      // BROWSER LOCK
+      // ======================================================
 
       const currentDeviceId =
         req.noviDeviceId;
-
-      // ------------------------------------------------------
-      // KEY IS ALREADY LOCKED
-      // ------------------------------------------------------
 
       if (
         keyRow.deviceId &&
@@ -827,9 +868,9 @@ app.post(
         });
       }
 
-      // ------------------------------------------------------
+      // ======================================================
       // FIRST USE
-      // ------------------------------------------------------
+      // ======================================================
 
       if (!keyRow.deviceId) {
         keyRow.deviceId =
@@ -841,23 +882,19 @@ app.post(
         saveData();
 
         console.log(
-          `🔐 Key ${keyRow.key} claimed by browser ${currentDeviceId}`
+          `🔐 Claimed ${keyRow.key}`
         );
       }
 
-      // ------------------------------------------------------
-      // DURATION
-      // ------------------------------------------------------
+      // ======================================================
+      // SESSION
+      // ======================================================
 
       const duration =
         normalizeDuration(
           keyRow.duration
         ) ||
         "lifetime";
-
-      // ------------------------------------------------------
-      // FIND EXISTING SESSION
-      // ------------------------------------------------------
 
       let session =
         data.sessions.find(
@@ -885,19 +922,11 @@ app.post(
           );
       }
 
-      // ------------------------------------------------------
-      // SAVE SESSION COOKIE
-      // ------------------------------------------------------
-
       setSessionCookie(
         res,
         sessionToken,
         expiresAt
       );
-
-      // ------------------------------------------------------
-      // RESPONSE
-      // ------------------------------------------------------
 
       return res.json({
         success: true,
@@ -924,7 +953,7 @@ app.post(
       });
     } catch (error) {
       console.error(
-        "❌ /api/verify error:",
+        "❌ VERIFY ERROR:",
         error
       );
 
@@ -938,43 +967,30 @@ app.post(
 );
 
 // ============================================================
-// STOCK COUNT
+// STOCK
 // ============================================================
 
 app.get(
   "/api/stock",
   requireSession,
   (req, res) => {
-    try {
-      return res.json({
-        success: true,
-        count:
-          data.stock.length,
-      });
-    } catch (error) {
-      console.error(
-        "❌ /api/stock error:",
-        error
-      );
+    refreshData();
 
-      return res.status(500).json({
-        success: false,
-        error:
-          "Could not load stock.",
-      });
-    }
+    return res.json({
+      success: true,
+      count:
+        data.stock.length,
+    });
   }
 );
-
-// ============================================================
-// GENERATE STOCK ITEM
-// ============================================================
 
 app.post(
   "/api/stock/generate",
   requireSession,
   (req, res) => {
     try {
+      refreshData();
+
       if (
         data.stock.length ===
         0
@@ -1004,7 +1020,7 @@ app.post(
       });
     } catch (error) {
       console.error(
-        "❌ /api/stock/generate error:",
+        "❌ Stock error:",
         error
       );
 
@@ -1020,40 +1036,30 @@ app.post(
 // ============================================================
 // LOGOUT
 // ============================================================
-//
-// Logging out DOES NOT release the key.
-//
-// The browser remains the owner
-// until the key expires.
-// ============================================================
 
 app.post(
   "/api/logout",
   (req, res) => {
     try {
-      const token =
-        req.headers[
-          "x-novi-session"
-        ];
+      refreshData();
 
       const cookies =
         parseCookies(
           req.headers.cookie
         );
 
-      const cookieToken =
+      const token =
+        req.headers[
+          "x-novi-session"
+        ] ||
         cookies.novi_session;
 
-      const tokenToRemove =
-        token ||
-        cookieToken;
-
-      if (tokenToRemove) {
+      if (token) {
         data.sessions =
           data.sessions.filter(
             session =>
               session.token !==
-              tokenToRemove
+              token
           );
 
         saveData();
@@ -1063,7 +1069,8 @@ app.post(
         process.env.NODE_ENV ===
         "production";
 
-      const cookie =
+      appendCookie(
+        res,
         [
           "novi_session=",
           "Path=/",
@@ -1075,11 +1082,7 @@ app.post(
             : "",
         ]
           .filter(Boolean)
-          .join("; ");
-
-      appendCookie(
-        res,
-        cookie
+          .join("; ")
       );
 
       return res.json({
@@ -1087,7 +1090,7 @@ app.post(
       });
     } catch (error) {
       console.error(
-        "❌ /api/logout error:",
+        "❌ Logout error:",
         error
       );
 
@@ -1114,7 +1117,7 @@ const discordClient =
   });
 
 // ============================================================
-// DISCORD ROLE CHECK
+// ROLE CHECK
 // ============================================================
 
 function hasAllowedDiscordRole(
@@ -1141,7 +1144,7 @@ async function denyDiscordCommand(
 }
 
 // ============================================================
-// !gen
+// !GEN
 // ============================================================
 
 async function handleGen(
@@ -1158,13 +1161,16 @@ async function handleGen(
     );
   }
 
+  // IMPORTANT:
+  // Reload first so we don't overwrite
+  // changes made by the website.
+
+  refreshData();
+
   let amount = 1;
 
   let durationInput =
     args[0];
-
-  // !gen 1d
-  // !gen 5 1d
 
   if (
     /^\d+$/.test(
@@ -1237,15 +1243,9 @@ async function handleGen(
 
       duration,
 
-      // ------------------------------------------------------
-      // BROWSER LOCK
-      // ------------------------------------------------------
-
       deviceId: null,
 
       claimedAt: null,
-
-      // Compatibility field.
 
       used: false,
     });
@@ -1253,7 +1253,13 @@ async function handleGen(
     generated.push(key);
   }
 
+  // Save to disk.
+
   saveData();
+
+  console.log(
+    `🔑 Generated ${generated.length} ${duration} key(s)`
+  );
 
   return message.channel.send(
     `✅ Generated **${generated.length}** ${duration} key(s):\n` +
@@ -1267,7 +1273,7 @@ async function handleGen(
 }
 
 // ============================================================
-// !add
+// !ADD
 // ============================================================
 
 async function handleAdd(
@@ -1284,9 +1290,9 @@ async function handleAdd(
     );
   }
 
-  const items = [];
+  refreshData();
 
-  // Direct item.
+  const items = [];
 
   if (
     args &&
@@ -1303,8 +1309,6 @@ async function handleAdd(
       );
     }
   }
-
-  // TXT attachment.
 
   if (
     message.attachments &&
@@ -1330,10 +1334,6 @@ async function handleAdd(
       }
 
       try {
-        console.log(
-          `📄 Downloading TXT: ${attachment.name}`
-        );
-
         const response =
           await fetch(
             attachment.url
@@ -1355,10 +1355,7 @@ async function handleAdd(
               line =>
                 line.trim()
             )
-            .filter(
-              line =>
-                line.length > 0
-            );
+            .filter(Boolean);
 
         items.push(
           ...lines
@@ -1380,9 +1377,7 @@ async function handleAdd(
     items.length === 0
   ) {
     return message.channel.send(
-      "❌ Usage:\n" +
-        "`!add ITEM-123`\n" +
-        "or attach a `.txt` file to `!add`."
+      "❌ Usage:\n`!add ITEM-123`\nor attach a `.txt` file."
     );
   }
 
@@ -1390,11 +1385,9 @@ async function handleAdd(
     items.length > 5000
   ) {
     return message.channel.send(
-      "❌ Too many stock items. Maximum: **5000**."
+      "❌ Maximum 5000 stock items."
     );
   }
-
-  let added = 0;
 
   for (
     const rawItem of items
@@ -1418,20 +1411,17 @@ async function handleAdd(
       created_at:
         Date.now(),
     });
-
-    added++;
   }
 
   saveData();
 
   return message.channel.send(
-    `✅ Added **${added}** stock item(s).\n` +
-      `📦 Current stock: **${data.stock.length}**`
+    `✅ Added **${items.length}** stock item(s).\n📦 Current stock: **${data.stock.length}**`
   );
 }
 
 // ============================================================
-// !stock
+// !STOCK
 // ============================================================
 
 async function handleStock(
@@ -1447,13 +1437,15 @@ async function handleStock(
     );
   }
 
+  refreshData();
+
   return message.channel.send(
     `📦 Novi stock: **${data.stock.length}**`
   );
 }
 
 // ============================================================
-// !clearstock
+// !CLEARSTOCK
 // ============================================================
 
 async function handleClearStock(
@@ -1469,6 +1461,8 @@ async function handleClearStock(
     );
   }
 
+  refreshData();
+
   const count =
     data.stock.length;
 
@@ -1482,7 +1476,7 @@ async function handleClearStock(
 }
 
 // ============================================================
-// !help
+// !HELP
 // ============================================================
 
 async function handleHelp(
@@ -1565,7 +1559,6 @@ discordClient.on(
           message,
           args
         );
-
         return;
       }
 
@@ -1576,7 +1569,6 @@ discordClient.on(
           message,
           args
         );
-
         return;
       }
 
@@ -1586,7 +1578,6 @@ discordClient.on(
         await handleStock(
           message
         );
-
         return;
       }
 
@@ -1596,7 +1587,6 @@ discordClient.on(
         await handleClearStock(
           message
         );
-
         return;
       }
 
@@ -1606,7 +1596,6 @@ discordClient.on(
         await handleHelp(
           message
         );
-
         return;
       }
     } catch (error) {
@@ -1634,19 +1623,6 @@ discordClient.once(
     console.log(
       `🤖 Discord bot logged in as ${discordClient.user.tag}`
     );
-
-    console.log(
-      "🔐 Allowed Discord roles:"
-    );
-
-    for (
-      const roleId of
-        ALLOWED_ROLE_IDS
-    ) {
-      console.log(
-        `   • ${roleId}`
-      );
-    }
   }
 );
 
@@ -1680,10 +1656,6 @@ app.use(
     PUBLIC_DIR
   )
 );
-
-// ============================================================
-// WEBSITE FALLBACK
-// ============================================================
 
 app.use(
   (req, res, next) => {
@@ -1722,85 +1694,59 @@ app.use(
 // ============================================================
 
 function start() {
-  try {
-    // Make sure the data file exists.
+  console.log(
+    "======================================"
+  );
 
-    if (
-      !fs.existsSync(
-        DATA_FILE
-      )
-    ) {
-      saveData();
+  console.log(
+    "           STARTING NOVI"
+  );
+
+  console.log(
+    "======================================"
+  );
+
+  console.log(
+    `🌐 Port: ${PORT}`
+  );
+
+  console.log(
+    `📁 Public: ${PUBLIC_DIR}`
+  );
+
+  console.log(
+    `💾 Storage: ${DATA_FILE}`
+  );
+
+  console.log(
+    "🗄️ Database: NONE"
+  );
+
+  console.log(
+    "🔐 Key locking: BROWSER"
+  );
+
+  console.log(
+    `🔑 Keys: ${data.keys.length}`
+  );
+
+  console.log(
+    `📦 Stock: ${data.stock.length}`
+  );
+
+  console.log(
+    "======================================"
+  );
+
+  app.listen(
+    PORT,
+    "0.0.0.0",
+    () => {
+      console.log(
+        `🌐 Novi running on port ${PORT}`
+      );
     }
-
-    console.log(
-      "======================================"
-    );
-
-    console.log(
-      "           STARTING NOVI"
-    );
-
-    console.log(
-      "======================================"
-    );
-
-    console.log(
-      `🌐 Port: ${PORT}`
-    );
-
-    console.log(
-      `📁 Public: ${PUBLIC_DIR}`
-    );
-
-    console.log(
-      `💾 Storage: ${DATA_FILE}`
-    );
-
-    console.log(
-      "🗄️ Database: NONE"
-    );
-
-    console.log(
-      "🔐 Key locking: BROWSER"
-    );
-
-    console.log(
-      `🔑 Keys: ${data.keys.length}`
-    );
-
-    console.log(
-      `📦 Stock: ${data.stock.length}`
-    );
-
-    console.log(
-      `👥 Sessions: ${data.sessions.length}`
-    );
-
-    console.log(
-      "======================================"
-    );
-
-    app.listen(
-      PORT,
-      "0.0.0.0",
-      () => {
-        console.log(
-          `🌐 Novi website running on port ${PORT}`
-        );
-      }
-    );
-  } catch (error) {
-    console.error(
-      "❌ FAILED TO START NOVI"
-    );
-
-    console.error(
-      error
-    );
-
-    process.exit(1);
-  }
+  );
 }
 
 start();
