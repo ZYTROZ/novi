@@ -1,11 +1,11 @@
 // =========================================================
-// LOAD ENVIRONMENT VARIABLES FIRST
+// NOVI - DISCORD BOT + API SERVER
 // =========================================================
 
 require("dotenv").config();
 
 // =========================================================
-// START NOVI WEBSITE / API SERVER
+// START NOVI SERVER
 // =========================================================
 
 require("./server.js");
@@ -34,6 +34,22 @@ const client = new Client({
 });
 
 // =========================================================
+// CONFIG
+// =========================================================
+
+const PORT =
+    process.env.PORT || 10000;
+
+const SERVER_URL =
+    `http://127.0.0.1:${PORT}`;
+
+const DISCORD_TOKEN =
+    process.env.DISCORD_TOKEN;
+
+const ADMIN_SECRET =
+    process.env.NOVI_ADMIN_SECRET;
+
+// =========================================================
 // ALLOWED ROLES
 // =========================================================
 
@@ -43,47 +59,39 @@ const ALLOWED_ROLE_IDS = [
 ];
 
 // =========================================================
-// NOVI API
-// =========================================================
-
-const SERVER_URL =
-    `http://127.0.0.1:${process.env.PORT || 10000}`;
-
-// =========================================================
-// ENVIRONMENT VARIABLES
-// =========================================================
-
-const DISCORD_TOKEN =
-    process.env.DISCORD_TOKEN;
-
-const ADMIN_SECRET =
-    process.env.NOVI_ADMIN_SECRET;
-
-// =========================================================
-// CONNECTION STATE
+// STATE
 // =========================================================
 
 let discordLoginStarted = false;
 
 // =========================================================
-// CHECK ENVIRONMENT
+// ENVIRONMENT CHECK
 // =========================================================
+
+console.log("================================");
+console.log("NOVI DISCORD STARTUP");
+console.log("================================");
+
+console.log(
+    "Token detected:",
+    Boolean(DISCORD_TOKEN)
+);
+
+console.log(
+    "Admin secret detected:",
+    Boolean(ADMIN_SECRET)
+);
+
+console.log(
+    "API:",
+    SERVER_URL
+);
+
+console.log("================================");
 
 if (!DISCORD_TOKEN) {
     console.error(
-        "================================"
-    );
-
-    console.error(
-        "DISCORD_TOKEN is missing."
-    );
-
-    console.error(
-        "Add DISCORD_TOKEN to Render Environment Variables."
-    );
-
-    console.error(
-        "================================"
+        "DISCORD_TOKEN is missing from Render Environment Variables."
     );
 
     process.exit(1);
@@ -91,137 +99,67 @@ if (!DISCORD_TOKEN) {
 
 if (!ADMIN_SECRET) {
     console.error(
-        "================================"
-    );
-
-    console.error(
-        "NOVI_ADMIN_SECRET is missing."
-    );
-
-    console.error(
-        "Add NOVI_ADMIN_SECRET to Render Environment Variables."
-    );
-
-    console.error(
-        "================================"
+        "NOVI_ADMIN_SECRET is missing from Render Environment Variables."
     );
 
     process.exit(1);
 }
 
 // =========================================================
-// DISCORD ERROR LOGGING
+// DISCORD EVENTS
 // =========================================================
 
-client.on(
-    "error",
-    (error) => {
-        console.error(
-            "================================"
-        );
+client.on("error", (error) => {
+    console.error("================================");
+    console.error("DISCORD CLIENT ERROR");
+    console.error(error);
+    console.error("================================");
+});
 
-        console.error(
-            "Discord client error:"
-        );
+client.on("warn", (warning) => {
+    console.warn(
+        "DISCORD WARNING:",
+        warning
+    );
+});
 
-        console.error(error);
+client.on("shardError", (error) => {
+    console.error("================================");
+    console.error("DISCORD SHARD ERROR");
+    console.error(error);
+    console.error("================================");
+});
 
-        console.error(
-            "================================"
-        );
-    }
-);
+client.on("shardDisconnect", (event) => {
+    console.warn("================================");
+    console.warn(
+        "DISCORD SHARD DISCONNECTED"
+    );
 
-client.on(
-    "warn",
-    (warning) => {
-        console.warn(
-            "Discord warning:",
-            warning
-        );
-    }
-);
+    console.warn(
+        "Code:",
+        event.code
+    );
 
-client.on(
-    "shardError",
-    (error) => {
-        console.error(
-            "================================"
-        );
+    console.warn(
+        "Reason:",
+        event.reason || "Unknown"
+    );
 
-        console.error(
-            "Discord gateway error:"
-        );
+    console.warn("================================");
+});
 
-        console.error(error);
-
-        console.error(
-            "================================"
-        );
-    }
-);
-
-client.on(
-    "shardDisconnect",
-    (event) => {
-        console.warn(
-            "================================"
-        );
-
-        console.warn(
-            `Discord disconnected. Code: ${event.code}`
-        );
-
-        if (event.reason) {
-            console.warn(
-                `Reason: ${event.reason}`
-            );
-        }
-
-        console.warn(
-            "discord.js will attempt to reconnect automatically."
-        );
-
-        console.warn(
-            "================================"
-        );
-    }
-);
-
-client.on(
-    "shardReconnecting",
-    () => {
-        console.log(
-            "================================"
-        );
-
-        console.log(
-            "Discord reconnecting..."
-        );
-
-        console.log(
-            "================================"
-        );
-    }
-);
+client.on("shardReconnecting", () => {
+    console.log(
+        "Discord shard reconnecting..."
+    );
+});
 
 client.on(
     "shardResume",
     (shardId, replayedEvents) => {
         console.log(
-            "================================"
-        );
-
-        console.log(
-            `Discord connection resumed. Shard: ${shardId}`
-        );
-
-        console.log(
-            `Replayed events: ${replayedEvents}`
-        );
-
-        console.log(
-            "================================"
+            `Discord shard ${shardId} resumed. Replayed events: ${replayedEvents}`
         );
     }
 );
@@ -230,55 +168,49 @@ client.on(
 // BOT READY
 // =========================================================
 
-client.once(
-    "ready",
-    () => {
-        console.log(
-            "================================"
-        );
+client.once("ready", () => {
+    console.log("");
+    console.log("================================");
+    console.log("DISCORD BOT IS ONLINE");
+    console.log("================================");
 
-        console.log(
-            "NOVI DISCORD BOT IS ONLINE"
-        );
+    console.log(
+        "Logged in as:",
+        client.user.tag
+    );
 
-        console.log(
-            `Logged in as: ${client.user.tag}`
-        );
+    console.log(
+        "Bot ID:",
+        client.user.id
+    );
 
-        console.log(
-            `Bot ID: ${client.user.id}`
-        );
+    console.log(
+        "Servers:",
+        client.guilds.cache.size
+    );
 
-        console.log(
-            `Servers: ${client.guilds.cache.size}`
-        );
+    console.log(
+        "API:",
+        SERVER_URL
+    );
 
-        console.log(
-            `Novi API: ${SERVER_URL}`
-        );
-
-        console.log(
-            "================================"
-        );
-    }
-);
+    console.log("================================");
+    console.log("");
+});
 
 // =========================================================
-// API HEADERS
+// ADMIN HEADERS
 // =========================================================
 
 function adminHeaders() {
     return {
-        "Content-Type":
-            "application/json",
-
-        "x-novi-admin-secret":
-            ADMIN_SECRET
+        "Content-Type": "application/json",
+        "x-novi-admin-secret": ADMIN_SECRET
     };
 }
 
 // =========================================================
-// CHECK PERMISSION
+// CHECK ROLE PERMISSION
 // =========================================================
 
 function hasPermission(message) {
@@ -295,17 +227,14 @@ function hasPermission(message) {
 }
 
 // =========================================================
-// COMMAND HANDLER
+// DISCORD COMMANDS
 // =========================================================
 
 client.on(
     "messageCreate",
     async (message) => {
 
-        // -----------------------------------------------------
         // Ignore bots
-        // -----------------------------------------------------
-
         if (message.author.bot) {
             return;
         }
@@ -333,14 +262,12 @@ client.on(
 
                 if (!message.member) {
                     return message.reply(
-                        "This command can only be used in a server."
+                        "This command can only be used inside a server."
                     );
                 }
 
                 if (
-                    !hasPermission(
-                        message
-                    )
+                    !hasPermission(message)
                 ) {
                     return message.reply(
                         "You don't have permission to generate keys."
@@ -363,13 +290,14 @@ client.on(
                         duration
                     )
                 ) {
+
                     return message.reply(
-                        "Usage: !gen 1d, !gen 3d, !gen 1week, !gen 1month, or !gen lifetime"
+                        "Usage: `!gen 1d`, `!gen 3d`, `!gen 1week`, `!gen 1month`, or `!gen lifetime`"
                     );
                 }
 
                 console.log(
-                    `Generating ${duration} key...`
+                    `Generating ${duration} key for ${message.author.tag}...`
                 );
 
                 try {
@@ -393,70 +321,62 @@ client.on(
                     ) {
 
                         console.error(
-                            "Novi server rejected key:",
+                            "Key generation rejected:",
                             response.data
                         );
 
                         return message.reply(
-                            `The server rejected the key.\n${
-                                response.data?.message ||
-                                "Unknown server error."
-                            }`
+                            response.data?.message ||
+                            "The server rejected the key."
                         );
                     }
 
-                    const generatedKey =
+                    const key =
                         response.data.key;
 
-                    if (!generatedKey) {
+                    if (!key) {
 
                         console.error(
-                            "Server created key but did not return the key:",
+                            "Server did not return a key:",
                             response.data
                         );
 
                         return message.reply(
-                            "The key was created, but the server did not return the key."
+                            "The server created the key but did not return it."
                         );
                     }
 
                     console.log(
-                        `Key successfully created: ${generatedKey}`
+                        `Key generated successfully: ${key}`
                     );
-
-                    const durationName =
-                        response.data.durationName ||
-                        duration;
 
                     return message.reply(
                         `**Novi Key Generated**\n\n` +
-                        `\`${generatedKey}\`\n\n` +
-                        `**Duration:** ${durationName}`
+                        `\`${key}\`\n\n` +
+                        `**Duration:** ${response.data.durationName || duration}`
                     );
 
                 } catch (error) {
 
                     console.error(
-                        "Novi API key error:",
+                        "Key generation error:",
                         error.response?.data ||
                         error.message
                     );
 
                     if (
-                        error.response?.status ===
-                        403
+                        error.response?.status === 403
                     ) {
                         return message.reply(
-                            "The bot is not authorized to access the Novi admin API."
+                            "The Discord bot is not authorized to use the Novi admin API."
                         );
                     }
 
                     if (
-                        error.response?.status ===
-                        503
+                        error.response?.status === 503
                     ) {
                         return message.reply(
-                            "The Novi admin secret is not configured on the server."
+                            "The Novi admin authentication is not configured correctly."
                         );
                     }
 
@@ -474,14 +394,12 @@ client.on(
 
                 if (!message.member) {
                     return message.reply(
-                        "This command can only be used in a server."
+                        "This command can only be used inside a server."
                     );
                 }
 
                 if (
-                    !hasPermission(
-                        message
-                    )
+                    !hasPermission(message)
                 ) {
                     return message.reply(
                         "You don't have permission to add stock."
@@ -491,7 +409,7 @@ client.on(
                 let items = [];
 
                 // -------------------------------------------------
-                // Items after !add
+                // Items directly after !add
                 // -------------------------------------------------
 
                 const commandItems =
@@ -515,25 +433,24 @@ client.on(
                 // -------------------------------------------------
 
                 if (
-                    message.attachments.size >
-                    0
+                    message.attachments.size > 0
                 ) {
 
                     const attachment =
                         message.attachments.first();
 
                     const filename =
-                        attachment.name
-                            ?.toLowerCase() ||
-                        "";
+                        (
+                            attachment.name ||
+                            ""
+                        ).toLowerCase();
 
                     if (
-                        !filename.endsWith(
-                            ".txt"
-                        )
+                        !filename.endsWith(".txt")
                     ) {
+
                         return message.reply(
-                            "The attachment must be a .txt file."
+                            "The attachment must be a `.txt` file."
                         );
                     }
 
@@ -554,17 +471,14 @@ client.on(
                             String(
                                 fileResponse.data
                             )
-                                .split(
-                                    /\r?\n/
-                                )
+                                .split(/\r?\n/)
                                 .map(
                                     (line) =>
                                         line.trim()
                                 )
                                 .filter(
                                     (line) =>
-                                        line.length >
-                                        0
+                                        line.length > 0
                                 );
 
                         items.push(
@@ -574,18 +488,18 @@ client.on(
                     } catch (error) {
 
                         console.error(
-                            "Could not read TXT file:",
+                            "TXT download error:",
                             error.message
                         );
 
                         return message.reply(
-                            "I couldn't read that .txt file."
+                            "I couldn't read the `.txt` file."
                         );
                     }
                 }
 
                 // -------------------------------------------------
-                // Nothing provided
+                // Nothing supplied
                 // -------------------------------------------------
 
                 if (
@@ -593,16 +507,13 @@ client.on(
                 ) {
 
                     return message.reply(
-                        "Nothing to add.\n\n" +
-                        "Use:\n" +
-                        "`!add CODE-123`\n\n" +
-                        "Or attach a `.txt` file with one item per line and type:\n" +
-                        "`!add`"
+                        "**Nothing to add.**\n\n" +
+                        "Use `!add ITEM` or attach a `.txt` file and type `!add`."
                     );
                 }
 
                 // -------------------------------------------------
-                // Remove duplicates from submission
+                // Remove duplicates
                 // -------------------------------------------------
 
                 items =
@@ -613,7 +524,7 @@ client.on(
                 let failed = 0;
 
                 // -------------------------------------------------
-                // Add each item
+                // Add items
                 // -------------------------------------------------
 
                 for (
@@ -629,31 +540,25 @@ client.on(
                                     item
                                 },
                                 {
-                                    timeout:
-                                        15000,
+                                    timeout: 15000,
                                     headers:
                                         adminHeaders()
                                 }
                             );
 
                         if (
-                            response.data &&
-                            response.data.success
+                            response.data?.success
                         ) {
 
                             added +=
                                 Number(
-                                    response
-                                        .data
-                                        .added ||
+                                    response.data.added ||
                                     0
                                 );
 
                             duplicates +=
                                 Number(
-                                    response
-                                        .data
-                                        .duplicates ||
+                                    response.data.duplicates ||
                                     0
                                 );
 
@@ -664,19 +569,18 @@ client.on(
 
                     } catch (error) {
 
+                        failed++;
+
                         console.error(
-                            `Failed to add stock item: ${item}`,
-                            error.response
-                                ?.data ||
+                            `Failed to add item: ${item}`,
+                            error.response?.data ||
                             error.message
                         );
-
-                        failed++;
                     }
                 }
 
                 // -------------------------------------------------
-                // Get stock count
+                // Get total stock
                 // -------------------------------------------------
 
                 let totalStock =
@@ -688,64 +592,54 @@ client.on(
                         await axios.get(
                             `${SERVER_URL}/api/admin/stock`,
                             {
-                                timeout:
-                                    10000,
+                                timeout: 10000,
                                 headers:
                                     adminHeaders()
                             }
                         );
 
                     if (
-                        stockResponse.data &&
-                        typeof stockResponse
-                            .data
-                            .count ===
-                            "number"
+                        typeof stockResponse.data?.count ===
+                        "number"
                     ) {
 
                         totalStock =
-                            stockResponse
-                                .data
-                                .count;
+                            stockResponse.data.count;
                     }
 
                 } catch (error) {
 
                     console.error(
-                        "Could not get stock count:",
-                        error.response
-                            ?.data ||
+                        "Stock count error:",
+                        error.response?.data ||
                         error.message
                     );
                 }
 
                 // -------------------------------------------------
-                // Result
+                // Send result
                 // -------------------------------------------------
 
-                let reply =
-                    `**Stock Added Successfully**\n\n` +
+                let result =
+                    `**Stock Update**\n\n` +
                     `**Added:** ${added}\n` +
                     `**Duplicates:** ${duplicates}\n` +
-                    `**Total stock:** ${totalStock}`;
+                    `**Total Stock:** ${totalStock}`;
 
-                if (
-                    failed > 0
-                ) {
-
-                    reply +=
+                if (failed > 0) {
+                    result +=
                         `\n**Failed:** ${failed}`;
                 }
 
                 return message.reply(
-                    reply
+                    result
                 );
             }
 
         } catch (error) {
 
             console.error(
-                "Discord command error:",
+                "Command handler error:",
                 error
             );
 
@@ -755,21 +649,13 @@ client.on(
                     "Something went wrong while processing that command."
                 );
 
-            } catch (
-                replyError
-            ) {
-
-                console.error(
-                    "Could not send error reply:",
-                    replyError.message
-                );
-            }
+            } catch {}
         }
     }
 );
 
 // =========================================================
-// DISCORD LOGIN
+// DISCORD CONNECTION
 // =========================================================
 
 async function startDiscord() {
@@ -779,7 +665,7 @@ async function startDiscord() {
     ) {
 
         console.log(
-            "Discord login has already been started."
+            "Discord login is already running."
         );
 
         return;
@@ -787,17 +673,10 @@ async function startDiscord() {
 
     discordLoginStarted = true;
 
-    console.log(
-        "================================"
-    );
-
-    console.log(
-        "NOVI DISCORD CONNECTION TEST"
-    );
-
-    console.log(
-        "================================"
-    );
+    console.log("");
+    console.log("================================");
+    console.log("NOVI DISCORD CONNECTION TEST");
+    console.log("================================");
 
     console.log(
         "Token detected:",
@@ -809,82 +688,263 @@ async function startDiscord() {
         DISCORD_TOKEN?.length || 0
     );
 
+    // =====================================================
+    // TEST 1 — DISCORD API
+    // =====================================================
+
+    console.log("");
     console.log(
-        "Connecting to Discord gateway..."
+        "TEST 1: Checking Discord API..."
+    );
+
+    try {
+
+        const gatewayResponse =
+            await axios.get(
+                "https://discord.com/api/v10/gateway",
+                {
+                    timeout: 10000
+                }
+            );
+
+        console.log(
+            "Discord API reachable: YES"
+        );
+
+        console.log(
+            "HTTP status:",
+            gatewayResponse.status
+        );
+
+        console.log(
+            "Gateway:",
+            gatewayResponse.data?.url ||
+            "Unknown"
+        );
+
+    } catch (error) {
+
+        console.error("");
+        console.error(
+            "================================"
+        );
+
+        console.error(
+            "DISCORD API CONNECTION FAILED"
+        );
+
+        console.error(
+            "Error code:",
+            error?.code ||
+            "Unknown"
+        );
+
+        console.error(
+            "Error message:",
+            error?.message ||
+            "Unknown"
+        );
+
+        console.error(
+            "================================"
+        );
+
+        discordLoginStarted =
+            false;
+
+        console.log(
+            "Retrying in 15 seconds..."
+        );
+
+        setTimeout(() => {
+            startDiscord().catch(
+                console.error
+            );
+        }, 15000);
+
+        return;
+    }
+
+    // =====================================================
+    // TEST 2 — BOT TOKEN
+    // =====================================================
+
+    console.log("");
+    console.log(
+        "TEST 2: Checking Discord bot token..."
+    );
+
+    try {
+
+        const userResponse =
+            await axios.get(
+                "https://discord.com/api/v10/users/@me",
+                {
+                    timeout: 10000,
+                    headers: {
+                        Authorization:
+                            `Bot ${DISCORD_TOKEN}`
+                    }
+                }
+            );
+
+        console.log(
+            "Discord bot token accepted: YES"
+        );
+
+        console.log(
+            "Bot username:",
+            userResponse.data?.username ||
+            "Unknown"
+        );
+
+        console.log(
+            "Bot ID:",
+            userResponse.data?.id ||
+            "Unknown"
+        );
+
+    } catch (error) {
+
+        console.error("");
+        console.error(
+            "================================"
+        );
+
+        console.error(
+            "DISCORD BOT TOKEN TEST FAILED"
+        );
+
+        console.error(
+            "HTTP status:",
+            error.response?.status ||
+            "Unknown"
+        );
+
+        console.error(
+            "Error code:",
+            error?.code ||
+            "Unknown"
+        );
+
+        console.error(
+            "Error message:",
+            error?.message ||
+            "Unknown"
+        );
+
+        if (
+            error.response?.status === 401
+        ) {
+
+            console.error(
+                "THE DISCORD TOKEN IS INVALID OR EXPIRED."
+            );
+
+            console.error(
+                "Generate a new bot token in the Discord Developer Portal and update Render's DISCORD_TOKEN."
+            );
+        }
+
+        console.error(
+            "================================"
+        );
+
+        discordLoginStarted =
+            false;
+
+        console.log(
+            "Retrying in 15 seconds..."
+        );
+
+        setTimeout(() => {
+            startDiscord().catch(
+                console.error
+            );
+        }, 15000);
+
+        return;
+    }
+
+    // =====================================================
+    // TEST 3 — DISCORD.JS GATEWAY
+    // =====================================================
+
+    console.log("");
+    console.log(
+        "TEST 3: Connecting through discord.js..."
+    );
+
+    console.log(
+        "Discord API works."
+    );
+
+    console.log(
+        "Bot token works."
+    );
+
+    console.log(
+        "Starting Gateway connection..."
     );
 
     console.log(
         "================================"
     );
 
-    // ---------------------------------------------------------
-    // 30 SECOND LOGIN TIMEOUT
-    // ---------------------------------------------------------
-
     const loginTimeout =
-        setTimeout(
-            () => {
+        setTimeout(() => {
 
-                console.error(
-                    "================================"
-                );
+            console.error("");
+            console.error(
+                "================================"
+            );
 
-                console.error(
-                    "DISCORD LOGIN TIMEOUT"
-                );
+            console.error(
+                "DISCORD.JS LOGIN TIMEOUT"
+            );
 
-                console.error(
-                    "Discord did not complete the gateway connection within 30 seconds."
-                );
+            console.error(
+                "Discord API is reachable."
+            );
 
-                console.error(
-                    "This usually points to the Discord token, gateway connection, or Discord configuration."
-                );
+            console.error(
+                "The bot token was accepted."
+            );
 
-                console.error(
-                    "================================"
-                );
+            console.error(
+                "The problem is happening during the Discord Gateway connection."
+            );
 
-                discordLoginStarted =
-                    false;
+            console.error(
+                "================================"
+            );
 
-                try {
+            discordLoginStarted =
+                false;
 
-                    client.destroy();
+            try {
+                client.destroy();
+            } catch {}
 
-                } catch (error) {
+            console.log(
+                "Retrying Discord connection in 15 seconds..."
+            );
 
-                    console.error(
-                        "Error destroying Discord client:",
-                        error.message
-                    );
-                }
+            setTimeout(() => {
 
-                console.log(
-                    "Retrying Discord connection in 15 seconds..."
-                );
-
-                setTimeout(
-                    () => {
-
-                        startDiscord()
-                            .catch(
-                                (retryError) => {
-
-                                    console.error(
-                                        "Discord retry error:",
-                                        retryError
-                                    );
-                                }
+                startDiscord()
+                    .catch(
+                        (error) => {
+                            console.error(
+                                "Discord retry error:",
+                                error
                             );
+                        }
+                    );
 
-                    },
-                    15000
-                );
+            }, 15000);
 
-            },
-            30000
-        );
+        }, 30000);
 
     try {
 
@@ -896,6 +956,7 @@ async function startDiscord() {
             loginTimeout
         );
 
+        console.log("");
         console.log(
             "================================"
         );
@@ -921,6 +982,7 @@ async function startDiscord() {
         console.log(
             "================================"
         );
+        console.log("");
 
     } catch (error) {
 
@@ -928,12 +990,13 @@ async function startDiscord() {
             loginTimeout
         );
 
+        console.error("");
         console.error(
             "================================"
         );
 
         console.error(
-            "DISCORD LOGIN FAILED"
+            "DISCORD.JS LOGIN FAILED"
         );
 
         console.error(
@@ -962,32 +1025,28 @@ async function startDiscord() {
             false;
 
         try {
-
             client.destroy();
-
         } catch {}
 
         console.log(
             "Retrying Discord connection in 15 seconds..."
         );
 
-        setTimeout(
-            () => {
+        setTimeout(() => {
 
-                startDiscord()
-                    .catch(
-                        (retryError) => {
+            startDiscord()
+                .catch(
+                    (retryError) => {
 
-                            console.error(
-                                "Discord retry error:",
-                                retryError
-                            );
-                        }
-                    );
+                        console.error(
+                            "Discord retry error:",
+                            retryError
+                        );
 
-            },
-            15000
-        );
+                    }
+                );
+
+        }, 15000);
     }
 }
 
@@ -1000,9 +1059,10 @@ process.on(
     (error) => {
 
         console.error(
-            "Unhandled promise rejection:",
-            error
+            "UNHANDLED PROMISE REJECTION:"
         );
+
+        console.error(error);
     }
 );
 
@@ -1011,14 +1071,15 @@ process.on(
     (error) => {
 
         console.error(
-            "Uncaught exception:",
-            error
+            "UNCAUGHT EXCEPTION:"
         );
+
+        console.error(error);
     }
 );
 
 // =========================================================
-// START DISCORD
+// START
 // =========================================================
 
 startDiscord();
