@@ -4,36 +4,74 @@ console.log("======================================");
 console.log("           STARTING NOVI");
 console.log("======================================");
 
-const app = spawn(process.execPath, ["index.js"], {
+// ============================================================
+// START WEBSITE
+// ============================================================
+
+const website = spawn(process.execPath, ["index.js"], {
   stdio: "inherit",
-  env: {
-    ...process.env,
-    NODE_ENV: process.env.NODE_ENV || "production",
-  },
+  env: process.env,
 });
 
-app.on("error", (err) => {
-  console.error("Failed to start Novi:");
+// ============================================================
+// START DISCORD BOT
+// ============================================================
+
+const bot = spawn(process.execPath, ["bot.js"], {
+  stdio: "inherit",
+  env: process.env,
+});
+
+// ============================================================
+// ERROR HANDLING
+// ============================================================
+
+website.on("error", (err) => {
+  console.error("Failed to start website:");
   console.error(err);
   process.exit(1);
 });
 
-app.on("close", (code, signal) => {
+bot.on("error", (err) => {
+  console.error("Failed to start Discord bot:");
+  console.error(err);
+  process.exit(1);
+});
+
+// ============================================================
+// PROCESS EXIT
+// ============================================================
+
+website.on("exit", (code, signal) => {
   if (signal) {
-    console.log(`Novi stopped because of signal: ${signal}`);
-    process.exit(1);
+    console.log(`Website stopped because of signal: ${signal}`);
+  } else {
+    console.log(`Website exited with code: ${code}`);
   }
-
-  console.log(`Novi exited with code: ${code}`);
-  process.exit(code ?? 1);
 });
 
-// Forward termination signals from Render to the Node process
-process.on("SIGTERM", () => {
-  console.log("Received SIGTERM, stopping Novi...");
-  app.kill("SIGTERM");
+bot.on("exit", (code, signal) => {
+  if (signal) {
+    console.log(`Discord bot stopped because of signal: ${signal}`);
+  } else {
+    console.log(`Discord bot exited with code: ${code}`);
+  }
 });
 
-process.on("SIGINT", () => {
-  console.log("Received SIGINT, stopping Novi...");
-  app.kill("SIGINT");
+// ============================================================
+// RENDER SHUTDOWN
+// ============================================================
+
+function shutdown(signal) {
+  console.log(`Received ${signal}. Shutting down Novi...`);
+
+  website.kill(signal);
+  bot.kill(signal);
+
+  setTimeout(() => {
+    process.exit(0);
+  }, 5000);
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
