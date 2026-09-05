@@ -1,18 +1,5 @@
-// =========================================================
-// NOVI - DISCORD BOT + API SERVER
-// =========================================================
-
 require("dotenv").config();
-
-// =========================================================
-// START NOVI SERVER
-// =========================================================
-
 require("./server.js");
-
-// =========================================================
-// IMPORTS
-// =========================================================
 
 const {
     Client,
@@ -21,12 +8,11 @@ const {
 
 const axios = require("axios");
 
-// =========================================================
+// =====================================================
 // CONFIG
-// =========================================================
+// =====================================================
 
-const PORT =
-    process.env.PORT || 10000;
+const PORT = process.env.PORT || 10000;
 
 const SERVER_URL =
     `http://127.0.0.1:${PORT}`;
@@ -37,9 +23,9 @@ const DISCORD_TOKEN =
 const ADMIN_SECRET =
     process.env.NOVI_ADMIN_SECRET;
 
-// =========================================================
+// =====================================================
 // DISCORD CLIENT
-// =========================================================
+// =====================================================
 
 const client = new Client({
     intents: [
@@ -49,25 +35,20 @@ const client = new Client({
     ]
 });
 
-// =========================================================
-// ALLOWED ROLES
-// =========================================================
+// =====================================================
+// ALLOWED ROLE IDS
+// =====================================================
 
 const ALLOWED_ROLE_IDS = [
     "1529705570209366167",
     "1378500563456626719"
 ];
 
-// =========================================================
-// STATE
-// =========================================================
-
-let discordLoginStarted = false;
-
-// =========================================================
+// =====================================================
 // STARTUP LOG
-// =========================================================
+// =====================================================
 
+console.log("");
 console.log("================================");
 console.log("NOVI DISCORD STARTUP");
 console.log("================================");
@@ -88,129 +69,89 @@ console.log(
 );
 
 console.log("================================");
+console.log("");
 
-// =========================================================
+// =====================================================
 // ENVIRONMENT CHECK
-// =========================================================
+// =====================================================
 
 if (!DISCORD_TOKEN) {
-
-    console.error(
-        "DISCORD_TOKEN is missing."
-    );
-
+    console.error("DISCORD_TOKEN is missing.");
     console.error(
         "Add DISCORD_TOKEN to Render Environment Variables."
     );
-
     process.exit(1);
 }
 
 if (!ADMIN_SECRET) {
-
-    console.error(
-        "NOVI_ADMIN_SECRET is missing."
-    );
-
+    console.error("NOVI_ADMIN_SECRET is missing.");
     console.error(
         "Add NOVI_ADMIN_SECRET to Render Environment Variables."
     );
-
     process.exit(1);
 }
 
-// =========================================================
-// DISCORD ERROR EVENTS
-// =========================================================
+// =====================================================
+// DISCORD DEBUG
+// =====================================================
 
-client.on(
-    "error",
-    (error) => {
+client.on("debug", (info) => {
+    console.log("[DISCORD DEBUG]", info);
+});
 
-        console.error(
-            "================================"
-        );
+// =====================================================
+// DISCORD ERRORS
+// =====================================================
 
-        console.error(
-            "DISCORD CLIENT ERROR"
-        );
+client.on("error", (error) => {
+    console.error("");
+    console.error("================================");
+    console.error("DISCORD CLIENT ERROR");
+    console.error("================================");
+    console.error(error);
+    console.error("================================");
+});
 
-        console.error(error);
+client.on("warn", (warning) => {
+    console.warn(
+        "[DISCORD WARNING]",
+        warning
+    );
+});
 
-        console.error(
-            "================================"
-        );
-    }
-);
+client.on("shardError", (error) => {
+    console.error("");
+    console.error("================================");
+    console.error("DISCORD SHARD ERROR");
+    console.error("================================");
+    console.error(error);
+    console.error("================================");
+});
 
-client.on(
-    "warn",
-    (warning) => {
+client.on("shardDisconnect", (event) => {
+    console.warn("");
+    console.warn("================================");
+    console.warn("DISCORD SHARD DISCONNECTED");
+    console.warn("================================");
 
-        console.warn(
-            "DISCORD WARNING:",
-            warning
-        );
-    }
-);
+    console.warn(
+        "Code:",
+        event.code
+    );
 
-client.on(
-    "shardError",
-    (error) => {
+    console.warn(
+        "Reason:",
+        event.reason || "Unknown"
+    );
 
-        console.error(
-            "================================"
-        );
+    console.warn("================================");
+});
 
-        console.error(
-            "DISCORD SHARD ERROR"
-        );
-
-        console.error(error);
-
-        console.error(
-            "================================"
-        );
-    }
-);
-
-client.on(
-    "shardDisconnect",
-    (event) => {
-
-        console.warn(
-            "================================"
-        );
-
-        console.warn(
-            "DISCORD SHARD DISCONNECTED"
-        );
-
-        console.warn(
-            "Code:",
-            event.code
-        );
-
-        console.warn(
-            "Reason:",
-            event.reason || "Unknown"
-        );
-
-        console.warn(
-            "================================"
-        );
-    }
-);
-
-client.on(
-    "shardReconnecting",
-    () => {
-
-        console.log(
-            "Discord shard reconnecting..."
-        );
-    }
-);
+client.on("shardReconnecting", () => {
+    console.log(
+        "Discord shard reconnecting..."
+    );
+});
 
 client.on(
     "shardResume",
@@ -226,58 +167,44 @@ client.on(
     }
 );
 
-// =========================================================
+// =====================================================
 // BOT READY
-// =========================================================
+// =====================================================
 
-client.once(
-    "ready",
-    () => {
+client.once("ready", () => {
 
-        console.log("");
-        console.log(
-            "================================"
-        );
+    console.log("");
+    console.log("================================");
+    console.log("DISCORD BOT IS ONLINE");
+    console.log("================================");
 
-        console.log(
-            "DISCORD BOT IS ONLINE"
-        );
+    console.log(
+        "Logged in as:",
+        client.user.tag
+    );
 
-        console.log(
-            "================================"
-        );
+    console.log(
+        "Bot ID:",
+        client.user.id
+    );
 
-        console.log(
-            "Logged in as:",
-            client.user.tag
-        );
+    console.log(
+        "Servers:",
+        client.guilds.cache.size
+    );
 
-        console.log(
-            "Bot ID:",
-            client.user.id
-        );
+    console.log(
+        "API:",
+        SERVER_URL
+    );
 
-        console.log(
-            "Servers:",
-            client.guilds.cache.size
-        );
+    console.log("================================");
+    console.log("");
+});
 
-        console.log(
-            "API:",
-            SERVER_URL
-        );
-
-        console.log(
-            "================================"
-        );
-
-        console.log("");
-    }
-);
-
-// =========================================================
+// =====================================================
 // ADMIN HEADERS
-// =========================================================
+// =====================================================
 
 function adminHeaders() {
 
@@ -290,9 +217,9 @@ function adminHeaders() {
     };
 }
 
-// =========================================================
-// ROLE PERMISSION
-// =========================================================
+// =====================================================
+// ROLE PERMISSION CHECK
+// =====================================================
 
 function hasPermission(message) {
 
@@ -308,15 +235,14 @@ function hasPermission(message) {
     );
 }
 
-// =========================================================
-// MESSAGE COMMANDS
-// =========================================================
+// =====================================================
+// MESSAGE HANDLER
+// =====================================================
 
 client.on(
     "messageCreate",
     async (message) => {
 
-        // Ignore bots
         if (message.author.bot) {
             return;
         }
@@ -381,7 +307,7 @@ client.on(
                 }
 
                 console.log(
-                    `Generating ${duration} key for ${message.author.tag}...`
+                    `[GEN] ${message.author.tag} requested ${duration}`
                 );
 
                 try {
@@ -400,12 +326,11 @@ client.on(
                         );
 
                     if (
-                        !response.data ||
-                        !response.data.success
+                        !response.data?.success
                     ) {
 
                         console.error(
-                            "Key generation rejected:",
+                            "[GEN] Server rejected request:",
                             response.data
                         );
 
@@ -421,7 +346,7 @@ client.on(
                     if (!key) {
 
                         console.error(
-                            "Server did not return a key:",
+                            "[GEN] No key returned:",
                             response.data
                         );
 
@@ -431,7 +356,7 @@ client.on(
                     }
 
                     console.log(
-                        "Key generated successfully."
+                        `[GEN] Key generated: ${key}`
                     );
 
                     return message.reply(
@@ -446,17 +371,18 @@ client.on(
                 } catch (error) {
 
                     console.error(
-                        "Key generation error:",
+                        "[GEN] Error:",
                         error.response?.data ||
                         error.message
                     );
 
                     if (
+                        error.response?.status === 401 ||
                         error.response?.status === 403
                     ) {
 
                         return message.reply(
-                            "The Discord bot is not authorized to use the Novi admin API."
+                            "Novi admin authentication failed."
                         );
                     }
 
@@ -465,7 +391,7 @@ client.on(
                     ) {
 
                         return message.reply(
-                            "The Novi admin authentication is not configured correctly."
+                            "Novi admin authentication is not configured correctly."
                         );
                     }
 
@@ -499,9 +425,9 @@ client.on(
 
                 let items = [];
 
-                // -------------------------------------------------
-                // Direct items
-                // -------------------------------------------------
+                // =================================================
+                // DIRECT ITEMS
+                // =================================================
 
                 const commandItems =
                     args
@@ -519,9 +445,9 @@ client.on(
                     ...commandItems
                 );
 
-                // -------------------------------------------------
-                // TXT attachment
-                // -------------------------------------------------
+                // =================================================
+                // TXT FILE
+                // =================================================
 
                 if (
                     message.attachments.size > 0
@@ -546,6 +472,10 @@ client.on(
                     }
 
                     try {
+
+                        console.log(
+                            `[ADD] Downloading ${attachment.name}`
+                        );
 
                         const fileResponse =
                             await axios.get(
@@ -581,7 +511,7 @@ client.on(
                     } catch (error) {
 
                         console.error(
-                            "TXT download error:",
+                            "[ADD] TXT error:",
                             error.message
                         );
 
@@ -591,9 +521,9 @@ client.on(
                     }
                 }
 
-                // -------------------------------------------------
-                // Nothing supplied
-                // -------------------------------------------------
+                // =================================================
+                // NOTHING TO ADD
+                // =================================================
 
                 if (
                     items.length === 0
@@ -605,20 +535,24 @@ client.on(
                     );
                 }
 
-                // -------------------------------------------------
-                // Remove duplicates
-                // -------------------------------------------------
+                // =================================================
+                // REMOVE DUPLICATES FROM REQUEST
+                // =================================================
 
                 items =
                     [...new Set(items)];
+
+                console.log(
+                    `[ADD] Processing ${items.length} items`
+                );
 
                 let added = 0;
                 let duplicates = 0;
                 let failed = 0;
 
-                // -------------------------------------------------
-                // Add stock
-                // -------------------------------------------------
+                // =================================================
+                // ADD EACH ITEM
+                // =================================================
 
                 for (
                     const item of items
@@ -666,16 +600,16 @@ client.on(
                         failed++;
 
                         console.error(
-                            "Failed to add stock item:",
+                            "[ADD] Item failed:",
                             error.response?.data ||
                             error.message
                         );
                     }
                 }
 
-                // -------------------------------------------------
-                // Get stock count
-                // -------------------------------------------------
+                // =================================================
+                // GET TOTAL STOCK
+                // =================================================
 
                 let totalStock =
                     "Unknown";
@@ -705,15 +639,15 @@ client.on(
                 } catch (error) {
 
                     console.error(
-                        "Stock count error:",
+                        "[ADD] Stock count error:",
                         error.response?.data ||
                         error.message
                     );
                 }
 
-                // -------------------------------------------------
-                // Result
-                // -------------------------------------------------
+                // =================================================
+                // RESULT
+                // =================================================
 
                 let result =
                     `**Stock Update**\n\n` +
@@ -737,7 +671,7 @@ client.on(
         } catch (error) {
 
             console.error(
-                "Command handler error:",
+                "[MESSAGE HANDLER ERROR]",
                 error
             );
 
@@ -752,38 +686,62 @@ client.on(
     }
 );
 
-// =========================================================
-// DISCORD LOGIN
-// =========================================================
+// =====================================================
+// PROCESS ERROR HANDLING
+// =====================================================
+
+process.on(
+    "unhandledRejection",
+    (error) => {
+
+        console.error("");
+        console.error(
+            "================================"
+        );
+
+        console.error(
+            "UNHANDLED PROMISE REJECTION"
+        );
+
+        console.error(error);
+
+        console.error(
+            "================================"
+        );
+    }
+);
+
+process.on(
+    "uncaughtException",
+    (error) => {
+
+        console.error("");
+        console.error(
+            "================================"
+        );
+
+        console.error(
+            "UNCAUGHT EXCEPTION"
+        );
+
+        console.error(error);
+
+        console.error(
+            "================================"
+        );
+    }
+);
+
+// =====================================================
+// START DISCORD
+// =====================================================
 
 async function startDiscord() {
 
-    if (
-        discordLoginStarted
-    ) {
-
-        console.log(
-            "Discord login already started."
-        );
-
-        return;
-    }
-
-    discordLoginStarted =
-        true;
-
     console.log("");
-    console.log(
-        "================================"
-    );
-
-    console.log(
-        "NOVI DISCORD CONNECTION"
-    );
-
-    console.log(
-        "================================"
-    );
+    console.log("================================");
+    console.log("CONNECTING TO DISCORD");
+    console.log("================================");
 
     console.log(
         "Token detected:",
@@ -792,160 +750,24 @@ async function startDiscord() {
 
     console.log(
         "Token length:",
-        DISCORD_TOKEN?.length || 0
+        DISCORD_TOKEN.length
     );
 
-    // =====================================================
-    // TEST BOT TOKEN ONCE
-    // =====================================================
-
-    console.log("");
     console.log(
-        "Checking Discord bot authentication..."
+        "Connecting through Discord Gateway..."
     );
+
+    console.log("================================");
+    console.log("");
 
     try {
 
-        const response =
-            await axios.get(
-                "https://discord.com/api/v10/users/@me",
-                {
-                    timeout: 10000,
-
-                    headers: {
-                        Authorization:
-                            `Bot ${DISCORD_TOKEN}`
-                    }
-                }
-            );
-
-        console.log(
-            "Discord authentication: SUCCESS"
-        );
-
-        console.log(
-            "Bot username:",
-            response.data?.username ||
-            "Unknown"
-        );
-
-        console.log(
-            "Bot ID:",
-            response.data?.id ||
-            "Unknown"
-        );
-
-    } catch (error) {
-
-        console.error("");
-        console.error(
-            "================================"
-        );
-
-        console.error(
-            "DISCORD AUTHENTICATION FAILED"
-        );
-
-        console.error(
-            "HTTP status:",
-            error.response?.status ||
-            "Unknown"
-        );
-
-        console.error(
-            "Error code:",
-            error.code ||
-            "Unknown"
-        );
-
-        console.error(
-            "Error message:",
-            error.message ||
-            "Unknown"
-        );
-
-        if (
-            error.response?.status === 401
-        ) {
-
-            console.error(
-                "THE DISCORD TOKEN IS INVALID OR EXPIRED."
-            );
-        }
-
-        if (
-            error.response?.status === 429
-        ) {
-
-            console.error(
-                "DISCORD RATE LIMITED THE REQUEST."
-            );
-
-            console.error(
-                "Do not repeatedly restart/deploy the service."
-            );
-        }
-
-        console.error(
-            "================================"
-        );
-
-        discordLoginStarted =
-            false;
-
-        return;
-    }
-
-    // =====================================================
-    // ACTUAL DISCORD.JS LOGIN
-    // =====================================================
-
-    console.log("");
-    console.log(
-        "Discord API authentication works."
-    );
-
-    console.log(
-        "Connecting to Discord Gateway..."
-    );
-
-    console.log(
-        "================================"
-    );
-
-    try {
+        discordLoginStarted = true;
 
         await client.login(
             DISCORD_TOKEN
         );
 
-        console.log("");
-        console.log(
-            "================================"
-        );
-
-        console.log(
-            "DISCORD LOGIN SUCCESSFUL"
-        );
-
-        console.log(
-            `Logged in as: ${
-                client.user?.tag ||
-                "Unknown"
-            }`
-        );
-
-        console.log(
-            `Bot ID: ${
-                client.user?.id ||
-                "Unknown"
-            }`
-        );
-
-        console.log(
-            "================================"
-        );
-
     } catch (error) {
 
         console.error("");
@@ -954,7 +776,7 @@ async function startDiscord() {
         );
 
         console.error(
-            "DISCORD.JS LOGIN FAILED"
+            "DISCORD LOGIN FAILED"
         );
 
         console.error(
@@ -979,53 +801,17 @@ async function startDiscord() {
             "================================"
         );
 
-        discordLoginStarted =
-            false;
+        discordLoginStarted = false;
 
         try {
             client.destroy();
         } catch {}
 
-        console.error(
-            "Discord login failed."
-        );
-
-        console.error(
-            "Fix the error above before restarting the service."
-        );
     }
 }
 
-// =========================================================
-// PROCESS ERROR HANDLING
-// =========================================================
-
-process.on(
-    "unhandledRejection",
-    (error) => {
-
-        console.error(
-            "UNHANDLED PROMISE REJECTION:"
-        );
-
-        console.error(error);
-    }
-);
-
-process.on(
-    "uncaughtException",
-    (error) => {
-
-        console.error(
-            "UNCAUGHT EXCEPTION:"
-        );
-
-        console.error(error);
-    }
-);
-
-// =========================================================
-// START DISCORD
-// =========================================================
+// =====================================================
+// START
+// =====================================================
 
 startDiscord();
