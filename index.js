@@ -78,23 +78,20 @@ function createSession(keyId, expiresAt) {
 
   sessions.set(token, {
     keyId,
-    expiresAt:
-      expiresAt ?? null,
+    expiresAt: expiresAt ?? null,
   });
 
   return token;
 }
 
 function getSession(req) {
-  const token =
-    req.headers["x-novi-session"];
+  const token = req.headers["x-novi-session"];
 
   if (!token) {
     return null;
   }
 
-  const session =
-    sessions.get(token);
+  const session = sessions.get(token);
 
   if (!session) {
     return null;
@@ -102,8 +99,7 @@ function getSession(req) {
 
   if (
     session.expiresAt !== null &&
-    Date.now() >=
-      Number(session.expiresAt)
+    Date.now() >= Number(session.expiresAt)
   ) {
     sessions.delete(token);
     return null;
@@ -115,13 +111,8 @@ function getSession(req) {
   };
 }
 
-function requireSession(
-  req,
-  res,
-  next
-) {
-  const session =
-    getSession(req);
+function requireSession(req, res, next) {
+  const session = getSession(req);
 
   if (!session) {
     return res.status(401).json({
@@ -141,11 +132,10 @@ function requireSession(
 // ============================================================
 
 function generateKey() {
-  const random =
-    crypto
-      .randomBytes(12)
-      .toString("hex")
-      .toUpperCase();
+  const random = crypto
+    .randomBytes(12)
+    .toString("hex")
+    .toUpperCase();
 
   return `NOVI-${random.slice(
     0,
@@ -176,24 +166,16 @@ function normalizeLogin(item) {
     };
   }
 
-  if (
-    typeof item === "object"
-  ) {
+  if (typeof item === "object") {
     return {
-      email: String(
-        item.email || ""
-      ),
-      password: String(
-        item.password || ""
-      ),
+      email: String(item.email || ""),
+      password: String(item.password || ""),
     };
   }
 
-  const value =
-    String(item);
+  const value = String(item);
 
-  const separator =
-    value.indexOf(":");
+  const separator = value.indexOf(":");
 
   if (separator === -1) {
     return {
@@ -203,19 +185,12 @@ function normalizeLogin(item) {
   }
 
   return {
-    email: value.slice(
-      0,
-      separator
-    ),
-    password: value.slice(
-      separator + 1
-    ),
+    email: value.slice(0, separator),
+    password: value.slice(separator + 1),
   };
 }
 
-function isExpired(
-  expiresAt
-) {
+function isExpired(expiresAt) {
   if (
     expiresAt === null ||
     expiresAt === undefined
@@ -223,18 +198,13 @@ function isExpired(
     return false;
   }
 
-  const timestamp =
-    Number(expiresAt);
+  const timestamp = Number(expiresAt);
 
-  if (
-    !Number.isFinite(timestamp)
-  ) {
+  if (!Number.isFinite(timestamp)) {
     return false;
   }
 
-  return (
-    Date.now() >= timestamp
-  );
+  return Date.now() >= timestamp;
 }
 
 // ============================================================
@@ -272,27 +242,20 @@ const DURATION_MS = {
   lifetime: null,
 };
 
-function normalizeDuration(
-  input
-) {
+function normalizeDuration(input) {
   if (!input) {
     return null;
   }
 
-  const value =
-    String(input)
-      .toLowerCase()
-      .trim();
+  const value = String(input)
+    .toLowerCase()
+    .trim();
 
-  if (
-    value === "1d"
-  ) {
+  if (value === "1d") {
     return "1d";
   }
 
-  if (
-    value === "3d"
-  ) {
+  if (value === "3d") {
     return "3d";
   }
 
@@ -310,9 +273,7 @@ function normalizeDuration(
     return "1mo";
   }
 
-  if (
-    value === "lifetime"
-  ) {
+  if (value === "lifetime") {
     return "lifetime";
   }
 
@@ -323,11 +284,8 @@ function normalizeDuration(
 // DATABASE TYPE VARIABLES
 // ============================================================
 
-let stockCreatedAtType =
-  "timestamp";
-
-let savedCreatedAtType =
-  "timestamp";
+let stockCreatedAtType = "timestamp";
+let savedCreatedAtType = "timestamp";
 
 // ============================================================
 // CLEAN SAVED ITEMS TABLE
@@ -347,40 +305,30 @@ async function cleanSavedLoginTable() {
     )
   `);
 
-  const allowedColumns =
-    new Set([
-      "id",
-      "email",
-      "password",
-      "created_at",
-    ]);
+  const allowedColumns = new Set([
+    "id",
+    "email",
+    "password",
+    "created_at",
+  ]);
 
-  const columnsResult =
-    await pool.query(`
-      SELECT column_name
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'novi_saved_items'
-      ORDER BY ordinal_position
-    `);
+  const columnsResult = await pool.query(`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'novi_saved_items'
+    ORDER BY ordinal_position
+  `);
 
   const columnsToRemove =
     columnsResult.rows
-      .map(
-        row =>
-          row.column_name
-      )
+      .map(row => row.column_name)
       .filter(
         column =>
-          !allowedColumns.has(
-            column
-          )
+          !allowedColumns.has(column)
       );
 
-  for (
-    const column of
-      columnsToRemove
-  ) {
+  for (const column of columnsToRemove) {
     const safeColumn =
       `"${column.replace(
         /"/g,
@@ -428,26 +376,22 @@ async function cleanSavedLoginTable() {
     ALTER COLUMN created_at DROP NOT NULL
   `);
 
-  const finalResult =
-    await pool.query(`
-      SELECT
-        column_name,
-        data_type,
-        is_nullable
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'novi_saved_items'
-      ORDER BY ordinal_position
-    `);
+  const finalResult = await pool.query(`
+    SELECT
+      column_name,
+      data_type,
+      is_nullable
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'novi_saved_items'
+    ORDER BY ordinal_position
+  `);
 
   console.log(
     "📋 Final novi_saved_items structure:"
   );
 
-  for (
-    const row of
-      finalResult.rows
-  ) {
+  for (const row of finalResult.rows) {
     console.log(
       `   ${row.column_name} | ${row.data_type} | nullable=${row.is_nullable}`
     );
@@ -463,24 +407,20 @@ async function cleanSavedLoginTable() {
 // ============================================================
 
 async function fixDurationColumn() {
-  const result =
-    await pool.query(`
-      SELECT data_type
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'novi_keys'
-        AND column_name = 'duration'
-      LIMIT 1
-    `);
+  const result = await pool.query(`
+    SELECT data_type
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'novi_keys'
+      AND column_name = 'duration'
+    LIMIT 1
+  `);
 
-  if (
-    result.rows.length === 0
-  ) {
+  if (result.rows.length === 0) {
     return;
   }
 
-  const dataType =
-    result.rows[0].data_type;
+  const dataType = result.rows[0].data_type;
 
   if (
     dataType === "bigint" ||
@@ -525,28 +465,22 @@ async function fixDurationColumn() {
 // ============================================================
 
 async function detectDatabaseTypes() {
-  const result =
-    await pool.query(`
-      SELECT
-        table_name,
-        data_type
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name IN (
-          'novi_stock_items',
-          'novi_saved_items'
-        )
-        AND column_name = 'created_at'
-    `);
-
-  for (
-    const row of
-      result.rows
-  ) {
-    const type =
-      row.data_type.includes(
-        "timestamp"
+  const result = await pool.query(`
+    SELECT
+      table_name,
+      data_type
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name IN (
+        'novi_stock_items',
+        'novi_saved_items'
       )
+      AND column_name = 'created_at'
+  `);
+
+  for (const row of result.rows) {
+    const type =
+      row.data_type.includes("timestamp")
         ? "timestamp"
         : "bigint";
 
@@ -554,16 +488,14 @@ async function detectDatabaseTypes() {
       row.table_name ===
       "novi_stock_items"
     ) {
-      stockCreatedAtType =
-        type;
+      stockCreatedAtType = type;
     }
 
     if (
       row.table_name ===
       "novi_saved_items"
     ) {
-      savedCreatedAtType =
-        type;
+      savedCreatedAtType = type;
     }
   }
 
@@ -682,9 +614,7 @@ app.get(
   "/api/health",
   async (req, res) => {
     try {
-      await pool.query(
-        "SELECT 1"
-      );
+      await pool.query("SELECT 1");
 
       return res.json({
         success: true,
@@ -715,16 +645,14 @@ app.post(
   "/api/verify",
   async (req, res) => {
     try {
-      const suppliedKey =
-        String(
-          req.body?.key || ""
-        ).trim();
+      const suppliedKey = String(
+        req.body?.key || ""
+      ).trim();
 
       if (!suppliedKey) {
         return res.status(400).json({
           success: false,
-          error:
-            "Key is required.",
+          error: "Key is required.",
         });
       }
 
@@ -745,18 +673,14 @@ app.post(
           [suppliedKey]
         );
 
-      if (
-        result.rows.length === 0
-      ) {
+      if (result.rows.length === 0) {
         return res.status(404).json({
           success: false,
-          error:
-            "Invalid key.",
+          error: "Invalid key.",
         });
       }
 
-      const keyRow =
-        result.rows[0];
+      const keyRow = result.rows[0];
 
       if (keyRow.used) {
         return res.status(403).json({
@@ -773,9 +697,7 @@ app.post(
               keyRow.expires_at
             );
 
-      if (
-        isExpired(expiresAt)
-      ) {
+      if (isExpired(expiresAt)) {
         return res.status(403).json({
           success: false,
           error:
@@ -820,8 +742,7 @@ app.post(
           key: keyRow.key,
           duration,
           expiresAt,
-          keyExpiresAt:
-            expiresAt,
+          keyExpiresAt: expiresAt,
         },
       });
     } catch (error) {
@@ -832,8 +753,7 @@ app.post(
 
       return res.status(500).json({
         success: false,
-        error:
-          "Server error.",
+        error: "Server error.",
       });
     }
   }
@@ -887,9 +807,7 @@ app.post(
       await pool.connect();
 
     try {
-      await client.query(
-        "BEGIN"
-      );
+      await client.query("BEGIN");
 
       const result =
         await client.query(`
@@ -903,12 +821,8 @@ app.post(
           FOR UPDATE SKIP LOCKED
         `);
 
-      if (
-        result.rows.length === 0
-      ) {
-        await client.query(
-          "ROLLBACK"
-        );
+      if (result.rows.length === 0) {
+        await client.query("ROLLBACK");
 
         return res.status(400).json({
           success: false,
@@ -917,8 +831,7 @@ app.post(
         });
       }
 
-      const stockRow =
-        result.rows[0];
+      const stockRow = result.rows[0];
 
       await client.query(
         `
@@ -928,9 +841,7 @@ app.post(
         [stockRow.id]
       );
 
-      await client.query(
-        "COMMIT"
-      );
+      await client.query("COMMIT");
 
       const item =
         normalizeLogin(
@@ -944,9 +855,7 @@ app.post(
       });
     } catch (error) {
       try {
-        await client.query(
-          "ROLLBACK"
-        );
+        await client.query("ROLLBACK");
       } catch {}
 
       console.error(
@@ -987,12 +896,9 @@ app.get(
 
       return res.json({
         success: true,
-        logins:
-          result.rows,
-        savedLogins:
-          result.rows,
-        items:
-          result.rows,
+        logins: result.rows,
+        savedLogins: result.rows,
+        items: result.rows,
       });
     } catch (error) {
       console.error(
@@ -1018,15 +924,13 @@ app.post(
   requireSession,
   async (req, res) => {
     try {
-      const email =
-        String(
-          req.body?.email || ""
-        ).trim();
+      const email = String(
+        req.body?.email || ""
+      ).trim();
 
-      const password =
-        String(
-          req.body?.password || ""
-        );
+      const password = String(
+        req.body?.password || ""
+      );
 
       if (!email) {
         return res.status(400).json({
@@ -1107,10 +1011,8 @@ app.post(
 
       return res.json({
         success: true,
-        login:
-          savedItem,
-        item:
-          savedItem,
+        login: savedItem,
+        item: savedItem,
       });
     } catch (error) {
       console.error(
@@ -1164,18 +1066,14 @@ app.get(
   requireSession,
   async (req, res) => {
     try {
-      const id =
-        Number(
-          req.params.id
-        );
+      const id = Number(
+        req.params.id
+      );
 
-      if (
-        !Number.isInteger(id)
-      ) {
+      if (!Number.isInteger(id)) {
         return res.status(400).json({
           success: false,
-          error:
-            "Invalid ID.",
+          error: "Invalid ID.",
         });
       }
 
@@ -1194,9 +1092,7 @@ app.get(
           [id]
         );
 
-      if (
-        result.rows.length === 0
-      ) {
+      if (result.rows.length === 0) {
         return res.status(404).json({
           success: false,
           error:
@@ -1206,10 +1102,8 @@ app.get(
 
       return res.json({
         success: true,
-        login:
-          result.rows[0],
-        item:
-          result.rows[0],
+        login: result.rows[0],
+        item: result.rows[0],
       });
     } catch (error) {
       console.error(
@@ -1235,18 +1129,14 @@ app.delete(
   requireSession,
   async (req, res) => {
     try {
-      const id =
-        Number(
-          req.params.id
-        );
+      const id = Number(
+        req.params.id
+      );
 
-      if (
-        !Number.isInteger(id)
-      ) {
+      if (!Number.isInteger(id)) {
         return res.status(400).json({
           success: false,
-          error:
-            "Invalid ID.",
+          error: "Invalid ID.",
         });
       }
 
@@ -1260,9 +1150,7 @@ app.delete(
           [id]
         );
 
-      if (
-        result.rows.length === 0
-      ) {
+      if (result.rows.length === 0) {
         return res.status(404).json({
           success: false,
           error:
@@ -1327,9 +1215,7 @@ const discordClient =
 // DISCORD ROLE CHECK
 // ============================================================
 
-function hasAllowedDiscordRole(
-  message
-) {
+function hasAllowedDiscordRole(message) {
   if (!message.member) {
     return false;
   }
@@ -1342,9 +1228,7 @@ function hasAllowedDiscordRole(
   );
 }
 
-async function denyDiscordCommand(
-  message
-) {
+async function denyDiscordCommand(message) {
   return message.reply(
     "❌ You don't have permission to use this command."
   );
@@ -1354,10 +1238,7 @@ async function denyDiscordCommand(
 // !gen
 // ============================================================
 
-async function handleGen(
-  message,
-  args
-) {
+async function handleGen(message, args) {
   if (
     !hasAllowedDiscordRole(
       message
@@ -1369,20 +1250,15 @@ async function handleGen(
   }
 
   let amount = 1;
-
-  let durationInput =
-    args[0];
+  let durationInput = args[0];
 
   if (
     /^\d+$/.test(
       args[0] || ""
     )
   ) {
-    amount =
-      Number(args[0]);
-
-    durationInput =
-      args[1];
+    amount = Number(args[0]);
+    durationInput = args[1];
   }
 
   if (
@@ -1482,13 +1358,10 @@ async function handleGen(
 // !add
 // + attach .txt
 //
-// Each non-empty line in the TXT file becomes one stock item.
+// Every non-empty TXT line becomes one stock item.
 // ============================================================
 
-async function handleAdd(
-  message,
-  args
-) {
+async function handleAdd(message, args) {
   if (
     !hasAllowedDiscordRole(
       message
@@ -1502,7 +1375,7 @@ async function handleAdd(
   let items = [];
 
   // ----------------------------------------------------------
-  // TEXT PROVIDED DIRECTLY
+  // DIRECT !add ITEM
   // ----------------------------------------------------------
 
   if (
@@ -1520,17 +1393,33 @@ async function handleAdd(
   }
 
   // ----------------------------------------------------------
-  // TXT ATTACHMENT
+  // ATTACHED TXT FILE
   // ----------------------------------------------------------
 
   if (
     message.attachments &&
     message.attachments.size > 0
   ) {
+    console.log(
+      `📎 Discord attachments detected: ${message.attachments.size}`
+    );
+
     for (
       const attachment of
         message.attachments.values()
     ) {
+      console.log(
+        `📎 File: ${attachment.name || "unknown"}`
+      );
+
+      console.log(
+        `📎 URL: ${attachment.url}`
+      );
+
+      console.log(
+        `📎 Type: ${attachment.contentType || "unknown"}`
+      );
+
       const fileName =
         String(
           attachment.name || ""
@@ -1538,25 +1427,30 @@ async function handleAdd(
 
       const contentType =
         String(
-          attachment.contentType ||
-            ""
+          attachment.contentType || ""
         ).toLowerCase();
 
-      const isTextFile =
+      const isTxt =
         fileName.endsWith(
           ".txt"
         ) ||
+        contentType ===
+          "text/plain" ||
         contentType.startsWith(
           "text/"
         );
 
-      if (!isTextFile) {
+      if (!isTxt) {
+        console.log(
+          `⚠️ Skipping non-TXT attachment: ${attachment.name}`
+        );
+
         continue;
       }
 
       try {
         console.log(
-          `📄 Downloading TXT attachment: ${attachment.name}`
+          `📄 Downloading TXT file: ${attachment.name}`
         );
 
         const response =
@@ -1566,12 +1460,18 @@ async function handleAdd(
 
         if (!response.ok) {
           throw new Error(
-            `Download failed with HTTP ${response.status}`
+            `HTTP ${response.status}`
           );
         }
 
         const text =
           await response.text();
+
+        if (!text.trim()) {
+          return message.reply(
+            "❌ The TXT file is empty."
+          );
+        }
 
         const lines =
           text
@@ -1580,26 +1480,34 @@ async function handleAdd(
               line =>
                 line.trim()
             )
-            .filter(Boolean);
+            .filter(
+              line =>
+                line.length > 0
+            );
+
+        console.log(
+          `📄 TXT contained ${lines.length} non-empty line(s)`
+        );
 
         items.push(
           ...lines
         );
-
-        console.log(
-          `📄 Read ${lines.length} line(s) from ${attachment.name}`
-        );
       } catch (error) {
         console.error(
-          "❌ TXT attachment error:",
+          "❌ TXT download error:",
           error
         );
 
         return message.reply(
-          `❌ Could not read \`${attachment.name || "file"}\`.`
+          `❌ Couldn't read \`${attachment.name || "file"}\`.\n` +
+          `Error: \`${error.message}\``
         );
       }
     }
+  } else {
+    console.log(
+      "📎 No Discord attachment detected."
+    );
   }
 
   // ----------------------------------------------------------
@@ -1610,86 +1518,120 @@ async function handleAdd(
     items.length === 0
   ) {
     return message.reply(
-      "❌ Usage:\n" +
+      "❌ No stock was provided.\n\n" +
+      "**Use:**\n" +
       "`!add item`\n" +
       "or attach a `.txt` file to `!add`."
     );
   }
 
   // ----------------------------------------------------------
-  // SAFETY LIMIT
+  // MAXIMUM
   // ----------------------------------------------------------
 
   if (
     items.length > 5000
   ) {
     return message.reply(
-      "❌ The file contains too many items. Maximum: **5000**."
+      "❌ Maximum **5000** items can be added at once."
     );
   }
 
   // ----------------------------------------------------------
-  // INSERT ITEMS
+  // INSERT STOCK
   // ----------------------------------------------------------
 
   let added = 0;
 
-  for (
-    const rawItem of
-      items
-  ) {
-    const stockId =
-      String(rawItem).trim();
+  const client =
+    await pool.connect();
 
-    if (!stockId) {
-      continue;
-    }
+  try {
+    await client.query(
+      "BEGIN"
+    );
 
-    if (
-      stockCreatedAtType ===
-      "timestamp"
+    for (
+      const rawItem of
+        items
     ) {
-      await pool.query(
-        `
-        INSERT INTO novi_stock_items
-          (
-            stock_id,
-            created_at
-          )
-        VALUES
-          (
-            $1,
-            NOW()
-          )
-        `,
-        [stockId]
-      );
-    } else {
-      await pool.query(
-        `
-        INSERT INTO novi_stock_items
-          (
-            stock_id,
-            created_at
-          )
-        VALUES
-          (
-            $1,
-            $2
-          )
-        `,
-        [
-          stockId,
-          Date.now(),
-        ]
-      );
+      const stockId =
+        String(
+          rawItem
+        ).trim();
+
+      if (!stockId) {
+        continue;
+      }
+
+      if (
+        stockCreatedAtType ===
+        "timestamp"
+      ) {
+        await client.query(
+          `
+          INSERT INTO novi_stock_items
+            (
+              stock_id,
+              created_at
+            )
+          VALUES
+            (
+              $1,
+              NOW()
+            )
+          `,
+          [stockId]
+        );
+      } else {
+        await client.query(
+          `
+          INSERT INTO novi_stock_items
+            (
+              stock_id,
+              created_at
+            )
+          VALUES
+            (
+              $1,
+              $2
+            )
+          `,
+          [
+            stockId,
+            Date.now(),
+          ]
+        );
+      }
+
+      added++;
     }
 
-    added++;
+    await client.query(
+      "COMMIT"
+    );
+  } catch (error) {
+    try {
+      await client.query(
+        "ROLLBACK"
+      );
+    } catch {}
+
+    console.error(
+      "❌ Stock insert error:",
+      error
+    );
+
+    return message.reply(
+      `❌ Failed to add stock.\n` +
+      `Error: \`${error.message}\``
+    );
+  } finally {
+    client.release();
   }
 
   // ----------------------------------------------------------
-  // UPDATED STOCK COUNT
+  // FINAL STOCK COUNT
   // ----------------------------------------------------------
 
   const countResult =
@@ -1713,9 +1655,7 @@ async function handleAdd(
 // !stock
 // ============================================================
 
-async function handleStock(
-  message
-) {
+async function handleStock(message) {
   if (
     !hasAllowedDiscordRole(
       message
@@ -1726,29 +1666,75 @@ async function handleStock(
     );
   }
 
-  const result =
-    await pool.query(`
-      SELECT COUNT(*)::INTEGER AS count
-      FROM novi_stock_items
-    `);
+  try {
+    const result =
+      await pool.query(`
+        SELECT COUNT(*)::INTEGER AS count
+        FROM novi_stock_items
+      `);
 
-  const count =
-    Number(
-      result.rows[0].count
+    const count =
+      Number(
+        result.rows[0].count
+      );
+
+    return message.reply(
+      `📦 Novi stock: **${count}**`
+    );
+  } catch (error) {
+    console.error(
+      "❌ Stock count error:",
+      error
     );
 
-  return message.reply(
-    `📦 Novi stock: **${count}**`
-  );
+    return message.reply(
+      "❌ Failed to check stock."
+    );
+  }
+}
+
+// ============================================================
+// !clearstock
+// ============================================================
+
+async function handleClearStock(message) {
+  if (
+    !hasAllowedDiscordRole(
+      message
+    )
+  ) {
+    return denyDiscordCommand(
+      message
+    );
+  }
+
+  try {
+    const result =
+      await pool.query(`
+        DELETE FROM novi_stock_items
+      `);
+
+    return message.reply(
+      `🗑️ Cleared **${result.rowCount}** stock item(s).\n` +
+      `📦 Current stock: **0**`
+    );
+  } catch (error) {
+    console.error(
+      "❌ Clear stock error:",
+      error
+    );
+
+    return message.reply(
+      "❌ Failed to clear stock."
+    );
+  }
 }
 
 // ============================================================
 // !help
 // ============================================================
 
-async function handleHelp(
-  message
-) {
+async function handleHelp(message) {
   if (
     !hasAllowedDiscordRole(
       message
@@ -1776,8 +1762,9 @@ async function handleHelp(
       "`!gen 5 lifetime` — Generate 5 lifetime keys",
       "",
       "`!add item` — Add one stock item",
-      "`!add + .txt` — Import TXT stock",
+      "`!add + TXT` — Import a TXT file",
       "`!stock` — Check stock",
+      "`!clearstock` — Remove ALL stock",
       "`!help` — Show commands",
     ].join("\n")
   );
@@ -1818,6 +1805,10 @@ discordClient.on(
       const args =
         parts;
 
+      // --------------------------------------------------------
+      // !gen
+      // --------------------------------------------------------
+
       if (
         command ===
         "!gen"
@@ -1829,6 +1820,10 @@ discordClient.on(
 
         return;
       }
+
+      // --------------------------------------------------------
+      // !add
+      // --------------------------------------------------------
 
       if (
         command ===
@@ -1842,6 +1837,10 @@ discordClient.on(
         return;
       }
 
+      // --------------------------------------------------------
+      // !stock
+      // --------------------------------------------------------
+
       if (
         command ===
         "!stock"
@@ -1852,6 +1851,25 @@ discordClient.on(
 
         return;
       }
+
+      // --------------------------------------------------------
+      // !clearstock
+      // --------------------------------------------------------
+
+      if (
+        command ===
+        "!clearstock"
+      ) {
+        await handleClearStock(
+          message
+        );
+
+        return;
+      }
+
+      // --------------------------------------------------------
+      // !help
+      // --------------------------------------------------------
 
       if (
         command ===
