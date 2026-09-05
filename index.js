@@ -36,7 +36,7 @@ const client = new Client({
 });
 
 // =====================================================
-// ALLOWED ROLE IDS
+// ALLOWED ROLES
 // =====================================================
 
 const ALLOWED_ROLE_IDS = [
@@ -45,7 +45,7 @@ const ALLOWED_ROLE_IDS = [
 ];
 
 // =====================================================
-// STARTUP LOG
+// STARTUP
 // =====================================================
 
 console.log("");
@@ -56,6 +56,11 @@ console.log("================================");
 console.log(
     "Token detected:",
     Boolean(DISCORD_TOKEN)
+);
+
+console.log(
+    "Token length:",
+    DISCORD_TOKEN?.length || 0
 );
 
 console.log(
@@ -76,27 +81,42 @@ console.log("");
 // =====================================================
 
 if (!DISCORD_TOKEN) {
-    console.error("DISCORD_TOKEN is missing.");
+
     console.error(
-        "Add DISCORD_TOKEN to Render Environment Variables."
+        "DISCORD_TOKEN is missing."
     );
+
     process.exit(1);
 }
 
 if (!ADMIN_SECRET) {
-    console.error("NOVI_ADMIN_SECRET is missing.");
+
     console.error(
-        "Add NOVI_ADMIN_SECRET to Render Environment Variables."
+        "NOVI_ADMIN_SECRET is missing."
     );
+
     process.exit(1);
 }
 
 // =====================================================
-// DISCORD DEBUG
+// SAFE DISCORD DEBUG
+// IMPORTANT:
+// NEVER PRINT THE TOKEN
 // =====================================================
 
 client.on("debug", (info) => {
-    console.log("[DISCORD DEBUG]", info);
+
+    const safeInfo =
+        String(info)
+            .replace(
+                /(?:Bot\s+)?[\w-]{20,}\.[\w-]+\.[\w-]+/g,
+                "[TOKEN REDACTED]"
+            );
+
+    console.log(
+        "[DISCORD DEBUG]",
+        safeInfo
+    );
 });
 
 // =====================================================
@@ -104,54 +124,136 @@ client.on("debug", (info) => {
 // =====================================================
 
 client.on("error", (error) => {
+
     console.error("");
-    console.error("================================");
-    console.error("DISCORD CLIENT ERROR");
-    console.error("================================");
-    console.error(error);
-    console.error("================================");
+    console.error(
+        "================================"
+    );
+
+    console.error(
+        "DISCORD CLIENT ERROR"
+    );
+
+    console.error(
+        "Name:",
+        error?.name || "Unknown"
+    );
+
+    console.error(
+        "Code:",
+        error?.code || "Unknown"
+    );
+
+    console.error(
+        "Message:",
+        error?.message || error
+    );
+
+    console.error(
+        "================================"
+    );
 });
 
+// =====================================================
+// WARNINGS
+// =====================================================
+
 client.on("warn", (warning) => {
+
     console.warn(
         "[DISCORD WARNING]",
         warning
     );
 });
 
-client.on("shardError", (error) => {
-    console.error("");
-    console.error("================================");
-    console.error("DISCORD SHARD ERROR");
-    console.error("================================");
-    console.error(error);
-    console.error("================================");
-});
+// =====================================================
+// SHARD ERROR
+// =====================================================
 
-client.on("shardDisconnect", (event) => {
-    console.warn("");
-    console.warn("================================");
-    console.warn("DISCORD SHARD DISCONNECTED");
-    console.warn("================================");
+client.on(
+    "shardError",
+    (error) => {
 
-    console.warn(
-        "Code:",
-        event.code
-    );
+        console.error("");
+        console.error(
+            "================================"
+        );
 
-    console.warn(
-        "Reason:",
-        event.reason || "Unknown"
-    );
+        console.error(
+            "DISCORD SHARD ERROR"
+        );
 
-    console.warn("================================");
-});
+        console.error(
+            "Name:",
+            error?.name || "Unknown"
+        );
 
-client.on("shardReconnecting", () => {
-    console.log(
-        "Discord shard reconnecting..."
-    );
-});
+        console.error(
+            "Code:",
+            error?.code || "Unknown"
+        );
+
+        console.error(
+            "Message:",
+            error?.message || error
+        );
+
+        console.error(
+            "================================"
+        );
+    }
+);
+
+// =====================================================
+// SHARD DISCONNECT
+// =====================================================
+
+client.on(
+    "shardDisconnect",
+    (event) => {
+
+        console.warn("");
+        console.warn(
+            "================================"
+        );
+
+        console.warn(
+            "DISCORD SHARD DISCONNECTED"
+        );
+
+        console.warn(
+            "Code:",
+            event?.code || "Unknown"
+        );
+
+        console.warn(
+            "Reason:",
+            event?.reason || "Unknown"
+        );
+
+        console.warn(
+            "================================"
+        );
+    }
+);
+
+// =====================================================
+// SHARD RECONNECT
+// =====================================================
+
+client.on(
+    "shardReconnecting",
+    () => {
+
+        console.log(
+            "Discord shard reconnecting..."
+        );
+    }
+);
+
+// =====================================================
+// SHARD RESUME
+// =====================================================
 
 client.on(
     "shardResume",
@@ -168,39 +270,96 @@ client.on(
 );
 
 // =====================================================
+// RATE LIMIT
+// =====================================================
+
+client.on(
+    "rateLimit",
+    (info) => {
+
+        console.warn("");
+        console.warn(
+            "================================"
+        );
+
+        console.warn(
+            "DISCORD RATE LIMIT"
+        );
+
+        console.warn(
+            "Timeout:",
+            info?.timeout
+        );
+
+        console.warn(
+            "Limit:",
+            info?.limit
+        );
+
+        console.warn(
+            "Method:",
+            info?.method
+        );
+
+        console.warn(
+            "Path:",
+            info?.path
+        );
+
+        console.warn(
+            "================================"
+        );
+    }
+);
+
+// =====================================================
 // BOT READY
 // =====================================================
 
-client.once("ready", () => {
+client.once(
+    "ready",
+    () => {
 
-    console.log("");
-    console.log("================================");
-    console.log("DISCORD BOT IS ONLINE");
-    console.log("================================");
+        console.log("");
+        console.log(
+            "================================"
+        );
 
-    console.log(
-        "Logged in as:",
-        client.user.tag
-    );
+        console.log(
+            "DISCORD BOT IS ONLINE"
+        );
 
-    console.log(
-        "Bot ID:",
-        client.user.id
-    );
+        console.log(
+            "================================"
+        );
 
-    console.log(
-        "Servers:",
-        client.guilds.cache.size
-    );
+        console.log(
+            "Logged in as:",
+            client.user.tag
+        );
 
-    console.log(
-        "API:",
-        SERVER_URL
-    );
+        console.log(
+            "Bot ID:",
+            client.user.id
+        );
 
-    console.log("================================");
-    console.log("");
-});
+        console.log(
+            "Servers:",
+            client.guilds.cache.size
+        );
+
+        console.log(
+            "API:",
+            SERVER_URL
+        );
+
+        console.log(
+            "================================"
+        );
+
+        console.log("");
+    }
+);
 
 // =====================================================
 // ADMIN HEADERS
@@ -218,7 +377,7 @@ function adminHeaders() {
 }
 
 // =====================================================
-// ROLE PERMISSION CHECK
+// PERMISSION CHECK
 // =====================================================
 
 function hasPermission(message) {
@@ -306,10 +465,6 @@ client.on(
                     );
                 }
 
-                console.log(
-                    `[GEN] ${message.author.tag} requested ${duration}`
-                );
-
                 try {
 
                     const response =
@@ -329,11 +484,6 @@ client.on(
                         !response.data?.success
                     ) {
 
-                        console.error(
-                            "[GEN] Server rejected request:",
-                            response.data
-                        );
-
                         return message.reply(
                             response.data?.message ||
                             "The server rejected the key."
@@ -345,19 +495,10 @@ client.on(
 
                     if (!key) {
 
-                        console.error(
-                            "[GEN] No key returned:",
-                            response.data
-                        );
-
                         return message.reply(
                             "The server created the key but did not return it."
                         );
                     }
-
-                    console.log(
-                        `[GEN] Key generated: ${key}`
-                    );
 
                     return message.reply(
                         `**Novi Key Generated**\n\n` +
@@ -371,29 +512,10 @@ client.on(
                 } catch (error) {
 
                     console.error(
-                        "[GEN] Error:",
+                        "[GEN ERROR]",
                         error.response?.data ||
                         error.message
                     );
-
-                    if (
-                        error.response?.status === 401 ||
-                        error.response?.status === 403
-                    ) {
-
-                        return message.reply(
-                            "Novi admin authentication failed."
-                        );
-                    }
-
-                    if (
-                        error.response?.status === 503
-                    ) {
-
-                        return message.reply(
-                            "Novi admin authentication is not configured correctly."
-                        );
-                    }
 
                     return message.reply(
                         "Could not connect to the Novi server."
@@ -426,7 +548,7 @@ client.on(
                 let items = [];
 
                 // =================================================
-                // DIRECT ITEMS
+                // COMMAND ITEMS
                 // =================================================
 
                 const commandItems =
@@ -473,11 +595,7 @@ client.on(
 
                     try {
 
-                        console.log(
-                            `[ADD] Downloading ${attachment.name}`
-                        );
-
-                        const fileResponse =
+                        const response =
                             await axios.get(
                                 attachment.url,
                                 {
@@ -490,7 +608,7 @@ client.on(
 
                         const fileItems =
                             String(
-                                fileResponse.data
+                                response.data
                             )
                                 .split(
                                     /\r?\n/
@@ -511,7 +629,7 @@ client.on(
                     } catch (error) {
 
                         console.error(
-                            "[ADD] TXT error:",
+                            "[TXT ERROR]",
                             error.message
                         );
 
@@ -522,7 +640,7 @@ client.on(
                 }
 
                 // =================================================
-                // NOTHING TO ADD
+                // EMPTY
                 // =================================================
 
                 if (
@@ -536,22 +654,18 @@ client.on(
                 }
 
                 // =================================================
-                // REMOVE DUPLICATES FROM REQUEST
+                // REMOVE DUPLICATES
                 // =================================================
 
                 items =
                     [...new Set(items)];
-
-                console.log(
-                    `[ADD] Processing ${items.length} items`
-                );
 
                 let added = 0;
                 let duplicates = 0;
                 let failed = 0;
 
                 // =================================================
-                // ADD EACH ITEM
+                // ADD STOCK
                 // =================================================
 
                 for (
@@ -600,7 +714,7 @@ client.on(
                         failed++;
 
                         console.error(
-                            "[ADD] Item failed:",
+                            "[STOCK ERROR]",
                             error.response?.data ||
                             error.message
                         );
@@ -608,7 +722,7 @@ client.on(
                 }
 
                 // =================================================
-                // GET TOTAL STOCK
+                // STOCK COUNT
                 // =================================================
 
                 let totalStock =
@@ -616,7 +730,7 @@ client.on(
 
                 try {
 
-                    const stockResponse =
+                    const response =
                         await axios.get(
                             `${SERVER_URL}/api/admin/stock`,
                             {
@@ -628,18 +742,18 @@ client.on(
                         );
 
                     if (
-                        typeof stockResponse.data?.count ===
+                        typeof response.data?.count ===
                         "number"
                     ) {
 
                         totalStock =
-                            stockResponse.data.count;
+                            response.data.count;
                     }
 
                 } catch (error) {
 
                     console.error(
-                        "[ADD] Stock count error:",
+                        "[STOCK COUNT ERROR]",
                         error.response?.data ||
                         error.message
                     );
@@ -687,7 +801,7 @@ client.on(
 );
 
 // =====================================================
-// PROCESS ERROR HANDLING
+// PROCESS ERRORS
 // =====================================================
 
 process.on(
@@ -696,18 +810,10 @@ process.on(
 
         console.error("");
         console.error(
-            "================================"
-        );
-
-        console.error(
             "UNHANDLED PROMISE REJECTION"
         );
 
         console.error(error);
-
-        console.error(
-            "================================"
-        );
     }
 );
 
@@ -717,52 +823,51 @@ process.on(
 
         console.error("");
         console.error(
-            "================================"
-        );
-
-        console.error(
             "UNCAUGHT EXCEPTION"
         );
 
         console.error(error);
-
-        console.error(
-            "================================"
-        );
     }
 );
 
 // =====================================================
-// START DISCORD
+// DISCORD LOGIN
 // =====================================================
 
 async function startDiscord() {
 
     console.log("");
-    console.log("================================");
-    console.log("CONNECTING TO DISCORD");
-    console.log("================================");
+    console.log(
+        "================================"
+    );
 
     console.log(
-        "Token detected:",
+        "CONNECTING TO DISCORD"
+    );
+
+    console.log(
+        "================================"
+    );
+
+    console.log(
+        "Starting Discord Gateway..."
+    );
+
+    console.log(
+        "Token present:",
         Boolean(DISCORD_TOKEN)
     );
 
     console.log(
         "Token length:",
-        DISCORD_TOKEN.length
+        DISCORD_TOKEN?.length || 0
     );
 
     console.log(
-        "Connecting through Discord Gateway..."
+        "================================"
     );
 
-    console.log("================================");
-    console.log("");
-
     try {
-
-        discordLoginStarted = true;
 
         await client.login(
             DISCORD_TOKEN
@@ -780,33 +885,23 @@ async function startDiscord() {
         );
 
         console.error(
-            "Error name:",
-            error?.name ||
-            "Unknown"
+            "Name:",
+            error?.name || "Unknown"
         );
 
         console.error(
-            "Error code:",
-            error?.code ||
-            "Unknown"
+            "Code:",
+            error?.code || "Unknown"
         );
 
         console.error(
-            "Error message:",
-            error?.message ||
-            error
+            "Message:",
+            error?.message || error
         );
 
         console.error(
             "================================"
         );
-
-        discordLoginStarted = false;
-
-        try {
-            client.destroy();
-        } catch {}
-
     }
 }
 
