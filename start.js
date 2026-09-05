@@ -17,7 +17,7 @@ const website = spawn(process.execPath, ["index.js"], {
 // START DISCORD BOT
 // ============================================================
 
-const bot = spawn(process.execPath, ["bot.js"], {
+const bot = spawn(process.execPath, ["server.js"], {
   stdio: "inherit",
   env: process.env,
 });
