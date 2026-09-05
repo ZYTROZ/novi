@@ -6,6 +6,14 @@ const path = require("path");
 const crypto = require("crypto");
 const { Pool } = require("pg");
 
+const {
+  Client,
+  GatewayIntentBits,
+  REST,
+  Routes,
+  SlashCommandBuilder,
+} = require("discord.js");
+
 const app = express();
 
 // ============================================================
@@ -17,6 +25,8 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 
 const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET || "";
 const DATABASE_URL = process.env.DATABASE_URL || "";
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN || "";
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || "";
 
 if (!DATABASE_URL) {
   console.error("ERROR: DATABASE_URL is missing.");
@@ -39,15 +49,19 @@ app.use(
   })
 );
 
-app.use(express.json({
-  limit: "10mb",
-  strict: false,
-}));
+app.use(
+  express.json({
+    limit: "10mb",
+    strict: false,
+  })
+);
 
-app.use(express.urlencoded({
-  extended: true,
-  limit: "10mb",
-}));
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "10mb",
+  })
+);
 
 // ============================================================
 // SESSIONS
@@ -441,11 +455,8 @@ app.post("/api/verify", async (req, res) => {
     res.json({
       success: true,
       valid: true,
-
-      // Compatibility with different frontend versions
       token,
       sessionToken: token,
-
       duration: keyRow.duration,
       expiresAt: keyRow.expires_at,
     });
@@ -521,8 +532,6 @@ async function stockAddHandler(req, res) {
 }
 
 app.post("/api/stock/add", requireAdmin, stockAddHandler);
-
-// Compatibility aliases for existing bot/API callers
 app.post("/api/add-stock", requireAdmin, stockAddHandler);
 
 // ============================================================
@@ -794,6 +803,104 @@ app.get("/{*splat}", (req, res) => {
 });
 
 // ============================================================
+// DISCORD BOT
+// ============================================================
+
+let discordClient = null;
+
+async function startDiscordBot() {
+  if (!DISCORD_TOKEN) {
+    console.log("Discord bot disabled: DISCORD_TOKEN is missing.");
+    return;
+  }
+
+  discordClient = new Client({
+    intents: [GatewayIntentBits.Guilds],
+  });
+
+  discordClient.once("ready", async (client) => {
+    console.log(`Discord bot online as ${client.user.tag}`);
+
+    if (DISCORD_CLIENT_ID) {
+      try {
+        const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
+
+        const commands = [
+          new SlashCommandBuilder()
+            .setName("ping")
+            .setDescription("Check if Novi is online"),
+
+          new SlashCommandBuilder()
+            .setName("stock")
+            .setDescription("Check the current Novi stock count"),
+        ].map((command) => command.toJSON());
+
+        await rest.put(
+          Routes.applicationCommands(DISCORD_CLIENT_ID),
+          { body: commands }
+        );
+
+        console.log("Discord slash commands registered.");
+      } catch (err) {
+        console.error("Failed to register Discord commands:");
+        console.error(err);
+      }
+    } else {
+      console.log(
+        "DISCORD_CLIENT_ID is missing. Slash commands were not registered."
+      );
+    }
+  });
+
+  discordClient.on("interactionCreate", async (interaction) => {
+    if (!interaction.isChatInputCommand()) return;
+
+    try {
+      if (interaction.commandName === "ping") {
+        return interaction.reply({
+          content: "🏓 Novi is online!",
+          ephemeral: true,
+        });
+      }
+
+      if (interaction.commandName === "stock") {
+        const result = await pool.query(`
+          SELECT COUNT(*)::int AS count
+          FROM novi_stock_items
+        `);
+
+        const count = result.rows[0].count;
+
+        return interaction.reply({
+          content: `📦 Current Novi stock: **${count}**`,
+        });
+      }
+    } catch (err) {
+      console.error("Discord command error:", err);
+
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({
+          content: "Something went wrong.",
+          ephemeral: true,
+        });
+      } else {
+        await interaction.reply({
+          content: "Something went wrong.",
+          ephemeral: true,
+        });
+      }
+    }
+  });
+
+  discordClient.on("error", (err) => {
+    console.error("Discord client error:");
+    console.error(err);
+  });
+
+  await discordClient.login(DISCORD_TOKEN);
+}
+
+// ============================================================
 // START
 // ============================================================
 
@@ -810,11 +917,38 @@ async function start() {
       console.log("Stock API: ready");
       console.log("===============================");
     });
+
+    await startDiscordBot();
+
   } catch (err) {
-    console.error("FAILED TO START SERVER:");
+    console.error("FAILED TO START NOVI:");
     console.error(err);
     process.exit(1);
   }
 }
+
+// ============================================================
+// SHUTDOWN
+// ============================================================
+
+async function shutdown(signal) {
+  console.log(`Received ${signal}. Shutting down Novi...`);
+
+  try {
+    if (discordClient) {
+      discordClient.destroy();
+    }
+
+    await pool.end();
+
+    process.exit(0);
+  } catch (err) {
+    console.error("Shutdown error:", err);
+    process.exit(1);
+  }
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 start();
