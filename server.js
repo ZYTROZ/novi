@@ -102,7 +102,6 @@ function getEncryptionKey() {
 
 function encrypt(text) {
   const key = getEncryptionKey();
-
   const iv = crypto.randomBytes(12);
 
   const cipher = crypto.createCipheriv(
@@ -175,7 +174,7 @@ function decryptPassword(password) {
 const sessions = new Map();
 
 // ============================================================
-// HELPERS
+// ADMIN
 // ============================================================
 
 function requireAdmin(req, res, next) {
@@ -196,14 +195,7 @@ function requireAdmin(req, res, next) {
 }
 
 // ============================================================
-// SESSION TOKEN
-// Supports BOTH:
-//
-// Authorization: Bearer TOKEN
-//
-// AND
-//
-// x-novi-session: TOKEN
+// SESSION HELPERS
 // ============================================================
 
 function getSessionToken(req) {
@@ -214,12 +206,16 @@ function getSessionToken(req) {
 
   let token = "";
 
+  // Support:
+  // Authorization: Bearer TOKEN
   if (auth.startsWith("Bearer ")) {
     token = auth
       .slice(7)
       .trim();
   }
 
+  // Support your current HTML:
+  // x-novi-session: TOKEN
   if (!token) {
     token = String(
       req.headers["x-novi-session"] || ""
@@ -230,7 +226,8 @@ function getSessionToken(req) {
 }
 
 function getSession(req) {
-  const token = getSessionToken(req);
+  const token =
+    getSessionToken(req);
 
   if (!token) {
     return null;
@@ -261,7 +258,8 @@ function requireSession(req, res, next) {
   if (!session) {
     return res.status(401).json({
       success: false,
-      error: "Invalid or expired session",
+      error:
+        "Invalid or expired session",
     });
   }
 
@@ -269,6 +267,10 @@ function requireSession(req, res, next) {
 
   next();
 }
+
+// ============================================================
+// KEY HELPERS
+// ============================================================
 
 function generateKeyString() {
   const part = () =>
@@ -378,7 +380,8 @@ app.post(
       ) {
         return res.status(400).json({
           success: false,
-          error: "Invalid duration",
+          error:
+            "Invalid duration",
         });
       }
 
@@ -459,7 +462,8 @@ app.post(
 
       res.status(500).json({
         success: false,
-        error: "Failed to create keys",
+        error:
+          "Failed to create keys",
       });
     }
   }
@@ -491,34 +495,33 @@ app.get(
       res.json({
         success: true,
 
-        keys: result.rows.map(
-          (row) => ({
-            id: row.id,
+        keys:
+          result.rows.map(
+            (row) => ({
+              id: row.id,
+              key: row.key,
+              duration:
+                row.duration,
 
-            key: row.key,
+              createdAt:
+                Number(
+                  row.created_at
+                ),
 
-            duration:
-              row.duration,
+              expiresAt:
+                row.expires_at ===
+                null
+                  ? null
+                  : Number(
+                      row.expires_at
+                    ),
 
-            createdAt:
-              Number(
-                row.created_at
-              ),
+              deviceId:
+                row.device_id,
 
-            expiresAt:
-              row.expires_at ===
-              null
-                ? null
-                : Number(
-                    row.expires_at
-                  ),
-
-            deviceId:
-              row.device_id,
-
-            used: row.used,
-          })
-        ),
+              used: row.used,
+            })
+          ),
       });
     } catch (error) {
       console.error(
@@ -528,7 +531,8 @@ app.get(
 
       res.status(500).json({
         success: false,
-        error: "Failed to get keys",
+        error:
+          "Failed to get keys",
       });
     }
   }
@@ -564,7 +568,8 @@ app.delete(
       ) {
         return res.status(404).json({
           success: false,
-          error: "Key not found",
+          error:
+            "Key not found",
         });
       }
 
@@ -579,7 +584,8 @@ app.delete(
 
       res.status(500).json({
         success: false,
-        error: "Failed to delete key",
+        error:
+          "Failed to delete key",
       });
     }
   }
@@ -613,6 +619,8 @@ app.post(
       if (!key || !deviceId) {
         return res.status(400).json({
           success: false,
+          message:
+            "Key and deviceId are required",
           error:
             "Key and deviceId are required",
         });
@@ -636,7 +644,8 @@ app.post(
           success: false,
           message:
             "Invalid or expired key.",
-          error: "Invalid key",
+          error:
+            "Invalid key",
         });
       }
 
@@ -646,7 +655,7 @@ app.post(
       const now = Date.now();
 
       // --------------------------------------------------------
-      // CHECK EXPIRATION
+      // EXPIRATION
       // --------------------------------------------------------
 
       if (
@@ -657,12 +666,13 @@ app.post(
           success: false,
           message:
             "Invalid or expired key.",
-          error: "Key expired",
+          error:
+            "Key expired",
         });
       }
 
       // --------------------------------------------------------
-      // CHECK DEVICE
+      // DEVICE BINDING
       // --------------------------------------------------------
 
       if (
@@ -700,11 +710,12 @@ app.post(
       }
 
       // --------------------------------------------------------
-      // CREATE SESSION
+      // SESSION
       // --------------------------------------------------------
 
       const token =
-        crypto.randomBytes(32)
+        crypto
+          .randomBytes(32)
           .toString("hex");
 
       const expiresAt =
@@ -718,19 +729,15 @@ app.post(
         token,
         {
           key: row.key,
-
           deviceId,
-
           createdAt: now,
-
           expiresAt,
         }
       );
 
-      // --------------------------------------------------------
       // IMPORTANT:
-      // Your current HTML expects sessionToken.
-      // We return BOTH sessionToken and token.
+      // Your HTML expects sessionToken.
+      // Return BOTH sessionToken and token.
       // --------------------------------------------------------
 
       return res.json({
@@ -742,12 +749,9 @@ app.post(
 
         key: {
           key: row.key,
-
           duration:
             row.duration,
-
           expiresAt,
-
           keyExpiresAt:
             expiresAt,
         },
@@ -763,7 +767,7 @@ app.post(
         error
       );
 
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message:
           "Verification failed",
@@ -786,12 +790,94 @@ app.post(
       await pool.connect();
 
     try {
-      const accounts =
+      console.log(
+        "📦 Stock add request:",
+        JSON.stringify(
+          req.body,
+          null,
+          2
+        )
+      );
+
+      let accounts = [];
+
+      // --------------------------------------------------------
+      // FORMAT 1
+      // { accounts: [...] }
+      // --------------------------------------------------------
+
+      if (
         Array.isArray(
           req.body?.accounts
         )
-          ? req.body.accounts
-          : [];
+      ) {
+        accounts =
+          req.body.accounts;
+      }
+
+      // --------------------------------------------------------
+      // FORMAT 2
+      // { account: {...} }
+      // --------------------------------------------------------
+
+      else if (
+        req.body?.account
+      ) {
+        accounts = [
+          req.body.account,
+        ];
+      }
+
+      // --------------------------------------------------------
+      // FORMAT 3
+      // { username, password }
+      // --------------------------------------------------------
+
+      else if (
+        req.body?.username &&
+        req.body?.password
+      ) {
+        accounts = [
+          {
+            username:
+              req.body.username,
+            password:
+              req.body.password,
+          },
+        ];
+      }
+
+      // --------------------------------------------------------
+      // FORMAT 4
+      // { email, password }
+      // --------------------------------------------------------
+
+      else if (
+        req.body?.email &&
+        req.body?.password
+      ) {
+        accounts = [
+          {
+            email:
+              req.body.email,
+            password:
+              req.body.password,
+          },
+        ];
+      }
+
+      // --------------------------------------------------------
+      // FORMAT 5
+      // Raw array
+      // ["username:password"]
+      // --------------------------------------------------------
+
+      else if (
+        Array.isArray(req.body)
+      ) {
+        accounts =
+          req.body;
+      }
 
       if (
         !accounts.length
@@ -819,6 +905,10 @@ app.post(
         let username = "";
         let password = "";
 
+        // ------------------------------------------------------
+        // STRING ACCOUNT
+        // ------------------------------------------------------
+
         if (
           typeof account ===
           "string"
@@ -827,7 +917,7 @@ app.post(
             account.split(":");
 
           username =
-            (
+            String(
               split[0] || ""
             ).trim();
 
@@ -836,18 +926,30 @@ app.post(
               .slice(1)
               .join(":")
               .trim();
-        } else {
+        }
+
+        // ------------------------------------------------------
+        // OBJECT ACCOUNT
+        // ------------------------------------------------------
+
+        else if (
+          typeof account ===
+          "object"
+        ) {
           username =
             String(
               account.username ||
               account.email ||
               account.emailAddress ||
+              account.user ||
+              account.login ||
               ""
             ).trim();
 
           password =
             String(
               account.password ||
+              account.pass ||
               ""
             ).trim();
         }
@@ -856,6 +958,11 @@ app.post(
           !username ||
           !password
         ) {
+          console.log(
+            "⚠️ Skipping invalid account:",
+            account
+          );
+
           continue;
         }
 
@@ -882,25 +989,41 @@ app.post(
         added++;
       }
 
+      if (
+        added === 0
+      ) {
+        await client.query(
+          "ROLLBACK"
+        );
+
+        return res.status(400).json({
+          success: false,
+          error:
+            "No valid accounts found in request",
+        });
+      }
+
       await client.query(
         "COMMIT"
       );
 
-      res.json({
+      return res.json({
         success: true,
         added,
       });
     } catch (error) {
-      await client.query(
-        "ROLLBACK"
-      );
+      try {
+        await client.query(
+          "ROLLBACK"
+        );
+      } catch {}
 
       console.error(
-        "Add stock error:",
+        "❌ Add stock error:",
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error:
           "Failed to add stock",
@@ -1020,9 +1143,7 @@ app.get(
 
       res.json({
         success: true,
-
         stock,
-
         count:
           stock.length,
       });
@@ -1181,11 +1302,11 @@ app.post(
       return res.json({
         success: true,
 
-        // Your HTML can use this
+        // Your current HTML supports this
         account:
           accounts[0],
 
-        // Also provide all accounts
+        // Also return all generated accounts
         accounts,
 
         count:
