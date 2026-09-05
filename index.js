@@ -206,10 +206,31 @@ client.on("messageCreate", async (message) => {
 
     const data = response.data;
 
+    /*
+      Novi API returns:
+
+      {
+        success: true,
+        keys: [
+          {
+            key: "...",
+            duration: "...",
+            createdAt: ...,
+            expiresAt: ...
+          }
+        ]
+      }
+
+      So the key is:
+      data.keys[0].key
+    */
+
     if (
       !data ||
       !data.success ||
-      !data.key
+      !Array.isArray(data.keys) ||
+      !data.keys[0] ||
+      !data.keys[0].key
     ) {
       console.log(
         "[GEN] Invalid API response:",
@@ -223,8 +244,15 @@ client.on("messageCreate", async (message) => {
       });
     }
 
+    const generatedKey = data.keys[0].key;
+
     console.log(
       "[GEN] KEY GENERATED SUCCESSFULLY"
+    );
+
+    console.log(
+      "[GEN] Key:",
+      generatedKey
     );
 
     const embed = new EmbedBuilder()
@@ -235,7 +263,7 @@ client.on("messageCreate", async (message) => {
       .addFields(
         {
           name: "Key",
-          value: `\`${data.key}\``,
+          value: `\`${generatedKey}\``,
           inline: false
         },
         {
