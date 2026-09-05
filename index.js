@@ -1,699 +1,1192 @@
 require("dotenv").config();
 
-const axios = require("axios");
-const {
-  Client,
-  GatewayIntentBits,
-  EmbedBuilder
-} = require("discord.js");
+const express = require("express");
+const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+const { Pool } = require("pg");
 
-// Start the Novi API server
-require("./server.js");
+const app = express();
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
-});
+const PORT = Number(process.env.PORT) || 10000;
+const PUBLIC_DIR = path.join(__dirname, "public");
 
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
-const NOVI_ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET;
+const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET || "";
+const DATABASE_URL = process.env.DATABASE_URL || "";
 
-const PORT = process.env.PORT || 10000;
-const API_URL = `http://127.0.0.1:${PORT}`;
-
-const ALLOWED_ROLES = [
-  "1529705570209366167",
-  "1378500563456626719"
-];
-
-const DURATIONS = {
-  "1d": "1 Day",
-  "3d": "3 Days",
-  "1week": "1 Week",
-  "1month": "1 Month",
-  "lifetime": "Lifetime"
-};
-
-
-/* =========================
-   PERMISSIONS
-========================= */
-
-function hasPermission(member) {
-  if (!member || !member.roles) {
-    return false;
-  }
-
-  return member.roles.cache.some(role =>
-    ALLOWED_ROLES.includes(role.id)
-  );
+if (!DATABASE_URL) {
+  console.error("DATABASE_URL is missing");
 }
 
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: DATABASE_URL
+    ? { rejectUnauthorized: false }
+    : undefined,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+});
 
-/* =========================
-   ADMIN HEADERS
-========================= */
+pool.on("error", (err) => {
+  console.error("PostgreSQL error:", err.message);
+});
 
-function adminHeaders() {
+/* ============================================================
+   EXPRESS
+============================================================ */
+
+app.disable("x-powered-by");
+
+app.use(
+  cors({
+    origin: true,
+    credentials: false,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "x-novi-session",
+      "x-admin-secret",
+      "x-api-key",
+    ],
+  })
+);
+
+app.use(
+  express.json({
+    limit: "10mb",
+    strict: false,
+  })
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "10mb",
+  })
+);
+
+app.use(
+  express.text({
+    type: ["text/plain", "text/*"],
+    limit: "10mb",
+  })
+);
+
+/* ============================================================
+   DATABASE
+============================================================ */
+
+async function initDatabase() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS novi_keys (
+      id SERIAL PRIMARY KEY,
+      key TEXT UNIQUE NOT NULL,
+      duration INTEGER DEFAULT 30,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      expires_at TIMESTAMPTZ
+    )
+  `);
+
+  /*
+    Separate safe stock table.
+
+    IMPORTANT:
+    This does NOT modify or delete columns from your
+    existing novi_stock table.
+  */
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS novi_stock_items (
+      id BIGSERIAL PRIMARY KEY,
+      stock_id TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS
+    novi_stock_items_created_idx
+    ON novi_stock_items(created_at)
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS
+    novi_stock_items_stock_id_idx
+    ON novi_stock_items(stock_id)
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS novi_saved_items (
+      id BIGSERIAL PRIMARY KEY,
+      stock_id TEXT NOT NULL,
+      device_id TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  console.log("Database initialized");
+}
+
+/* ============================================================
+   SESSIONS
+============================================================ */
+
+const sessions = new Map();
+
+function createSession(key, expiresAt, deviceId = null) {
+  const token = crypto.randomBytes(32).toString("hex");
+
+  sessions.set(token, {
+    key,
+    expiresAt,
+    deviceId,
+    createdAt: Date.now(),
+  });
+
+  return token;
+}
+
+function getSession(req) {
+  const headerToken = req.headers["x-novi-session"];
+
+  const auth = req.headers.authorization || "";
+
+  let bearer = null;
+
+  if (auth.toLowerCase().startsWith("bearer ")) {
+    bearer = auth.slice(7).trim();
+  }
+
+  const token = headerToken || bearer;
+
+  if (!token) return null;
+
+  const session = sessions.get(token);
+
+  if (!session) return null;
+
+  if (
+    session.expiresAt &&
+    Date.now() >= session.expiresAt
+  ) {
+    sessions.delete(token);
+    return null;
+  }
+
   return {
-    "x-novi-admin-secret": NOVI_ADMIN_SECRET,
-    "Content-Type": "application/json"
+    token,
+    ...session,
   };
 }
 
+/* ============================================================
+   ADMIN AUTH
+============================================================ */
 
-/* =========================
-   CLEAN API ERROR
-========================= */
-
-function getApiError(data) {
-  if (!data) {
-    return "Unknown API error.";
-  }
-
-  if (typeof data === "string") {
-    return data
-      .replace(/<[^>]*>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 1000);
-  }
-
-  if (typeof data === "object") {
-    return (
-      data.error ||
-      data.message ||
-      data.details ||
-      JSON.stringify(data)
-    );
-  }
-
-  return "Unknown API error.";
+function getAdminSecret(req) {
+  return (
+    req.headers["x-admin-secret"] ||
+    req.headers["x-api-key"] ||
+    req.headers.authorization?.replace(
+      /^Bearer\s+/i,
+      ""
+    ) ||
+    req.body?.adminSecret ||
+    req.body?.secret ||
+    req.body?.apiKey ||
+    req.query?.secret ||
+    ""
+  );
 }
 
+function requireAdmin(req, res, next) {
+  const supplied = String(getAdminSecret(req) || "");
+  const expected = String(ADMIN_SECRET || "");
 
-/* =========================
-   BOT READY
-========================= */
+  if (!expected) {
+    return res.status(500).json({
+      success: false,
+      error: "NOVI_ADMIN_SECRET is not configured",
+    });
+  }
 
-client.once("ready", () => {
-  console.log("========================================");
-  console.log("       DISCORD BOT IS CONNECTED");
-  console.log("========================================");
-  console.log(`Bot: ${client.user.tag}`);
-  console.log(`API: ${API_URL}`);
-  console.log("========================================");
+  if (!supplied) {
+    return res.status(401).json({
+      success: false,
+      error: "Missing admin secret",
+    });
+  }
+
+  const a = Buffer.from(supplied);
+  const b = Buffer.from(expected);
+
+  if (
+    a.length !== b.length ||
+    !crypto.timingSafeEqual(a, b)
+  ) {
+    return res.status(403).json({
+      success: false,
+      error: "Invalid admin secret",
+    });
+  }
+
+  next();
+}
+
+/* ============================================================
+   SESSION AUTH
+============================================================ */
+
+function requireSession(req, res, next) {
+  const session = getSession(req);
+
+  if (!session) {
+    return res.status(401).json({
+      success: false,
+      error: "Invalid or expired session",
+    });
+  }
+
+  req.noviSession = session;
+  next();
+}
+
+/* ============================================================
+   HEALTH
+============================================================ */
+
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    service: "Novi API",
+    status: "online",
+  });
 });
 
-
-/* =========================
-   !GEN
-========================= */
-
-client.on("messageCreate", async (message) => {
+app.get("/api/health", async (req, res) => {
   try {
-    if (message.author.bot) return;
+    await pool.query("SELECT 1");
 
-    const content = message.content.trim();
+    res.json({
+      success: true,
+      status: "online",
+      database: "connected",
+      sessions: sessions.size,
+    });
+  } catch (err) {
+    console.error("Health error:", err.message);
 
-    if (!content.toLowerCase().startsWith("!gen")) {
+    res.status(500).json({
+      success: false,
+      status: "online",
+      database: "error",
+    });
+  }
+});
+
+/* ============================================================
+   KEYS
+============================================================ */
+
+app.post("/api/keys", requireAdmin, async (req, res) => {
+  try {
+    const body = req.body || {};
+
+    const requestedKey =
+      body.key ||
+      body.license ||
+      body.licenseKey ||
+      body.value ||
+      null;
+
+    const duration = Number(
+      body.duration ||
+      body.days ||
+      body.durationDays ||
+      30
+    );
+
+    const key =
+      requestedKey &&
+      String(requestedKey).trim()
+        ? String(requestedKey).trim()
+        : crypto.randomBytes(16).toString("hex");
+
+    const safeDuration =
+      Number.isFinite(duration) && duration > 0
+        ? Math.floor(duration)
+        : 30;
+
+    const expiresAt = new Date(
+      Date.now() +
+        safeDuration * 24 * 60 * 60 * 1000
+    );
+
+    const result = await pool.query(
+      `
+      INSERT INTO novi_keys
+        (key, duration, expires_at)
+      VALUES
+        ($1, $2, $3)
+      ON CONFLICT (key)
+      DO UPDATE SET
+        duration = EXCLUDED.duration,
+        expires_at = EXCLUDED.expires_at
+      RETURNING *
+      `,
+      [key, safeDuration, expiresAt]
+    );
+
+    res.json({
+      success: true,
+      key: result.rows[0].key,
+      duration: result.rows[0].duration,
+      expiresAt: result.rows[0].expires_at,
+    });
+  } catch (err) {
+    console.error("Create key error:", err);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to create key",
+    });
+  }
+});
+
+app.get("/api/keys", requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        id,
+        key,
+        duration,
+        created_at,
+        expires_at
+      FROM novi_keys
+      ORDER BY id DESC
+    `);
+
+    res.json({
+      success: true,
+      keys: result.rows,
+    });
+  } catch (err) {
+    console.error("Keys error:", err);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to load keys",
+    });
+  }
+});
+
+/* ============================================================
+   VERIFY
+============================================================ */
+
+app.post("/api/verify", async (req, res) => {
+  try {
+    const body = req.body || {};
+
+    const key = String(
+      body.key ||
+      body.license ||
+      body.licenseKey ||
+      ""
+    ).trim();
+
+    const deviceId = String(
+      body.deviceId ||
+      body.device_id ||
+      ""
+    ).trim() || null;
+
+    if (!key) {
+      return res.status(400).json({
+        success: false,
+        valid: false,
+        error: "Missing key",
+      });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM novi_keys
+      WHERE key = $1
+      LIMIT 1
+      `,
+      [key]
+    );
+
+    if (!result.rows.length) {
+      return res.status(401).json({
+        success: false,
+        valid: false,
+        error: "Invalid key",
+      });
+    }
+
+    const row = result.rows[0];
+
+    if (
+      row.expires_at &&
+      new Date(row.expires_at).getTime() <= Date.now()
+    ) {
+      return res.status(401).json({
+        success: false,
+        valid: false,
+        error: "Key expired",
+      });
+    }
+
+    const expiresAt = row.expires_at
+      ? new Date(row.expires_at).getTime()
+      : Date.now() +
+        Number(row.duration || 30) * 86400000;
+
+    const sessionToken = createSession(
+      key,
+      expiresAt,
+      deviceId
+    );
+
+    res.json({
+      success: true,
+      valid: true,
+
+      sessionToken,
+      token: sessionToken,
+
+      key,
+      duration: row.duration,
+      expiresAt: row.expires_at,
+    });
+  } catch (err) {
+    console.error("Verify error:", err);
+
+    res.status(500).json({
+      success: false,
+      valid: false,
+      error: "Verification failed",
+    });
+  }
+});
+
+/* ============================================================
+   STOCK HELPERS
+============================================================ */
+
+function cleanStockValue(value) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return null;
+  }
+
+  if (
+    typeof value === "number" ||
+    typeof value === "bigint"
+  ) {
+    return String(value).trim() || null;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const valueClean = value.trim();
+
+  if (!valueClean) {
+    return null;
+  }
+
+  /*
+    Stock entries must be non-sensitive IDs/codes.
+    Reject credential-shaped values.
+  */
+  if (
+    /^[^@\s:]+@[^@\s:]+:[^\s]+$/.test(
+      valueClean
+    )
+  ) {
+    return null;
+  }
+
+  return valueClean;
+}
+
+function extractStockValues(input) {
+  const values = [];
+
+  function add(value) {
+    const cleaned = cleanStockValue(value);
+
+    if (cleaned) {
+      values.push(cleaned);
+    }
+  }
+
+  function walk(value) {
+    if (
+      value === null ||
+      value === undefined
+    ) {
       return;
     }
 
-    console.log("");
-    console.log("========================================");
-    console.log("[GEN] COMMAND RECEIVED");
-    console.log("========================================");
-    console.log("User:", message.author.tag);
-    console.log("Message:", content);
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        walk(item);
+      }
 
-    if (!hasPermission(message.member)) {
-      console.log("[GEN] Permission denied");
-
-      return message.reply({
-        content: "❌ You do not have permission to generate keys."
-      });
+      return;
     }
 
-    const args = content.split(/\s+/);
+    if (typeof value === "string") {
+      const lines = value
+        .split(/\r?\n/)
+        .map((x) => x.trim())
+        .filter(Boolean);
 
-    const duration =
-      (args[1] || "1d").toLowerCase();
+      for (const line of lines) {
+        add(line);
+      }
 
-    if (!DURATIONS[duration]) {
-      return message.reply({
-        content:
-          "❌ Invalid duration.\n\n" +
-          "Available durations:\n" +
-          "`1d` • `3d` • `1week` • `1month` • `lifetime`"
-      });
+      return;
     }
-
-    console.log("[GEN] Duration:", duration);
-    console.log(
-      "[GEN] API URL:",
-      `${API_URL}/api/keys`
-    );
-    console.log(
-      "[GEN] Admin secret exists:",
-      Boolean(NOVI_ADMIN_SECRET)
-    );
-
-    await message.channel.sendTyping();
-
-    const response = await axios({
-      method: "POST",
-      url: `${API_URL}/api/keys`,
-      headers: adminHeaders(),
-      data: {
-        duration
-      },
-      timeout: 15000,
-      validateStatus: () => true
-    });
-
-    console.log(
-      "[GEN] HTTP STATUS:",
-      response.status
-    );
-
-    console.log(
-      "[GEN] RESPONSE:",
-      response.data
-    );
 
     if (
-      response.status < 200 ||
-      response.status >= 300
+      typeof value === "number" ||
+      typeof value === "bigint"
     ) {
-      const errorMessage =
-        getApiError(response.data);
-
-      console.log(
-        "[GEN] API ERROR:",
-        errorMessage
-      );
-
-      return message.reply({
-        content:
-          `❌ Failed to generate key.\n` +
-          `API HTTP ${response.status}: ${errorMessage}`
-      });
+      add(value);
+      return;
     }
 
-    const data = response.data;
+    if (typeof value === "object") {
+      const directFields = [
+        "stockId",
+        "stock_id",
+        "id",
+        "value",
+        "name",
+        "code",
+        "item",
+        "itemId",
+        "item_id",
+      ];
+
+      for (const field of directFields) {
+        if (
+          Object.prototype.hasOwnProperty.call(
+            value,
+            field
+          )
+        ) {
+          add(value[field]);
+        }
+      }
+
+      const arrayFields = [
+        "stock",
+        "stocks",
+        "items",
+        "data",
+        "values",
+        "list",
+        "stockIds",
+        "stock_ids",
+        "entries",
+      ];
+
+      for (const field of arrayFields) {
+        if (
+          Object.prototype.hasOwnProperty.call(
+            value,
+            field
+          )
+        ) {
+          walk(value[field]);
+        }
+      }
+    }
+  }
+
+  walk(input);
+
+  return [...new Set(values)];
+}
+
+/* ============================================================
+   STOCK ADD
+============================================================ */
+
+async function stockAddHandler(req, res) {
+  try {
+    console.log(
+      "STOCK ADD:",
+      req.method,
+      req.originalUrl
+    );
+
+    let body = req.body;
 
     /*
-      Novi API returns:
-
-      {
-        success: true,
-        keys: [
-          {
-            key: "...",
-            duration: "...",
-            createdAt: ...,
-            expiresAt: ...
-          }
-        ]
-      }
-
-      So the key is:
-      data.keys[0].key
+      Some older bots send JSON as text.
     */
-
-    if (
-      !data ||
-      !data.success ||
-      !Array.isArray(data.keys) ||
-      !data.keys[0] ||
-      !data.keys[0].key
-    ) {
-      console.log(
-        "[GEN] Invalid API response:",
-        data
-      );
-
-      return message.reply({
-        content:
-          "❌ API returned an invalid response.\n" +
-          `\`${JSON.stringify(data).slice(0, 1000)}\``
-      });
-    }
-
-    const generatedKey = data.keys[0].key;
-
-    console.log(
-      "[GEN] KEY GENERATED SUCCESSFULLY"
-    );
-
-    console.log(
-      "[GEN] Key:",
-      generatedKey
-    );
-
-    const embed = new EmbedBuilder()
-      .setTitle("🔑 Novi Key Generated")
-      .setDescription(
-        `Your **${DURATIONS[duration]}** key has been generated.`
-      )
-      .addFields(
-        {
-          name: "Key",
-          value: `\`${generatedKey}\``,
-          inline: false
-        },
-        {
-          name: "Duration",
-          value: DURATIONS[duration],
-          inline: true
-        }
-      )
-      .setFooter({
-        text: "Novi Key System"
-      })
-      .setTimestamp();
-
-    return message.reply({
-      embeds: [embed]
-    });
-
-  } catch (error) {
-
-    console.log("");
-    console.log("========================================");
-    console.log("[GEN] UNEXPECTED ERROR");
-    console.log("========================================");
-    console.log("Message:", error.message);
-    console.log("Code:", error.code);
-
-    if (error.response) {
-      console.log(
-        "HTTP STATUS:",
-        error.response.status
-      );
-
-      console.log(
-        "HTTP DATA:",
-        error.response.data
-      );
-    }
-
-    console.log("========================================");
-
-    return message.reply({
-      content:
-        `❌ Failed to generate key.\n` +
-        `API: ${error.message || "Unknown API error."}`
-    }).catch(() => {});
-  }
-});
-
-
-/* =========================
-   !ADD
-========================= */
-
-client.on("messageCreate", async (message) => {
-
-  try {
-
-    if (message.author.bot) {
-      return;
-    }
-
-    const content =
-      message.content.trim();
-
-    if (!content.toLowerCase().startsWith("!add")) {
-      return;
-    }
-
-    console.log("");
-    console.log("========================================");
-    console.log("[ADD] COMMAND RECEIVED");
-    console.log("========================================");
-    console.log("User:", message.author.tag);
-    console.log("Message:", content);
-
-
-    /* -------------------------
-       PERMISSION
-    ------------------------- */
-
-    if (!hasPermission(message.member)) {
-
-      console.log(
-        "[ADD] Permission denied"
-      );
-
-      return message.reply({
-        content:
-          "❌ You do not have permission to add stock."
-      });
-    }
-
-
-    /* -------------------------
-       GET TYPED ITEMS
-    ------------------------- */
-
-    const args =
-      content
-        .split(/\s+/)
-        .slice(1);
-
-    let items = [];
-
-
-    if (args.length > 0) {
-      items.push(...args);
-    }
-
-
-    /* -------------------------
-       GET TXT ATTACHMENT
-    ------------------------- */
-
-    const attachment =
-      message.attachments.first();
-
-
-    if (
-      attachment &&
-      attachment.name &&
-      attachment.name
-        .toLowerCase()
-        .endsWith(".txt")
-    ) {
-
-      console.log(
-        "[ADD] TXT attachment detected:",
-        attachment.name
-      );
-
-      try {
-
-        const fileResponse =
-          await axios.get(
-            attachment.url,
-            {
-              responseType: "text",
-              timeout: 15000
-            }
-          );
-
-        const fileItems =
-          String(fileResponse.data)
-            .split(/\r?\n/)
-            .map(item => item.trim())
-            .filter(Boolean);
-
-        items.push(...fileItems);
-
-        console.log(
-          "[ADD] TXT items:",
-          fileItems.length
-        );
-
-      } catch (error) {
-
-        console.error(
-          "[ADD] Failed to download TXT:",
-          error.message
-        );
-
-        return message.reply({
-          content:
-            "❌ Failed to read the TXT attachment."
-        });
-      }
-    }
-
-
-    /* -------------------------
-       CLEAN ITEMS
-    ------------------------- */
-
-    items = items
-      .map(item => String(item).trim())
-      .filter(Boolean);
-
-
-    /* -------------------------
-       REMOVE DUPLICATES
-    ------------------------- */
-
-    items = [
-      ...new Set(items)
-    ];
-
-
-    /* -------------------------
-       EMPTY CHECK
-    ------------------------- */
-
-    if (items.length === 0) {
-
-      return message.reply({
-        content:
-          "❌ Please provide stock items or attach a `.txt` file."
-      });
-    }
-
-
-    console.log(
-      "[ADD] Items to add:",
-      items.length
-    );
-
-
-    /* -------------------------
-       SEND TO API
-    ------------------------- */
-
-    const response =
-      await axios({
-        method: "POST",
-        url: `${API_URL}/api/stock/add`,
-        headers: adminHeaders(),
-
-        data: {
-          items
-        },
-
-        timeout: 15000,
-
-        validateStatus: () => true
-      });
-
-
-    console.log(
-      "[ADD] HTTP STATUS:",
-      response.status
-    );
-
-    console.log(
-      "[ADD] RESPONSE:",
-      response.data
-    );
-
-
-    /* -------------------------
-       API ERROR
-    ------------------------- */
-
-    if (
-      response.status < 200 ||
-      response.status >= 300
-    ) {
-
-      const errorMessage =
-        getApiError(response.data);
-
-      console.log(
-        "[ADD] API ERROR:",
-        errorMessage
-      );
-
-      return message.reply({
-        content:
-          `❌ Failed to add stock.\n` +
-          `API HTTP ${response.status}: ${errorMessage}`
-      });
-    }
-
-
-    /* -------------------------
-       SUCCESS
-    ------------------------- */
-
-    const added =
-      response.data?.added ??
-      items.length;
-
-
-    let stockCount = "?";
-
-
-    /* -------------------------
-       GET STOCK COUNT
-    ------------------------- */
-
-    try {
-
-      const stockResponse =
-        await axios.get(
-          `${API_URL}/api/admin/stock`,
-          {
-            headers: adminHeaders(),
-            timeout: 15000,
-            validateStatus: () => true
-          }
-        );
-
-
-      console.log(
-        "[ADD] STOCK RESPONSE:",
-        stockResponse.data
-      );
-
+    if (typeof body === "string") {
+      const trimmed = body.trim();
 
       if (
-        stockResponse.status >= 200 &&
-        stockResponse.status < 300 &&
-        stockResponse.data &&
-        typeof stockResponse.data.count !==
-          "undefined"
+        trimmed.startsWith("{") ||
+        trimmed.startsWith("[")
       ) {
-
-        stockCount =
-          stockResponse.data.count;
+        try {
+          body = JSON.parse(trimmed);
+        } catch {
+          // Keep as text.
+        }
       }
-
-    } catch (error) {
-
-      console.log(
-        "[ADD] Could not get stock count:",
-        error.message
-      );
     }
 
+    const values = extractStockValues(body);
 
     console.log(
-      `[ADD] Successfully added ${added} item(s).`
+      "Stock values received:",
+      values.length
     );
 
+    if (!values.length) {
+      return res.status(400).json({
+        success: false,
+        error: "No valid stock IDs supplied",
+        added: 0,
+      });
+    }
 
-    return message.reply({
-      content:
-        `✅ Added **${added}** stock item(s).\n` +
-        `📦 Total stock: **${stockCount}**`
+    let added = 0;
+
+    for (const stockId of values) {
+      await pool.query(
+        `
+        INSERT INTO novi_stock_items
+          (stock_id, created_at)
+        VALUES
+          ($1, NOW())
+        `,
+        [stockId]
+      );
+
+      added++;
+    }
+
+    console.log(
+      `Added ${added} stock item(s)`
+    );
+
+    return res.json({
+      success: true,
+      added,
+      count: added,
+      message:
+        `Added ${added} stock item(s)`,
     });
-
-
-  } catch (error) {
-
+  } catch (err) {
     console.error(
-      "[ADD] Error:",
-      error
+      "STOCK ADD ERROR:",
+      err
     );
 
-    return message.reply({
-      content:
-        `❌ Failed to add stock.\n` +
-        `API: ${error.message || "Unknown API error."}`
-    }).catch(() => {});
+    return res.status(500).json({
+      success: false,
+      error: "Failed to add stock",
+    });
   }
-
-});
-
-
-/* =========================
-   DISCORD ERRORS
-========================= */
-
-client.on("error", error => {
-  console.error(
-    "[DISCORD ERROR]",
-    error
-  );
-});
-
-
-process.on(
-  "unhandledRejection",
-  error => {
-    console.error(
-      "[UNHANDLED REJECTION]",
-      error
-    );
-  }
-);
-
-
-process.on(
-  "uncaughtException",
-  error => {
-    console.error(
-      "[UNCAUGHT EXCEPTION]",
-      error
-    );
-  }
-);
-
-
-/* =========================
-   ENV CHECK
-========================= */
-
-if (!DISCORD_TOKEN) {
-
-  console.error(
-    "❌ DISCORD_TOKEN is missing."
-  );
-
-  process.exit(1);
 }
 
-
-if (!NOVI_ADMIN_SECRET) {
-
-  console.error(
-    "❌ NOVI_ADMIN_SECRET is missing."
-  );
-
-  process.exit(1);
-}
-
-
-/* =========================
-   START BOT
-========================= */
-
-console.log(
-  "[BOT] Starting Discord login..."
+app.post(
+  "/api/stock/add",
+  requireAdmin,
+  stockAddHandler
 );
 
+/*
+  Compatibility aliases.
+*/
+app.post(
+  "/api/add-stock",
+  requireAdmin,
+  stockAddHandler
+);
 
-client
-  .login(DISCORD_TOKEN)
-  .then(() => {
+app.post(
+  "/api/stock",
+  requireAdmin,
+  stockAddHandler
+);
 
-    console.log(
-      "[BOT] Discord login successful."
-    );
+/* ============================================================
+   STOCK COUNT
+============================================================ */
 
-  })
-  .catch(error => {
+app.get(
+  "/api/stock/count",
+  requireSession,
+  async (req, res) => {
+    try {
+      const result = await pool.query(`
+        SELECT COUNT(*)::INTEGER AS count
+        FROM novi_stock_items
+      `);
 
-    console.error(
-      "❌ Discord login failed:"
-    );
+      res.json({
+        success: true,
+        count: result.rows[0].count,
+      });
+    } catch (err) {
+      console.error(
+        "Stock count error:",
+        err
+      );
 
-    console.error(error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to get stock count",
+      });
+    }
+  }
+);
 
+/* ============================================================
+   STOCK LIST
+============================================================ */
+
+app.get(
+  "/api/stock",
+  requireSession,
+  async (req, res) => {
+    try {
+      const result = await pool.query(`
+        SELECT
+          id,
+          stock_id,
+          created_at
+        FROM novi_stock_items
+        ORDER BY id ASC
+      `);
+
+      res.json({
+        success: true,
+        stock: result.rows,
+        items: result.rows,
+        accounts: result.rows,
+      });
+    } catch (err) {
+      console.error(
+        "Stock list error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to load stock",
+      });
+    }
+  }
+);
+
+/* ============================================================
+   ADMIN STOCK
+============================================================ */
+
+app.get(
+  "/api/admin/stock",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const result = await pool.query(`
+        SELECT
+          id,
+          stock_id,
+          created_at
+        FROM novi_stock_items
+        ORDER BY id ASC
+      `);
+
+      res.json({
+        success: true,
+        stock: result.rows,
+        items: result.rows,
+        count: result.rows.length,
+      });
+    } catch (err) {
+      console.error(
+        "Admin stock error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to load stock",
+      });
+    }
+  }
+);
+
+/* ============================================================
+   GENERATE STOCK
+============================================================ */
+
+app.post(
+  "/api/stock/generate",
+  requireSession,
+  async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      const result = await client.query(`
+        SELECT
+          id,
+          stock_id,
+          created_at
+        FROM novi_stock_items
+        ORDER BY id ASC
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+      `);
+
+      if (!result.rows.length) {
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          success: false,
+          error: "Out of stock",
+        });
+      }
+
+      const item = result.rows[0];
+
+      await client.query(
+        `
+        DELETE FROM novi_stock_items
+        WHERE id = $1
+        `,
+        [item.id]
+      );
+
+      await client.query("COMMIT");
+
+      res.json({
+        success: true,
+
+        item: item.stock_id,
+        account: item.stock_id,
+        stock: item.stock_id,
+        stockId: item.stock_id,
+      });
+    } catch (err) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {}
+
+      console.error(
+        "Generate error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to generate stock",
+      });
+    } finally {
+      client.release();
+    }
+  }
+);
+
+/* ============================================================
+   SAVED ITEMS
+============================================================ */
+
+app.post(
+  "/api/saved-items",
+  requireSession,
+  async (req, res) => {
+    try {
+      const body = req.body || {};
+
+      const stockId = cleanStockValue(
+        body.stockId ||
+        body.stock_id ||
+        body.item ||
+        body.value
+      );
+
+      const deviceId = String(
+        body.deviceId ||
+        body.device_id ||
+        req.noviSession.deviceId ||
+        ""
+      ).trim() || null;
+
+      if (!stockId) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing stock ID",
+        });
+      }
+
+      const result = await pool.query(
+        `
+        INSERT INTO novi_saved_items
+          (stock_id, device_id, created_at)
+        VALUES
+          ($1, $2, NOW())
+        RETURNING *
+        `,
+        [stockId, deviceId]
+      );
+
+      res.json({
+        success: true,
+        item: result.rows[0],
+      });
+    } catch (err) {
+      console.error(
+        "Save error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to save item",
+      });
+    }
+  }
+);
+
+app.get(
+  "/api/saved-items",
+  requireSession,
+  async (req, res) => {
+    try {
+      const deviceId = String(
+        req.query.deviceId ||
+        req.query.device_id ||
+        req.noviSession.deviceId ||
+        ""
+      ).trim();
+
+      let result;
+
+      if (deviceId) {
+        result = await pool.query(
+          `
+          SELECT
+            id,
+            stock_id,
+            device_id,
+            created_at
+          FROM novi_saved_items
+          WHERE device_id = $1
+          ORDER BY id DESC
+          `,
+          [deviceId]
+        );
+      } else {
+        result = await pool.query(`
+          SELECT
+            id,
+            stock_id,
+            device_id,
+            created_at
+          FROM novi_saved_items
+          ORDER BY id DESC
+        `);
+      }
+
+      res.json({
+        success: true,
+        items: result.rows,
+        savedItems: result.rows,
+      });
+    } catch (err) {
+      console.error(
+        "Saved items error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to load saved items",
+      });
+    }
+  }
+);
+
+/* ============================================================
+   DELETE SAVED ITEM
+============================================================ */
+
+app.delete(
+  "/api/saved-items/:id",
+  requireSession,
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+
+      if (!Number.isInteger(id)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid item ID",
+        });
+      }
+
+      const result = await pool.query(
+        `
+        DELETE FROM novi_saved_items
+        WHERE id = $1
+        RETURNING id
+        `,
+        [id]
+      );
+
+      if (!result.rows.length) {
+        return res.status(404).json({
+          success: false,
+          error: "Saved item not found",
+        });
+      }
+
+      res.json({
+        success: true,
+        deleted: true,
+      });
+    } catch (err) {
+      console.error(
+        "Delete saved item error:",
+        err
+      );
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to delete saved item",
+      });
+    }
+  }
+);
+
+/* ============================================================
+   LOGOUT
+============================================================ */
+
+app.post("/api/logout", (req, res) => {
+  const session = getSession(req);
+
+  if (session) {
+    sessions.delete(session.token);
+  }
+
+  res.json({
+    success: true,
+    loggedOut: true,
   });
+});
+
+/* ============================================================
+   API 404
+============================================================ */
+
+app.use("/api", (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: "API route not found",
+    method: req.method,
+    path: req.originalUrl,
+  });
+});
+
+/* ============================================================
+   WEBSITE
+============================================================ */
+
+if (fs.existsSync(PUBLIC_DIR)) {
+  app.use(express.static(PUBLIC_DIR));
+
+  /*
+    EXPRESS 5 FIX:
+    Do NOT use app.get("*").
+    Express 5 requires a named wildcard.
+  */
+  app.get("/{*splat}", (req, res, next) => {
+    if (req.path.startsWith("/api/")) {
+      return next();
+    }
+
+    const indexFile = path.join(
+      PUBLIC_DIR,
+      "index.html"
+    );
+
+    if (fs.existsSync(indexFile)) {
+      return res.sendFile(indexFile);
+    }
+
+    next();
+  });
+}
+
+/* ============================================================
+   ERROR HANDLER
+============================================================ */
+
+app.use((err, req, res, next) => {
+  console.error(
+    "Unhandled server error:",
+    err
+  );
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  res.status(500).json({
+    success: false,
+    error: "Internal server error",
+  });
+});
+
+/* ============================================================
+   START
+============================================================ */
+
+async function start() {
+  try {
+    await initDatabase();
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log("================================");
+      console.log("       NOVI SERVER ONLINE");
+      console.log("================================");
+      console.log("Port:", PORT);
+      console.log("Database: connected");
+      console.log("Stock API: ready");
+      console.log("================================");
+    });
+  } catch (err) {
+    console.error(
+      "FAILED TO START NOVI:",
+      err
+    );
+
+    process.exit(1);
+  }
+}
+
+start();
