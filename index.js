@@ -5,6 +5,7 @@ const cors = require("cors");
 const path = require("path");
 const crypto = require("crypto");
 const fs = require("fs");
+
 const {
   Client,
   GatewayIntentBits,
@@ -16,12 +17,27 @@ const {
 
 const app = express();
 
-const PORT = Number(process.env.PORT) || 10000;
-const PUBLIC_DIR = path.join(__dirname, "public");
-const DATA_FILE = path.join(__dirname, "novi-data.json");
+const PORT =
+  Number(process.env.PORT) || 10000;
 
-const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET;
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+const PUBLIC_DIR =
+  path.join(__dirname, "public");
+
+const DATA_FILE =
+  path.join(
+    __dirname,
+    "novi-data.json"
+  );
+
+const ADMIN_SECRET =
+  process.env.NOVI_ADMIN_SECRET;
+
+const DISCORD_TOKEN =
+  process.env.DISCORD_TOKEN;
+
+// ============================================================
+// DISCORD ROLES
+// ============================================================
 
 const ALLOWED_ROLE_IDS = [
   "1529705570209366167",
@@ -29,58 +45,92 @@ const ALLOWED_ROLE_IDS = [
 ];
 
 // ============================================================
-// REQUIRED ENVIRONMENT VARIABLES
-// ============================================================
-
-if (!ADMIN_SECRET) {
-  console.error("❌ NOVI_ADMIN_SECRET is missing.");
-  process.exit(1);
-}
-
-// ============================================================
-// DATA STORAGE
+// DATA
 // ============================================================
 
 const DEFAULT_DATA = {
   nextStockId: 1,
   keys: [],
   stock: [],
+  sessions: [],
 };
+
+// ============================================================
+// LOAD DATA
+// ============================================================
+
+function createEmptyData() {
+  return {
+    nextStockId: 1,
+    keys: [],
+    stock: [],
+    sessions: [],
+  };
+}
 
 function loadData() {
   try {
-    if (!fs.existsSync(DATA_FILE)) {
+    if (
+      !fs.existsSync(
+        DATA_FILE
+      )
+    ) {
       fs.writeFileSync(
         DATA_FILE,
-        JSON.stringify(DEFAULT_DATA, null, 2),
+        JSON.stringify(
+          DEFAULT_DATA,
+          null,
+          2
+        ),
         "utf8"
       );
 
-      return {
-        ...DEFAULT_DATA,
-        keys: [],
-        stock: [],
-      };
+      console.log(
+        "📁 Created novi-data.json"
+      );
+
+      return createEmptyData();
     }
 
-    const raw = fs.readFileSync(
-      DATA_FILE,
-      "utf8"
-    );
+    const raw =
+      fs.readFileSync(
+        DATA_FILE,
+        "utf8"
+      );
 
-    const parsed = JSON.parse(raw);
+    if (!raw.trim()) {
+      return createEmptyData();
+    }
+
+    const parsed =
+      JSON.parse(raw);
 
     return {
       nextStockId:
-        Number(parsed.nextStockId) || 1,
+        Number(
+          parsed.nextStockId
+        ) || 1,
 
-      keys: Array.isArray(parsed.keys)
-        ? parsed.keys
-        : [],
+      keys:
+        Array.isArray(
+          parsed.keys
+        )
+          ? parsed.keys
+          : [],
 
-      stock: Array.isArray(parsed.stock)
-        ? parsed.stock
-        : [],
+      stock:
+        Array.isArray(
+          parsed.stock
+        )
+          ? parsed.stock
+          : [],
+
+      sessions:
+        Array.isArray(
+          parsed.sessions
+        )
+          ? parsed.sessions
+          : [],
     };
   } catch (error) {
     console.error(
@@ -88,17 +138,16 @@ function loadData() {
       error
     );
 
-    return {
-      ...DEFAULT_DATA,
-      keys: [],
-      stock: [],
-    };
+    return createEmptyData();
   }
 }
 
-let data = loadData();
+let data =
+  loadData();
 
-let saveTimer = null;
+// ============================================================
+// SAVE DATA
+// ============================================================
 
 function saveData() {
   try {
@@ -107,7 +156,11 @@ function saveData() {
 
     fs.writeFileSync(
       tempFile,
-      JSON.stringify(data, null, 2),
+      JSON.stringify(
+        data,
+        null,
+        2
+      ),
       "utf8"
     );
 
@@ -123,38 +176,16 @@ function saveData() {
   }
 }
 
-function scheduleSave() {
-  if (saveTimer) {
-    clearTimeout(saveTimer);
-  }
-
-  saveTimer = setTimeout(() => {
-    saveTimer = null;
-    saveData();
-  }, 250);
-}
-
-// Save immediately when the process exits.
-
-process.on("SIGINT", () => {
-  saveData();
-  process.exit(0);
-});
-
-process.on("SIGTERM", () => {
-  saveData();
-  process.exit(0);
-});
-
-process.on("exit", () => {
-  saveData();
-});
-
 // ============================================================
 // EXPRESS
 // ============================================================
 
-app.use(cors());
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 
 app.use(
   express.json({
@@ -163,122 +194,145 @@ app.use(
 );
 
 // ============================================================
-// SESSION SYSTEM
+// DEVICE COOKIE
+//
+// This is what locks a key to one browser.
+//
+// It is NOT a physical-device fingerprint.
+// It is a persistent browser identifier.
+//
+// If the browser closes:
+//   cookie stays.
+//
+// If the website is reopened:
+//   same device ID.
+//
+// If another browser uses the key:
+//   different device ID.
 // ============================================================
 
-const sessions = new Map();
-
-function createSession(
-  keyId,
-  expiresAt
+function parseCookies(
+  cookieHeader
 ) {
-  const token = crypto
-    .randomBytes(32)
-    .toString("hex");
+  const cookies = {};
 
-  sessions.set(token, {
-    keyId,
-    expiresAt:
-      expiresAt ?? null,
-  });
-
-  return token;
-}
-
-function getSession(req) {
-  const token =
-    req.headers["x-novi-session"];
-
-  if (!token) {
-    return null;
+  if (!cookieHeader) {
+    return cookies;
   }
 
-  const session =
-    sessions.get(token);
+  const parts =
+    cookieHeader.split(";");
 
-  if (!session) {
-    return null;
-  }
-
-  if (
-    session.expiresAt !== null &&
-    Date.now() >=
-      Number(session.expiresAt)
+  for (
+    const part of parts
   ) {
-    sessions.delete(token);
+    const index =
+      part.indexOf("=");
 
-    return null;
+    if (index === -1) {
+      continue;
+    }
+
+    const name =
+      part
+        .slice(0, index)
+        .trim();
+
+    const value =
+      part
+        .slice(index + 1)
+        .trim();
+
+    try {
+      cookies[name] =
+        decodeURIComponent(
+          value
+        );
+    } catch {
+      cookies[name] = value;
+    }
   }
 
-  return {
-    token,
-    ...session,
-  };
+  return cookies;
 }
 
-function requireSession(
-  req,
+function setDeviceCookie(
   res,
-  next
+  deviceId
 ) {
-  const session =
-    getSession(req);
+  const isProduction =
+    process.env.NODE_ENV ===
+    "production";
 
-  if (!session) {
-    return res.status(401).json({
-      success: false,
-      error:
-        "Your session has expired or is invalid.",
-    });
-  }
+  const cookie =
+    [
+      `novi_device=${encodeURIComponent(
+        deviceId
+      )}`,
 
-  req.noviSession =
-    session;
+      "Path=/",
 
-  next();
-}
+      "Max-Age=31536000",
 
-// ============================================================
-// GENERAL HELPERS
-// ============================================================
+      "HttpOnly",
 
-function generateKey() {
-  const random =
-    crypto
-      .randomBytes(12)
-      .toString("hex")
-      .toUpperCase();
+      "SameSite=Lax",
 
-  return (
-    `NOVI-${random.slice(0, 4)}-` +
-    `${random.slice(4, 8)}-` +
-    `${random.slice(8, 12)}-` +
-    `${random.slice(12, 16)}-` +
-    `${random.slice(16, 24)}`
+      isProduction
+        ? "Secure"
+        : "",
+    ]
+      .filter(Boolean)
+      .join("; ");
+
+  res.setHeader(
+    "Set-Cookie",
+    cookie
   );
 }
 
-function isExpired(
-  expiresAt
+function getOrCreateDeviceId(
+  req,
+  res
 ) {
-  if (
-    expiresAt === null ||
-    expiresAt === undefined
-  ) {
-    return false;
-  }
+  const cookies =
+    parseCookies(
+      req.headers.cookie
+    );
 
-  const timestamp =
-    Number(expiresAt);
+  let deviceId =
+    cookies.novi_device;
 
   if (
-    !Number.isFinite(timestamp)
+    !deviceId ||
+    deviceId.length < 20
   ) {
-    return false;
+    deviceId =
+      crypto.randomUUID();
+
+    setDeviceCookie(
+      res,
+      deviceId
+    );
   }
 
-  return Date.now() >= timestamp;
+  return deviceId;
 }
+
+// Create/check device cookie
+// before API routes.
+
+app.use(
+  (req, res, next) => {
+    req.noviDeviceId =
+      getOrCreateDeviceId(
+        req,
+        res
+      );
+
+    next();
+  }
+);
 
 // ============================================================
 // DURATIONS
@@ -349,7 +403,9 @@ function normalizeDuration(
     return "1mo";
   }
 
-  if (value === "lifetime") {
+  if (
+    value === "lifetime"
+  ) {
     return "lifetime";
   }
 
@@ -357,25 +413,286 @@ function normalizeDuration(
 }
 
 // ============================================================
+// KEY HELPERS
+// ============================================================
+
+function generateKey() {
+  const random =
+    crypto
+      .randomBytes(12)
+      .toString("hex")
+      .toUpperCase();
+
+  return (
+    "NOVI-" +
+    random.slice(0, 4) +
+    "-" +
+    random.slice(4, 8) +
+    "-" +
+    random.slice(8, 12) +
+    "-" +
+    random.slice(12, 16) +
+    "-" +
+    random.slice(16, 24)
+  );
+}
+
+function isExpired(
+  expiresAt
+) {
+  if (
+    expiresAt === null ||
+    expiresAt === undefined
+  ) {
+    return false;
+  }
+
+  const timestamp =
+    Number(expiresAt);
+
+  if (
+    !Number.isFinite(
+      timestamp
+    )
+  ) {
+    return false;
+  }
+
+  return (
+    Date.now() >= timestamp
+  );
+}
+
+// ============================================================
+// SESSION HELPERS
+// ============================================================
+
+function generateSessionToken() {
+  return crypto
+    .randomBytes(32)
+    .toString("hex");
+}
+
+function createSession(
+  keyId,
+  deviceId,
+  expiresAt
+) {
+  const token =
+    generateSessionToken();
+
+  data.sessions.push({
+    token,
+    keyId,
+    deviceId,
+    expiresAt:
+      expiresAt ?? null,
+    createdAt:
+      Date.now(),
+  });
+
+  saveData();
+
+  return token;
+}
+
+function getSession(
+  req
+) {
+  const headerToken =
+    req.headers[
+      "x-novi-session"
+    ];
+
+  let token =
+    headerToken;
+
+  // Also support a cookie
+  // session if the frontend
+  // doesn't send the header.
+
+  if (!token) {
+    const cookies =
+      parseCookies(
+        req.headers.cookie
+      );
+
+    token =
+      cookies.novi_session;
+  }
+
+  if (!token) {
+    return null;
+  }
+
+  const session =
+    data.sessions.find(
+      item =>
+        item.token ===
+        token
+    );
+
+  if (!session) {
+    return null;
+  }
+
+  // Make sure session belongs
+  // to this browser.
+
+  if (
+    session.deviceId !==
+    req.noviDeviceId
+  ) {
+    return null;
+  }
+
+  if (
+    isExpired(
+      session.expiresAt
+    )
+  ) {
+    data.sessions =
+      data.sessions.filter(
+        item =>
+          item.token !==
+          token
+      );
+
+    saveData();
+
+    return null;
+  }
+
+  return {
+    token,
+    ...session,
+  };
+}
+
+function setSessionCookie(
+  res,
+  token,
+  expiresAt
+) {
+  const isProduction =
+    process.env.NODE_ENV ===
+    "production";
+
+  let maxAge =
+    31536000;
+
+  if (
+    expiresAt !== null &&
+    expiresAt !== undefined
+  ) {
+    const remaining =
+      Number(expiresAt) -
+      Date.now();
+
+    if (remaining > 0) {
+      maxAge =
+        Math.floor(
+          remaining / 1000
+        );
+    }
+  }
+
+  const cookie =
+    [
+      `novi_session=${encodeURIComponent(
+        token
+      )}`,
+
+      "Path=/",
+
+      `Max-Age=${maxAge}`,
+
+      "HttpOnly",
+
+      "SameSite=Lax",
+
+      isProduction
+        ? "Secure"
+        : "",
+    ]
+      .filter(Boolean)
+      .join("; ");
+
+  // Preserve existing
+  // Set-Cookie header.
+
+  const existing =
+    res.getHeader(
+      "Set-Cookie"
+    );
+
+  const cookies =
+    existing
+      ? Array.isArray(
+          existing
+        )
+        ? existing
+        : [existing]
+      : [];
+
+  cookies.push(cookie);
+
+  res.setHeader(
+    "Set-Cookie",
+    cookies
+  );
+}
+
+function requireSession(
+  req,
+  res,
+  next
+) {
+  const session =
+    getSession(req);
+
+  if (!session) {
+    return res.status(401).json({
+      success: false,
+      error:
+        "Your session has expired or is invalid.",
+    });
+  }
+
+  req.noviSession =
+    session;
+
+  next();
+}
+
+// ============================================================
 // CLEAN EXPIRED SESSIONS
 // ============================================================
 
-setInterval(() => {
-  for (
-    const [
-      token,
-      session,
-    ] of sessions
+function cleanExpiredSessions() {
+  const before =
+    data.sessions.length;
+
+  data.sessions =
+    data.sessions.filter(
+      session =>
+        !isExpired(
+          session.expiresAt
+        )
+    );
+
+  if (
+    data.sessions.length !==
+    before
   ) {
-    if (
-      session.expiresAt !== null &&
-      Date.now() >=
-        Number(session.expiresAt)
-    ) {
-      sessions.delete(token);
-    }
+    saveData();
   }
-}, 60 * 1000);
+}
+
+setInterval(
+  cleanExpiredSessions,
+  60 * 1000
+);
 
 // ============================================================
 // HEALTH
@@ -389,12 +706,32 @@ app.get(
       ok: true,
       database: false,
       storage: "json",
+      keyLocking:
+        "device",
     });
   }
 );
 
 // ============================================================
 // VERIFY KEY
+//
+// FIRST USE:
+//
+// Key has no owner
+//        ↓
+// Browser claims key
+//        ↓
+// Device ID is saved
+//
+// NEXT USE:
+//
+// Same browser
+//        ↓
+// Allowed
+//
+// Different browser
+//        ↓
+// Rejected
 // ============================================================
 
 app.post(
@@ -417,36 +754,38 @@ app.post(
       const keyRow =
         data.keys.find(
           item =>
-            String(item.key)
-              .toUpperCase() ===
+            String(
+              item.key || ""
+            ).toUpperCase() ===
             suppliedKey.toUpperCase()
         );
 
       if (!keyRow) {
         return res.status(404).json({
           success: false,
-          error: "Invalid key.",
-        });
-      }
-
-      if (keyRow.used) {
-        return res.status(403).json({
-          success: false,
           error:
-            "This key has already been used.",
+            "Invalid key.",
         });
       }
 
       const expiresAt =
-        keyRow.expiresAt === null ||
-        keyRow.expiresAt === undefined
+        keyRow.expiresAt ===
+          null ||
+        keyRow.expiresAt ===
+          undefined
           ? null
           : Number(
               keyRow.expiresAt
             );
 
+      // ------------------------------------------------------
+      // EXPIRATION
+      // ------------------------------------------------------
+
       if (
-        isExpired(expiresAt)
+        isExpired(
+          expiresAt
+        )
       ) {
         return res.status(403).json({
           success: false,
@@ -455,46 +794,131 @@ app.post(
         });
       }
 
+      // ------------------------------------------------------
+      // DEVICE LOCK
+      // ------------------------------------------------------
+
+      const currentDeviceId =
+        req.noviDeviceId;
+
+      // Older keys may not have
+      // a deviceId property.
+
+      const keyOwner =
+        keyRow.deviceId ||
+        null;
+
+      // ------------------------------------------------------
+      // KEY ALREADY BELONGS
+      // TO ANOTHER DEVICE
+      // ------------------------------------------------------
+
+      if (
+        keyOwner &&
+        keyOwner !==
+          currentDeviceId
+      ) {
+        return res.status(403).json({
+          success: false,
+          error:
+            "This key is already being used on another device.",
+          code:
+            "KEY_ALREADY_CLAIMED",
+        });
+      }
+
+      // ------------------------------------------------------
+      // FIRST CLAIM
+      // ------------------------------------------------------
+
+      if (!keyOwner) {
+        keyRow.deviceId =
+          currentDeviceId;
+
+        keyRow.claimedAt =
+          Date.now();
+
+        saveData();
+      }
+
+      // ------------------------------------------------------
+      // SAME DEVICE
+      // ------------------------------------------------------
+
       const duration =
         normalizeDuration(
           keyRow.duration
         ) ||
-        (
-          keyRow.duration ===
-          null
-            ? "lifetime"
-            : String(
-                keyRow.duration
-              )
+        "lifetime";
+
+      // Check whether this
+      // browser already has a
+      // valid session for this key.
+
+      let existingSession =
+        data.sessions.find(
+          session =>
+            session.keyId ===
+              keyRow.id &&
+            session.deviceId ===
+              currentDeviceId &&
+            !isExpired(
+              session.expiresAt
+            )
         );
 
-      const sessionToken =
-        createSession(
-          keyRow.id,
-          expiresAt
-        );
+      let sessionToken;
 
-      keyRow.used = true;
+      if (
+        existingSession
+      ) {
+        sessionToken =
+          existingSession.token;
+      } else {
+        sessionToken =
+          createSession(
+            keyRow.id,
+            currentDeviceId,
+            expiresAt
+          );
+      }
 
-      scheduleSave();
+      // Persistent session cookie.
+      setSessionCookie(
+        res,
+        sessionToken,
+        expiresAt
+      );
+
+      // ------------------------------------------------------
+      // RESPONSE
+      // ------------------------------------------------------
 
       return res.json({
         success: true,
+
         sessionToken,
+
         duration,
+
         expiresAt,
 
         key: {
           key: keyRow.key,
+
           duration,
+
           expiresAt,
+
           keyExpiresAt:
             expiresAt,
+
+          claimed: true,
         },
       });
     } catch (error) {
       console.error(
-        "❌ /api/verify:",
+        "❌ /api/verify error:",
         error
       );
 
@@ -518,11 +942,12 @@ app.get(
     try {
       return res.json({
         success: true,
-        count: data.stock.length,
+        count:
+          data.stock.length,
       });
     } catch (error) {
       console.error(
-        "❌ /api/stock:",
+        "❌ /api/stock error:",
         error
       );
 
@@ -545,7 +970,8 @@ app.post(
   (req, res) => {
     try {
       if (
-        data.stock.length === 0
+        data.stock.length ===
+        0
       ) {
         return res.status(400).json({
           success: false,
@@ -554,26 +980,31 @@ app.post(
         });
       }
 
-      // Take the oldest stock item.
+      // Remove oldest item.
 
       const stockRow =
         data.stock.shift();
 
-      scheduleSave();
+      // Save immediately.
+
+      saveData();
 
       const item =
         String(
-          stockRow.stock_id || ""
+          stockRow.stock_id ||
+            ""
         ).trim();
 
       return res.json({
         success: true,
+
         item,
+
         account: item,
       });
     } catch (error) {
       console.error(
-        "❌ /api/stock/generate:",
+        "❌ /api/stock/generate error:",
         error
       );
 
@@ -589,6 +1020,17 @@ app.post(
 // ============================================================
 // LOGOUT
 // ============================================================
+//
+// IMPORTANT:
+// Logging out does NOT release the key.
+//
+// The key remains locked to the
+// browser until the key expires.
+//
+// This prevents someone from
+// logging out and giving the key
+// to another person.
+// ============================================================
 
 app.post(
   "/api/logout",
@@ -599,8 +1041,61 @@ app.post(
       ];
 
     if (token) {
-      sessions.delete(token);
+      data.sessions =
+        data.sessions.filter(
+          session =>
+            session.token !==
+            token
+        );
+
+      saveData();
     }
+
+    // Clear session cookie.
+
+    const isProduction =
+      process.env.NODE_ENV ===
+      "production";
+
+    const cookie =
+      [
+        "novi_session=",
+
+        "Path=/",
+
+        "Max-Age=0",
+
+        "HttpOnly",
+
+        "SameSite=Lax",
+
+        isProduction
+          ? "Secure"
+          : "",
+      ]
+        .filter(Boolean)
+        .join("; ");
+
+    const existing =
+      res.getHeader(
+        "Set-Cookie"
+      );
+
+    const cookies =
+      existing
+        ? Array.isArray(
+            existing
+          )
+          ? existing
+          : [existing]
+        : [];
+
+    cookies.push(cookie);
+
+    res.setHeader(
+      "Set-Cookie",
+      cookies
+    );
 
     return res.json({
       success: true,
@@ -667,8 +1162,12 @@ async function handleGen(
   }
 
   let amount = 1;
+
   let durationInput =
     args[0];
+
+  // !gen 1d
+  // !gen 5 1d
 
   if (
     /^\d+$/.test(
@@ -734,10 +1233,24 @@ async function handleGen(
 
     data.keys.push({
       id: keyId,
+
       key,
+
       createdAt,
+
       expiresAt,
+
       duration,
+
+      // Key starts unclaimed.
+
+      deviceId: null,
+
+      claimedAt: null,
+
+      // Kept for compatibility
+      // with older data.
+
       used: false,
     });
 
@@ -759,19 +1272,6 @@ async function handleGen(
 
 // ============================================================
 // !add
-//
-// Supports:
-//
-// !add ITEM-123
-//
-// OR
-//
-// !add
-// + attach .txt
-//
-// ONE NON-EMPTY TXT LINE = ONE STOCK ITEM
-//
-// Colons are preserved.
 // ============================================================
 
 async function handleAdd(
@@ -791,7 +1291,7 @@ async function handleAdd(
   const items = [];
 
   // ----------------------------------------------------------
-  // DIRECT STOCK ID
+  // DIRECT ITEM
   // ----------------------------------------------------------
 
   if (
@@ -811,7 +1311,7 @@ async function handleAdd(
   }
 
   // ----------------------------------------------------------
-  // TXT ATTACHMENT
+  // TXT FILE
   // ----------------------------------------------------------
 
   if (
@@ -856,9 +1356,6 @@ async function handleAdd(
         const text =
           await response.text();
 
-        // One line = one stock item.
-        // Colons are preserved.
-
         const lines =
           text
             .split(/\r?\n/)
@@ -871,16 +1368,12 @@ async function handleAdd(
                 line.length > 0
             );
 
-        console.log(
-          `📄 Found ${lines.length} stock ID(s) in ${attachment.name}`
-        );
-
         items.push(
           ...lines
         );
       } catch (error) {
         console.error(
-          "❌ TXT attachment error:",
+          "❌ TXT error:",
           error
         );
 
@@ -892,7 +1385,7 @@ async function handleAdd(
   }
 
   // ----------------------------------------------------------
-  // NOTHING PROVIDED
+  // NOTHING
   // ----------------------------------------------------------
 
   if (
@@ -913,12 +1406,12 @@ async function handleAdd(
     items.length > 5000
   ) {
     return message.channel.send(
-      "❌ Too many stock IDs. Maximum: **5000**."
+      "❌ Too many stock items. Maximum: **5000**."
     );
   }
 
   // ----------------------------------------------------------
-  // INSERT
+  // ADD
   // ----------------------------------------------------------
 
   let added = 0;
@@ -927,7 +1420,9 @@ async function handleAdd(
     const rawItem of items
   ) {
     const stockId =
-      String(rawItem).trim();
+      String(
+        rawItem
+      ).trim();
 
     if (!stockId) {
       continue;
@@ -936,8 +1431,10 @@ async function handleAdd(
     data.stock.push({
       id:
         data.nextStockId++,
+
       stock_id:
         stockId,
+
       created_at:
         Date.now(),
     });
@@ -947,16 +1444,9 @@ async function handleAdd(
 
   saveData();
 
-  // ----------------------------------------------------------
-  // CURRENT STOCK
-  // ----------------------------------------------------------
-
-  const count =
-    data.stock.length;
-
   return message.channel.send(
     `✅ Added **${added}** stock item(s).\n` +
-      `📦 Current stock: **${count}**`
+      `📦 Current stock: **${data.stock.length}**`
   );
 }
 
@@ -977,11 +1467,8 @@ async function handleStock(
     );
   }
 
-  const count =
-    data.stock.length;
-
   return message.channel.send(
-    `📦 Novi stock: **${count}**`
+    `📦 Novi stock: **${data.stock.length}**`
   );
 }
 
@@ -1047,10 +1534,10 @@ async function handleHelp(
       "`!gen 5 1mo` — Generate 5 one-month keys",
       "`!gen 5 lifetime` — Generate 5 lifetime keys",
       "",
-      "`!add ITEM-123` — Add one stock ID",
+      "`!add ITEM-123` — Add stock",
       "`!add` + `.txt` — Import TXT stock",
       "`!stock` — Check stock",
-      "`!clearstock` — Clear all stock",
+      "`!clearstock` — Clear stock",
       "`!help` — Show commands",
     ].join("\n")
   );
@@ -1189,7 +1676,9 @@ discordClient.once(
 
 if (DISCORD_TOKEN) {
   discordClient
-    .login(DISCORD_TOKEN)
+    .login(
+      DISCORD_TOKEN
+    )
     .catch(error => {
       console.error(
         "❌ Discord login failed:",
@@ -1212,14 +1701,35 @@ app.use(
   )
 );
 
-app.get(
-  "/{*splat}",
-  (req, res) => {
-    res.sendFile(
+// Express 4/5 compatible
+// fallback.
+
+app.use(
+  (req, res, next) => {
+    if (
+      req.method !== "GET"
+    ) {
+      return next();
+    }
+
+    const indexPath =
       path.join(
         PUBLIC_DIR,
         "index.html"
+      );
+
+    if (
+      !fs.existsSync(
+        indexPath
       )
+    ) {
+      return res.status(404).send(
+        "Novi website index.html was not found."
+      );
+    }
+
+    return res.sendFile(
+      indexPath
     );
   }
 );
@@ -1230,10 +1740,10 @@ app.get(
 
 function start() {
   try {
-    // Make sure data file exists.
-
     if (
-      !fs.existsSync(DATA_FILE)
+      !fs.existsSync(
+        DATA_FILE
+      )
     ) {
       saveData();
     }
@@ -1243,7 +1753,7 @@ function start() {
     );
 
     console.log(
-      "        NOVI SERVER ONLINE"
+      "           STARTING NOVI"
     );
 
     console.log(
@@ -1259,7 +1769,11 @@ function start() {
     );
 
     console.log(
-      "💾 Storage: JSON files"
+      `💾 Storage: ${DATA_FILE}`
+    );
+
+    console.log(
+      "🔐 Key locking: DEVICE"
     );
 
     console.log(
@@ -1268,6 +1782,10 @@ function start() {
 
     console.log(
       `📦 Stock: ${data.stock.length}`
+    );
+
+    console.log(
+      `👥 Sessions: ${data.sessions.length}`
     );
 
     console.log(
