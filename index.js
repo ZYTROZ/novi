@@ -276,8 +276,14 @@ async function detectDatabaseTypes() {
     }
 
     console.log("📊 Database timestamp types:");
-    console.log("   stock:", stockCreatedAtType);
-    console.log("   saved:", savedCreatedAtType);
+    console.log(
+      "   stock:",
+      stockCreatedAtType
+    );
+    console.log(
+      "   saved:",
+      savedCreatedAtType
+    );
   } catch (error) {
     console.error(
       "❌ Could not detect database types:",
@@ -383,6 +389,17 @@ async function initializeDatabase() {
     )
   `);
 
+  await pool.query(`
+    ALTER TABLE novi_stock_items
+    ADD COLUMN IF NOT EXISTS stock_id TEXT
+  `);
+
+  await pool.query(`
+    ALTER TABLE novi_stock_items
+    ADD COLUMN IF NOT EXISTS created_at
+    TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  `);
+
   // ----------------------------------------------------------
   // SAVED LOGINS
   // ----------------------------------------------------------
@@ -394,6 +411,26 @@ async function initializeDatabase() {
       password TEXT,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
+  `);
+
+  // IMPORTANT:
+  // This updates an EXISTING table if it was created
+  // with an older schema.
+
+  await pool.query(`
+    ALTER TABLE novi_saved_items
+    ADD COLUMN IF NOT EXISTS email TEXT
+  `);
+
+  await pool.query(`
+    ALTER TABLE novi_saved_items
+    ADD COLUMN IF NOT EXISTS password TEXT
+  `);
+
+  await pool.query(`
+    ALTER TABLE novi_saved_items
+    ADD COLUMN IF NOT EXISTS created_at
+    TIMESTAMP WITH TIME ZONE DEFAULT NOW()
   `);
 
   // ----------------------------------------------------------
@@ -415,6 +452,7 @@ async function initializeDatabase() {
   // ----------------------------------------------------------
 
   await fixDurationColumn();
+
   await detectDatabaseTypes();
 
   console.log("✅ Database ready.");
@@ -526,14 +564,12 @@ app.post(
             : String(keyRow.duration)
         );
 
-      // Create real server-side session
       const sessionToken =
         createSession(
           keyRow.id,
           expiresAt
         );
 
-      // Mark key as used
       await pool.query(
         `
         UPDATE novi_keys
@@ -545,11 +581,8 @@ app.post(
 
       return res.json({
         success: true,
-
         sessionToken,
-
         duration,
-
         expiresAt,
 
         key: {
@@ -711,6 +744,11 @@ app.get(
 
       return res.json({
         success: true,
+
+        // All three are provided so the frontend
+        // can use whichever format it expects.
+        logins: result.rows,
+        savedLogins: result.rows,
         items: result.rows,
       });
     } catch (error) {
@@ -737,6 +775,22 @@ app.post(
   requireSession,
   async (req, res) => {
     try {
+      console.log(
+        "📥 SAVE LOGIN REQUEST"
+      );
+
+      console.log(
+        "📥 Body:",
+        {
+          hasEmail: Boolean(
+            req.body?.email
+          ),
+          hasPassword: Boolean(
+            req.body?.password
+          ),
+        }
+      );
+
       const email = String(
         req.body?.email || ""
       ).trim();
@@ -753,11 +807,78 @@ app.post(
         });
       }
 
-      let result;
+      // ------------------------------------------------------
+      // CHECK ACTUAL TABLE
+      // ------------------------------------------------------
+
+      const columnsResult =
+        await pool.query(`
+          SELECT
+            column_name,
+            data_type,
+            is_nullable,
+            column_default
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+          AND table_name = 'novi_saved_items'
+          ORDER BY ordinal_position
+        `);
+
+      console.log(
+        "📊 novi_saved_items columns:",
+        columnsResult.rows
+      );
+
+      const columns =
+        columnsResult.rows;
+
+      const hasEmail =
+        columns.some(
+          column =>
+            column.column_name ===
+            "email"
+        );
+
+      const hasPassword =
+        columns.some(
+          column =>
+            column.column_name ===
+            "password"
+        );
+
+      const createdAtColumn =
+        columns.find(
+          column =>
+            column.column_name ===
+            "created_at"
+        );
 
       if (
-        savedCreatedAtType ===
-        "timestamp"
+        !hasEmail ||
+        !hasPassword
+      ) {
+        console.error(
+          "❌ Database is missing email/password columns."
+        );
+
+        return res.status(500).json({
+          success: false,
+          error:
+            "Saved-login database table is missing required columns.",
+        });
+      }
+
+      let result;
+
+      // ------------------------------------------------------
+      // TIMESTAMP
+      // ------------------------------------------------------
+
+      if (
+        createdAtColumn &&
+        createdAtColumn.data_type.includes(
+          "timestamp"
+        )
       ) {
         result =
           await pool.query(
@@ -785,7 +906,23 @@ app.post(
               password,
             ]
           );
-      } else {
+      }
+
+      // ------------------------------------------------------
+      // BIGINT / INTEGER / NUMERIC
+      // ------------------------------------------------------
+
+      else if (
+        createdAtColumn &&
+        (
+          createdAtColumn.data_type ===
+            "bigint" ||
+          createdAtColumn.data_type ===
+            "integer" ||
+          createdAtColumn.data_type ===
+            "numeric"
+        )
+      ) {
         result =
           await pool.query(
             `
@@ -815,19 +952,93 @@ app.post(
           );
       }
 
+      // ------------------------------------------------------
+      // NO CREATED_AT
+      // ------------------------------------------------------
+
+      else {
+        result =
+          await pool.query(
+            `
+            INSERT INTO novi_saved_items
+              (
+                email,
+                password
+              )
+            VALUES
+              (
+                $1,
+                $2
+              )
+            RETURNING
+              id,
+              email,
+              password
+            `,
+            [
+              email,
+              password,
+            ]
+          );
+      }
+
+      const savedLogin =
+        result.rows[0];
+
+      console.log(
+        "✅ LOGIN SAVED:",
+        savedLogin?.id
+      );
+
       return res.json({
         success: true,
-        item: result.rows[0],
+
+        // Both formats supported
+        login: savedLogin,
+        item: savedLogin,
       });
+
     } catch (error) {
       console.error(
-        "❌ POST /api/saved-logins:",
-        error
+        "========================================"
+      );
+
+      console.error(
+        "❌ SAVE LOGIN DATABASE ERROR"
+      );
+
+      console.error(
+        "Message:",
+        error.message
+      );
+
+      console.error(
+        "Code:",
+        error.code
+      );
+
+      console.error(
+        "Detail:",
+        error.detail || ""
+      );
+
+      console.error(
+        "Hint:",
+        error.hint || ""
+      );
+
+      console.error(
+        "========================================"
       );
 
       return res.status(500).json({
         success: false,
+
+        // Return the real PostgreSQL
+        // message so the frontend can
+        // show what actually failed.
         error:
+          error.message ||
           "Could not save login.",
       });
     }
@@ -852,7 +1063,8 @@ app.get(
       ) {
         return res.status(400).json({
           success: false,
-          error: "Invalid ID.",
+          error:
+            "Invalid ID.",
         });
       }
 
@@ -883,6 +1095,7 @@ app.get(
 
       return res.json({
         success: true,
+        login: result.rows[0],
         item: result.rows[0],
       });
     } catch (error) {
@@ -918,7 +1131,8 @@ app.delete(
       ) {
         return res.status(400).json({
           success: false,
-          error: "Invalid ID.",
+          error:
+            "Invalid ID.",
         });
       }
 
@@ -1005,7 +1219,7 @@ function hasAllowedDiscordRole(
   }
 
   return ALLOWED_ROLE_IDS.some(
-    (roleId) =>
+    roleId =>
       message.member.roles.cache.has(
         roleId
       )
@@ -1132,7 +1346,7 @@ async function handleGen(
   const output =
     generated
       .map(
-        (key) =>
+        key =>
           `\`${key}\``
       )
       .join("\n");
@@ -1313,7 +1527,7 @@ async function handleHelp(
 
 discordClient.on(
   "messageCreate",
-  async (message) => {
+  async message => {
     try {
       if (message.author.bot) {
         return;
@@ -1426,7 +1640,7 @@ discordClient.once(
 if (DISCORD_TOKEN) {
   discordClient
     .login(DISCORD_TOKEN)
-    .catch((error) => {
+    .catch(error => {
       console.error(
         "❌ Discord login failed:",
         error
