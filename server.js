@@ -2,9 +2,9 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
-const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { Pool } = require("pg");
 
 const app = express();
 
@@ -13,361 +13,186 @@ const app = express();
 // ============================================================
 
 const PORT = Number(process.env.PORT) || 10000;
-
 const PUBLIC_DIR = path.join(__dirname, "public");
 
-const KEY_FILE = path.join(__dirname, "keys.json");
-const STOCK_FILE = path.join(__dirname, "epicgames-stock.json");
-const SAVED_LOGINS_FILE = path.join(
-  __dirname,
-  "saved-logins.json"
-);
+const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET;
+const CREDENTIAL_SECRET = process.env.NOVI_CREDENTIAL_SECRET;
+const DATABASE_URL = process.env.DATABASE_URL;
 
-const NOVI_ADMIN_SECRET =
-  process.env.NOVI_ADMIN_SECRET;
+if (!ADMIN_SECRET) {
+  console.error("❌ Missing NOVI_ADMIN_SECRET");
+  process.exit(1);
+}
 
-const NOVI_CREDENTIAL_SECRET =
-  process.env.NOVI_CREDENTIAL_SECRET;
+if (!CREDENTIAL_SECRET) {
+  console.error("❌ Missing NOVI_CREDENTIAL_SECRET");
+  process.exit(1);
+}
+
+if (!DATABASE_URL) {
+  console.error("❌ Missing DATABASE_URL");
+  process.exit(1);
+}
+
+// ============================================================
+// DATABASE
+// ============================================================
+
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
+async function initDatabase() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS novi_keys (
+      id SERIAL PRIMARY KEY,
+      key TEXT UNIQUE NOT NULL,
+      duration TEXT NOT NULL,
+      created_at BIGINT NOT NULL,
+      expires_at BIGINT,
+      device_id TEXT,
+      used BOOLEAN NOT NULL DEFAULT FALSE
+    );
+
+    CREATE TABLE IF NOT EXISTS novi_stock (
+      id SERIAL PRIMARY KEY,
+      username TEXT NOT NULL,
+      password TEXT NOT NULL,
+      created_at BIGINT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS novi_saved_logins (
+      id SERIAL PRIMARY KEY,
+      username TEXT NOT NULL,
+      password TEXT NOT NULL,
+      created_at BIGINT NOT NULL,
+      device_id TEXT NOT NULL
+    );
+  `);
+
+  console.log("✅ PostgreSQL database ready");
+}
 
 // ============================================================
 // EXPRESS
 // ============================================================
 
 app.use(cors());
-
-app.use(
-  express.json({
-    limit: "2mb"
-  })
-);
+app.use(express.json({ limit: "2mb" }));
 
 // ============================================================
-// FILE HELPERS
-// ============================================================
-
-function ensureFile(file, defaultValue) {
-  try {
-    if (!fs.existsSync(file)) {
-      fs.writeFileSync(
-        file,
-        JSON.stringify(defaultValue, null, 2),
-        "utf8"
-      );
-    }
-  } catch (error) {
-    console.error(
-      `[FILE] Failed to create ${file}:`,
-      error.message
-    );
-  }
-}
-
-function readJson(file, fallback) {
-  try {
-    if (!fs.existsSync(file)) {
-      ensureFile(file, fallback);
-      return fallback;
-    }
-
-    const raw = fs.readFileSync(file, "utf8");
-
-    if (!raw.trim()) {
-      return fallback;
-    }
-
-    return JSON.parse(raw);
-  } catch (error) {
-    console.error(
-      `[FILE] Failed to read ${file}:`,
-      error.message
-    );
-
-    return fallback;
-  }
-}
-
-function writeJson(file, data) {
-  fs.writeFileSync(
-    file,
-    JSON.stringify(data, null, 2),
-    "utf8"
-  );
-}
-
-// ============================================================
-// KEY FILE
-// ============================================================
-
-function readKeys() {
-  const keys = readJson(KEY_FILE, []);
-
-  return Array.isArray(keys)
-    ? keys
-    : [];
-}
-
-function saveKeys(keys) {
-  writeJson(KEY_FILE, keys);
-}
-
-// ============================================================
-// SAVED LOGIN FILE
-// ============================================================
-
-function readSavedLogins() {
-  const logins = readJson(
-    SAVED_LOGINS_FILE,
-    []
-  );
-
-  return Array.isArray(logins)
-    ? logins
-    : [];
-}
-
-function saveSavedLogins(logins) {
-  writeJson(
-    SAVED_LOGINS_FILE,
-    logins
-  );
-}
-
-// ============================================================
-// ENCRYPTION KEY
+// ENCRYPTION
 // ============================================================
 
 function getEncryptionKey() {
-  if (!NOVI_CREDENTIAL_SECRET) {
-    throw new Error(
-      "NOVI_CREDENTIAL_SECRET is not configured."
-    );
-  }
-
   return crypto
     .createHash("sha256")
-    .update(NOVI_CREDENTIAL_SECRET)
+    .update(CREDENTIAL_SECRET)
     .digest();
 }
 
-// ============================================================
-// ENCRYPT STOCK ON DISK
-// ============================================================
-
-function encryptStock(stock) {
+function encrypt(text) {
   const key = getEncryptionKey();
-
   const iv = crypto.randomBytes(12);
 
-  const cipher = crypto.createCipheriv(
-    "aes-256-gcm",
-    key,
-    iv
-  );
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
 
-  const plaintext = JSON.stringify(stock);
-
-  const encrypted = Buffer.concat([
-    cipher.update(plaintext, "utf8"),
-    cipher.final()
-  ]);
+  let encrypted = cipher.update(String(text), "utf8", "base64");
+  encrypted += cipher.final("base64");
 
   const authTag = cipher.getAuthTag();
 
   return {
-    version: 1,
-    algorithm: "aes-256-gcm",
+    encrypted,
     iv: iv.toString("base64"),
     authTag: authTag.toString("base64"),
-    data: encrypted.toString("base64")
   };
 }
 
-function decryptStock(encryptedStock) {
+function decrypt(data) {
   const key = getEncryptionKey();
-
-  if (
-    !encryptedStock ||
-    encryptedStock.version !== 1 ||
-    encryptedStock.algorithm !== "aes-256-gcm" ||
-    !encryptedStock.iv ||
-    !encryptedStock.authTag ||
-    !encryptedStock.data
-  ) {
-    throw new Error(
-      "Invalid encrypted stock format."
-    );
-  }
-
-  const iv = Buffer.from(
-    encryptedStock.iv,
-    "base64"
-  );
-
-  const authTag = Buffer.from(
-    encryptedStock.authTag,
-    "base64"
-  );
-
-  const encrypted = Buffer.from(
-    encryptedStock.data,
-    "base64"
-  );
 
   const decipher = crypto.createDecipheriv(
     "aes-256-gcm",
     key,
-    iv
+    Buffer.from(data.iv, "base64")
   );
 
-  decipher.setAuthTag(authTag);
+  decipher.setAuthTag(Buffer.from(data.authTag, "base64"));
 
-  const decrypted = Buffer.concat([
-    decipher.update(encrypted),
-    decipher.final()
-  ]);
+  let decrypted = decipher.update(data.encrypted, "base64", "utf8");
+  decrypted += decipher.final("utf8");
 
-  const stock = JSON.parse(
-    decrypted.toString("utf8")
-  );
-
-  if (!Array.isArray(stock)) {
-    throw new Error(
-      "Decrypted stock is not an array."
-    );
-  }
-
-  return stock;
+  return decrypted;
 }
 
-function readStock() {
+function encryptPassword(password) {
+  return JSON.stringify(encrypt(password));
+}
+
+function decryptPassword(password) {
   try {
-    if (!fs.existsSync(STOCK_FILE)) {
-      saveStock([]);
-      return [];
-    }
-
-    const raw = fs
-      .readFileSync(STOCK_FILE, "utf8")
-      .trim();
-
-    if (!raw) {
-      saveStock([]);
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-
-    // Automatically migrate old plaintext stock
-    if (Array.isArray(parsed)) {
-      console.log(
-        "[STOCK] Plaintext stock detected."
-      );
-
-      console.log(
-        "[STOCK] Encrypting stock on disk..."
-      );
-
-      saveStock(parsed);
-
-      console.log(
-        "[STOCK] Stock encryption complete."
-      );
-
-      return parsed;
-    }
-
-    return decryptStock(parsed);
-
-  } catch (error) {
-    console.error(
-      "[STOCK] Failed to read/decrypt stock:",
-      error.message
-    );
-
-    throw error;
+    return decrypt(JSON.parse(password));
+  } catch {
+    // Allows old plaintext passwords to continue working
+    return password;
   }
 }
 
-function saveStock(stock) {
-  if (!Array.isArray(stock)) {
-    throw new Error(
-      "Stock must be an array."
-    );
+// ============================================================
+// HELPERS
+// ============================================================
+
+function requireAdmin(req, res, next) {
+  const provided = req.headers["x-novi-admin-secret"];
+
+  if (!provided || provided !== ADMIN_SECRET) {
+    return res.status(401).json({
+      success: false,
+      error: "Unauthorized",
+    });
   }
 
-  const encrypted = encryptStock(stock);
-
-  fs.writeFileSync(
-    STOCK_FILE,
-    JSON.stringify(
-      encrypted,
-      null,
-      2
-    ),
-    "utf8"
-  );
+  next();
 }
 
-// ============================================================
-// INITIAL FILES
-// ============================================================
+function getSession(req) {
+  const auth =
+    req.headers.authorization ||
+    req.headers.Authorization ||
+    "";
 
-ensureFile(KEY_FILE, []);
-ensureFile(STOCK_FILE, []);
-ensureFile(SAVED_LOGINS_FILE, []);
-
-// ============================================================
-// KEY DURATIONS
-// ============================================================
-
-const DURATIONS = {
-  "1d": {
-    name: "1 Day",
-    milliseconds:
-      24 * 60 * 60 * 1000
-  },
-
-  "3d": {
-    name: "3 Days",
-    milliseconds:
-      3 *
-      24 *
-      60 *
-      60 *
-      1000
-  },
-
-  "1week": {
-    name: "1 Week",
-    milliseconds:
-      7 *
-      24 *
-      60 *
-      60 *
-      1000
-  },
-
-  "1month": {
-    name: "1 Month",
-    milliseconds:
-      30 *
-      24 *
-      60 *
-      60 *
-      1000
-  },
-
-  "lifetime": {
-    name: "Lifetime",
-    milliseconds: null
+  if (!auth.startsWith("Bearer ")) {
+    return null;
   }
-};
 
-// ============================================================
-// KEY GENERATOR
-// ============================================================
+  const token = auth.slice(7).trim();
 
-function generateKey() {
+  if (!token) {
+    return null;
+  }
+
+  return sessions.get(token) || null;
+}
+
+function requireSession(req, res, next) {
+  const session = getSession(req);
+
+  if (!session) {
+    return res.status(401).json({
+      success: false,
+      error: "Invalid or expired session",
+    });
+  }
+
+  req.session = session;
+  next();
+}
+
+function generateKeyString() {
   const part = () =>
     crypto
       .randomBytes(3)
@@ -377,1331 +202,759 @@ function generateKey() {
   return `NOVI-${part()}-${part()}-${part()}`;
 }
 
-function getExpiration(
-  duration,
-  createdAt
-) {
-  if (duration === "lifetime") {
-    return null;
+function getDurationMs(duration) {
+  switch (duration) {
+    case "1d":
+      return 24 * 60 * 60 * 1000;
+
+    case "3d":
+      return 3 * 24 * 60 * 60 * 1000;
+
+    case "1week":
+      return 7 * 24 * 60 * 60 * 1000;
+
+    case "1month":
+      return 30 * 24 * 60 * 60 * 1000;
+
+    case "lifetime":
+      return null;
+
+    default:
+      return undefined;
   }
-
-  const info = DURATIONS[duration];
-
-  if (!info) {
-    return null;
-  }
-
-  return new Date(
-    new Date(createdAt).getTime() +
-      info.milliseconds
-  ).toISOString();
-}
-
-// ============================================================
-// ADMIN AUTH
-// ============================================================
-
-function requireAdmin(
-  req,
-  res,
-  next
-) {
-  if (!NOVI_ADMIN_SECRET) {
-    return res.status(500).json({
-      success: false,
-      message:
-        "NOVI_ADMIN_SECRET is not configured."
-    });
-  }
-
-  const providedSecret =
-    req.headers[
-      "x-novi-admin-secret"
-    ];
-
-  if (
-    typeof providedSecret !== "string" ||
-    providedSecret !== NOVI_ADMIN_SECRET
-  ) {
-    return res.status(403).json({
-      success: false,
-      message: "Unauthorized."
-    });
-  }
-
-  next();
 }
 
 // ============================================================
 // SESSIONS
 // ============================================================
-//
-// IMPORTANT:
-// There is NO 30-minute session timeout.
-//
-// The session remains valid as long as the
-// associated Novi key itself is valid.
-// ============================================================
+
+// Sessions are intentionally kept in memory.
+// Keys themselves are stored permanently in PostgreSQL.
 
 const sessions = new Map();
-
-function createSession(
-  keyRecord,
-  deviceId
-) {
-  const sessionToken =
-    crypto
-      .randomBytes(32)
-      .toString("hex");
-
-  sessions.set(
-    sessionToken,
-    {
-      key: keyRecord.key,
-      deviceId
-    }
-  );
-
-  return {
-    sessionToken
-  };
-}
-
-function getSession(req) {
-  const token =
-    req.headers[
-      "x-novi-session"
-    ];
-
-  if (
-    !token ||
-    typeof token !== "string"
-  ) {
-    return null;
-  }
-
-  const session =
-    sessions.get(token);
-
-  if (!session) {
-    return null;
-  }
-
-  // ----------------------------------------------------------
-  // Find the actual key
-  // ----------------------------------------------------------
-
-  const keys = readKeys();
-
-  const keyRecord =
-    keys.find(
-      item =>
-        item.key === session.key
-    );
-
-  if (!keyRecord) {
-    sessions.delete(token);
-    return null;
-  }
-
-  // ----------------------------------------------------------
-  // Check key expiration
-  // ----------------------------------------------------------
-
-  if (
-    keyRecord.expiresAt &&
-    Date.now() >=
-      new Date(
-        keyRecord.expiresAt
-      ).getTime()
-  ) {
-    sessions.delete(token);
-    return null;
-  }
-
-  // ----------------------------------------------------------
-  // Check device binding
-  // ----------------------------------------------------------
-
-  if (
-    keyRecord.deviceId &&
-    keyRecord.deviceId !==
-      session.deviceId
-  ) {
-    sessions.delete(token);
-    return null;
-  }
-
-  return {
-    ...session,
-    keyRecord
-  };
-}
-
-function requireSession(
-  req,
-  res,
-  next
-) {
-  const session =
-    getSession(req);
-
-  if (!session) {
-    return res.status(401).json({
-      success: false,
-      message:
-        "Key expired or session invalid."
-    });
-  }
-
-  req.noviSession =
-    session;
-
-  next();
-}
-
-// ============================================================
-// DEVICE ID
-// ============================================================
-
-function normalizeDeviceId(
-  deviceId
-) {
-  if (
-    typeof deviceId !== "string" ||
-    !deviceId.trim()
-  ) {
-    return null;
-  }
-
-  return deviceId
-    .trim()
-    .slice(0, 200);
-}
-
-// ============================================================
-// SAVED LOGIN ENCRYPTION
-// ============================================================
-
-function encryptPassword(
-  password
-) {
-  const key =
-    getEncryptionKey();
-
-  const iv =
-    crypto.randomBytes(12);
-
-  const cipher =
-    crypto.createCipheriv(
-      "aes-256-gcm",
-      key,
-      iv
-    );
-
-  const encrypted =
-    Buffer.concat([
-      cipher.update(
-        password,
-        "utf8"
-      ),
-      cipher.final()
-    ]);
-
-  const authTag =
-    cipher.getAuthTag();
-
-  return {
-    iv:
-      iv.toString("base64"),
-
-    content:
-      encrypted.toString(
-        "base64"
-      ),
-
-    authTag:
-      authTag.toString(
-        "base64"
-      )
-  };
-}
-
-function decryptPassword(
-  encryptedData
-) {
-  const key =
-    getEncryptionKey();
-
-  const iv =
-    Buffer.from(
-      encryptedData.iv,
-      "base64"
-    );
-
-  const content =
-    Buffer.from(
-      encryptedData.content,
-      "base64"
-    );
-
-  const authTag =
-    Buffer.from(
-      encryptedData.authTag,
-      "base64"
-    );
-
-  const decipher =
-    crypto.createDecipheriv(
-      "aes-256-gcm",
-      key,
-      iv
-    );
-
-  decipher.setAuthTag(
-    authTag
-  );
-
-  const decrypted =
-    Buffer.concat([
-      decipher.update(
-        content
-      ),
-      decipher.final()
-    ]);
-
-  return decrypted.toString(
-    "utf8"
-  );
-}
-
-// ============================================================
-// STOCK PARSER
-// ============================================================
-
-function parseStockItem(item) {
-  if (
-    typeof item !== "string"
-  ) {
-    return {
-      email: "",
-      password: ""
-    };
-  }
-
-  const value =
-    item.trim();
-
-  // Split at the FIRST colon only.
-  // Passwords can contain additional colons.
-  const separator =
-    value.indexOf(":");
-
-  if (
-    separator === -1
-  ) {
-    return {
-      email: value,
-      password: ""
-    };
-  }
-
-  return {
-    email:
-      value
-        .slice(
-          0,
-          separator
-        )
-        .trim(),
-
-    password:
-      value
-        .slice(
-          separator + 1
-        )
-        .trim()
-  };
-}
 
 // ============================================================
 // HEALTH
 // ============================================================
 
-app.get(
-  "/health",
-  (req, res) => {
+app.get("/health", async (req, res) => {
+  try {
+    await pool.query("SELECT 1");
+
     res.json({
       success: true,
       status: "online",
-      service: "Novi"
+      database: "connected",
+      timestamp: Date.now(),
+    });
+  } catch (error) {
+    console.error("Health check database error:", error);
+
+    res.status(500).json({
+      success: false,
+      status: "online",
+      database: "error",
     });
   }
-);
+});
 
 // ============================================================
 // API INFO
 // ============================================================
 
-app.get(
-  "/api",
-  (req, res) => {
-    res.json({
-      success: true,
-      name: "Novi API",
-      status: "online"
-    });
-  }
-);
+app.get("/api", (req, res) => {
+  res.json({
+    success: true,
+    name: "Novi API",
+    status: "online",
+  });
+});
 
 // ============================================================
-// GENERATE KEY
+// KEYS
 // ============================================================
 
-app.post(
-  "/api/keys",
-  requireAdmin,
-  (req, res) => {
-    try {
-      console.log(
-        "[API/KEYS] Request received"
-      );
+// CREATE KEYS
 
-      const duration =
-        typeof req.body?.duration ===
-          "string"
-          ? req.body.duration
-              .toLowerCase()
-          : "";
+app.post("/api/keys", requireAdmin, async (req, res) => {
+  try {
+    const duration = req.body?.duration;
+    const amount = Math.min(
+      Math.max(Number(req.body?.amount) || 1, 1),
+      1000
+    );
 
-      if (
-        !DURATIONS[duration]
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid duration."
-        });
-      }
+    const durationMs = getDurationMs(duration);
 
-      const createdAt =
-        new Date().toISOString();
-
-      const keyRecord = {
-        key: generateKey(),
-
-        duration,
-
-        createdAt,
-
-        expiresAt:
-          getExpiration(
-            duration,
-            createdAt
-          ),
-
-        deviceId: null,
-
-        used: false
-      };
-
-      const keys =
-        readKeys();
-
-      keys.push(
-        keyRecord
-      );
-
-      saveKeys(
-        keys
-      );
-
-      console.log(
-        "[API/KEYS] Generated:",
-        keyRecord.key
-      );
-
-      return res.status(201).json({
-        success: true,
-
-        key:
-          keyRecord.key,
-
-        duration:
-          keyRecord.duration,
-
-        durationName:
-          DURATIONS[
-            duration
-          ].name,
-
-        createdAt:
-          keyRecord.createdAt,
-
-        expiresAt:
-          keyRecord.expiresAt
-      });
-
-    } catch (error) {
-      console.error(
-        "[API/KEYS] Error:",
-        error
-      );
-
-      return res.status(500).json({
+    if (durationMs === undefined) {
+      return res.status(400).json({
         success: false,
-        message:
-          "Failed to generate key."
+        error: "Invalid duration",
       });
     }
-  }
-);
 
-// ============================================================
-// LIST KEYS
-// ============================================================
+    const created = [];
+    const now = Date.now();
 
-app.get(
-  "/api/keys",
-  requireAdmin,
-  (req, res) => {
-    try {
-      return res.json({
-        success: true,
-        keys: readKeys()
-      });
-    } catch (error) {
-      console.error(
-        "[API/KEYS GET] Error:",
-        error
-      );
+    for (let i = 0; i < amount; i++) {
+      let key;
 
-      return res.status(500).json({
-        success: false,
-        message:
-          "Failed to read keys."
-      });
-    }
-  }
-);
+      while (true) {
+        key = generateKeyString();
 
-// ============================================================
-// DELETE KEY
-// ============================================================
-
-app.delete(
-  "/api/keys/:key",
-  requireAdmin,
-  (req, res) => {
-    try {
-      const targetKey =
-        req.params.key;
-
-      const keys =
-        readKeys();
-
-      const filtered =
-        keys.filter(
-          item =>
-            item.key !==
-            targetKey
+        const exists = await pool.query(
+          "SELECT id FROM novi_keys WHERE key = $1",
+          [key]
         );
 
-      if (
-        filtered.length ===
-        keys.length
-      ) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Key not found."
-        });
+        if (exists.rowCount === 0) break;
       }
 
-      saveKeys(
-        filtered
+      const expiresAt =
+        durationMs === null ? null : now + durationMs;
+
+      await pool.query(
+        `
+        INSERT INTO novi_keys
+        (key, duration, created_at, expires_at, used)
+        VALUES ($1, $2, $3, $4, FALSE)
+        `,
+        [key, duration, now, expiresAt]
       );
 
-      // Remove active sessions
-      // belonging to deleted key.
-      for (
-        const [
-          token,
-          session
-        ] of sessions.entries()
-      ) {
-        if (
-          session.key ===
-          targetKey
-        ) {
-          sessions.delete(
-            token
-          );
-        }
-      }
-
-      return res.json({
-        success: true,
-        message:
-          "Key deleted."
-      });
-
-    } catch (error) {
-      console.error(
-        "[API/KEYS DELETE] Error:",
-        error
-      );
-
-      return res.status(500).json({
-        success: false,
-        message:
-          "Failed to delete key."
+      created.push({
+        key,
+        duration,
+        createdAt: now,
+        expiresAt,
       });
     }
+
+    res.json({
+      success: true,
+      keys: created,
+    });
+  } catch (error) {
+    console.error("Create keys error:", error);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to create keys",
+    });
   }
-);
+});
+
+// LIST KEYS
+
+app.get("/api/keys", requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        id,
+        key,
+        duration,
+        created_at,
+        expires_at,
+        device_id,
+        used
+      FROM novi_keys
+      ORDER BY id DESC
+    `);
+
+    res.json({
+      success: true,
+      keys: result.rows.map((row) => ({
+        id: row.id,
+        key: row.key,
+        duration: row.duration,
+        createdAt: Number(row.created_at),
+        expiresAt:
+          row.expires_at === null
+            ? null
+            : Number(row.expires_at),
+        deviceId: row.device_id,
+        used: row.used,
+      })),
+    });
+  } catch (error) {
+    console.error("Get keys error:", error);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to get keys",
+    });
+  }
+});
+
+// DELETE KEY
+
+app.delete("/api/keys/:key", requireAdmin, async (req, res) => {
+  try {
+    const key = req.params.key;
+
+    const result = await pool.query(
+      "DELETE FROM novi_keys WHERE key = $1",
+      [key]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Key not found",
+      });
+    }
+
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    console.error("Delete key error:", error);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to delete key",
+    });
+  }
+});
 
 // ============================================================
 // VERIFY KEY
 // ============================================================
 
-app.post(
-  "/api/verify",
-  (req, res) => {
-    try {
-      const providedKey =
-        typeof req.body?.key ===
-          "string"
-          ? req.body.key.trim()
-          : "";
+app.post("/api/verify", async (req, res) => {
+  try {
+    const { key, deviceId } = req.body || {};
 
-      const deviceId =
-        normalizeDeviceId(
-          req.body?.deviceId
-        );
-
-      if (!providedKey) {
-        return res.status(400).json({
-          success: false,
-          valid: false,
-          message:
-            "Key is required."
-        });
-      }
-
-      if (!deviceId) {
-        return res.status(400).json({
-          success: false,
-          valid: false,
-          message:
-            "Device ID is required."
-        });
-      }
-
-      const keys =
-        readKeys();
-
-      const keyRecord =
-        keys.find(
-          item =>
-            item.key ===
-            providedKey
-        );
-
-      if (!keyRecord) {
-        return res.status(401).json({
-          success: false,
-          valid: false,
-          message:
-            "Invalid key."
-        });
-      }
-
-      // ======================================================
-      // KEY EXPIRATION
-      // ======================================================
-
-      if (
-        keyRecord.expiresAt &&
-        Date.now() >=
-          new Date(
-            keyRecord.expiresAt
-          ).getTime()
-      ) {
-        return res.status(401).json({
-          success: false,
-          valid: false,
-          message:
-            "This key has expired."
-        });
-      }
-
-      // ======================================================
-      // ONE DEVICE PER KEY
-      // ======================================================
-
-      if (
-        keyRecord.deviceId &&
-        keyRecord.deviceId !==
-          deviceId
-      ) {
-        return res.status(403).json({
-          success: false,
-          valid: false,
-          message:
-            "This key is already locked to another device."
-        });
-      }
-
-      // First device gets the key.
-      if (
-        !keyRecord.deviceId
-      ) {
-        keyRecord.deviceId =
-          deviceId;
-
-        keyRecord.used =
-          true;
-
-        saveKeys(
-          keys
-        );
-
-        console.log(
-          `[VERIFY] Key ${keyRecord.key} locked to first device.`
-        );
-      }
-
-      const session =
-        createSession(
-          keyRecord,
-          deviceId
-        );
-
-      return res.json({
-        success: true,
-        valid: true,
-
-        sessionToken:
-          session.sessionToken,
-
-        // No 30-minute expiration.
-        expiresAt:
-          keyRecord.expiresAt,
-
-        key: {
-          key:
-            keyRecord.key,
-
-          duration:
-            keyRecord.duration,
-
-          durationName:
-            DURATIONS[
-              keyRecord.duration
-            ]?.name ||
-            keyRecord.duration,
-
-          createdAt:
-            keyRecord.createdAt,
-
-          keyExpiresAt:
-            keyRecord.expiresAt
-        }
-      });
-
-    } catch (error) {
-      console.error(
-        "[VERIFY] Error:",
-        error
-      );
-
-      return res.status(500).json({
+    if (!key || !deviceId) {
+      return res.status(400).json({
         success: false,
-        valid: false,
-        message:
-          "Verification failed."
+        error: "Key and deviceId are required",
       });
     }
+
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM novi_keys
+      WHERE key = $1
+      LIMIT 1
+      `,
+      [key]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(401).json({
+        success: false,
+        error: "Invalid key",
+      });
+    }
+
+    const row = result.rows[0];
+    const now = Date.now();
+
+    // Check expiration
+    if (
+      row.expires_at !== null &&
+      Number(row.expires_at) <= now
+    ) {
+      return res.status(401).json({
+        success: false,
+        error: "Key expired",
+      });
+    }
+
+    // Bind key to first device
+    if (row.device_id && row.device_id !== deviceId) {
+      return res.status(401).json({
+        success: false,
+        error: "Key is already bound to another device",
+      });
+    }
+
+    if (!row.device_id) {
+      await pool.query(
+        `
+        UPDATE novi_keys
+        SET device_id = $1,
+            used = TRUE
+        WHERE id = $2
+        `,
+        [deviceId, row.id]
+      );
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+
+    sessions.set(token, {
+      key,
+      deviceId,
+      createdAt: now,
+      expiresAt:
+        row.expires_at === null
+          ? null
+          : Number(row.expires_at),
+    });
+
+    res.json({
+      success: true,
+      token,
+      key,
+      duration: row.duration,
+      expiresAt:
+        row.expires_at === null
+          ? null
+          : Number(row.expires_at),
+    });
+  } catch (error) {
+    console.error("Verify error:", error);
+
+    res.status(500).json({
+      success: false,
+      error: "Verification failed",
+    });
   }
-);
+});
 
 // ============================================================
+// STOCK
+// ============================================================
+
 // ADD STOCK
-// ============================================================
-//
-// Supports:
-//
-// !add email:password
-//
-// and multiple items:
-//
-// !add email1:password1 email2:password2
-//
-// Your Discord bot sends:
-// { items: [...] }
-//
-// ============================================================
 
-app.post(
-  "/api/stock/add",
-  requireAdmin,
-  (req, res) => {
-    try {
-      const body =
-        req.body || {};
+app.post("/api/stock/add", requireAdmin, async (req, res) => {
+  const client = await pool.connect();
 
-      let items = [];
+  try {
+    const accounts = Array.isArray(req.body?.accounts)
+      ? req.body.accounts
+      : [];
 
-      // Single item
-      if (
-        typeof body.item ===
-          "string" &&
-        body.item.trim()
-      ) {
-        items.push(
-          body.item.trim()
-        );
+    if (!accounts.length) {
+      return res.status(400).json({
+        success: false,
+        error: "No accounts supplied",
+      });
+    }
+
+    await client.query("BEGIN");
+
+    let added = 0;
+
+    for (const account of accounts) {
+      if (!account) continue;
+
+      let username = "";
+      let password = "";
+
+      if (typeof account === "string") {
+        const split = account.split(":");
+
+        username = (split[0] || "").trim();
+        password = split.slice(1).join(":").trim();
+      } else {
+        username = String(
+          account.username ||
+          account.email ||
+          account.emailAddress ||
+          ""
+        ).trim();
+
+        password = String(
+          account.password ||
+          ""
+        ).trim();
       }
 
-      // Multiple items
-      if (
-        Array.isArray(
-          body.items
-        )
-      ) {
-        items.push(
-          ...body.items
-            .filter(
-              item =>
-                typeof item ===
-                "string"
-            )
-            .map(
-              item =>
-                item.trim()
-            )
-            .filter(
-              Boolean
-            )
-        );
-      }
+      if (!username || !password) continue;
 
-      // Remove duplicate entries
-      items =
-        [...new Set(items)];
-
-      if (
-        items.length === 0
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Item is required."
-        });
-      }
-
-      const stock =
-        readStock();
-
-      stock.push(
-        ...items
+      await client.query(
+        `
+        INSERT INTO novi_stock
+        (username, password, created_at)
+        VALUES ($1, $2, $3)
+        `,
+        [
+          username,
+          encryptPassword(password),
+          Date.now(),
+        ]
       );
 
-      // Encrypt before writing
-      saveStock(
-        stock
-      );
+      added++;
+    }
 
-      console.log(
-        `[STOCK] Added ${items.length} item(s). Total stock: ${stock.length}`
-      );
+    await client.query("COMMIT");
 
-      // Never return credentials.
-      return res.status(201).json({
-        success: true,
-        added:
-          items.length,
-        count:
-          stock.length
-      });
+    res.json({
+      success: true,
+      added,
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
 
-    } catch (error) {
-      console.error(
-        "[STOCK ADD ERROR]",
-        error
-      );
+    console.error("Add stock error:", error);
 
-      return res.status(500).json({
+    res.status(500).json({
+      success: false,
+      error: "Failed to add stock",
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// ADMIN STOCK
+
+app.get("/api/admin/stock", requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, username, password, created_at
+      FROM novi_stock
+      ORDER BY id ASC
+    `);
+
+    const stock = result.rows.map((row) => ({
+      id: row.id,
+      username: row.username,
+      password: decryptPassword(row.password),
+      createdAt: Number(row.created_at),
+    }));
+
+    res.json({
+      success: true,
+      stock,
+      count: stock.length,
+    });
+  } catch (error) {
+    console.error("Admin stock error:", error);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to get stock",
+    });
+  }
+});
+
+// GET STOCK
+
+app.get("/api/stock", requireSession, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, username, password, created_at
+      FROM novi_stock
+      ORDER BY id ASC
+    `);
+
+    const stock = result.rows.map((row) => ({
+      id: row.id,
+      username: row.username,
+      password: decryptPassword(row.password),
+      createdAt: Number(row.created_at),
+    }));
+
+    res.json({
+      success: true,
+      stock,
+      count: stock.length,
+    });
+  } catch (error) {
+    console.error("Get stock error:", error);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to get stock",
+    });
+  }
+});
+
+// STOCK COUNT
+
+app.get("/api/stock/count", requireSession, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT COUNT(*)::int AS count FROM novi_stock"
+    );
+
+    res.json({
+      success: true,
+      count: result.rows[0].count,
+    });
+  } catch (error) {
+    console.error("Stock count error:", error);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to get stock count",
+    });
+  }
+});
+
+// GENERATE / CLAIM STOCK
+
+app.post("/api/stock/generate", requireSession, async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const amount = Math.min(
+      Math.max(Number(req.body?.amount) || 1, 1),
+      100
+    );
+
+    await client.query("BEGIN");
+
+    const result = await client.query(
+      `
+      SELECT id, username, password, created_at
+      FROM novi_stock
+      ORDER BY id ASC
+      LIMIT $1
+      FOR UPDATE SKIP LOCKED
+      `,
+      [amount]
+    );
+
+    if (result.rowCount === 0) {
+      await client.query("ROLLBACK");
+
+      return res.status(404).json({
         success: false,
-        message:
-          "Failed to add stock."
+        error: "No stock available",
       });
     }
+
+    const accounts = result.rows.map((row) => ({
+      id: row.id,
+      username: row.username,
+      password: decryptPassword(row.password),
+      createdAt: Number(row.created_at),
+    }));
+
+    const ids = result.rows.map((row) => row.id);
+
+    await client.query(
+      `
+      DELETE FROM novi_stock
+      WHERE id = ANY($1::int[])
+      `,
+      [ids]
+    );
+
+    await client.query("COMMIT");
+
+    res.json({
+      success: true,
+      accounts,
+      count: accounts.length,
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+
+    console.error("Generate stock error:", error);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to generate stock",
+    });
+  } finally {
+    client.release();
   }
-);
+});
 
 // ============================================================
-// ADMIN STOCK COUNT
+// SAVED LOGINS
 // ============================================================
 
-app.get(
-  "/api/admin/stock",
-  requireAdmin,
-  (req, res) => {
-    try {
-      const stock =
-        readStock();
-
-      return res.json({
-        success: true,
-        count:
-          stock.length
-      });
-
-    } catch (error) {
-      console.error(
-        "[ADMIN STOCK] Error:",
-        error
-      );
-
-      return res.status(500).json({
-        success: false,
-        message:
-          "Failed to get stock."
-      });
-    }
-  }
-);
-
-// ============================================================
-// USER STOCK
-// ============================================================
-
-app.get(
-  "/api/stock",
-  requireSession,
-  (req, res) => {
-    try {
-      const stock =
-        readStock();
-
-      // ONLY count is returned.
-      return res.json({
-        success: true,
-        count:
-          stock.length
-      });
-
-    } catch (error) {
-      console.error(
-        "[STOCK] Error:",
-        error
-      );
-
-      return res.status(500).json({
-        success: false,
-        message:
-          "Failed to get stock."
-      });
-    }
-  }
-);
-
-// ============================================================
-// USER STOCK COUNT
-// ============================================================
-
-app.get(
-  "/api/stock/count",
-  requireSession,
-  (req, res) => {
-    try {
-      const stock =
-        readStock();
-
-      return res.json({
-        success: true,
-        count:
-          stock.length
-      });
-
-    } catch (error) {
-      console.error(
-        "[STOCK COUNT] Error:",
-        error
-      );
-
-      return res.status(500).json({
-        success: false,
-        message:
-          "Failed to get stock count."
-      });
-    }
-  }
-);
-
-// ============================================================
-// GENERATE STOCK
-// ============================================================
-
-app.post(
-  "/api/stock/generate",
-  requireSession,
-  (req, res) => {
-    try {
-      const stock =
-        readStock();
-
-      if (
-        stock.length === 0
-      ) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "No stock available."
-        });
-      }
-
-      // Take first item
-      const rawItem =
-        stock.shift();
-
-      // Save remaining stock
-      // encrypted on disk.
-      saveStock(
-        stock
-      );
-
-      const parsed =
-        parseStockItem(
-          rawItem
-        );
-
-      console.log(
-        `[STOCK] Generated item for key ${req.noviSession.key}`
-      );
-
-      return res.json({
-        success: true,
-
-        item: {
-          email:
-            parsed.email,
-
-          password:
-            parsed.password
-        },
-
-        remaining:
-          stock.length
-      });
-
-    } catch (error) {
-      console.error(
-        "[STOCK GENERATE ERROR]",
-        error
-      );
-
-      return res.status(500).json({
-        success: false,
-        message:
-          "Failed to generate stock."
-      });
-    }
-  }
-);
-
-// ============================================================
 // SAVE LOGIN
-// ============================================================
 
-app.post(
-  "/api/saved-logins",
-  requireSession,
-  (req, res) => {
-    try {
-      if (
-        !NOVI_CREDENTIAL_SECRET
-      ) {
-        return res.status(500).json({
-          success: false,
-          message:
-            "NOVI_CREDENTIAL_SECRET is not configured."
-        });
-      }
+app.post("/api/saved-logins", requireSession, async (req, res) => {
+  try {
+    const username = String(
+      req.body?.username ||
+      req.body?.email ||
+      ""
+    ).trim();
 
-      const email =
-        typeof req.body?.email ===
-          "string"
-          ? req.body.email.trim()
-          : "";
+    const password = String(
+      req.body?.password ||
+      ""
+    );
 
-      const password =
-        typeof req.body?.password ===
-          "string"
-          ? req.body.password
-          : "";
-
-      if (
-        !email ||
-        !password
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Email and password are required."
-        });
-      }
-
-      const logins =
-        readSavedLogins();
-
-      const encryptedPassword =
-        encryptPassword(
-          password
-        );
-
-      const savedLogin = {
-        id:
-          crypto.randomUUID(),
-
-        ownerKey:
-          req.noviSession.key,
-
-        deviceId:
-          req.noviSession.deviceId,
-
-        email,
-
-        password:
-          encryptedPassword,
-
-        createdAt:
-          new Date().toISOString()
-      };
-
-      logins.push(
-        savedLogin
-      );
-
-      saveSavedLogins(
-        logins
-      );
-
-      return res.status(201).json({
-        success: true,
-
-        login: {
-          id:
-            savedLogin.id,
-
-          email:
-            savedLogin.email,
-
-          createdAt:
-            savedLogin.createdAt
-        }
-      });
-
-    } catch (error) {
-      console.error(
-        "[SAVED LOGIN SAVE ERROR]",
-        error
-      );
-
-      return res.status(500).json({
+    if (!username || !password) {
+      return res.status(400).json({
         success: false,
-        message:
-          "Failed to save login."
+        error: "Username and password are required",
       });
     }
+
+    const encryptedPassword = encryptPassword(password);
+
+    const result = await pool.query(
+      `
+      INSERT INTO novi_saved_logins
+      (username, password, created_at, device_id)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, username, created_at
+      `,
+      [
+        username,
+        encryptedPassword,
+        Date.now(),
+        req.session.deviceId,
+      ]
+    );
+
+    const row = result.rows[0];
+
+    res.json({
+      success: true,
+      login: {
+        id: row.id,
+        username: row.username,
+        createdAt: Number(row.created_at),
+      },
+    });
+  } catch (error) {
+    console.error("Save login error:", error);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to save login",
+    });
   }
-);
+});
 
-// ============================================================
-// LIST SAVED LOGINS
-// ============================================================
+// GET SAVED LOGINS
 
-app.get(
-  "/api/saved-logins",
-  requireSession,
-  (req, res) => {
-    try {
-      const logins =
-        readSavedLogins();
+app.get("/api/saved-logins", requireSession, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+      SELECT id, username, password, created_at
+      FROM novi_saved_logins
+      WHERE device_id = $1
+      ORDER BY id DESC
+      `,
+      [req.session.deviceId]
+    );
 
-      const owned =
-        logins
-          .filter(
-            login =>
-              login.ownerKey ===
-              req.noviSession.key
-          )
-          .map(
-            login => ({
-              id:
-                login.id,
+    const logins = result.rows.map((row) => ({
+      id: row.id,
+      username: row.username,
+      password: decryptPassword(row.password),
+      createdAt: Number(row.created_at),
+    }));
 
-              email:
-                login.email,
+    res.json({
+      success: true,
+      logins,
+    });
+  } catch (error) {
+    console.error("Get saved logins error:", error);
 
-              createdAt:
-                login.createdAt
-            })
-          );
-
-      return res.json({
-        success: true,
-        logins:
-          owned
-      });
-
-    } catch (error) {
-      console.error(
-        "[SAVED LOGIN LIST ERROR]",
-        error
-      );
-
-      return res.status(500).json({
-        success: false,
-        message:
-          "Failed to load saved logins."
-      });
-    }
+    res.status(500).json({
+      success: false,
+      error: "Failed to get saved logins",
+    });
   }
-);
+});
 
-// ============================================================
-// REVEAL SAVED LOGIN
-// ============================================================
+// GET ONE SAVED LOGIN
 
 app.get(
   "/api/saved-logins/:id",
   requireSession,
-  (req, res) => {
+  async (req, res) => {
     try {
-      if (
-        !NOVI_CREDENTIAL_SECRET
-      ) {
-        return res.status(500).json({
+      const id = Number(req.params.id);
+
+      if (!Number.isInteger(id)) {
+        return res.status(400).json({
           success: false,
-          message:
-            "NOVI_CREDENTIAL_SECRET is not configured."
+          error: "Invalid ID",
         });
       }
 
-      const logins =
-        readSavedLogins();
-
-      const login =
-        logins.find(
-          item =>
-            item.id ===
-              req.params.id &&
-            item.ownerKey ===
-              req.noviSession.key
-        );
-
-      if (!login) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Saved login not found."
-        });
-      }
-
-      const password =
-        decryptPassword(
-          login.password
-        );
-
-      return res.json({
-        success: true,
-
-        login: {
-          id:
-            login.id,
-
-          email:
-            login.email,
-
-          password
-        }
-      });
-
-    } catch (error) {
-      console.error(
-        "[SAVED LOGIN REVEAL ERROR]",
-        error
+      const result = await pool.query(
+        `
+        SELECT id, username, password, created_at
+        FROM novi_saved_logins
+        WHERE id = $1
+          AND device_id = $2
+        LIMIT 1
+        `,
+        [id, req.session.deviceId]
       );
 
-      return res.status(500).json({
+      if (result.rowCount === 0) {
+        return res.status(404).json({
+          success: false,
+          error: "Saved login not found",
+        });
+      }
+
+      const row = result.rows[0];
+
+      res.json({
+        success: true,
+        login: {
+          id: row.id,
+          username: row.username,
+          password: decryptPassword(row.password),
+          createdAt: Number(row.created_at),
+        },
+      });
+    } catch (error) {
+      console.error("Get saved login error:", error);
+
+      res.status(500).json({
         success: false,
-        message:
-          "Failed to reveal saved login."
+        error: "Failed to get saved login",
       });
     }
   }
 );
 
-// ============================================================
 // DELETE SAVED LOGIN
-// ============================================================
 
 app.delete(
   "/api/saved-logins/:id",
   requireSession,
-  (req, res) => {
+  async (req, res) => {
     try {
-      const logins =
-        readSavedLogins();
+      const id = Number(req.params.id);
 
-      const originalLength =
-        logins.length;
-
-      const filtered =
-        logins.filter(
-          login =>
-            !(
-              login.id ===
-                req.params.id &&
-              login.ownerKey ===
-                req.noviSession.key
-            )
-        );
-
-      if (
-        filtered.length ===
-        originalLength
-      ) {
-        return res.status(404).json({
+      if (!Number.isInteger(id)) {
+        return res.status(400).json({
           success: false,
-          message:
-            "Saved login not found."
+          error: "Invalid ID",
         });
       }
 
-      saveSavedLogins(
-        filtered
+      const result = await pool.query(
+        `
+        DELETE FROM novi_saved_logins
+        WHERE id = $1
+          AND device_id = $2
+        `,
+        [id, req.session.deviceId]
       );
 
-      return res.json({
+      if (result.rowCount === 0) {
+        return res.status(404).json({
+          success: false,
+          error: "Saved login not found",
+        });
+      }
+
+      res.json({
         success: true,
-        message:
-          "Saved login deleted."
       });
-
     } catch (error) {
-      console.error(
-        "[SAVED LOGIN DELETE ERROR]",
-        error
-      );
+      console.error("Delete saved login error:", error);
 
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
-        message:
-          "Failed to delete saved login."
+        error: "Failed to delete saved login",
       });
     }
   }
@@ -1711,200 +964,50 @@ app.delete(
 // LOGOUT
 // ============================================================
 
-app.post(
-  "/api/logout",
-  requireSession,
-  (req, res) => {
-    const token =
-      req.headers[
-        "x-novi-session"
-      ];
+app.post("/api/logout", requireSession, (req, res) => {
+  const auth =
+    req.headers.authorization ||
+    req.headers.Authorization ||
+    "";
 
-    sessions.delete(
-      token
-    );
+  const token = auth.startsWith("Bearer ")
+    ? auth.slice(7).trim()
+    : null;
 
-    return res.json({
-      success: true,
-      message:
-        "Logged out."
-    });
+  if (token) {
+    sessions.delete(token);
   }
-);
+
+  res.json({
+    success: true,
+  });
+});
 
 // ============================================================
 // STATIC WEBSITE
 // ============================================================
 
-if (
-  fs.existsSync(
-    PUBLIC_DIR
-  )
-) {
-  app.use(
-    express.static(
-      PUBLIC_DIR
-    )
-  );
-}
+app.use(express.static(PUBLIC_DIR));
 
-// ============================================================
-// 404
-// ============================================================
-
-app.use(
-  (req, res) => {
-    if (
-      req.path.startsWith(
-        "/api/"
-      )
-    ) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "API endpoint not found."
-      });
-    }
-
-    const indexPath =
-      path.join(
-        PUBLIC_DIR,
-        "index.html"
-      );
-
-    if (
-      fs.existsSync(
-        indexPath
-      )
-    ) {
-      return res.sendFile(
-        indexPath
-      );
-    }
-
-    return res.status(404).send(
-      "Not found."
-    );
-  }
-);
-
-// ============================================================
-// ERROR HANDLER
-// ============================================================
-
-app.use(
-  (
-    error,
-    req,
-    res,
-    next
-  ) => {
-    console.error(
-      "[SERVER ERROR]",
-      error
-    );
-
-    if (
-      res.headersSent
-    ) {
-      return next(error);
-    }
-
-    return res.status(500).json({
-      success: false,
-      message:
-        "Internal server error."
-    });
-  }
-);
+app.get("*", (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, "index.html"));
+});
 
 // ============================================================
 // START SERVER
 // ============================================================
 
-app.listen(
-  PORT,
-  "0.0.0.0",
-  () => {
-    console.log("");
-    console.log(
-      "========================================"
-    );
-    console.log(
-      "           NOVI SERVER ONLINE"
-    );
-    console.log(
-      "========================================"
-    );
+async function start() {
+  try {
+    await initDatabase();
 
-    console.log(
-      `Port: ${PORT}`
-    );
-
-    console.log(
-      `Public: ${PUBLIC_DIR}`
-    );
-
-    console.log(
-      `Keys: ${KEY_FILE}`
-    );
-
-    console.log(
-      `Encrypted Stock: ${STOCK_FILE}`
-    );
-
-    console.log(
-      `Saved Logins: ${SAVED_LOGINS_FILE}`
-    );
-
-    console.log("");
-
-    console.log(
-      "Key access is controlled by key expiration."
-    );
-
-    console.log(
-      "No 30-minute dashboard timeout."
-    );
-
-    console.log("");
-
-    console.log(
-      "API Endpoints:"
-    );
-
-    console.log(
-      "Health: GET /health"
-    );
-
-    console.log(
-      "Verify: POST /api/verify"
-    );
-
-    console.log(
-      "Keys: POST /api/keys"
-    );
-
-    console.log(
-      "Stock Add: POST /api/stock/add"
-    );
-
-    console.log(
-      "Stock Count: GET /api/stock"
-    );
-
-    console.log(
-      "Stock Generate: POST /api/stock/generate"
-    );
-
-    console.log(
-      "Saved Logins: /api/saved-logins"
-    );
-
-    console.log(
-      "========================================"
-    );
-
-    console.log("");
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Novi server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start Novi:", error);
+    process.exit(1);
   }
-);
+}
+
+start();
