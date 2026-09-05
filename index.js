@@ -12,56 +12,60 @@ const axios = require("axios");
    CONFIG
 ========================================================= */
 
-const PORT = process.env.PORT || 10000;
-const API_URL = `http://127.0.0.1:${PORT}`;
+const PORT =
+    Number(process.env.PORT) || 10000;
 
-const TOKEN = String(
-    process.env.DISCORD_TOKEN || ""
-).trim();
+const API_URL =
+    `http://127.0.0.1:${PORT}`;
 
-const ADMIN_SECRET = String(
-    process.env.NOVI_ADMIN_SECRET || ""
-).trim();
+const TOKEN =
+    String(
+        process.env.DISCORD_TOKEN || ""
+    ).trim();
+
+const ADMIN_SECRET =
+    String(
+        process.env.NOVI_ADMIN_SECRET || ""
+    ).trim();
 
 /* =========================================================
-   STARTUP
+   CHECK ENV
 ========================================================= */
 
-console.log("");
-console.log("========================================");
-console.log("NOVI DISCORD BOT");
-console.log("========================================");
-
 console.log(
-    "DISCORD_TOKEN:",
-    TOKEN ? "FOUND" : "MISSING"
+    `[BOT] Token: ${TOKEN ? "FOUND" : "MISSING"}`
 );
 
 console.log(
-    "NOVI_ADMIN_SECRET:",
-    ADMIN_SECRET ? "FOUND" : "MISSING"
+    `[BOT] Admin secret: ${
+        ADMIN_SECRET
+            ? "FOUND"
+            : "MISSING"
+    }`
 );
 
 console.log(
-    "API:",
-    API_URL
+    `[BOT] API: ${API_URL}`
 );
-
-console.log("========================================");
-console.log("");
 
 if (!TOKEN) {
-    console.error("❌ DISCORD_TOKEN is missing.");
+    console.error(
+        "[BOT] DISCORD_TOKEN is missing."
+    );
+
     process.exit(1);
 }
 
 if (!ADMIN_SECRET) {
-    console.error("❌ NOVI_ADMIN_SECRET is missing.");
+    console.error(
+        "[BOT] NOVI_ADMIN_SECRET is missing."
+    );
+
     process.exit(1);
 }
 
 /* =========================================================
-   DISCORD CLIENT
+   CLIENT
 ========================================================= */
 
 const client = new Client({
@@ -73,7 +77,7 @@ const client = new Client({
 });
 
 /* =========================================================
-   ALLOWED ROLES
+   ROLES
 ========================================================= */
 
 const ALLOWED_ROLE_IDS = [
@@ -82,7 +86,7 @@ const ALLOWED_ROLE_IDS = [
 ];
 
 /* =========================================================
-   PERMISSION CHECK
+   PERMISSION
 ========================================================= */
 
 function hasPermission(message) {
@@ -93,93 +97,49 @@ function hasPermission(message) {
 
     return ALLOWED_ROLE_IDS.some(
         roleId =>
-            message.member.roles.cache.has(roleId)
+            message.member.roles.cache.has(
+                roleId
+            )
     );
-}
-
-/* =========================================================
-   ADMIN HEADERS
-========================================================= */
-
-function adminHeaders() {
-
-    return {
-        "Content-Type": "application/json",
-        "x-novi-admin-secret": ADMIN_SECRET
-    };
 }
 
 /* =========================================================
    READY
 ========================================================= */
 
-client.once("ready", () => {
+client.once(
+    "ready",
+    () => {
 
-    console.log("");
-    console.log("========================================");
-    console.log("✅ NOVI BOT IS ONLINE");
-    console.log("========================================");
+        console.log("");
+        console.log(
+            "========================================"
+        );
+        console.log(
+            "✅ NOVI BOT IS ONLINE"
+        );
+        console.log(
+            "========================================"
+        );
 
-    console.log(
-        "Bot:",
-        client.user.tag
-    );
+        console.log(
+            `Bot: ${client.user.tag}`
+        );
 
-    console.log(
-        "Bot ID:",
-        client.user.id
-    );
+        console.log(
+            `ID: ${client.user.id}`
+        );
 
-    console.log(
-        "Servers:",
-        client.guilds.cache.size
-    );
+        console.log(
+            `Servers: ${client.guilds.cache.size}`
+        );
 
-    console.log("========================================");
-    console.log("");
-});
-
-/* =========================================================
-   DISCORD ERRORS
-========================================================= */
-
-client.on("error", error => {
-
-    console.error(
-        "❌ Discord client error:",
-        error?.message || error
-    );
-});
-
-client.on("shardError", error => {
-
-    console.error(
-        "❌ Discord gateway error:",
-        error?.message || error
-    );
-});
-
-client.on("shardReconnecting", () => {
-
-    console.log(
-        "🔄 Discord reconnecting..."
-    );
-});
-
-client.on("shardResume", shardId => {
-
-    console.log(
-        `✅ Discord resumed on shard ${shardId}.`
-    );
-});
-
-client.on("shardDisconnect", event => {
-
-    console.log(
-        "⚠️ Discord disconnected:",
-        event?.code || "Unknown"
-    );
-});
+        console.log(
+            "========================================"
+        );
+        console.log("");
+    }
+);
 
 /* =========================================================
    MESSAGE HANDLER
@@ -195,12 +155,24 @@ client.on(
                 return;
             }
 
+            /*
+             * THIS LOG IS IMPORTANT.
+             * It proves Discord messages are reaching
+             * your Render bot.
+             */
+
+            console.log(
+                `[MESSAGE] ${message.author.tag}: ${message.content}`
+            );
+
             if (!message.guild) {
                 return;
             }
 
             const content =
-                String(message.content || "").trim();
+                String(
+                    message.content || ""
+                ).trim();
 
             if (!content) {
                 return;
@@ -216,9 +188,21 @@ client.on(
                !GEN
             ================================================= */
 
-            if (command === "!gen") {
+            if (
+                command === "!gen"
+            ) {
+
+                console.log(
+                    "[GEN] Command received."
+                );
+
+                /* Permission */
 
                 if (!hasPermission(message)) {
+
+                    console.log(
+                        `[GEN] Permission denied for ${message.author.tag}`
+                    );
 
                     await message.reply(
                         "❌ You don't have permission to use this command."
@@ -227,12 +211,20 @@ client.on(
                     return;
                 }
 
+                console.log(
+                    "[GEN] Permission accepted."
+                );
+
+                /* Duration */
+
                 const duration =
-                    String(args[1] || "")
+                    String(
+                        args[1] || ""
+                    )
                         .trim()
                         .toLowerCase();
 
-                const allowedDurations = [
+                const validDurations = [
                     "1d",
                     "3d",
                     "1week",
@@ -241,68 +233,57 @@ client.on(
                 ];
 
                 if (
-                    !allowedDurations.includes(
+                    !validDurations.includes(
                         duration
                     )
                 ) {
 
                     await message.reply(
-                        "❌ Usage:\n" +
-                        "`!gen 1d`\n" +
-                        "`!gen 3d`\n" +
-                        "`!gen 1week`\n" +
-                        "`!gen 1month`\n" +
-                        "`!gen lifetime`"
+                        "❌ Usage: `!gen 1d`, `!gen 3d`, `!gen 1week`, `!gen 1month`, or `!gen lifetime`"
                     );
 
                     return;
                 }
 
-                console.log("");
                 console.log(
-                    `[GEN] ${message.author.tag} requested ${duration}`
+                    `[GEN] Generating ${duration}...`
                 );
 
                 try {
 
-                    /*
-                     * IMPORTANT:
-                     * The bot talks directly to the Express
-                     * server running in the same Render service.
-                     */
-
                     const response =
-                        await axios({
-                            method: "POST",
-
-                            url:
-                                `${API_URL}/api/keys`,
-
-                            data: {
+                        await axios.post(
+                            `${API_URL}/api/keys`,
+                            {
                                 duration
                             },
+                            {
+                                headers: {
+                                    "Content-Type":
+                                        "application/json",
 
-                            headers:
-                                adminHeaders(),
+                                    "x-novi-admin-secret":
+                                        ADMIN_SECRET
+                                },
 
-                            timeout: 15000,
+                                timeout: 15000,
 
-                            validateStatus:
-                                () => true
-                        });
+                                validateStatus:
+                                    () => true
+                            }
+                        );
 
                     console.log(
-                        "[GEN] HTTP status:",
-                        response.status
+                        `[GEN] Server status: ${response.status}`
                     );
 
                     console.log(
-                        "[GEN] Response:",
+                        "[GEN] Server response:",
                         response.data
                     );
 
                     /* -----------------------------------------
-                       SERVER REJECTED REQUEST
+                       SERVER ERROR
                     ----------------------------------------- */
 
                     if (
@@ -310,24 +291,22 @@ client.on(
                         response.status >= 300
                     ) {
 
-                        const messageText =
-                            response.data?.message ||
-                            `Server returned HTTP ${response.status}.`;
-
                         await message.reply(
-                            `❌ ${messageText}`
+                            `❌ ${
+                                response.data?.message ||
+                                `Server error ${response.status}.`
+                            }`
                         );
 
                         return;
                     }
 
                     /* -----------------------------------------
-                       SERVER RESPONSE
+                       SUCCESS CHECK
                     ----------------------------------------- */
 
                     if (
-                        !response.data ||
-                        response.data.success !== true
+                        response.data?.success !== true
                     ) {
 
                         await message.reply(
@@ -341,85 +320,46 @@ client.on(
                     }
 
                     /* -----------------------------------------
-                       GET KEY
+                       KEY
                     ----------------------------------------- */
 
                     const key =
                         String(
-                            response.data.key || ""
+                            response.data?.key ||
+                            ""
                         ).trim();
 
                     if (!key) {
 
-                        console.error(
-                            "[GEN] Server returned success but no key."
-                        );
-
                         await message.reply(
-                            "❌ The server generated the request but did not return a key."
+                            "❌ Server generated a response but no key was returned."
                         );
 
                         return;
                     }
 
-                    /* -----------------------------------------
-                       SUCCESS
-                    ----------------------------------------- */
-
                     console.log(
-                        `[GEN] SUCCESS -> ${key}`
+                        "[GEN] ✅ KEY GENERATED"
                     );
-
-                    const durationName =
-                        response.data.durationName ||
-                        response.data.duration ||
-                        duration;
 
                     await message.reply(
                         "🔑 **Novi Key Generated**\n\n" +
                         `\`${key}\`\n\n` +
-                        `⏱️ **Duration:** ${durationName}`
+                        `⏱️ **Duration:** ${
+                            response.data.durationName ||
+                            duration
+                        }`
                     );
 
                 } catch (error) {
 
-                    console.error("");
                     console.error(
-                        "========================================"
-                    );
-                    console.error(
-                        "❌ !GEN ERROR"
-                    );
-                    console.error(
-                        "========================================"
-                    );
-
-                    console.error(
-                        "Message:",
-                        error?.message || error
-                    );
-
-                    console.error(
-                        "Code:",
-                        error?.code || "Unknown"
-                    );
-
-                    console.error(
-                        "Status:",
-                        error?.response?.status || "No response"
-                    );
-
-                    console.error(
-                        "Response:",
-                        error?.response?.data || "No response"
-                    );
-
-                    console.error(
-                        "========================================"
+                        "[GEN] REQUEST ERROR:",
+                        error
                     );
 
                     await message.reply(
-                        "❌ Something went wrong while generating the key. Check the Render logs."
+                        "❌ Failed to contact the Novi server."
                     );
                 }
 
@@ -430,7 +370,9 @@ client.on(
                !ADD
             ================================================= */
 
-            if (command === "!add") {
+            if (
+                command === "!add"
+            ) {
 
                 if (!hasPermission(message)) {
 
@@ -443,27 +385,23 @@ client.on(
 
                 let items = [];
 
-                /* -----------------------------------------
-                   TEXT AFTER !ADD
-                ----------------------------------------- */
-
                 const typedItems =
                     args
                         .slice(1)
-                        .map(item =>
-                            item.trim()
+                        .map(
+                            item =>
+                                item.trim()
                         )
-                        .filter(item =>
-                            item.length > 0
+                        .filter(
+                            item =>
+                                item.length > 0
                         );
 
                 items.push(
                     ...typedItems
                 );
 
-                /* -----------------------------------------
-                   TXT ATTACHMENT
-                ----------------------------------------- */
+                /* TXT */
 
                 if (
                     message.attachments.size > 0
@@ -474,11 +412,14 @@ client.on(
 
                     const filename =
                         String(
-                            attachment.name || ""
+                            attachment.name ||
+                            ""
                         ).toLowerCase();
 
                     if (
-                        !filename.endsWith(".txt")
+                        !filename.endsWith(
+                            ".txt"
+                        )
                     ) {
 
                         await message.reply(
@@ -496,7 +437,6 @@ client.on(
                                 {
                                     responseType:
                                         "text",
-
                                     timeout:
                                         15000
                                 }
@@ -504,14 +444,19 @@ client.on(
 
                         const fileItems =
                             String(
-                                response.data || ""
+                                response.data ||
+                                ""
                             )
-                                .split(/\r?\n/)
-                                .map(line =>
-                                    line.trim()
+                                .split(
+                                    /\r?\n/
                                 )
-                                .filter(line =>
-                                    line.length > 0
+                                .map(
+                                    line =>
+                                        line.trim()
+                                )
+                                .filter(
+                                    line =>
+                                        line.length > 0
                                 );
 
                         items.push(
@@ -521,8 +466,8 @@ client.on(
                     } catch (error) {
 
                         console.error(
-                            "[TXT ERROR]",
-                            error?.message || error
+                            "[ADD] TXT ERROR:",
+                            error
                         );
 
                         await message.reply(
@@ -533,25 +478,18 @@ client.on(
                     }
                 }
 
-                /* -----------------------------------------
-                   NOTHING PROVIDED
-                ----------------------------------------- */
+                /* Nothing */
 
                 if (
                     items.length === 0
                 ) {
 
                     await message.reply(
-                        "❌ Nothing to add.\n\n" +
-                        "Use `!add ITEM` or attach a `.txt` file."
+                        "❌ Nothing to add.\n\nUse `!add ITEM` or attach a `.txt` file."
                     );
 
                     return;
                 }
-
-                /* -----------------------------------------
-                   REMOVE DUPLICATES
-                ----------------------------------------- */
 
                 items =
                     [...new Set(items)];
@@ -560,9 +498,7 @@ client.on(
                 let duplicates = 0;
                 let failed = 0;
 
-                /* -----------------------------------------
-                   ADD ITEMS
-                ----------------------------------------- */
+                /* Add */
 
                 for (
                     const item of items
@@ -571,25 +507,27 @@ client.on(
                     try {
 
                         const response =
-                            await axios({
-                                method: "POST",
-
-                                url:
-                                    `${API_URL}/api/stock/add`,
-
-                                data: {
+                            await axios.post(
+                                `${API_URL}/api/stock/add`,
+                                {
                                     item
                                 },
+                                {
+                                    headers: {
+                                        "Content-Type":
+                                            "application/json",
 
-                                headers:
-                                    adminHeaders(),
+                                        "x-novi-admin-secret":
+                                            ADMIN_SECRET
+                                    },
 
-                                timeout:
-                                    15000,
+                                    timeout:
+                                        15000,
 
-                                validateStatus:
-                                    () => true
-                            });
+                                    validateStatus:
+                                        () => true
+                                }
+                            );
 
                         if (
                             response.status >= 200 &&
@@ -599,12 +537,14 @@ client.on(
 
                             added +=
                                 Number(
-                                    response.data.added || 0
+                                    response.data.added ||
+                                    0
                                 );
 
                             duplicates +=
                                 Number(
-                                    response.data.duplicates || 0
+                                    response.data.duplicates ||
+                                    0
                                 );
 
                         } else {
@@ -612,7 +552,7 @@ client.on(
                             failed++;
 
                             console.error(
-                                "[ADD FAILED]",
+                                "[ADD] Failed:",
                                 response.status,
                                 response.data
                             );
@@ -623,15 +563,14 @@ client.on(
                         failed++;
 
                         console.error(
-                            "[ADD ERROR]",
-                            error?.message || error
+                            "[ADD] Error:",
+                            error?.message ||
+                            error
                         );
                     }
                 }
 
-                /* -----------------------------------------
-                   GET TOTAL STOCK
-                ----------------------------------------- */
+                /* Count */
 
                 let totalStock =
                     "Unknown";
@@ -639,21 +578,21 @@ client.on(
                 try {
 
                     const response =
-                        await axios({
-                            method: "GET",
+                        await axios.get(
+                            `${API_URL}/api/admin/stock`,
+                            {
+                                headers: {
+                                    "x-novi-admin-secret":
+                                        ADMIN_SECRET
+                                },
 
-                            url:
-                                `${API_URL}/api/admin/stock`,
+                                timeout:
+                                    10000,
 
-                            headers:
-                                adminHeaders(),
-
-                            timeout:
-                                10000,
-
-                            validateStatus:
-                                () => true
-                        });
+                                validateStatus:
+                                    () => true
+                            }
+                        );
 
                     if (
                         typeof response.data?.count ===
@@ -667,14 +606,10 @@ client.on(
                 } catch (error) {
 
                     console.error(
-                        "[STOCK COUNT ERROR]",
-                        error?.message || error
+                        "[ADD] Count error:",
+                        error
                     );
                 }
-
-                /* -----------------------------------------
-                   RESULT
-                ----------------------------------------- */
 
                 let result =
                     `📦 **Stock Updated**\n\n` +
@@ -700,10 +635,66 @@ client.on(
         } catch (error) {
 
             console.error(
-                "MESSAGE HANDLER ERROR:",
+                "[MESSAGE HANDLER ERROR]",
                 error
             );
         }
+    }
+);
+
+/* =========================================================
+   DISCORD ERRORS
+========================================================= */
+
+client.on(
+    "error",
+    error => {
+
+        console.error(
+            "[DISCORD ERROR]",
+            error
+        );
+    }
+);
+
+client.on(
+    "shardError",
+    error => {
+
+        console.error(
+            "[DISCORD SHARD ERROR]",
+            error
+        );
+    }
+);
+
+client.on(
+    "shardReconnecting",
+    () => {
+
+        console.log(
+            "[DISCORD] Reconnecting..."
+        );
+    }
+);
+
+client.on(
+    "shardResume",
+    shardId => {
+
+        console.log(
+            `[DISCORD] Resumed shard ${shardId}`
+        );
+    }
+);
+
+client.on(
+    "shardDisconnect",
+    event => {
+
+        console.log(
+            `[DISCORD] Disconnected: ${event?.code}`
+        );
     }
 );
 
@@ -716,7 +707,7 @@ process.on(
     error => {
 
         console.error(
-            "UNHANDLED REJECTION:",
+            "[UNHANDLED REJECTION]",
             error
         );
     }
@@ -727,69 +718,32 @@ process.on(
     error => {
 
         console.error(
-            "UNCAUGHT EXCEPTION:",
+            "[UNCAUGHT EXCEPTION]",
             error
         );
     }
 );
 
 /* =========================================================
-   START BOT
+   LOGIN
 ========================================================= */
 
-async function startDiscord() {
+console.log(
+    "[BOT] Connecting to Discord..."
+);
 
-    console.log("");
-    console.log(
-        "Connecting Discord.js..."
-    );
-
-    try {
-
-        await client.login(TOKEN);
+client.login(TOKEN)
+    .then(() => {
 
         console.log(
-            "✅ Discord login successful."
+            "[BOT] Discord login completed."
         );
 
-    } catch (error) {
-
-        console.error("");
-        console.error(
-            "========================================"
-        );
+    })
+    .catch(error => {
 
         console.error(
-            "❌ DISCORD LOGIN FAILED"
+            "[BOT] Discord login failed:",
+            error
         );
-
-        console.error(
-            "========================================"
-        );
-
-        console.error(
-            "Name:",
-            error?.name || "Unknown"
-        );
-
-        console.error(
-            "Code:",
-            error?.code || "Unknown"
-        );
-
-        console.error(
-            "Message:",
-            error?.message || error
-        );
-
-        console.error(
-            "========================================"
-        );
-    }
-}
-
-/* =========================================================
-   RUN
-========================================================= */
-
-startDiscord();
+    });
