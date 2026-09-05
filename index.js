@@ -201,18 +201,6 @@ function normalizeDuration(input) {
   return null;
 }
 
-function isAdmin(req) {
-  const provided =
-    req.headers["x-admin-secret"] ||
-    req.body?.adminSecret ||
-    req.query?.adminSecret;
-
-  return Boolean(
-    provided &&
-    provided === ADMIN_SECRET
-  );
-}
-
 function isExpired(expiresAt) {
   if (
     expiresAt === null ||
@@ -228,6 +216,18 @@ function isExpired(expiresAt) {
   }
 
   return Date.now() >= timestamp;
+}
+
+function isAdmin(req) {
+  const provided =
+    req.headers["x-admin-secret"] ||
+    req.body?.adminSecret ||
+    req.query?.adminSecret;
+
+  return Boolean(
+    provided &&
+    provided === ADMIN_SECRET
+  );
 }
 
 // ============================================================
@@ -275,19 +275,9 @@ async function detectDatabaseTypes() {
       }
     }
 
-    console.log(
-      "📊 Database timestamp types:"
-    );
-
-    console.log(
-      "   stock:",
-      stockCreatedAtType
-    );
-
-    console.log(
-      "   saved:",
-      savedCreatedAtType
-    );
+    console.log("📊 Database timestamp types:");
+    console.log("   stock:", stockCreatedAtType);
+    console.log("   saved:", savedCreatedAtType);
   } catch (error) {
     console.error(
       "❌ Could not detect database types:",
@@ -315,7 +305,6 @@ async function fixDurationColumn() {
       console.log(
         "⚠️ novi_keys.duration was not found."
       );
-
       return;
     }
 
@@ -347,6 +336,10 @@ async function fixDurationColumn() {
       console.log(
         "✅ novi_keys.duration is now TEXT."
       );
+    } else {
+      console.log(
+        "✅ novi_keys.duration is already TEXT-compatible."
+      );
     }
   } catch (error) {
     console.error(
@@ -363,6 +356,10 @@ async function fixDurationColumn() {
 // ============================================================
 
 async function initializeDatabase() {
+  // ----------------------------------------------------------
+  // LICENSE KEYS
+  // ----------------------------------------------------------
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS novi_keys (
       id SERIAL PRIMARY KEY,
@@ -374,6 +371,10 @@ async function initializeDatabase() {
     )
   `);
 
+  // ----------------------------------------------------------
+  // STOCK
+  // ----------------------------------------------------------
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS novi_stock_items (
       id SERIAL PRIMARY KEY,
@@ -381,6 +382,10 @@ async function initializeDatabase() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `);
+
+  // ----------------------------------------------------------
+  // SAVED LOGINS
+  // ----------------------------------------------------------
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS novi_saved_items (
@@ -391,6 +396,10 @@ async function initializeDatabase() {
     )
   `);
 
+  // ----------------------------------------------------------
+  // INDEXES
+  // ----------------------------------------------------------
+
   await pool.query(`
     CREATE INDEX IF NOT EXISTS novi_keys_key_idx
     ON novi_keys(key)
@@ -400,6 +409,10 @@ async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS novi_stock_items_stock_id_idx
     ON novi_stock_items(stock_id)
   `);
+
+  // ----------------------------------------------------------
+  // FIX OLD DATABASE
+  // ----------------------------------------------------------
 
   await fixDurationColumn();
   await detectDatabaseTypes();
@@ -437,7 +450,7 @@ app.get(
 );
 
 // ============================================================
-// VERIFY KEY
+// VERIFY LICENSE KEY
 // ============================================================
 
 app.post(
@@ -513,16 +526,14 @@ app.post(
             : String(keyRow.duration)
         );
 
-      /*
-        Create and store a real server-side session.
-      */
-
+      // Create real server-side session
       const sessionToken =
         createSession(
           keyRow.id,
           expiresAt
         );
 
+      // Mark key as used
       await pool.query(
         `
         UPDATE novi_keys
@@ -599,7 +610,7 @@ app.get(
 );
 
 // ============================================================
-// GENERATE ACCOUNT FROM STOCK
+// GENERATE ONE ACCOUNT FROM STOCK
 // ============================================================
 
 app.post(
@@ -611,10 +622,6 @@ app.post(
 
     try {
       await client.query("BEGIN");
-
-      /*
-        Take one available stock item.
-      */
 
       const result =
         await client.query(`
@@ -629,9 +636,7 @@ app.post(
         `);
 
       if (result.rows.length === 0) {
-        await client.query(
-          "ROLLBACK"
-        );
+        await client.query("ROLLBACK");
 
         return res.status(400).json({
           success: false,
@@ -643,10 +648,6 @@ app.post(
       const stockRow =
         result.rows[0];
 
-      /*
-        Remove it from available stock.
-      */
-
       await client.query(
         `
         DELETE FROM novi_stock_items
@@ -655,9 +656,7 @@ app.post(
         [stockRow.id]
       );
 
-      await client.query(
-        "COMMIT"
-      );
+      await client.query("COMMIT");
 
       const item =
         normalizeLogin(
@@ -671,9 +670,7 @@ app.post(
       });
     } catch (error) {
       try {
-        await client.query(
-          "ROLLBACK"
-        );
+        await client.query("ROLLBACK");
       } catch {}
 
       console.error(
@@ -681,7 +678,7 @@ app.post(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error:
           "Could not generate account.",
@@ -693,7 +690,7 @@ app.post(
 );
 
 // ============================================================
-// SAVED LOGINS
+// GET SAVED LOGINS
 // ============================================================
 
 app.get(
@@ -706,22 +703,15 @@ app.get(
           SELECT
             id,
             email,
+            password,
             created_at
           FROM novi_saved_items
           ORDER BY id DESC
         `);
 
-      res.json({
+      return res.json({
         success: true,
-        logins:
-          result.rows.map(
-            (row) => ({
-              id: row.id,
-              email: row.email,
-              createdAt:
-                row.created_at,
-            })
-          ),
+        items: result.rows,
       });
     } catch (error) {
       console.error(
@@ -729,7 +719,7 @@ app.get(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error:
           "Could not load saved logins.",
@@ -773,12 +763,21 @@ app.post(
           await pool.query(
             `
             INSERT INTO novi_saved_items
-              (email, password, created_at)
+              (
+                email,
+                password,
+                created_at
+              )
             VALUES
-              ($1, $2, NOW())
+              (
+                $1,
+                $2,
+                NOW()
+              )
             RETURNING
               id,
               email,
+              password,
               created_at
             `,
             [
@@ -791,12 +790,21 @@ app.post(
           await pool.query(
             `
             INSERT INTO novi_saved_items
-              (email, password, created_at)
+              (
+                email,
+                password,
+                created_at
+              )
             VALUES
-              ($1, $2, $3)
+              (
+                $1,
+                $2,
+                $3
+              )
             RETURNING
               id,
               email,
+              password,
               created_at
             `,
             [
@@ -807,11 +815,9 @@ app.post(
           );
       }
 
-      res.json({
+      return res.json({
         success: true,
-        item: {
-          ...result.rows[0],
-        },
+        item: result.rows[0],
       });
     } catch (error) {
       console.error(
@@ -819,7 +825,7 @@ app.post(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error:
           "Could not save login.",
@@ -829,7 +835,7 @@ app.post(
 );
 
 // ============================================================
-// GET SAVED LOGIN
+// GET ONE SAVED LOGIN
 // ============================================================
 
 app.get(
@@ -875,9 +881,9 @@ app.get(
         });
       }
 
-      res.json({
+      return res.json({
         success: true,
-        login: result.rows[0],
+        item: result.rows[0],
       });
     } catch (error) {
       console.error(
@@ -885,10 +891,10 @@ app.get(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error:
-          "Could not load login.",
+          "Could not load saved login.",
       });
     }
   }
@@ -936,7 +942,7 @@ app.delete(
         });
       }
 
-      res.json({
+      return res.json({
         success: true,
       });
     } catch (error) {
@@ -945,10 +951,10 @@ app.delete(
         error
       );
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error:
-          "Could not delete login.",
+          "Could not delete saved login.",
       });
     }
   }
@@ -1177,9 +1183,15 @@ async function handleAdd(
       await pool.query(
         `
         INSERT INTO novi_stock_items
-          (stock_id, created_at)
+          (
+            stock_id,
+            created_at
+          )
         VALUES
-          ($1, NOW())
+          (
+            $1,
+            NOW()
+          )
         `,
         [stockId]
       );
@@ -1187,9 +1199,15 @@ async function handleAdd(
       await pool.query(
         `
         INSERT INTO novi_stock_items
-          (stock_id, created_at)
+          (
+            stock_id,
+            created_at
+          )
         VALUES
-          ($1, $2)
+          (
+            $1,
+            $2
+          )
         `,
         [
           stockId,
