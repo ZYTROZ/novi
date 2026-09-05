@@ -16,7 +16,8 @@ const PORT = Number(process.env.PORT) || 10000;
 const PUBLIC_DIR = path.join(__dirname, "public");
 
 const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET;
-const CREDENTIAL_SECRET = process.env.NOVI_CREDENTIAL_SECRET;
+const CREDENTIAL_SECRET =
+  process.env.NOVI_CREDENTIAL_SECRET;
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!ADMIN_SECRET) {
@@ -81,7 +82,12 @@ async function initDatabase() {
 // ============================================================
 
 app.use(cors());
-app.use(express.json({ limit: "2mb" }));
+
+app.use(
+  express.json({
+    limit: "2mb",
+  })
+);
 
 // ============================================================
 // ENCRYPTION
@@ -96,6 +102,7 @@ function getEncryptionKey() {
 
 function encrypt(text) {
   const key = getEncryptionKey();
+
   const iv = crypto.randomBytes(12);
 
   const cipher = crypto.createCipheriv(
@@ -146,12 +153,16 @@ function decrypt(data) {
 }
 
 function encryptPassword(password) {
-  return JSON.stringify(encrypt(password));
+  return JSON.stringify(
+    encrypt(password)
+  );
 }
 
 function decryptPassword(password) {
   try {
-    return decrypt(JSON.parse(password));
+    return decrypt(
+      JSON.parse(password)
+    );
   } catch {
     return password;
   }
@@ -168,9 +179,13 @@ const sessions = new Map();
 // ============================================================
 
 function requireAdmin(req, res, next) {
-  const provided = req.headers["x-novi-admin-secret"];
+  const provided =
+    req.headers["x-novi-admin-secret"];
 
-  if (!provided || provided !== ADMIN_SECRET) {
+  if (
+    !provided ||
+    provided !== ADMIN_SECRET
+  ) {
     return res.status(401).json({
       success: false,
       error: "Unauthorized",
@@ -180,23 +195,49 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-function getSession(req) {
+// ============================================================
+// SESSION TOKEN
+// Supports BOTH:
+//
+// Authorization: Bearer TOKEN
+//
+// AND
+//
+// x-novi-session: TOKEN
+// ============================================================
+
+function getSessionToken(req) {
   const auth =
     req.headers.authorization ||
     req.headers.Authorization ||
     "";
 
-  if (!auth.startsWith("Bearer ")) {
-    return null;
+  let token = "";
+
+  if (auth.startsWith("Bearer ")) {
+    token = auth
+      .slice(7)
+      .trim();
   }
 
-  const token = auth.slice(7).trim();
+  if (!token) {
+    token = String(
+      req.headers["x-novi-session"] || ""
+    ).trim();
+  }
+
+  return token;
+}
+
+function getSession(req) {
+  const token = getSessionToken(req);
 
   if (!token) {
     return null;
   }
 
-  const session = sessions.get(token);
+  const session =
+    sessions.get(token);
 
   if (!session) {
     return null;
@@ -214,7 +255,8 @@ function getSession(req) {
 }
 
 function requireSession(req, res, next) {
-  const session = getSession(req);
+  const session =
+    getSession(req);
 
   if (!session) {
     return res.status(401).json({
@@ -224,6 +266,7 @@ function requireSession(req, res, next) {
   }
 
   req.session = session;
+
   next();
 }
 
@@ -263,167 +306,233 @@ function getDurationMs(duration) {
 // HEALTH
 // ============================================================
 
-app.get("/health", async (req, res) => {
-  try {
-    await pool.query("SELECT 1");
+app.get(
+  "/health",
+  async (req, res) => {
+    try {
+      await pool.query("SELECT 1");
 
-    res.json({
-      success: true,
-      status: "online",
-      database: "connected",
-      timestamp: Date.now(),
-    });
-  } catch (error) {
-    console.error("Health check error:", error);
+      res.json({
+        success: true,
+        status: "online",
+        database: "connected",
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      console.error(
+        "Health check error:",
+        error
+      );
 
-    res.status(500).json({
-      success: false,
-      status: "online",
-      database: "error",
-    });
+      res.status(500).json({
+        success: false,
+        status: "online",
+        database: "error",
+      });
+    }
   }
-});
+);
 
 // ============================================================
 // API INFO
 // ============================================================
 
-app.get("/api", (req, res) => {
-  res.json({
-    success: true,
-    name: "Novi API",
-    status: "online",
-  });
-});
+app.get(
+  "/api",
+  (req, res) => {
+    res.json({
+      success: true,
+      name: "Novi API",
+      status: "online",
+    });
+  }
+);
 
 // ============================================================
 // CREATE KEYS
 // ============================================================
 
-app.post("/api/keys", requireAdmin, async (req, res) => {
-  try {
-    const duration = req.body?.duration;
+app.post(
+  "/api/keys",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const duration =
+        req.body?.duration;
 
-    const amount = Math.min(
-      Math.max(
-        Number(req.body?.amount) || 1,
-        1
-      ),
-      1000
-    );
-
-    const durationMs = getDurationMs(duration);
-
-    if (durationMs === undefined) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid duration",
-      });
-    }
-
-    const created = [];
-    const now = Date.now();
-
-    for (let i = 0; i < amount; i++) {
-      let key;
-
-      while (true) {
-        key = generateKeyString();
-
-        const exists = await pool.query(
-          "SELECT id FROM novi_keys WHERE key = $1",
-          [key]
-        );
-
-        if (exists.rowCount === 0) {
-          break;
-        }
-      }
-
-      const expiresAt =
-        durationMs === null
-          ? null
-          : now + durationMs;
-
-      await pool.query(
-        `
-        INSERT INTO novi_keys
-        (key, duration, created_at, expires_at, used)
-        VALUES ($1, $2, $3, $4, FALSE)
-        `,
-        [
-          key,
-          duration,
-          now,
-          expiresAt,
-        ]
+      const amount = Math.min(
+        Math.max(
+          Number(
+            req.body?.amount
+          ) || 1,
+          1
+        ),
+        1000
       );
 
-      created.push({
-        key,
-        duration,
-        createdAt: now,
-        expiresAt,
+      const durationMs =
+        getDurationMs(duration);
+
+      if (
+        durationMs === undefined
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid duration",
+        });
+      }
+
+      const created = [];
+      const now = Date.now();
+
+      for (
+        let i = 0;
+        i < amount;
+        i++
+      ) {
+        let key;
+
+        while (true) {
+          key =
+            generateKeyString();
+
+          const exists =
+            await pool.query(
+              `
+              SELECT id
+              FROM novi_keys
+              WHERE UPPER(key) = $1
+              `,
+              [key]
+            );
+
+          if (
+            exists.rowCount === 0
+          ) {
+            break;
+          }
+        }
+
+        const expiresAt =
+          durationMs === null
+            ? null
+            : now + durationMs;
+
+        await pool.query(
+          `
+          INSERT INTO novi_keys
+          (
+            key,
+            duration,
+            created_at,
+            expires_at,
+            used
+          )
+          VALUES
+          ($1, $2, $3, $4, FALSE)
+          `,
+          [
+            key,
+            duration,
+            now,
+            expiresAt,
+          ]
+        );
+
+        created.push({
+          key,
+          duration,
+          createdAt: now,
+          expiresAt,
+        });
+      }
+
+      res.json({
+        success: true,
+        keys: created,
+      });
+    } catch (error) {
+      console.error(
+        "Create keys error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to create keys",
       });
     }
-
-    res.json({
-      success: true,
-      keys: created,
-    });
-  } catch (error) {
-    console.error("Create keys error:", error);
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to create keys",
-    });
   }
-});
+);
 
 // ============================================================
 // GET KEYS
 // ============================================================
 
-app.get("/api/keys", requireAdmin, async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT
-        id,
-        key,
-        duration,
-        created_at,
-        expires_at,
-        device_id,
-        used
-      FROM novi_keys
-      ORDER BY id DESC
-    `);
+app.get(
+  "/api/keys",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const result =
+        await pool.query(`
+          SELECT
+            id,
+            key,
+            duration,
+            created_at,
+            expires_at,
+            device_id,
+            used
+          FROM novi_keys
+          ORDER BY id DESC
+        `);
 
-    res.json({
-      success: true,
-      keys: result.rows.map((row) => ({
-        id: row.id,
-        key: row.key,
-        duration: row.duration,
-        createdAt: Number(row.created_at),
-        expiresAt:
-          row.expires_at === null
-            ? null
-            : Number(row.expires_at),
-        deviceId: row.device_id,
-        used: row.used,
-      })),
-    });
-  } catch (error) {
-    console.error("Get keys error:", error);
+      res.json({
+        success: true,
 
-    res.status(500).json({
-      success: false,
-      error: "Failed to get keys",
-    });
+        keys: result.rows.map(
+          (row) => ({
+            id: row.id,
+
+            key: row.key,
+
+            duration:
+              row.duration,
+
+            createdAt:
+              Number(
+                row.created_at
+              ),
+
+            expiresAt:
+              row.expires_at ===
+              null
+                ? null
+                : Number(
+                    row.expires_at
+                  ),
+
+            deviceId:
+              row.device_id,
+
+            used: row.used,
+          })
+        ),
+      });
+    } catch (error) {
+      console.error(
+        "Get keys error:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to get keys",
+      });
+    }
   }
-});
+);
 
 // ============================================================
 // DELETE KEY
@@ -434,14 +543,25 @@ app.delete(
   requireAdmin,
   async (req, res) => {
     try {
-      const key = req.params.key;
+      const key =
+        String(
+          req.params.key || ""
+        )
+          .trim()
+          .toUpperCase();
 
-      const result = await pool.query(
-        "DELETE FROM novi_keys WHERE key = $1",
-        [key]
-      );
+      const result =
+        await pool.query(
+          `
+          DELETE FROM novi_keys
+          WHERE UPPER(key) = $1
+          `,
+          [key]
+        );
 
-      if (result.rowCount === 0) {
+      if (
+        result.rowCount === 0
+      ) {
         return res.status(404).json({
           success: false,
           error: "Key not found",
@@ -452,7 +572,10 @@ app.delete(
         success: true,
       });
     } catch (error) {
-      console.error("Delete key error:", error);
+      console.error(
+        "Delete key error:",
+        error
+      );
 
       res.status(500).json({
         success: false,
@@ -466,115 +589,190 @@ app.delete(
 // VERIFY KEY
 // ============================================================
 
-app.post("/api/verify", async (req, res) => {
-  try {
-    const rawKey = req.body?.key;
-    const deviceId = req.body?.deviceId;
+app.post(
+  "/api/verify",
+  async (req, res) => {
+    try {
+      const rawKey =
+        req.body?.key;
 
-    const key =
-      typeof rawKey === "string"
-        ? rawKey.trim().toUpperCase()
-        : "";
+      const deviceId =
+        String(
+          req.body?.deviceId ||
+          req.body?.device_id ||
+          ""
+        ).trim();
 
-    if (!key || !deviceId) {
-      return res.status(400).json({
-        success: false,
-        error: "Key and deviceId are required",
-      });
-    }
+      const key =
+        typeof rawKey === "string"
+          ? rawKey
+              .trim()
+              .toUpperCase()
+          : "";
 
-    const result = await pool.query(
-      `
-      SELECT *
-      FROM novi_keys
-      WHERE UPPER(key) = $1
-      LIMIT 1
-      `,
-      [key]
-    );
+      if (!key || !deviceId) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Key and deviceId are required",
+        });
+      }
 
-    if (result.rowCount === 0) {
-      return res.status(401).json({
-        success: false,
-        error: "Invalid key",
-      });
-    }
+      const result =
+        await pool.query(
+          `
+          SELECT *
+          FROM novi_keys
+          WHERE UPPER(key) = $1
+          LIMIT 1
+          `,
+          [key]
+        );
 
-    const row = result.rows[0];
-    const now = Date.now();
+      if (
+        result.rowCount === 0
+      ) {
+        return res.status(401).json({
+          success: false,
+          message:
+            "Invalid or expired key.",
+          error: "Invalid key",
+        });
+      }
 
-    if (
-      row.expires_at !== null &&
-      Number(row.expires_at) <= now
-    ) {
-      return res.status(401).json({
-        success: false,
-        error: "Key expired",
-      });
-    }
+      const row =
+        result.rows[0];
 
-    if (
-      row.device_id &&
-      row.device_id !== deviceId
-    ) {
-      return res.status(401).json({
-        success: false,
-        error:
-          "Key is already bound to another device",
-      });
-    }
+      const now = Date.now();
 
-    if (!row.device_id) {
-      await pool.query(
-        `
-        UPDATE novi_keys
-        SET device_id = $1,
+      // --------------------------------------------------------
+      // CHECK EXPIRATION
+      // --------------------------------------------------------
+
+      if (
+        row.expires_at !== null &&
+        Number(row.expires_at) <= now
+      ) {
+        return res.status(401).json({
+          success: false,
+          message:
+            "Invalid or expired key.",
+          error: "Key expired",
+        });
+      }
+
+      // --------------------------------------------------------
+      // CHECK DEVICE
+      // --------------------------------------------------------
+
+      if (
+        row.device_id &&
+        String(row.device_id) !==
+          String(deviceId)
+      ) {
+        return res.status(401).json({
+          success: false,
+          message:
+            "Key is already bound to another device.",
+          error:
+            "Key is already bound to another device",
+        });
+      }
+
+      // --------------------------------------------------------
+      // BIND DEVICE
+      // --------------------------------------------------------
+
+      if (!row.device_id) {
+        await pool.query(
+          `
+          UPDATE novi_keys
+          SET
+            device_id = $1,
             used = TRUE
-        WHERE id = $2
-        `,
-        [
+          WHERE id = $2
+          `,
+          [
+            deviceId,
+            row.id,
+          ]
+        );
+      }
+
+      // --------------------------------------------------------
+      // CREATE SESSION
+      // --------------------------------------------------------
+
+      const token =
+        crypto.randomBytes(32)
+          .toString("hex");
+
+      const expiresAt =
+        row.expires_at === null
+          ? null
+          : Number(
+              row.expires_at
+            );
+
+      sessions.set(
+        token,
+        {
+          key: row.key,
+
           deviceId,
-          row.id,
-        ]
+
+          createdAt: now,
+
+          expiresAt,
+        }
       );
+
+      // --------------------------------------------------------
+      // IMPORTANT:
+      // Your current HTML expects sessionToken.
+      // We return BOTH sessionToken and token.
+      // --------------------------------------------------------
+
+      return res.json({
+        success: true,
+
+        sessionToken: token,
+
+        token,
+
+        key: {
+          key: row.key,
+
+          duration:
+            row.duration,
+
+          expiresAt,
+
+          keyExpiresAt:
+            expiresAt,
+        },
+
+        duration:
+          row.duration,
+
+        expiresAt,
+      });
+    } catch (error) {
+      console.error(
+        "Verify error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Verification failed",
+        error:
+          "Verification failed",
+      });
     }
-
-    const token =
-      crypto.randomBytes(32).toString("hex");
-
-    sessions.set(token, {
-      key: row.key,
-      deviceId,
-      createdAt: now,
-      expiresAt:
-        row.expires_at === null
-          ? null
-          : Number(row.expires_at),
-    });
-
-    res.json({
-      success: true,
-
-      // Frontend uses this
-      token,
-
-      key: row.key,
-      duration: row.duration,
-
-      expiresAt:
-        row.expires_at === null
-          ? null
-          : Number(row.expires_at),
-    });
-  } catch (error) {
-    console.error("Verify error:", error);
-
-    res.status(500).json({
-      success: false,
-      error: "Verification failed",
-    });
   }
-});
+);
 
 // ============================================================
 // STOCK ADD
@@ -584,36 +782,54 @@ app.post(
   "/api/stock/add",
   requireAdmin,
   async (req, res) => {
-    const client = await pool.connect();
+    const client =
+      await pool.connect();
 
     try {
       const accounts =
-        Array.isArray(req.body?.accounts)
+        Array.isArray(
+          req.body?.accounts
+        )
           ? req.body.accounts
           : [];
 
-      if (!accounts.length) {
+      if (
+        !accounts.length
+      ) {
         return res.status(400).json({
           success: false,
-          error: "No accounts supplied",
+          error:
+            "No accounts supplied",
         });
       }
 
-      await client.query("BEGIN");
+      await client.query(
+        "BEGIN"
+      );
 
       let added = 0;
 
-      for (const account of accounts) {
-        if (!account) continue;
+      for (
+        const account of accounts
+      ) {
+        if (!account) {
+          continue;
+        }
 
         let username = "";
         let password = "";
 
-        if (typeof account === "string") {
-          const split = account.split(":");
+        if (
+          typeof account ===
+          "string"
+        ) {
+          const split =
+            account.split(":");
 
           username =
-            (split[0] || "").trim();
+            (
+              split[0] || ""
+            ).trim();
 
           password =
             split
@@ -621,31 +837,44 @@ app.post(
               .join(":")
               .trim();
         } else {
-          username = String(
-            account.username ||
-            account.email ||
-            account.emailAddress ||
-            ""
-          ).trim();
+          username =
+            String(
+              account.username ||
+              account.email ||
+              account.emailAddress ||
+              ""
+            ).trim();
 
-          password = String(
-            account.password || ""
-          ).trim();
+          password =
+            String(
+              account.password ||
+              ""
+            ).trim();
         }
 
-        if (!username || !password) {
+        if (
+          !username ||
+          !password
+        ) {
           continue;
         }
 
         await client.query(
           `
           INSERT INTO novi_stock
-          (username, password, created_at)
-          VALUES ($1, $2, $3)
+          (
+            username,
+            password,
+            created_at
+          )
+          VALUES
+          ($1, $2, $3)
           `,
           [
             username,
-            encryptPassword(password),
+            encryptPassword(
+              password
+            ),
             Date.now(),
           ]
         );
@@ -653,20 +882,28 @@ app.post(
         added++;
       }
 
-      await client.query("COMMIT");
+      await client.query(
+        "COMMIT"
+      );
 
       res.json({
         success: true,
         added,
       });
     } catch (error) {
-      await client.query("ROLLBACK");
+      await client.query(
+        "ROLLBACK"
+      );
 
-      console.error("Add stock error:", error);
+      console.error(
+        "Add stock error:",
+        error
+      );
 
       res.status(500).json({
         success: false,
-        error: "Failed to add stock",
+        error:
+          "Failed to add stock",
       });
     } finally {
       client.release();
@@ -683,30 +920,56 @@ app.get(
   requireAdmin,
   async (req, res) => {
     try {
-      const result = await pool.query(`
-        SELECT id, username, password, created_at
-        FROM novi_stock
-        ORDER BY id ASC
-      `);
+      const result =
+        await pool.query(`
+          SELECT
+            id,
+            username,
+            password,
+            created_at
+          FROM novi_stock
+          ORDER BY id ASC
+        `);
 
-      const stock = result.rows.map((row) => ({
-        id: row.id,
-        username: row.username,
-        password: decryptPassword(row.password),
-        createdAt: Number(row.created_at),
-      }));
+      const stock =
+        result.rows.map(
+          (row) => ({
+            id: row.id,
+
+            username:
+              row.username,
+
+            email:
+              row.username,
+
+            password:
+              decryptPassword(
+                row.password
+              ),
+
+            createdAt:
+              Number(
+                row.created_at
+              ),
+          })
+        );
 
       res.json({
         success: true,
         stock,
-        count: stock.length,
+        count:
+          stock.length,
       });
     } catch (error) {
-      console.error("Admin stock error:", error);
+      console.error(
+        "Admin stock error:",
+        error
+      );
 
       res.status(500).json({
         success: false,
-        error: "Failed to get stock",
+        error:
+          "Failed to get stock",
       });
     }
   }
@@ -721,35 +984,58 @@ app.get(
   requireSession,
   async (req, res) => {
     try {
-      const result = await pool.query(`
-        SELECT id, username, password, created_at
-        FROM novi_stock
-        ORDER BY id ASC
-      `);
+      const result =
+        await pool.query(`
+          SELECT
+            id,
+            username,
+            password,
+            created_at
+          FROM novi_stock
+          ORDER BY id ASC
+        `);
 
-      const stock = result.rows.map((row) => ({
-        id: row.id,
+      const stock =
+        result.rows.map(
+          (row) => ({
+            id: row.id,
 
-        // Return both names for compatibility
-        username: row.username,
-        email: row.username,
+            username:
+              row.username,
 
-        password: decryptPassword(row.password),
+            email:
+              row.username,
 
-        createdAt: Number(row.created_at),
-      }));
+            password:
+              decryptPassword(
+                row.password
+              ),
+
+            createdAt:
+              Number(
+                row.created_at
+              ),
+          })
+        );
 
       res.json({
         success: true,
+
         stock,
-        count: stock.length,
+
+        count:
+          stock.length,
       });
     } catch (error) {
-      console.error("Get stock error:", error);
+      console.error(
+        "Get stock error:",
+        error
+      );
 
       res.status(500).json({
         success: false,
-        error: "Failed to get stock",
+        error:
+          "Failed to get stock",
       });
     }
   }
@@ -764,20 +1050,32 @@ app.get(
   requireSession,
   async (req, res) => {
     try {
-      const result = await pool.query(
-        "SELECT COUNT(*)::int AS count FROM novi_stock"
-      );
+      const result =
+        await pool.query(
+          `
+          SELECT
+            COUNT(*)::int AS count
+          FROM novi_stock
+          `
+        );
 
       res.json({
         success: true,
-        count: result.rows[0].count,
+
+        count:
+          result.rows[0]
+            .count,
       });
     } catch (error) {
-      console.error("Stock count error:", error);
+      console.error(
+        "Stock count error:",
+        error
+      );
 
       res.status(500).json({
         success: false,
-        error: "Failed to get stock count",
+        error:
+          "Failed to get stock count",
       });
     }
   }
@@ -791,54 +1089,82 @@ app.post(
   "/api/stock/generate",
   requireSession,
   async (req, res) => {
-    const client = await pool.connect();
+    const client =
+      await pool.connect();
 
     try {
-      const amount = Math.min(
-        Math.max(
-          Number(req.body?.amount) || 1,
-          1
-        ),
-        100
+      const amount =
+        Math.min(
+          Math.max(
+            Number(
+              req.body?.amount
+            ) || 1,
+            1
+          ),
+          100
+        );
+
+      await client.query(
+        "BEGIN"
       );
 
-      await client.query("BEGIN");
+      const result =
+        await client.query(
+          `
+          SELECT
+            id,
+            username,
+            password,
+            created_at
+          FROM novi_stock
+          ORDER BY id ASC
+          LIMIT $1
+          FOR UPDATE SKIP LOCKED
+          `,
+          [amount]
+        );
 
-      const result = await client.query(
-        `
-        SELECT id, username, password, created_at
-        FROM novi_stock
-        ORDER BY id ASC
-        LIMIT $1
-        FOR UPDATE SKIP LOCKED
-        `,
-        [amount]
-      );
-
-      if (result.rowCount === 0) {
-        await client.query("ROLLBACK");
+      if (
+        result.rowCount === 0
+      ) {
+        await client.query(
+          "ROLLBACK"
+        );
 
         return res.status(404).json({
           success: false,
-          error: "No stock available",
+          error:
+            "No stock available",
         });
       }
 
-      const accounts = result.rows.map((row) => ({
-        id: row.id,
+      const accounts =
+        result.rows.map(
+          (row) => ({
+            id: row.id,
 
-        username: row.username,
-        email: row.username,
+            username:
+              row.username,
 
-        password:
-          decryptPassword(row.password),
+            email:
+              row.username,
 
-        createdAt:
-          Number(row.created_at),
-      }));
+            password:
+              decryptPassword(
+                row.password
+              ),
+
+            createdAt:
+              Number(
+                row.created_at
+              ),
+          })
+        );
 
       const ids =
-        result.rows.map((row) => row.id);
+        result.rows.map(
+          (row) => row.id
+        );
 
       await client.query(
         `
@@ -848,21 +1174,29 @@ app.post(
         [ids]
       );
 
-      await client.query("COMMIT");
+      await client.query(
+        "COMMIT"
+      );
 
-      res.json({
+      return res.json({
         success: true,
 
-        // Frontend expects account
-        account: accounts[0],
+        // Your HTML can use this
+        account:
+          accounts[0],
 
-        // Also return accounts
+        // Also provide all accounts
         accounts,
 
-        count: accounts.length,
+        count:
+          accounts.length,
       });
     } catch (error) {
-      await client.query("ROLLBACK");
+      try {
+        await client.query(
+          "ROLLBACK"
+        );
+      } catch {}
 
       console.error(
         "Generate stock error:",
@@ -871,7 +1205,8 @@ app.post(
 
       res.status(500).json({
         success: false,
-        error: "Failed to generate stock",
+        error:
+          "Failed to generate stock",
       });
     } finally {
       client.release();
@@ -888,17 +1223,23 @@ app.post(
   requireSession,
   async (req, res) => {
     try {
-      const username = String(
-        req.body?.username ||
-        req.body?.email ||
-        ""
-      ).trim();
+      const username =
+        String(
+          req.body?.username ||
+          req.body?.email ||
+          ""
+        ).trim();
 
-      const password = String(
-        req.body?.password || ""
-      );
+      const password =
+        String(
+          req.body?.password ||
+          ""
+        );
 
-      if (!username || !password) {
+      if (
+        !username ||
+        !password
+      ) {
         return res.status(400).json({
           success: false,
           error:
@@ -907,34 +1248,54 @@ app.post(
       }
 
       const encryptedPassword =
-        encryptPassword(password);
+        encryptPassword(
+          password
+        );
 
-      const result = await pool.query(
-        `
-        INSERT INTO novi_saved_logins
-        (username, password, created_at, device_id)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id, username, created_at
-        `,
-        [
-          username,
-          encryptedPassword,
-          Date.now(),
-          req.session.deviceId,
-        ]
-      );
+      const result =
+        await pool.query(
+          `
+          INSERT INTO novi_saved_logins
+          (
+            username,
+            password,
+            created_at,
+            device_id
+          )
+          VALUES
+          ($1, $2, $3, $4)
+          RETURNING
+            id,
+            username,
+            created_at
+          `,
+          [
+            username,
+            encryptedPassword,
+            Date.now(),
+            req.session.deviceId,
+          ]
+        );
 
-      const row = result.rows[0];
+      const row =
+        result.rows[0];
 
       res.json({
         success: true,
 
         login: {
           id: row.id,
-          username: row.username,
-          email: row.username,
+
+          username:
+            row.username,
+
+          email:
+            row.username,
+
           createdAt:
-            Number(row.created_at),
+            Number(
+              row.created_at
+            ),
         },
       });
     } catch (error) {
@@ -945,7 +1306,8 @@ app.post(
 
       res.status(500).json({
         success: false,
-        error: "Failed to save login",
+        error:
+          "Failed to save login",
       });
     }
   }
@@ -960,32 +1322,45 @@ app.get(
   requireSession,
   async (req, res) => {
     try {
-      const result = await pool.query(
-        `
-        SELECT id, username, password, created_at
-        FROM novi_saved_logins
-        WHERE device_id = $1
-        ORDER BY id DESC
-        `,
-        [req.session.deviceId]
-      );
+      const result =
+        await pool.query(
+          `
+          SELECT
+            id,
+            username,
+            password,
+            created_at
+          FROM novi_saved_logins
+          WHERE device_id = $1
+          ORDER BY id DESC
+          `,
+          [
+            req.session.deviceId,
+          ]
+        );
 
-      const logins = result.rows.map(
-        (row) => ({
-          id: row.id,
+      const logins =
+        result.rows.map(
+          (row) => ({
+            id: row.id,
 
-          username: row.username,
-          email: row.username,
+            username:
+              row.username,
 
-          password:
-            decryptPassword(
-              row.password
-            ),
+            email:
+              row.username,
 
-          createdAt:
-            Number(row.created_at),
-        })
-      );
+            password:
+              decryptPassword(
+                row.password
+              ),
+
+            createdAt:
+              Number(
+                row.created_at
+              ),
+          })
+        );
 
       res.json({
         success: true,
@@ -1016,30 +1391,41 @@ app.get(
   async (req, res) => {
     try {
       const id =
-        Number(req.params.id);
+        Number(
+          req.params.id
+        );
 
-      if (!Number.isInteger(id)) {
+      if (
+        !Number.isInteger(id)
+      ) {
         return res.status(400).json({
           success: false,
           error: "Invalid ID",
         });
       }
 
-      const result = await pool.query(
-        `
-        SELECT id, username, password, created_at
-        FROM novi_saved_logins
-        WHERE id = $1
-          AND device_id = $2
-        LIMIT 1
-        `,
-        [
-          id,
-          req.session.deviceId,
-        ]
-      );
+      const result =
+        await pool.query(
+          `
+          SELECT
+            id,
+            username,
+            password,
+            created_at
+          FROM novi_saved_logins
+          WHERE id = $1
+            AND device_id = $2
+          LIMIT 1
+          `,
+          [
+            id,
+            req.session.deviceId,
+          ]
+        );
 
-      if (result.rowCount === 0) {
+      if (
+        result.rowCount === 0
+      ) {
         return res.status(404).json({
           success: false,
           error:
@@ -1047,15 +1433,20 @@ app.get(
         });
       }
 
-      const row = result.rows[0];
+      const row =
+        result.rows[0];
 
       res.json({
         success: true,
 
         login: {
           id: row.id,
-          username: row.username,
-          email: row.username,
+
+          username:
+            row.username,
+
+          email:
+            row.username,
 
           password:
             decryptPassword(
@@ -1063,7 +1454,9 @@ app.get(
             ),
 
           createdAt:
-            Number(row.created_at),
+            Number(
+              row.created_at
+            ),
         },
       });
     } catch (error) {
@@ -1091,28 +1484,35 @@ app.delete(
   async (req, res) => {
     try {
       const id =
-        Number(req.params.id);
+        Number(
+          req.params.id
+        );
 
-      if (!Number.isInteger(id)) {
+      if (
+        !Number.isInteger(id)
+      ) {
         return res.status(400).json({
           success: false,
           error: "Invalid ID",
         });
       }
 
-      const result = await pool.query(
-        `
-        DELETE FROM novi_saved_logins
-        WHERE id = $1
-          AND device_id = $2
-        `,
-        [
-          id,
-          req.session.deviceId,
-        ]
-      );
+      const result =
+        await pool.query(
+          `
+          DELETE FROM novi_saved_logins
+          WHERE id = $1
+            AND device_id = $2
+          `,
+          [
+            id,
+            req.session.deviceId,
+          ]
+        );
 
-      if (result.rowCount === 0) {
+      if (
+        result.rowCount === 0
+      ) {
         return res.status(404).json({
           success: false,
           error:
@@ -1146,15 +1546,8 @@ app.post(
   "/api/logout",
   requireSession,
   (req, res) => {
-    const auth =
-      req.headers.authorization ||
-      req.headers.Authorization ||
-      "";
-
     const token =
-      auth.startsWith("Bearer ")
-        ? auth.slice(7).trim()
-        : null;
+      getSessionToken(req);
 
     if (token) {
       sessions.delete(token);
@@ -1173,6 +1566,10 @@ app.post(
 app.use(
   express.static(PUBLIC_DIR)
 );
+
+// ============================================================
+// WEBSITE FALLBACK
+// ============================================================
 
 app.get(
   "/{*splat}",
