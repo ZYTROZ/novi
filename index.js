@@ -302,15 +302,16 @@ client.on(
     "messageCreate",
     async (message) => {
 
-        /* ---------------------------------------------------
-           Ignore bots
-        --------------------------------------------------- */
+        // -----------------------------------------------------
+        // Ignore bots
+        // -----------------------------------------------------
 
         if (message.author.bot) {
             return;
         }
 
         try {
+
             const content =
                 message.content.trim();
 
@@ -324,9 +325,9 @@ client.on(
             const command =
                 args[0].toLowerCase();
 
-            /* =================================================
-               !GEN
-            ================================================= */
+            // =================================================
+            // !GEN
+            // =================================================
 
             if (command === "!gen") {
 
@@ -372,6 +373,7 @@ client.on(
                 );
 
                 try {
+
                     const response =
                         await axios.post(
                             `${SERVER_URL}/api/keys`,
@@ -389,6 +391,7 @@ client.on(
                         !response.data ||
                         !response.data.success
                     ) {
+
                         console.error(
                             "Novi server rejected key:",
                             response.data
@@ -406,8 +409,9 @@ client.on(
                         response.data.key;
 
                     if (!generatedKey) {
+
                         console.error(
-                            "Server created key but did not return it:",
+                            "Server created key but did not return the key:",
                             response.data
                         );
 
@@ -462,9 +466,9 @@ client.on(
                 }
             }
 
-            /* =================================================
-               !ADD
-            ================================================= */
+            // =================================================
+            // !ADD
+            // =================================================
 
             if (command === "!add") {
 
@@ -486,9 +490,9 @@ client.on(
 
                 let items = [];
 
-                /* ------------------------------------------------
-                   Items after !add
-                ------------------------------------------------ */
+                // -------------------------------------------------
+                // Items after !add
+                // -------------------------------------------------
 
                 const commandItems =
                     args
@@ -506,14 +510,15 @@ client.on(
                     ...commandItems
                 );
 
-                /* ------------------------------------------------
-                   TXT attachment
-                ------------------------------------------------ */
+                // -------------------------------------------------
+                // TXT attachment
+                // -------------------------------------------------
 
                 if (
                     message.attachments.size >
                     0
                 ) {
+
                     const attachment =
                         message.attachments.first();
 
@@ -533,13 +538,15 @@ client.on(
                     }
 
                     try {
+
                         const fileResponse =
                             await axios.get(
                                 attachment.url,
                                 {
                                     responseType:
                                         "text",
-                                    timeout: 15000
+                                    timeout:
+                                        15000
                                 }
                             );
 
@@ -577,13 +584,14 @@ client.on(
                     }
                 }
 
-                /* ------------------------------------------------
-                   Nothing provided
-                ------------------------------------------------ */
+                // -------------------------------------------------
+                // Nothing provided
+                // -------------------------------------------------
 
                 if (
                     items.length === 0
                 ) {
+
                     return message.reply(
                         "Nothing to add.\n\n" +
                         "Use:\n" +
@@ -593,10 +601,9 @@ client.on(
                     );
                 }
 
-                /* ------------------------------------------------
-                   Remove duplicates from the
-                   submitted list itself
-                ------------------------------------------------ */
+                // -------------------------------------------------
+                // Remove duplicates from submission
+                // -------------------------------------------------
 
                 items =
                     [...new Set(items)];
@@ -605,14 +612,16 @@ client.on(
                 let duplicates = 0;
                 let failed = 0;
 
-                /* ------------------------------------------------
-                   Add every item
-                ------------------------------------------------ */
+                // -------------------------------------------------
+                // Add each item
+                // -------------------------------------------------
 
                 for (
                     const item of items
                 ) {
+
                     try {
+
                         const response =
                             await axios.post(
                                 `${SERVER_URL}/api/stock/add`,
@@ -631,6 +640,7 @@ client.on(
                             response.data &&
                             response.data.success
                         ) {
+
                             added +=
                                 Number(
                                     response
@@ -646,7 +656,9 @@ client.on(
                                         .duplicates ||
                                     0
                                 );
+
                         } else {
+
                             failed++;
                         }
 
@@ -663,15 +675,15 @@ client.on(
                     }
                 }
 
-                /* ------------------------------------------------
-                   Get stock count using
-                   admin endpoint
-                ------------------------------------------------ */
+                // -------------------------------------------------
+                // Get stock count
+                // -------------------------------------------------
 
                 let totalStock =
                     "Unknown";
 
                 try {
+
                     const stockResponse =
                         await axios.get(
                             `${SERVER_URL}/api/admin/stock`,
@@ -690,6 +702,7 @@ client.on(
                             .count ===
                             "number"
                     ) {
+
                         totalStock =
                             stockResponse
                                 .data
@@ -706,9 +719,9 @@ client.on(
                     );
                 }
 
-                /* ------------------------------------------------
-                   Result
-                ------------------------------------------------ */
+                // -------------------------------------------------
+                // Result
+                // -------------------------------------------------
 
                 let reply =
                     `**Stock Added Successfully**\n\n` +
@@ -719,6 +732,7 @@ client.on(
                 if (
                     failed > 0
                 ) {
+
                     reply +=
                         `\n**Failed:** ${failed}`;
                 }
@@ -736,12 +750,15 @@ client.on(
             );
 
             try {
+
                 await message.reply(
                     "Something went wrong while processing that command."
                 );
+
             } catch (
                 replyError
             ) {
+
                 console.error(
                     "Could not send error reply:",
                     replyError.message
@@ -751,15 +768,16 @@ client.on(
     }
 );
 
-/* =========================================================
-   DISCORD LOGIN
-========================================================= */
+// =========================================================
+// DISCORD LOGIN
+// =========================================================
 
 async function startDiscord() {
 
     if (
         discordLoginStarted
     ) {
+
         console.log(
             "Discord login has already been started."
         );
@@ -774,20 +792,99 @@ async function startDiscord() {
     );
 
     console.log(
-        "Connecting to Discord..."
-    );
-
-    console.log(
-        "Token detected: YES"
-    );
-
-    console.log(
-        "Admin secret detected: YES"
+        "NOVI DISCORD CONNECTION TEST"
     );
 
     console.log(
         "================================"
     );
+
+    console.log(
+        "Token detected:",
+        Boolean(DISCORD_TOKEN)
+    );
+
+    console.log(
+        "Token length:",
+        DISCORD_TOKEN?.length || 0
+    );
+
+    console.log(
+        "Connecting to Discord gateway..."
+    );
+
+    console.log(
+        "================================"
+    );
+
+    // ---------------------------------------------------------
+    // 30 SECOND LOGIN TIMEOUT
+    // ---------------------------------------------------------
+
+    const loginTimeout =
+        setTimeout(
+            () => {
+
+                console.error(
+                    "================================"
+                );
+
+                console.error(
+                    "DISCORD LOGIN TIMEOUT"
+                );
+
+                console.error(
+                    "Discord did not complete the gateway connection within 30 seconds."
+                );
+
+                console.error(
+                    "This usually points to the Discord token, gateway connection, or Discord configuration."
+                );
+
+                console.error(
+                    "================================"
+                );
+
+                discordLoginStarted =
+                    false;
+
+                try {
+
+                    client.destroy();
+
+                } catch (error) {
+
+                    console.error(
+                        "Error destroying Discord client:",
+                        error.message
+                    );
+                }
+
+                console.log(
+                    "Retrying Discord connection in 15 seconds..."
+                );
+
+                setTimeout(
+                    () => {
+
+                        startDiscord()
+                            .catch(
+                                (retryError) => {
+
+                                    console.error(
+                                        "Discord retry error:",
+                                        retryError
+                                    );
+                                }
+                            );
+
+                    },
+                    15000
+                );
+
+            },
+            30000
+        );
 
     try {
 
@@ -795,16 +892,30 @@ async function startDiscord() {
             DISCORD_TOKEN
         );
 
+        clearTimeout(
+            loginTimeout
+        );
+
         console.log(
             "================================"
         );
 
         console.log(
-            "Discord login successful."
+            "DISCORD LOGIN SUCCESSFUL"
         );
 
         console.log(
-            "Waiting for READY event..."
+            `Logged in as: ${
+                client.user?.tag ||
+                "Unknown"
+            }`
+        );
+
+        console.log(
+            `Bot ID: ${
+                client.user?.id ||
+                "Unknown"
+            }`
         );
 
         console.log(
@@ -813,12 +924,16 @@ async function startDiscord() {
 
     } catch (error) {
 
+        clearTimeout(
+            loginTimeout
+        );
+
         console.error(
             "================================"
         );
 
         console.error(
-            "Discord login failed."
+            "DISCORD LOGIN FAILED"
         );
 
         console.error(
@@ -846,33 +961,44 @@ async function startDiscord() {
         discordLoginStarted =
             false;
 
+        try {
+
+            client.destroy();
+
+        } catch {}
+
         console.log(
-            "Discord login failed. Retrying in 15 seconds..."
+            "Retrying Discord connection in 15 seconds..."
         );
 
         setTimeout(
             () => {
-                startDiscord().catch(
-                    (retryError) => {
-                        console.error(
-                            "Discord retry error:",
-                            retryError
-                        );
-                    }
-                );
+
+                startDiscord()
+                    .catch(
+                        (retryError) => {
+
+                            console.error(
+                                "Discord retry error:",
+                                retryError
+                            );
+                        }
+                    );
+
             },
             15000
         );
     }
 }
 
-/* =========================================================
-   PROCESS ERROR HANDLING
-========================================================= */
+// =========================================================
+// PROCESS ERROR HANDLING
+// =========================================================
 
 process.on(
     "unhandledRejection",
     (error) => {
+
         console.error(
             "Unhandled promise rejection:",
             error
@@ -883,6 +1009,7 @@ process.on(
 process.on(
     "uncaughtException",
     (error) => {
+
         console.error(
             "Uncaught exception:",
             error
@@ -890,8 +1017,8 @@ process.on(
     }
 );
 
-/* =========================================================
-   START DISCORD
-========================================================= */
+// =========================================================
+// START DISCORD
+// =========================================================
 
 startDiscord();
