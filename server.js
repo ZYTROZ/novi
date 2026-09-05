@@ -16,8 +16,7 @@ const PORT = Number(process.env.PORT) || 10000;
 const PUBLIC_DIR = path.join(__dirname, "public");
 
 const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET;
-const CREDENTIAL_SECRET =
-  process.env.NOVI_CREDENTIAL_SECRET;
+const CREDENTIAL_SECRET = process.env.NOVI_CREDENTIAL_SECRET;
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!ADMIN_SECRET) {
@@ -85,7 +84,15 @@ app.use(cors());
 
 app.use(
   express.json({
-    limit: "2mb",
+    limit: "10mb",
+    strict: false,
+  })
+);
+
+app.use(
+  express.text({
+    type: "text/plain",
+    limit: "10mb",
   })
 );
 
@@ -152,16 +159,12 @@ function decrypt(data) {
 }
 
 function encryptPassword(password) {
-  return JSON.stringify(
-    encrypt(password)
-  );
+  return JSON.stringify(encrypt(password));
 }
 
 function decryptPassword(password) {
   try {
-    return decrypt(
-      JSON.parse(password)
-    );
+    return decrypt(JSON.parse(password));
   } catch {
     return password;
   }
@@ -174,17 +177,14 @@ function decryptPassword(password) {
 const sessions = new Map();
 
 // ============================================================
-// ADMIN
+// ADMIN AUTH
 // ============================================================
 
 function requireAdmin(req, res, next) {
   const provided =
     req.headers["x-novi-admin-secret"];
 
-  if (
-    !provided ||
-    provided !== ADMIN_SECRET
-  ) {
+  if (!provided || provided !== ADMIN_SECRET) {
     return res.status(401).json({
       success: false,
       error: "Unauthorized",
@@ -199,23 +199,19 @@ function requireAdmin(req, res, next) {
 // ============================================================
 
 function getSessionToken(req) {
-  const auth =
+  const authorization =
     req.headers.authorization ||
     req.headers.Authorization ||
     "";
 
   let token = "";
 
-  // Support:
-  // Authorization: Bearer TOKEN
-  if (auth.startsWith("Bearer ")) {
-    token = auth
+  if (authorization.startsWith("Bearer ")) {
+    token = authorization
       .slice(7)
       .trim();
   }
 
-  // Support your current HTML:
-  // x-novi-session: TOKEN
   if (!token) {
     token = String(
       req.headers["x-novi-session"] || ""
@@ -226,15 +222,13 @@ function getSessionToken(req) {
 }
 
 function getSession(req) {
-  const token =
-    getSessionToken(req);
+  const token = getSessionToken(req);
 
   if (!token) {
     return null;
   }
 
-  const session =
-    sessions.get(token);
+  const session = sessions.get(token);
 
   if (!session) {
     return null;
@@ -252,14 +246,12 @@ function getSession(req) {
 }
 
 function requireSession(req, res, next) {
-  const session =
-    getSession(req);
+  const session = getSession(req);
 
   if (!session) {
     return res.status(401).json({
       success: false,
-      error:
-        "Invalid or expired session",
+      error: "Invalid or expired session",
     });
   }
 
@@ -308,47 +300,38 @@ function getDurationMs(duration) {
 // HEALTH
 // ============================================================
 
-app.get(
-  "/health",
-  async (req, res) => {
-    try {
-      await pool.query("SELECT 1");
+app.get("/health", async (req, res) => {
+  try {
+    await pool.query("SELECT 1");
 
-      res.json({
-        success: true,
-        status: "online",
-        database: "connected",
-        timestamp: Date.now(),
-      });
-    } catch (error) {
-      console.error(
-        "Health check error:",
-        error
-      );
+    res.json({
+      success: true,
+      status: "online",
+      database: "connected",
+      timestamp: Date.now(),
+    });
+  } catch (error) {
+    console.error("Health check error:", error);
 
-      res.status(500).json({
-        success: false,
-        status: "online",
-        database: "error",
-      });
-    }
+    res.status(500).json({
+      success: false,
+      status: "online",
+      database: "error",
+    });
   }
-);
+});
 
 // ============================================================
 // API INFO
 // ============================================================
 
-app.get(
-  "/api",
-  (req, res) => {
-    res.json({
-      success: true,
-      name: "Novi API",
-      status: "online",
-    });
-  }
-);
+app.get("/api", (req, res) => {
+  res.json({
+    success: true,
+    name: "Novi API",
+    status: "online",
+  });
+});
 
 // ============================================================
 // CREATE KEYS
@@ -359,59 +342,44 @@ app.post(
   requireAdmin,
   async (req, res) => {
     try {
-      const duration =
-        req.body?.duration;
+      const duration = req.body?.duration;
 
       const amount = Math.min(
         Math.max(
-          Number(
-            req.body?.amount
-          ) || 1,
+          Number(req.body?.amount) || 1,
           1
         ),
         1000
       );
 
-      const durationMs =
-        getDurationMs(duration);
+      const durationMs = getDurationMs(duration);
 
-      if (
-        durationMs === undefined
-      ) {
+      if (durationMs === undefined) {
         return res.status(400).json({
           success: false,
-          error:
-            "Invalid duration",
+          error: "Invalid duration",
         });
       }
 
       const created = [];
       const now = Date.now();
 
-      for (
-        let i = 0;
-        i < amount;
-        i++
-      ) {
+      for (let i = 0; i < amount; i++) {
         let key;
 
         while (true) {
-          key =
-            generateKeyString();
+          key = generateKeyString();
 
-          const exists =
-            await pool.query(
-              `
-              SELECT id
-              FROM novi_keys
-              WHERE UPPER(key) = $1
-              `,
-              [key]
-            );
+          const exists = await pool.query(
+            `
+            SELECT id
+            FROM novi_keys
+            WHERE UPPER(key) = $1
+            `,
+            [key]
+          );
 
-          if (
-            exists.rowCount === 0
-          ) {
+          if (exists.rowCount === 0) {
             break;
           }
         }
@@ -455,15 +423,11 @@ app.post(
         keys: created,
       });
     } catch (error) {
-      console.error(
-        "Create keys error:",
-        error
-      );
+      console.error("Create keys error:", error);
 
       res.status(500).json({
         success: false,
-        error:
-          "Failed to create keys",
+        error: "Failed to create keys",
       });
     }
   }
@@ -478,61 +442,44 @@ app.get(
   requireAdmin,
   async (req, res) => {
     try {
-      const result =
-        await pool.query(`
-          SELECT
-            id,
-            key,
-            duration,
-            created_at,
-            expires_at,
-            device_id,
-            used
-          FROM novi_keys
-          ORDER BY id DESC
-        `);
+      const result = await pool.query(`
+        SELECT
+          id,
+          key,
+          duration,
+          created_at,
+          expires_at,
+          device_id,
+          used
+        FROM novi_keys
+        ORDER BY id DESC
+      `);
 
       res.json({
         success: true,
 
-        keys:
-          result.rows.map(
-            (row) => ({
-              id: row.id,
-              key: row.key,
-              duration:
-                row.duration,
+        keys: result.rows.map((row) => ({
+          id: row.id,
+          key: row.key,
+          duration: row.duration,
 
-              createdAt:
-                Number(
-                  row.created_at
-                ),
+          createdAt: Number(row.created_at),
 
-              expiresAt:
-                row.expires_at ===
-                null
-                  ? null
-                  : Number(
-                      row.expires_at
-                    ),
+          expiresAt:
+            row.expires_at === null
+              ? null
+              : Number(row.expires_at),
 
-              deviceId:
-                row.device_id,
-
-              used: row.used,
-            })
-          ),
+          deviceId: row.device_id,
+          used: row.used,
+        })),
       });
     } catch (error) {
-      console.error(
-        "Get keys error:",
-        error
-      );
+      console.error("Get keys error:", error);
 
       res.status(500).json({
         success: false,
-        error:
-          "Failed to get keys",
+        error: "Failed to get keys",
       });
     }
   }
@@ -547,29 +494,24 @@ app.delete(
   requireAdmin,
   async (req, res) => {
     try {
-      const key =
-        String(
-          req.params.key || ""
-        )
-          .trim()
-          .toUpperCase();
+      const key = String(
+        req.params.key || ""
+      )
+        .trim()
+        .toUpperCase();
 
-      const result =
-        await pool.query(
-          `
-          DELETE FROM novi_keys
-          WHERE UPPER(key) = $1
-          `,
-          [key]
-        );
+      const result = await pool.query(
+        `
+        DELETE FROM novi_keys
+        WHERE UPPER(key) = $1
+        `,
+        [key]
+      );
 
-      if (
-        result.rowCount === 0
-      ) {
+      if (result.rowCount === 0) {
         return res.status(404).json({
           success: false,
-          error:
-            "Key not found",
+          error: "Key not found",
         });
       }
 
@@ -577,15 +519,11 @@ app.delete(
         success: true,
       });
     } catch (error) {
-      console.error(
-        "Delete key error:",
-        error
-      );
+      console.error("Delete key error:", error);
 
       res.status(500).json({
         success: false,
-        error:
-          "Failed to delete key",
+        error: "Failed to delete key",
       });
     }
   }
@@ -599,21 +537,17 @@ app.post(
   "/api/verify",
   async (req, res) => {
     try {
-      const rawKey =
-        req.body?.key;
+      const rawKey = req.body?.key;
 
-      const deviceId =
-        String(
-          req.body?.deviceId ||
-          req.body?.device_id ||
-          ""
-        ).trim();
+      const deviceId = String(
+        req.body?.deviceId ||
+        req.body?.device_id ||
+        ""
+      ).trim();
 
       const key =
         typeof rawKey === "string"
-          ? rawKey
-              .trim()
-              .toUpperCase()
+          ? rawKey.trim().toUpperCase()
           : "";
 
       if (!key || !deviceId) {
@@ -626,37 +560,27 @@ app.post(
         });
       }
 
-      const result =
-        await pool.query(
-          `
-          SELECT *
-          FROM novi_keys
-          WHERE UPPER(key) = $1
-          LIMIT 1
-          `,
-          [key]
-        );
+      const result = await pool.query(
+        `
+        SELECT *
+        FROM novi_keys
+        WHERE UPPER(key) = $1
+        LIMIT 1
+        `,
+        [key]
+      );
 
-      if (
-        result.rowCount === 0
-      ) {
+      if (result.rowCount === 0) {
         return res.status(401).json({
           success: false,
           message:
             "Invalid or expired key.",
-          error:
-            "Invalid key",
+          error: "Invalid key",
         });
       }
 
-      const row =
-        result.rows[0];
-
+      const row = result.rows[0];
       const now = Date.now();
-
-      // --------------------------------------------------------
-      // EXPIRATION
-      // --------------------------------------------------------
 
       if (
         row.expires_at !== null &&
@@ -666,14 +590,9 @@ app.post(
           success: false,
           message:
             "Invalid or expired key.",
-          error:
-            "Key expired",
+          error: "Key expired",
         });
       }
-
-      // --------------------------------------------------------
-      // DEVICE BINDING
-      // --------------------------------------------------------
 
       if (
         row.device_id &&
@@ -688,10 +607,6 @@ app.post(
             "Key is already bound to another device",
         });
       }
-
-      // --------------------------------------------------------
-      // BIND DEVICE
-      // --------------------------------------------------------
 
       if (!row.device_id) {
         await pool.query(
@@ -709,70 +624,45 @@ app.post(
         );
       }
 
-      // --------------------------------------------------------
-      // SESSION
-      // --------------------------------------------------------
-
-      const token =
-        crypto
-          .randomBytes(32)
-          .toString("hex");
+      const token = crypto
+        .randomBytes(32)
+        .toString("hex");
 
       const expiresAt =
         row.expires_at === null
           ? null
-          : Number(
-              row.expires_at
-            );
+          : Number(row.expires_at);
 
-      sessions.set(
-        token,
-        {
-          key: row.key,
-          deviceId,
-          createdAt: now,
-          expiresAt,
-        }
-      );
+      sessions.set(token, {
+        key: row.key,
+        deviceId,
+        createdAt: now,
+        expiresAt,
+      });
 
-      // IMPORTANT:
-      // Your HTML expects sessionToken.
-      // Return BOTH sessionToken and token.
-      // --------------------------------------------------------
-
-      return res.json({
+      res.json({
         success: true,
 
         sessionToken: token,
-
         token,
 
         key: {
           key: row.key,
-          duration:
-            row.duration,
+          duration: row.duration,
           expiresAt,
-          keyExpiresAt:
-            expiresAt,
+          keyExpiresAt: expiresAt,
         },
 
-        duration:
-          row.duration,
-
+        duration: row.duration,
         expiresAt,
       });
     } catch (error) {
-      console.error(
-        "Verify error:",
-        error
-      );
+      console.error("Verify error:", error);
 
       res.status(500).json({
         success: false,
-        message:
-          "Verification failed",
-        error:
-          "Verification failed",
+        message: "Verification failed",
+        error: "Verification failed",
       });
     }
   }
@@ -786,183 +676,232 @@ app.post(
   "/api/stock/add",
   requireAdmin,
   async (req, res) => {
-    const client =
-      await pool.connect();
+    const client = await pool.connect();
 
     try {
-      console.log(
-        "📦 Stock add request:",
-        JSON.stringify(
-          req.body,
-          null,
-          2
-        )
-      );
-
       let accounts = [];
 
-      // --------------------------------------------------------
-      // FORMAT 1
-      // { accounts: [...] }
-      // --------------------------------------------------------
+      // ======================================================
+      // RAW ARRAY
+      // ======================================================
+
+      if (Array.isArray(req.body)) {
+        accounts = req.body;
+      }
+
+      // ======================================================
+      // OBJECT CONTAINING ACCOUNTS
+      // ======================================================
+
+      else if (
+        req.body &&
+        typeof req.body === "object"
+      ) {
+        const possibleKeys = [
+          "accounts",
+          "account",
+          "stock",
+          "data",
+          "items",
+          "logins",
+          "accountList",
+        ];
+
+        for (const key of possibleKeys) {
+          if (
+            Array.isArray(req.body[key])
+          ) {
+            accounts = req.body[key];
+            break;
+          }
+        }
+
+        // Single account object
+        if (
+          accounts.length === 0 &&
+          req.body.account &&
+          typeof req.body.account ===
+            "object"
+        ) {
+          accounts = [
+            req.body.account,
+          ];
+        }
+
+        // username/password
+        if (
+          accounts.length === 0 &&
+          req.body.username &&
+          req.body.password
+        ) {
+          accounts = [
+            {
+              username:
+                req.body.username,
+              password:
+                req.body.password,
+            },
+          ];
+        }
+
+        // email/password
+        if (
+          accounts.length === 0 &&
+          req.body.email &&
+          req.body.password
+        ) {
+          accounts = [
+            {
+              email:
+                req.body.email,
+              password:
+                req.body.password,
+            },
+          ];
+        }
+
+        // ====================================================
+        // LAST RESORT:
+        // Find the first array anywhere in the object.
+        // ====================================================
+
+        if (accounts.length === 0) {
+          for (const value of Object.values(
+            req.body
+          )) {
+            if (Array.isArray(value)) {
+              accounts = value;
+              break;
+            }
+          }
+        }
+      }
+
+      // ======================================================
+      // TEXT BODY
+      // ======================================================
 
       if (
-        Array.isArray(
-          req.body?.accounts
-        )
+        typeof req.body === "string"
       ) {
-        accounts =
-          req.body.accounts;
+        const text =
+          req.body.trim();
+
+        if (text) {
+          try {
+            const parsed =
+              JSON.parse(text);
+
+            if (Array.isArray(parsed)) {
+              accounts = parsed;
+            } else if (
+              parsed &&
+              typeof parsed === "object"
+            ) {
+              for (const key of [
+                "accounts",
+                "stock",
+                "data",
+                "items",
+                "logins",
+              ]) {
+                if (
+                  Array.isArray(
+                    parsed[key]
+                  )
+                ) {
+                  accounts =
+                    parsed[key];
+                  break;
+                }
+              }
+            }
+          } catch {
+            accounts = text
+              .split(/\r?\n/)
+              .map((line) =>
+                line.trim()
+              )
+              .filter(Boolean);
+          }
+        }
       }
 
-      // --------------------------------------------------------
-      // FORMAT 2
-      // { account: {...} }
-      // --------------------------------------------------------
-
-      else if (
-        req.body?.account
-      ) {
-        accounts = [
-          req.body.account,
-        ];
-      }
-
-      // --------------------------------------------------------
-      // FORMAT 3
-      // { username, password }
-      // --------------------------------------------------------
-
-      else if (
-        req.body?.username &&
-        req.body?.password
-      ) {
-        accounts = [
-          {
-            username:
-              req.body.username,
-            password:
-              req.body.password,
-          },
-        ];
-      }
-
-      // --------------------------------------------------------
-      // FORMAT 4
-      // { email, password }
-      // --------------------------------------------------------
-
-      else if (
-        req.body?.email &&
-        req.body?.password
-      ) {
-        accounts = [
-          {
-            email:
-              req.body.email,
-            password:
-              req.body.password,
-          },
-        ];
-      }
-
-      // --------------------------------------------------------
-      // FORMAT 5
-      // Raw array
-      // ["username:password"]
-      // --------------------------------------------------------
-
-      else if (
-        Array.isArray(req.body)
-      ) {
-        accounts =
-          req.body;
-      }
-
-      if (
-        !accounts.length
-      ) {
+      if (!accounts.length) {
         return res.status(400).json({
           success: false,
-          error:
-            "No accounts supplied",
+          error: "No accounts supplied",
         });
       }
 
-      await client.query(
-        "BEGIN"
-      );
+      await client.query("BEGIN");
 
       let added = 0;
 
-      for (
-        const account of accounts
-      ) {
-        if (!account) {
-          continue;
-        }
+      for (const account of accounts) {
+        if (!account) continue;
 
         let username = "";
         let password = "";
 
-        // ------------------------------------------------------
-        // STRING ACCOUNT
-        // ------------------------------------------------------
+        // ====================================================
+        // STRING:
+        // username:password
+        // ====================================================
 
         if (
-          typeof account ===
-          "string"
+          typeof account === "string"
         ) {
-          const split =
-            account.split(":");
+          const value =
+            account.trim();
 
-          username =
-            String(
-              split[0] || ""
-            ).trim();
+          if (!value) continue;
 
-          password =
-            split
-              .slice(1)
-              .join(":")
-              .trim();
+          // Split only on the FIRST colon.
+          // This allows colons later in the value.
+          const separator =
+            value.indexOf(":");
+
+          if (separator === -1) {
+            continue;
+          }
+
+          username = value
+            .slice(0, separator)
+            .trim();
+
+          password = value
+            .slice(separator + 1)
+            .trim();
         }
 
-        // ------------------------------------------------------
-        // OBJECT ACCOUNT
-        // ------------------------------------------------------
+        // ====================================================
+        // OBJECT
+        // ====================================================
 
         else if (
-          typeof account ===
-          "object"
+          typeof account === "object"
         ) {
-          username =
-            String(
-              account.username ||
-              account.email ||
-              account.emailAddress ||
-              account.user ||
-              account.login ||
-              ""
-            ).trim();
+          username = String(
+            account.username ||
+            account.email ||
+            account.emailAddress ||
+            account.user ||
+            account.login ||
+            ""
+          ).trim();
 
-          password =
-            String(
-              account.password ||
-              account.pass ||
-              ""
-            ).trim();
+          password = String(
+            account.password ||
+            account.pass ||
+            ""
+          ).trim();
         }
 
         if (
           !username ||
           !password
         ) {
-          console.log(
-            "⚠️ Skipping invalid account:",
-            account
-          );
-
           continue;
         }
 
@@ -979,9 +918,7 @@ app.post(
           `,
           [
             username,
-            encryptPassword(
-              password
-            ),
+            encryptPassword(password),
             Date.now(),
           ]
         );
@@ -989,12 +926,8 @@ app.post(
         added++;
       }
 
-      if (
-        added === 0
-      ) {
-        await client.query(
-          "ROLLBACK"
-        );
+      if (added === 0) {
+        await client.query("ROLLBACK");
 
         return res.status(400).json({
           success: false,
@@ -1003,19 +936,19 @@ app.post(
         });
       }
 
-      await client.query(
-        "COMMIT"
+      await client.query("COMMIT");
+
+      console.log(
+        `✅ Added ${added} stock item(s)`
       );
 
-      return res.json({
+      res.json({
         success: true,
         added,
       });
     } catch (error) {
       try {
-        await client.query(
-          "ROLLBACK"
-        );
+        await client.query("ROLLBACK");
       } catch {}
 
       console.error(
@@ -1023,10 +956,9 @@ app.post(
         error
       );
 
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
-        error:
-          "Failed to add stock",
+        error: "Failed to add stock",
       });
     } finally {
       client.release();
@@ -1043,45 +975,37 @@ app.get(
   requireAdmin,
   async (req, res) => {
     try {
-      const result =
-        await pool.query(`
-          SELECT
-            id,
-            username,
-            password,
-            created_at
-          FROM novi_stock
-          ORDER BY id ASC
-        `);
+      const result = await pool.query(`
+        SELECT
+          id,
+          username,
+          password,
+          created_at
+        FROM novi_stock
+        ORDER BY id ASC
+      `);
 
-      const stock =
-        result.rows.map(
-          (row) => ({
-            id: row.id,
+      const stock = result.rows.map(
+        (row) => ({
+          id: row.id,
 
-            username:
-              row.username,
+          username: row.username,
+          email: row.username,
 
-            email:
-              row.username,
+          password:
+            decryptPassword(
+              row.password
+            ),
 
-            password:
-              decryptPassword(
-                row.password
-              ),
-
-            createdAt:
-              Number(
-                row.created_at
-              ),
-          })
-        );
+          createdAt:
+            Number(row.created_at),
+        })
+      );
 
       res.json({
         success: true,
         stock,
-        count:
-          stock.length,
+        count: stock.length,
       });
     } catch (error) {
       console.error(
@@ -1091,8 +1015,7 @@ app.get(
 
       res.status(500).json({
         success: false,
-        error:
-          "Failed to get stock",
+        error: "Failed to get stock",
       });
     }
   }
@@ -1107,45 +1030,37 @@ app.get(
   requireSession,
   async (req, res) => {
     try {
-      const result =
-        await pool.query(`
-          SELECT
-            id,
-            username,
-            password,
-            created_at
-          FROM novi_stock
-          ORDER BY id ASC
-        `);
+      const result = await pool.query(`
+        SELECT
+          id,
+          username,
+          password,
+          created_at
+        FROM novi_stock
+        ORDER BY id ASC
+      `);
 
-      const stock =
-        result.rows.map(
-          (row) => ({
-            id: row.id,
+      const stock = result.rows.map(
+        (row) => ({
+          id: row.id,
 
-            username:
-              row.username,
+          username: row.username,
+          email: row.username,
 
-            email:
-              row.username,
+          password:
+            decryptPassword(
+              row.password
+            ),
 
-            password:
-              decryptPassword(
-                row.password
-              ),
-
-            createdAt:
-              Number(
-                row.created_at
-              ),
-          })
-        );
+          createdAt:
+            Number(row.created_at),
+        })
+      );
 
       res.json({
         success: true,
         stock,
-        count:
-          stock.length,
+        count: stock.length,
       });
     } catch (error) {
       console.error(
@@ -1155,8 +1070,7 @@ app.get(
 
       res.status(500).json({
         success: false,
-        error:
-          "Failed to get stock",
+        error: "Failed to get stock",
       });
     }
   }
@@ -1171,21 +1085,15 @@ app.get(
   requireSession,
   async (req, res) => {
     try {
-      const result =
-        await pool.query(
-          `
-          SELECT
-            COUNT(*)::int AS count
-          FROM novi_stock
-          `
-        );
+      const result = await pool.query(`
+        SELECT COUNT(*)::int AS count
+        FROM novi_stock
+      `);
 
       res.json({
         success: true,
-
         count:
-          result.rows[0]
-            .count,
+          result.rows[0].count,
       });
     } catch (error) {
       console.error(
@@ -1210,24 +1118,20 @@ app.post(
   "/api/stock/generate",
   requireSession,
   async (req, res) => {
-    const client =
-      await pool.connect();
+    const client = await pool.connect();
 
     try {
-      const amount =
-        Math.min(
-          Math.max(
-            Number(
-              req.body?.amount
-            ) || 1,
-            1
-          ),
-          100
-        );
-
-      await client.query(
-        "BEGIN"
+      const amount = Math.min(
+        Math.max(
+          Number(
+            req.body?.amount
+          ) || 1,
+          1
+        ),
+        100
       );
+
+      await client.query("BEGIN");
 
       const result =
         await client.query(
@@ -1245,17 +1149,12 @@ app.post(
           [amount]
         );
 
-      if (
-        result.rowCount === 0
-      ) {
-        await client.query(
-          "ROLLBACK"
-        );
+      if (result.rowCount === 0) {
+        await client.query("ROLLBACK");
 
         return res.status(404).json({
           success: false,
-          error:
-            "No stock available",
+          error: "No stock available",
         });
       }
 
@@ -1295,18 +1194,14 @@ app.post(
         [ids]
       );
 
-      await client.query(
-        "COMMIT"
-      );
+      await client.query("COMMIT");
 
-      return res.json({
+      res.json({
         success: true,
 
-        // Your current HTML supports this
         account:
           accounts[0],
 
-        // Also return all generated accounts
         accounts,
 
         count:
@@ -1314,9 +1209,7 @@ app.post(
       });
     } catch (error) {
       try {
-        await client.query(
-          "ROLLBACK"
-        );
+        await client.query("ROLLBACK");
       } catch {}
 
       console.error(
@@ -1344,34 +1237,23 @@ app.post(
   requireSession,
   async (req, res) => {
     try {
-      const username =
-        String(
-          req.body?.username ||
-          req.body?.email ||
-          ""
-        ).trim();
+      const username = String(
+        req.body?.username ||
+        req.body?.email ||
+        ""
+      ).trim();
 
-      const password =
-        String(
-          req.body?.password ||
-          ""
-        );
+      const password = String(
+        req.body?.password || ""
+      );
 
-      if (
-        !username ||
-        !password
-      ) {
+      if (!username || !password) {
         return res.status(400).json({
           success: false,
           error:
             "Username and password are required",
         });
       }
-
-      const encryptedPassword =
-        encryptPassword(
-          password
-        );
 
       const result =
         await pool.query(
@@ -1392,7 +1274,7 @@ app.post(
           `,
           [
             username,
-            encryptedPassword,
+            encryptPassword(password),
             Date.now(),
             req.session.deviceId,
           ]
@@ -1406,17 +1288,10 @@ app.post(
 
         login: {
           id: row.id,
-
-          username:
-            row.username,
-
-          email:
-            row.username,
-
+          username: row.username,
+          email: row.username,
           createdAt:
-            Number(
-              row.created_at
-            ),
+            Number(row.created_at),
         },
       });
     } catch (error) {
@@ -1512,13 +1387,9 @@ app.get(
   async (req, res) => {
     try {
       const id =
-        Number(
-          req.params.id
-        );
+        Number(req.params.id);
 
-      if (
-        !Number.isInteger(id)
-      ) {
+      if (!Number.isInteger(id)) {
         return res.status(400).json({
           success: false,
           error: "Invalid ID",
@@ -1544,9 +1415,7 @@ app.get(
           ]
         );
 
-      if (
-        result.rowCount === 0
-      ) {
+      if (result.rowCount === 0) {
         return res.status(404).json({
           success: false,
           error:
@@ -1562,12 +1431,8 @@ app.get(
 
         login: {
           id: row.id,
-
-          username:
-            row.username,
-
-          email:
-            row.username,
+          username: row.username,
+          email: row.username,
 
           password:
             decryptPassword(
@@ -1575,9 +1440,7 @@ app.get(
             ),
 
           createdAt:
-            Number(
-              row.created_at
-            ),
+            Number(row.created_at),
         },
       });
     } catch (error) {
@@ -1605,13 +1468,9 @@ app.delete(
   async (req, res) => {
     try {
       const id =
-        Number(
-          req.params.id
-        );
+        Number(req.params.id);
 
-      if (
-        !Number.isInteger(id)
-      ) {
+      if (!Number.isInteger(id)) {
         return res.status(400).json({
           success: false,
           error: "Invalid ID",
@@ -1631,9 +1490,7 @@ app.delete(
           ]
         );
 
-      if (
-        result.rowCount === 0
-      ) {
+      if (result.rowCount === 0) {
         return res.status(404).json({
           success: false,
           error:
