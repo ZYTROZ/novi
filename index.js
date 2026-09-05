@@ -19,7 +19,6 @@ const {
     GatewayIntentBits
 } = require("discord.js");
 
-const crypto = require("crypto");
 const axios = require("axios");
 
 // =========================================================
@@ -46,14 +45,41 @@ const ALLOWED_ROLE_IDS = [
 // =========================================================
 // NOVI API
 // =========================================================
-//
-// The bot and website server run in the same Render service.
-// Using 127.0.0.1 makes the bot talk directly to the
-// server.js process instead of going through the public URL.
-//
+
+const SERVER_URL =
+    `http://127.0.0.1:${process.env.PORT || 10000}`;
+
+// =========================================================
+// ADMIN SECRET
 // =========================================================
 
-const SERVER_URL = `http://127.0.0.1:${process.env.PORT || 10000}`;
+const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET;
+
+// =========================================================
+// DISCORD ERROR LOGGING
+// =========================================================
+
+client.on("error", (error) => {
+    console.error("Discord client error:", error);
+});
+
+client.on("warn", (warning) => {
+    console.warn("Discord warning:", warning);
+});
+
+client.on("shardError", (error) => {
+    console.error("Discord gateway error:", error);
+});
+
+client.on("shardDisconnect", (event) => {
+    console.error(
+        `Discord disconnected. Code: ${event.code}`
+    );
+});
+
+client.on("shardReconnecting", () => {
+    console.log("Discord reconnecting...");
+});
 
 // =========================================================
 // BOT READY
@@ -68,27 +94,32 @@ client.once("ready", () => {
 });
 
 // =========================================================
-// GENERATE NOVI KEY
+// CHECK ENVIRONMENT
 // =========================================================
 
-function generateKey() {
-    const part1 = crypto.randomBytes(2)
-        .toString("hex")
-        .toUpperCase();
+if (!process.env.DISCORD_TOKEN) {
+    console.error(
+        "DISCORD_TOKEN is missing from Render Environment Variables."
+    );
+    process.exit(1);
+}
 
-    const part2 = crypto.randomBytes(2)
-        .toString("hex")
-        .toUpperCase();
+if (!ADMIN_SECRET) {
+    console.error(
+        "NOVI_ADMIN_SECRET is missing from Render Environment Variables."
+    );
+    process.exit(1);
+}
 
-    const part3 = crypto.randomBytes(2)
-        .toString("hex")
-        .toUpperCase();
+// =========================================================
+// API HEADERS
+// =========================================================
 
-    const part4 = crypto.randomBytes(2)
-        .toString("hex")
-        .toUpperCase();
-
-    return `NOVI-${part1}-${part2}-${part3}-${part4}`;
+function adminHeaders() {
+    return {
+        "Content-Type": "application/json",
+        "x-novi-admin-secret": ADMIN_SECRET
+    };
 }
 
 // =========================================================
@@ -100,7 +131,7 @@ function hasPermission(message) {
         return false;
     }
 
-    return ALLOWED_ROLE_IDS.some(roleId =>
+    return ALLOWED_ROLE_IDS.some((roleId) =>
         message.member.roles.cache.has(roleId)
     );
 }
@@ -161,35 +192,22 @@ client.on("messageCreate", async (message) => {
                 );
             }
 
-            const key = generateKey();
-
             console.log(
-                `Generating key: ${key} | Duration: ${duration}`
+                `Generating ${duration} key...`
             );
 
             try {
 
-                // =================================================
-                // SAVE KEY DIRECTLY TO NOVI SERVER
-                // =================================================
-
                 const response = await axios.post(
                     `${SERVER_URL}/api/keys`,
                     {
-                        key: key,
                         duration: duration
                     },
                     {
                         timeout: 15000,
-                        headers: {
-                            "Content-Type": "application/json"
-                        }
+                        headers: adminHeaders()
                     }
                 );
-
-                // =================================================
-                // CHECK RESPONSE
-                // =================================================
 
                 if (
                     !response.data ||
@@ -209,27 +227,46 @@ client.on("messageCreate", async (message) => {
                     );
                 }
 
-                // =================================================
-                // SUCCESS
-                // =================================================
+                // Server-generated key
+                const generatedKey =
+                    response.data.key ||
+                    response.data.data?.key;
+
+                if (!generatedKey) {
+
+                    console.error(
+                        "Server created key but did not return the key:",
+                        response.data
+                    );
+
+                    return message.reply(
+                        "The key was created, but the server did not return it."
+                    );
+                }
 
                 console.log(
-                    `Key successfully saved: ${key}`
+                    `Key successfully created: ${generatedKey}`
                 );
 
                 return message.reply(
                     `Novi Key Generated\n\n` +
-                    `${key}\n\n` +
+                    `\`${generatedKey}\`\n\n` +
                     `Duration: ${duration}`
                 );
 
             } catch (error) {
 
                 console.error(
-                    "Novi API connection error:",
+                    "Novi API key error:",
                     error.response?.data ||
                     error.message
                 );
+
+                if (error.response?.status === 403) {
+                    return message.reply(
+                        "The bot is not authorized to access the Novi admin API."
+                    );
+                }
 
                 return message.reply(
                     "Could not connect to the Novi server."
@@ -258,13 +295,13 @@ client.on("messageCreate", async (message) => {
             let items = [];
 
             // =================================================
-            // ITEMS WRITTEN AFTER !ADD
+            // ITEMS AFTER !ADD
             // =================================================
 
             const commandItems = args
                 .slice(1)
-                .map(item => item.trim())
-                .filter(item => item.length > 0);
+                .map((item) => item.trim())
+                .filter((item) => item.length > 0);
 
             items.push(...commandItems);
 
@@ -300,9 +337,10 @@ client.on("messageCreate", async (message) => {
                     const fileItems =
                         String(fileResponse.data)
                             .split(/\r?\n/)
-                            .map(line => line.trim())
+                            .map((line) => line.trim())
                             .filter(
-                                line => line.length > 0
+                                (line) =>
+                                    line.length > 0
                             );
 
                     items.push(...fileItems);
@@ -346,7 +384,7 @@ client.on("messageCreate", async (message) => {
             let failed = 0;
 
             // =================================================
-            // ADD EACH ITEM TO NOVI
+            // ADD EACH ITEM
             // =================================================
 
             for (const item of items) {
@@ -361,9 +399,7 @@ client.on("messageCreate", async (message) => {
                             },
                             {
                                 timeout: 15000,
-                                headers: {
-                                    "Content-Type": "application/json"
-                                }
+                                headers: adminHeaders()
                             }
                         );
 
@@ -398,7 +434,7 @@ client.on("messageCreate", async (message) => {
             }
 
             // =================================================
-            // GET CURRENT STOCK COUNT
+            // GET STOCK COUNT
             // =================================================
 
             let totalStock = "Unknown";
@@ -432,7 +468,7 @@ client.on("messageCreate", async (message) => {
             }
 
             // =================================================
-            // SEND RESULT
+            // RESULT
             // =================================================
 
             let reply =
@@ -462,27 +498,42 @@ client.on("messageCreate", async (message) => {
 });
 
 // =========================================================
-// DISCORD TOKEN CHECK
+// LOGIN
 // =========================================================
 
-if (!process.env.DISCORD_TOKEN) {
+console.log("================================");
+console.log("Connecting to Discord...");
+console.log("Token detected: YES");
+console.log("Admin secret detected: YES");
+console.log("================================");
+
+// Give Discord 30 seconds to connect.
+// This prevents Render from sitting forever on
+// "Connecting to Discord..." without an explanation.
+
+const loginTimeout = setTimeout(() => {
 
     console.error(
-        "DISCORD_TOKEN is missing from Render Environment Variables."
+        "Discord login timed out after 30 seconds."
+    );
+
+    console.error(
+        "Check the Discord Developer Portal, bot token, and gateway/intent settings."
     );
 
     process.exit(1);
-}
+
+}, 30000);
 
 // =========================================================
 // LOGIN
 // =========================================================
 
-console.log("Connecting to Discord...");
-
 client.login(process.env.DISCORD_TOKEN)
 
     .then(() => {
+
+        clearTimeout(loginTimeout);
 
         console.log(
             "Discord login successful."
@@ -492,9 +543,14 @@ client.login(process.env.DISCORD_TOKEN)
 
     .catch((error) => {
 
+        clearTimeout(loginTimeout);
+
         console.error(
-            "Discord login failed:",
-            error.message
+            "Discord login failed:"
+        );
+
+        console.error(
+            error
         );
 
         process.exit(1);
