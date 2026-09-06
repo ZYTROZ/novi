@@ -4,63 +4,43 @@ console.log("======================================");
 console.log("           STARTING NOVI");
 console.log("======================================");
 
-// ============================================================
 // START WEBSITE
-// ============================================================
-
 const website = spawn(process.execPath, ["index.js"], {
   stdio: "inherit",
-  env: process.env,
+  env: process.env
 });
 
-// ============================================================
 // START DISCORD BOT
-// ============================================================
-
-const bot = spawn(process.execPath, ["server.js"], {
+const bot = spawn(process.execPath, ["bot.js"], {
   stdio: "inherit",
-  env: process.env,
+  env: process.env
 });
-
-// ============================================================
-// ERROR HANDLING
-// ============================================================
 
 website.on("error", (err) => {
   console.error("Failed to start website:");
   console.error(err);
-  process.exit(1);
 });
 
 bot.on("error", (err) => {
   console.error("Failed to start Discord bot:");
   console.error(err);
-  process.exit(1);
 });
 
-// ============================================================
-// PROCESS EXIT
-// ============================================================
-
 website.on("exit", (code, signal) => {
-  if (signal) {
-    console.log(`Website stopped because of signal: ${signal}`);
-  } else {
-    console.log(`Website exited with code: ${code}`);
-  }
+  console.log(
+    signal
+      ? `Website stopped because of signal: ${signal}`
+      : `Website exited with code: ${code}`
+  );
 });
 
 bot.on("exit", (code, signal) => {
-  if (signal) {
-    console.log(`Discord bot stopped because of signal: ${signal}`);
-  } else {
-    console.log(`Discord bot exited with code: ${code}`);
-  }
+  console.log(
+    signal
+      ? `Discord bot stopped because of signal: ${signal}`
+      : `Discord bot exited with code: ${code}`
+  );
 });
-
-// ============================================================
-// RENDER SHUTDOWN
-// ============================================================
 
 function shutdown(signal) {
   console.log(`Received ${signal}. Shutting down Novi...`);
