@@ -74,9 +74,18 @@ function readJsonArray(file) {
 
         const data = JSON.parse(raw);
 
-        return Array.isArray(data)
-            ? data
-            : [];
+        if (Array.isArray(data)) {
+            return data;
+        }
+
+        if (
+            data &&
+            Array.isArray(data.stock)
+        ) {
+            return data.stock;
+        }
+
+        return [];
 
     } catch (error) {
 
@@ -130,6 +139,21 @@ ensureFile(STOCK_FILE, []);
    STOCK
 ========================================================= */
 
+/*
+ * Accept any non-empty stock value.
+ *
+ * No format checking is performed.
+ * Characters such as:
+ * @
+ * :
+ * /
+ * |
+ * -
+ * _
+ * .
+ * etc.
+ * are all allowed.
+ */
 function normalizeStockItem(value) {
 
     if (
@@ -171,24 +195,25 @@ function readStock() {
         const data =
             JSON.parse(raw);
 
+        let stock = [];
+
         if (Array.isArray(data)) {
 
-            return data
-                .map(normalizeStockItem)
-                .filter(Boolean);
-        }
+            stock = data;
 
-        if (
+        } else if (
             data &&
             Array.isArray(data.stock)
         ) {
 
-            return data.stock
-                .map(normalizeStockItem)
-                .filter(Boolean);
+            stock = data.stock;
         }
 
-        return [];
+        return stock
+            .map(
+                normalizeStockItem
+            )
+            .filter(Boolean);
 
     } catch (error) {
 
@@ -210,7 +235,7 @@ function saveStock(stock) {
 }
 
 /* =========================================================
-   STOCK WEBSOCKET
+   WEBSOCKET / LIVE STOCK
 ========================================================= */
 
 const wss =
@@ -227,7 +252,7 @@ wss.on(
     ws => {
 
         console.log(
-            "[WS] Client connected"
+            "[WS] Novi real-time client connected"
         );
 
         wsClients.add(ws);
@@ -249,14 +274,19 @@ wss.on(
                 wsClients.delete(ws);
 
                 console.log(
-                    "[WS] Client disconnected"
+                    "[WS] Novi real-time client disconnected"
                 );
             }
         );
 
         ws.on(
             "error",
-            () => {
+            error => {
+
+                console.error(
+                    "[WS] Client error:",
+                    error.message
+                );
 
                 wsClients.delete(ws);
             }
@@ -289,7 +319,12 @@ function broadcastStockCount() {
                     message
                 );
 
-            } catch {
+            } catch (error) {
+
+                console.error(
+                    "[WS] Send error:",
+                    error.message
+                );
 
                 wsClients.delete(
                     client
@@ -298,6 +333,75 @@ function broadcastStockCount() {
         }
     }
 }
+
+/*
+ * Discord modifies epicgames-stock.json directly.
+ * This watcher detects those changes and pushes the
+ * new count to connected website clients.
+ */
+
+let lastStockMtime = 0;
+
+try {
+
+    if (
+        fs.existsSync(
+            STOCK_FILE
+        )
+    ) {
+
+        lastStockMtime =
+            fs.statSync(
+                STOCK_FILE
+            ).mtimeMs;
+    }
+
+} catch {}
+
+setInterval(
+    () => {
+
+        try {
+
+            if (
+                !fs.existsSync(
+                    STOCK_FILE
+                )
+            ) {
+                return;
+            }
+
+            const mtime =
+                fs.statSync(
+                    STOCK_FILE
+                ).mtimeMs;
+
+            if (
+                mtime !==
+                lastStockMtime
+            ) {
+
+                lastStockMtime =
+                    mtime;
+
+                console.log(
+                    "[STOCK] Stock file changed - broadcasting update"
+                );
+
+                broadcastStockCount();
+            }
+
+        } catch (error) {
+
+            console.error(
+                "[STOCK WATCH ERROR]",
+                error.message
+            );
+        }
+
+    },
+    1000
+);
 
 /* =========================================================
    ADMIN AUTH
@@ -374,7 +478,7 @@ function requireAdmin(
 }
 
 /* =========================================================
-   KEYS
+   KEY SYSTEM
 ========================================================= */
 
 const DURATIONS = {
@@ -426,12 +530,9 @@ const DURATIONS = {
 
 function readKeys() {
 
-    const keys =
-        readJsonArray(
-            KEY_FILE
-        );
-
-    return keys;
+    return readJsonArray(
+        KEY_FILE
+    );
 }
 
 function saveKeys(keys) {
@@ -465,14 +566,10 @@ function generateKey() {
     return `NOVI-${a}-${b}-${c}`;
 }
 
-function createKey(
-    duration
-) {
+function createKey(duration) {
 
     const info =
-        DURATIONS[
-            duration
-        ];
+        DURATIONS[duration];
 
     const now =
         Date.now();
@@ -570,7 +667,9 @@ function getSession(req) {
         session.expiresAt
     ) {
 
-        sessions.delete(token);
+        sessions.delete(
+            token
+        );
 
         return null;
     }
@@ -593,7 +692,9 @@ function requireSession(
     if (!session) {
 
         return res.status(401).json({
+
             success: false,
+
             message:
                 "Your session has expired."
         });
@@ -822,9 +923,20 @@ app.delete(
             });
         }
 
-        saveKeys(
-            filtered
-        );
+        if (
+            !saveKeys(
+                filtered
+            )
+        ) {
+
+            return res.status(500).json({
+
+                success: false,
+
+                message:
+                    "Failed to delete key."
+            });
+        }
 
         res.json({
 
@@ -944,9 +1056,22 @@ app.post(
                     new Date()
                         .toISOString();
 
-                saveKeys(
-                    keys
-                );
+                if (
+                    !saveKeys(
+                        keys
+                    )
+                ) {
+
+                    return res.status(500).json({
+
+                        success: false,
+
+                        valid: false,
+
+                        message:
+                            "Failed to save key activation."
+                    });
+                }
 
             } else if (
                 String(
@@ -1060,7 +1185,8 @@ app.post(
                     existing =>
                         String(
                             existing
-                        ).toLowerCase() ===
+                        )
+                            .toLowerCase() ===
                         item.toLowerCase()
                 );
 
@@ -1097,6 +1223,11 @@ app.post(
                         "Failed to save stock."
                 });
             }
+
+            lastStockMtime =
+                fs.statSync(
+                    STOCK_FILE
+                ).mtimeMs;
 
             broadcastStockCount();
 
@@ -1135,7 +1266,7 @@ app.post(
 );
 
 /* =========================================================
-   ADD MULTIPLE STOCK ITEMS
+   ADD MANY STOCK ITEMS
 ========================================================= */
 
 app.post(
@@ -1152,7 +1283,9 @@ app.post(
                     ? req.body.items
                     : [];
 
-            if (!incoming.length) {
+            if (
+                incoming.length === 0
+            ) {
 
                 return res.status(400).json({
 
@@ -1191,6 +1324,10 @@ app.post(
                         raw
                     );
 
+                /*
+                 * The only invalid value is an
+                 * empty/null value.
+                 */
                 if (!item) {
 
                     invalid++;
@@ -1238,7 +1375,16 @@ app.post(
                 });
             }
 
+            lastStockMtime =
+                fs.statSync(
+                    STOCK_FILE
+                ).mtimeMs;
+
             broadcastStockCount();
+
+            console.log(
+                `[STOCK] Bulk add | Added: ${added} | Duplicates: ${duplicates} | Invalid: ${invalid} | Total: ${stock.length}`
+            );
 
             res.json({
 
@@ -1340,7 +1486,7 @@ app.get(
 );
 
 /* =========================================================
-   GENERATE ONE STOCK ITEM
+   ONE-CLICK GENERATOR
 ========================================================= */
 
 app.post(
@@ -1353,7 +1499,13 @@ app.post(
             const stock =
                 readStock();
 
-            if (!stock.length) {
+            console.log(
+                `[Novi] Generate requested | Actual stock: ${stock.length}`
+            );
+
+            if (
+                stock.length === 0
+            ) {
 
                 return res.json({
 
@@ -1366,7 +1518,7 @@ app.post(
             }
 
             /*
-             * Always consume exactly ONE item.
+             * Consume exactly one inventory item.
              */
             const item =
                 stock.shift();
@@ -1385,6 +1537,11 @@ app.post(
                         "Failed to update inventory."
                 });
             }
+
+            lastStockMtime =
+                fs.statSync(
+                    STOCK_FILE
+                ).mtimeMs;
 
             broadcastStockCount();
 
@@ -1579,7 +1736,7 @@ app.use(
 );
 
 /* =========================================================
-   START
+   START SERVER
 ========================================================= */
 
 server.listen(
@@ -1597,21 +1754,27 @@ server.listen(
         console.log(
             "======================================"
         );
+
         console.log(
-            `Port: ${PORT}`
+            `Website running on port ${PORT}`
         );
-        console.log(
-            `Current stock: ${readStock().length}`
-        );
+
         console.log(
             "WebSocket: /ws"
         );
+
         console.log(
-            "Live stock counter: ENABLED"
+            "Real-time stock: ENABLED"
         );
+
         console.log(
-            "One-click generation: ENABLED"
+            `Current stock: ${readStock().length}`
         );
+
+        console.log(
+            "One-click generator: ENABLED"
+        );
+
         console.log(
             "======================================"
         );
@@ -1638,6 +1801,10 @@ function shutdown(signal) {
         } catch {}
     }
 
+    try {
+        wss.close();
+    } catch {}
+
     server.close(
         () => {
             process.exit(0);
@@ -1662,7 +1829,32 @@ process.on(
     () => shutdown("SIGINT")
 );
 
+process.on(
+    "uncaughtException",
+    error => {
+
+        console.error(
+            "[NOVI] Uncaught exception:",
+            error
+        );
+    }
+);
+
+process.on(
+    "unhandledRejection",
+    error => {
+
+        console.error(
+            "[NOVI] Unhandled rejection:",
+            error
+        );
+    }
+);
+
 module.exports = {
     app,
-    server
+    server,
+    readStock,
+    saveStock,
+    broadcastStockCount
 };
