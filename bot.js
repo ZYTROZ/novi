@@ -20,6 +20,10 @@ const ADMIN_IDS = String(process.env.DISCORD_ADMIN_IDS || "")
   .map(x => x.trim())
   .filter(Boolean);
 
+/* =========================================================
+   FILE HELPERS
+========================================================= */
+
 function ensureFile(file, fallback) {
   if (!fs.existsSync(file)) {
     fs.writeFileSync(
@@ -38,10 +42,10 @@ function readJson(file, fallback) {
 
     if (!raw) return fallback;
 
-    const parsed = JSON.parse(raw);
+    return JSON.parse(raw);
 
-    return parsed;
   } catch (error) {
+
     console.error(
       `[Novi] Failed reading ${path.basename(file)}:`,
       error.message
@@ -52,6 +56,7 @@ function readJson(file, fallback) {
 }
 
 function writeJson(file, data) {
+
   const temp = `${file}.tmp`;
 
   fs.writeFileSync(
@@ -66,7 +71,12 @@ function writeJson(file, data) {
 ensureFile(STOCK_FILE, []);
 ensureFile(KEY_FILE, []);
 
+/* =========================================================
+   ADMIN
+========================================================= */
+
 function isAdmin(message) {
+
   if (ADMIN_IDS.length === 0) {
     return true;
   }
@@ -74,10 +84,12 @@ function isAdmin(message) {
   return ADMIN_IDS.includes(message.author.id);
 }
 
-/*
-  Stock is restricted to non-sensitive inventory codes.
-*/
+/* =========================================================
+   STOCK
+========================================================= */
+
 function cleanStockValue(value) {
+
   if (
     value === null ||
     value === undefined
@@ -92,7 +104,7 @@ function cleanStockValue(value) {
   }
 
   /*
-    Reject email:password-style account credentials.
+    Reject email:password-style credentials.
   */
   if (/^[^@\s:]+@[^@\s:]+:[^\s]+$/.test(text)) {
     return null;
@@ -102,14 +114,18 @@ function cleanStockValue(value) {
 }
 
 function normalizeStock(stock) {
+
   if (!Array.isArray(stock)) {
     return [];
   }
 
   return stock
     .map(item => {
+
       if (typeof item === "string") {
-        const value = cleanStockValue(item);
+
+        const value =
+          cleanStockValue(item);
 
         if (!value) return null;
 
@@ -120,13 +136,18 @@ function normalizeStock(stock) {
         };
       }
 
-      if (item && typeof item === "object") {
-        const value = cleanStockValue(
-          item.stock_id ??
-          item.stockId ??
-          item.value ??
-          item.code
-        );
+      if (
+        item &&
+        typeof item === "object"
+      ) {
+
+        const value =
+          cleanStockValue(
+            item.stock_id ??
+            item.stockId ??
+            item.value ??
+            item.code
+          );
 
         if (!value) return null;
 
@@ -150,21 +171,21 @@ function normalizeStock(stock) {
 }
 
 function getStock() {
-  const raw = readJson(
-    STOCK_FILE,
-    []
-  );
 
-  const stock = normalizeStock(raw);
+  const raw =
+    readJson(
+      STOCK_FILE,
+      []
+    );
 
-  /*
-    Keep the file in the exact format
-    Novi expects.
-  */
+  const stock =
+    normalizeStock(raw);
+
   if (
     JSON.stringify(raw) !==
     JSON.stringify(stock)
   ) {
+
     writeJson(
       STOCK_FILE,
       stock
@@ -175,29 +196,35 @@ function getStock() {
 }
 
 function addStock(values) {
-  const stock = getStock();
 
-  const existing = new Set(
-    stock.map(item =>
-      String(item.stock_id)
-        .trim()
-        .toLowerCase()
-    )
-  );
+  const stock =
+    getStock();
+
+  const existing =
+    new Set(
+      stock.map(item =>
+        String(item.stock_id)
+          .trim()
+          .toLowerCase()
+      )
+    );
 
   let added = 0;
   let duplicate = 0;
   let invalid = 0;
 
   for (const raw of values) {
-    const value = cleanStockValue(raw);
+
+    const value =
+      cleanStockValue(raw);
 
     if (!value) {
       invalid++;
       continue;
     }
 
-    const key = value.toLowerCase();
+    const key =
+      value.toLowerCase();
 
     if (existing.has(key)) {
       duplicate++;
@@ -211,6 +238,7 @@ function addStock(values) {
     });
 
     existing.add(key);
+
     added++;
   }
 
@@ -231,7 +259,12 @@ function addStock(values) {
   };
 }
 
+/* =========================================================
+   KEYS
+========================================================= */
+
 function generateKey() {
+
   return `NOVI-${crypto
     .randomBytes(12)
     .toString("hex")
@@ -239,11 +272,14 @@ function generateKey() {
 }
 
 function parseDuration(input) {
-  const value = String(input || "")
-    .trim()
-    .toLowerCase();
+
+  const value =
+    String(input || "")
+      .trim()
+      .toLowerCase();
 
   if (value === "lifetime") {
+
     return {
       label: "Lifetime",
       days: null,
@@ -251,23 +287,29 @@ function parseDuration(input) {
     };
   }
 
-  const match = value.match(
-    /^(\d+)(d|w|mo)$/
-  );
+  const match =
+    value.match(
+      /^(\d+)(d|w|mo)$/
+    );
 
   if (!match) {
     return null;
   }
 
-  const amount = Number(match[1]);
+  const amount =
+    Number(match[1]);
 
-  if (!Number.isInteger(amount) || amount <= 0) {
+  if (
+    !Number.isInteger(amount) ||
+    amount <= 0
+  ) {
     return null;
   }
 
   let days;
 
   switch (match[2]) {
+
     case "d":
       days = amount;
       break;
@@ -295,7 +337,11 @@ function parseDuration(input) {
   };
 }
 
-function generateKeys(amount, duration) {
+function generateKeys(
+  amount,
+  duration
+) {
+
   const parsed =
     parseDuration(duration);
 
@@ -316,18 +362,23 @@ function generateKeys(amount, duration) {
     i < amount;
     i++
   ) {
+
     const key =
       generateKey();
 
     keys.push({
       id: crypto.randomUUID(),
+
       key,
+
       duration:
         parsed.days === null
           ? "lifetime"
           : parsed.days,
+
       created_at:
         new Date().toISOString(),
+
       expires_at:
         parsed.expiresAt
     });
@@ -346,48 +397,84 @@ function generateKeys(amount, duration) {
   };
 }
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
-});
+/* =========================================================
+   DISCORD CLIENT
+========================================================= */
+
+const client =
+  new Client({
+
+    intents: [
+
+      GatewayIntentBits.Guilds,
+
+      GatewayIntentBits.GuildMessages,
+
+      GatewayIntentBits.MessageContent
+
+    ]
+
+  });
+
+/* =========================================================
+   READY
+========================================================= */
 
 client.once(
   "ready",
   () => {
+
     console.log(
       "======================================"
     );
+
     console.log(
       "       NOVI DISCORD BOT ONLINE"
     );
+
     console.log(
       "======================================"
     );
+
     console.log(
       `Logged in as: ${client.user.tag}`
     );
+
     console.log(
       "======================================"
     );
   }
 );
 
+/* =========================================================
+   COMMAND HANDLER
+========================================================= */
+
 client.on(
   "messageCreate",
   async message => {
+
     try {
+
       if (message.author.bot) {
         return;
       }
 
-      if (!message.content.startsWith("!")) {
+      /*
+        Ignore messages that aren't commands.
+      */
+      if (
+        !message.content ||
+        !message.content.startsWith("!")
+      ) {
         return;
       }
 
+      /*
+        Admin check.
+      */
       if (!isAdmin(message)) {
+
         return message.reply(
           "❌ You don't have permission to use this command."
         );
@@ -401,27 +488,162 @@ client.on(
       const command =
         args.shift().toLowerCase();
 
-      /*
-        !ADD
-      */
+      /* =====================================================
+         !ADD
+      ===================================================== */
 
       if (command === "!add") {
 
         /*
-          !add CODE
+          IMPORTANT:
+
+          Check attachments FIRST.
+
+          This means if you send:
+
+          !add
+          + stock.txt
+
+          the bot will import stock.txt and will NOT
+          treat any weird Discord-generated message text
+          as a stock code.
+        */
+
+        const attachment =
+          message.attachments.first();
+
+        if (attachment) {
+
+          const filename =
+            String(
+              attachment.name || ""
+            ).toLowerCase();
+
+          /*
+            Only allow TXT files.
+          */
+
+          if (
+            !filename.endsWith(".txt")
+          ) {
+
+            return message.reply(
+              "❌ The attached file must be a `.txt` file."
+            );
+          }
+
+          try {
+
+            console.log(
+              `[Novi] Starting TXT import: ${attachment.name}`
+            );
+
+            /*
+              Download the Discord attachment.
+            */
+
+            const response =
+              await fetch(
+                attachment.url
+              );
+
+            if (!response.ok) {
+
+              throw new Error(
+                `HTTP ${response.status}`
+              );
+            }
+
+            const text =
+              await response.text();
+
+            /*
+              One stock item per line.
+            */
+
+            const values =
+              text
+                .split(/\r?\n/)
+                .map(line =>
+                  line.trim()
+                )
+                .filter(Boolean);
+
+            if (
+              values.length === 0
+            ) {
+
+              return message.reply(
+                "❌ The TXT file is empty."
+              );
+            }
+
+            /*
+              Add everything to stock.
+            */
+
+            const result =
+              addStock(values);
+
+            console.log(
+              `[Novi] TXT import finished | File: ${attachment.name} | Lines: ${values.length} | Added: ${result.added} | Duplicates: ${result.duplicate} | Invalid: ${result.invalid} | Total: ${result.total}`
+            );
+
+            return message.reply(
+
+              `✅ **Stock imported successfully!**\n\n` +
+
+              `📄 File: **${attachment.name}**\n` +
+
+              `📥 Added: **${result.added}**\n` +
+
+              `⚠️ Duplicates: **${result.duplicate}**\n` +
+
+              `❌ Invalid: **${result.invalid}**\n` +
+
+              `📦 Total stock: **${result.total}**`
+
+            );
+
+          } catch (error) {
+
+            console.error(
+              "[Novi] TXT import error:",
+              error
+            );
+
+            return message.reply(
+              "❌ Failed to import the TXT file."
+            );
+          }
+        }
+
+        /*
+          No attachment.
+
+          Allow:
+
+          !add CODE-123
         */
 
         if (args.length > 0) {
 
           const value =
-            args.join(" ").trim();
+            args
+              .join(" ")
+              .trim();
 
           const result =
             addStock([value]);
 
-          if (result.added === 0) {
+          if (
+            result.added === 0
+          ) {
 
-            if (result.duplicate > 0) {
+            if (
+              result.duplicate > 0
+            ) {
+
               return message.reply(
                 `⚠️ \`${value}\` is already in stock.`
               );
@@ -433,91 +655,36 @@ client.on(
           }
 
           return message.reply(
+
             `✅ **Stock added**\n\n` +
+
             `Code: \`${value}\`\n` +
+
             `📦 Total stock: **${result.total}**`
+
           );
         }
 
         /*
-          !add + TXT attachment
+          Nothing attached and no code supplied.
         */
 
-        const attachment =
-          message.attachments.first();
+        return message.reply(
 
-        if (!attachment) {
-          return message.reply(
-            "❌ Use `!add CODE` or attach a `.txt` file."
-          );
-        }
+          `📦 **Novi Stock Import**\n\n` +
 
-        const filename =
-          String(
-            attachment.name || ""
-          ).toLowerCase();
+          `Attach a \`.txt\` file to \`!add\`.\n\n` +
 
-        if (!filename.endsWith(".txt")) {
-          return message.reply(
-            "❌ The file must be a `.txt` file."
-          );
-        }
+          `Example:\n` +
 
-        try {
+          `\`!add\` + **stock.txt**`
 
-          const response =
-            await fetch(
-              attachment.url
-            );
-
-          if (!response.ok) {
-            throw new Error(
-              `HTTP ${response.status}`
-            );
-          }
-
-          const text =
-            await response.text();
-
-          const values =
-            text
-              .split(/\r?\n/)
-              .map(x => x.trim())
-              .filter(Boolean);
-
-          if (!values.length) {
-            return message.reply(
-              "❌ The TXT file is empty."
-            );
-          }
-
-          const result =
-            addStock(values);
-
-          return message.reply(
-            `✅ **Stock imported**\n\n` +
-            `Added: **${result.added}**\n` +
-            `Duplicates: **${result.duplicate}**\n` +
-            `Invalid: **${result.invalid}**\n` +
-            `📦 Total: **${result.total}**`
-          );
-
-        } catch (error) {
-
-          console.error(
-            "[Novi] TXT import error:",
-            error
-          );
-
-          return message.reply(
-            "❌ Failed to import the TXT file."
-          );
-        }
+        );
       }
 
-      /*
-        !STOCK
-      */
+      /* =====================================================
+         !STOCK
+      ===================================================== */
 
       if (command === "!stock") {
 
@@ -525,14 +692,17 @@ client.on(
           getStock();
 
         return message.reply(
+
           `📦 **NOVI STOCK**\n\n` +
+
           `Available: **${stock.length}**`
+
         );
       }
 
-      /*
-        !CLEARSTOCK
-      */
+      /* =====================================================
+         !CLEARSTOCK
+      ===================================================== */
 
       if (command === "!clearstock") {
 
@@ -548,17 +718,20 @@ client.on(
         );
 
         return message.reply(
+
           `🗑️ Cleared **${amount}** stock item(s).`
+
         );
       }
 
-      /*
-        !GEN
-      */
+      /* =====================================================
+         !GEN
+      ===================================================== */
 
       if (command === "!gen") {
 
         if (!args.length) {
+
           return message.reply(
             "❌ Usage: `!gen 1d` or `!gen 5 1d`"
           );
@@ -567,9 +740,15 @@ client.on(
         let amount = 1;
         let duration;
 
-        if (args.length === 1) {
-          duration = args[0];
+        if (
+          args.length === 1
+        ) {
+
+          duration =
+            args[0];
+
         } else {
+
           amount =
             Number(args[0]);
 
@@ -582,6 +761,7 @@ client.on(
           amount < 1 ||
           amount > 100
         ) {
+
           return message.reply(
             "❌ Amount must be between 1 and 100."
           );
@@ -594,26 +774,48 @@ client.on(
           );
 
         if (!result) {
+
           return message.reply(
             "❌ Invalid duration. Use `1d`, `3d`, `1w`, `1mo`, or `lifetime`."
           );
         }
 
+        /*
+          One key.
+        */
+
         if (
           result.keys.length === 1
         ) {
+
           return message.reply(
+
             `✅ **Generated ${result.duration} key**\n\n` +
+
             `\`${result.keys[0]}\``
+
           );
         }
 
+        /*
+          Multiple keys.
+        */
+
         const output =
           result.keys
-            .map(key => `\`${key}\``)
+            .map(
+              key => `\`${key}\``
+            )
             .join("\n");
 
-        if (output.length > 1800) {
+        /*
+          If Discord message gets too long,
+          send the keys as a TXT file.
+        */
+
+        if (
+          output.length > 1800
+        ) {
 
           const file =
             Buffer.from(
@@ -622,44 +824,67 @@ client.on(
             );
 
           return message.reply({
+
             content:
               `✅ Generated **${result.keys.length} ${result.duration} keys**.`,
+
             files: [
+
               new AttachmentBuilder(
                 file,
                 {
                   name: "novi-keys.txt"
                 }
               )
+
             ]
+
           });
         }
 
         return message.reply(
-          `✅ **Generated ${result.keys.length} ${result.duration} keys**\n\n${output}`
+
+          `✅ **Generated ${result.keys.length} ${result.duration} keys**\n\n` +
+
+          output
+
         );
       }
 
-      /*
-        !HELP
-      */
+      /* =====================================================
+         !HELP
+      ===================================================== */
 
       if (command === "!help") {
 
         return message.reply(
+
           "```text\n" +
+
           "NOVI COMMANDS\n" +
-          "────────────────────\n" +
+
+          "────────────────────────\n" +
+
           "!add CODE\n" +
+
           "!add + TXT\n" +
+
           "!stock\n" +
+
           "!clearstock\n" +
+
           "!gen 1d\n" +
+
           "!gen 5 1d\n" +
+
           "!gen 1w\n" +
+
           "!gen lifetime\n" +
+
           "!help\n" +
+
           "```"
+
         );
       }
 
@@ -671,33 +896,48 @@ client.on(
       );
 
       try {
+
         await message.reply(
           "❌ An error occurred."
         );
+
       } catch {}
+
     }
   }
 );
 
+/* =========================================================
+   DISCORD ERRORS
+========================================================= */
+
 client.on(
   "error",
   error => {
+
     console.error(
       "[Novi] Discord error:",
       error
     );
+
   }
 );
 
 process.on(
   "unhandledRejection",
   error => {
+
     console.error(
       "[Novi] Unhandled rejection:",
       error
     );
+
   }
 );
+
+/* =========================================================
+   LOGIN
+========================================================= */
 
 if (!TOKEN) {
 
@@ -710,6 +950,7 @@ if (!TOKEN) {
 
 client.login(TOKEN).catch(
   error => {
+
     console.error(
       "❌ Discord login failed:",
       error
