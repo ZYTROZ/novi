@@ -24,6 +24,7 @@
       --muted: #9c94aa;
       --green: #22c55e;
       --red: #ef4444;
+      --yellow: #f59e0b;
     }
 
     body {
@@ -36,6 +37,7 @@
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
+
       background:
         radial-gradient(
           circle at top left,
@@ -48,6 +50,7 @@
           transparent 30%
         ),
         var(--bg);
+
       color: var(--text);
     }
 
@@ -58,6 +61,11 @@
 
     button {
       cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .6;
     }
 
     .hidden {
@@ -80,14 +88,17 @@
       width: 100%;
       max-width: 430px;
       padding: 38px;
+
       background:
         linear-gradient(
           145deg,
           rgba(25, 15, 42, .96),
           rgba(10, 7, 17, .98)
         );
+
       border: 1px solid var(--border);
       border-radius: 26px;
+
       box-shadow:
         0 30px 100px rgba(0, 0, 0, .55),
         0 0 60px rgba(124, 58, 237, .10);
@@ -97,17 +108,22 @@
       width: 62px;
       height: 62px;
       border-radius: 18px;
+
       display: grid;
       place-items: center;
+
       margin-bottom: 22px;
+
       background:
         linear-gradient(
           135deg,
           var(--purple),
           var(--purple2)
         );
+
       box-shadow:
         0 15px 40px rgba(124, 58, 237, .35);
+
       font-size: 28px;
       font-weight: 900;
     }
@@ -133,38 +149,51 @@
 
     .input {
       width: 100%;
+
       border: 1px solid var(--border);
       outline: none;
+
       color: white;
       background: rgba(255,255,255,.035);
+
       border-radius: 13px;
       padding: 15px 16px;
+
       transition: .2s;
     }
 
     .input:focus {
       border-color: rgba(168, 85, 247, .7);
+
       box-shadow:
         0 0 0 4px rgba(168, 85, 247, .08);
     }
 
     .primary-btn {
       width: 100%;
+
       border: 0;
       border-radius: 13px;
+
       padding: 15px;
       margin-top: 16px;
+
       color: white;
       font-weight: 800;
+
       background:
         linear-gradient(
           135deg,
           var(--purple),
           var(--purple2)
         );
+
       box-shadow:
         0 12px 30px rgba(124, 58, 237, .25);
-      transition: transform .2s, filter .2s;
+
+      transition:
+        transform .2s,
+        filter .2s;
     }
 
     .primary-btn:hover {
@@ -174,11 +203,15 @@
 
     .error {
       color: #fca5a5;
+
       background: rgba(239,68,68,.08);
       border: 1px solid rgba(239,68,68,.18);
+
       border-radius: 12px;
       padding: 12px;
+
       margin-top: 15px;
+
       font-size: 13px;
     }
 
@@ -200,6 +233,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+
       gap: 20px;
       margin-bottom: 26px;
     }
@@ -213,16 +247,23 @@
     .brand-icon {
       width: 44px;
       height: 44px;
+
       display: grid;
       place-items: center;
+
       border-radius: 13px;
+
       background:
         linear-gradient(
           135deg,
           var(--purple),
           var(--purple2)
         );
+
       font-weight: 900;
+
+      box-shadow:
+        0 10px 30px rgba(124,58,237,.22);
     }
 
     .brand h2 {
@@ -231,21 +272,91 @@
 
     .brand span {
       display: block;
+
       color: var(--muted);
       font-size: 12px;
+
       margin-top: 2px;
     }
 
     .logout-btn {
       border: 1px solid var(--border);
+
       background: rgba(255,255,255,.03);
+
       color: #ddd6e8;
+
       border-radius: 11px;
       padding: 10px 15px;
+
+      transition: .2s;
     }
 
     .logout-btn:hover {
       background: rgba(255,255,255,.06);
+    }
+
+    /* ======================================================
+       LIVE STATUS
+    ====================================================== */
+
+    .live-status {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+
+      padding: 7px 11px;
+
+      border-radius: 999px;
+
+      background: rgba(239,68,68,.07);
+      border: 1px solid rgba(239,68,68,.14);
+
+      color: #fca5a5;
+
+      font-size: 11px;
+      font-weight: 800;
+
+      white-space: nowrap;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+
+      border-radius: 50%;
+
+      background: var(--red);
+
+      box-shadow:
+        0 0 10px rgba(239,68,68,.6);
+    }
+
+    .live-status.connected {
+      background: rgba(34,197,94,.07);
+      border-color: rgba(34,197,94,.16);
+      color: #86efac;
+    }
+
+    .live-status.connected .live-dot {
+      background: var(--green);
+
+      box-shadow:
+        0 0 10px rgba(34,197,94,.65);
+
+      animation: livePulse 1.5s infinite;
+    }
+
+    @keyframes livePulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: .45;
+        transform: scale(.8);
+      }
     }
 
     /* ======================================================
@@ -254,9 +365,12 @@
 
     .stats {
       display: grid;
+
       grid-template-columns:
         repeat(3, minmax(0, 1fr));
+
       gap: 16px;
+
       margin-bottom: 18px;
     }
 
@@ -267,15 +381,40 @@
           rgba(19, 13, 31, .96),
           rgba(10, 7, 17, .96)
         );
+
       border: 1px solid var(--border);
       border-radius: 18px;
+
       padding: 20px;
+
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat::after {
+      content: "";
+
+      position: absolute;
+
+      width: 100px;
+      height: 100px;
+
+      right: -50px;
+      top: -50px;
+
+      background: rgba(168,85,247,.08);
+
+      border-radius: 50%;
+
+      filter: blur(20px);
     }
 
     .stat-label {
       color: var(--muted);
+
       font-size: 12px;
       font-weight: 700;
+
       text-transform: uppercase;
       letter-spacing: .08em;
     }
@@ -283,6 +422,7 @@
     .stat-value {
       font-size: 25px;
       font-weight: 850;
+
       margin-top: 8px;
     }
 
@@ -296,9 +436,11 @@
 
     .grid {
       display: grid;
+
       grid-template-columns:
         minmax(0, 1.5fr)
         minmax(300px, .8fr);
+
       gap: 18px;
     }
 
@@ -309,9 +451,12 @@
           rgba(19, 13, 31, .96),
           rgba(10, 7, 17, .96)
         );
+
       border: 1px solid var(--border);
       border-radius: 20px;
+
       padding: 22px;
+
       box-shadow:
         0 20px 60px rgba(0,0,0,.18);
     }
@@ -320,6 +465,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+
       gap: 12px;
       margin-bottom: 18px;
     }
@@ -331,12 +477,14 @@
     .panel-header p {
       color: var(--muted);
       font-size: 12px;
+
       margin-top: 4px;
     }
 
     .stock-controls {
       display: flex;
       gap: 10px;
+
       margin-bottom: 18px;
     }
 
@@ -347,60 +495,273 @@
     .generate-btn {
       border: 0;
       border-radius: 12px;
+
       padding: 0 20px;
+
       color: white;
       font-weight: 800;
+
       background:
         linear-gradient(
           135deg,
           var(--purple),
           var(--purple2)
         );
+
+      box-shadow:
+        0 10px 25px rgba(124,58,237,.20);
+
+      transition: .2s;
     }
+
+    .generate-btn:hover {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+
+    /* ======================================================
+       STOCK LIST
+    ====================================================== */
 
     .stock-list {
       display: flex;
       flex-direction: column;
       gap: 9px;
+
       max-height: 420px;
       overflow-y: auto;
+
+      padding-right: 3px;
+    }
+
+    .stock-list::-webkit-scrollbar,
+    .saved-list::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .stock-list::-webkit-scrollbar-thumb,
+    .saved-list::-webkit-scrollbar-thumb {
+      background: rgba(168,85,247,.25);
+      border-radius: 10px;
     }
 
     .stock-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
+
       gap: 15px;
+
       padding: 14px;
+
       border-radius: 13px;
+
       border: 1px solid rgba(255,255,255,.06);
+
       background: rgba(255,255,255,.025);
+
+      transition:
+        border-color .2s,
+        background .2s,
+        transform .2s;
+    }
+
+    .stock-item:hover {
+      background: rgba(168,85,247,.045);
+
+      border-color:
+        rgba(168,85,247,.20);
+
+      transform: translateY(-1px);
     }
 
     .stock-value {
       word-break: break-all;
+
       font-family: monospace;
       font-size: 13px;
+
       color: #e9ddff;
+
+      min-width: 0;
+      flex: 1;
+    }
+
+    .stock-actions {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+
+      flex-shrink: 0;
+    }
+
+    .copy-btn,
+    .save-btn,
+    .remove-btn {
+      border-radius: 9px;
+
+      padding: 8px 11px;
+
+      font-size: 12px;
+      font-weight: 700;
+
+      transition: .2s;
     }
 
     .copy-btn {
-      flex-shrink: 0;
       border: 1px solid var(--border);
-      background: rgba(168,85,247,.08);
+
+      background:
+        rgba(168,85,247,.08);
+
       color: #d8b4fe;
-      padding: 8px 12px;
-      border-radius: 9px;
-      font-size: 12px;
-      font-weight: 700;
+    }
+
+    .copy-btn:hover {
+      background:
+        rgba(168,85,247,.16);
+    }
+
+    .save-btn {
+      border: 1px solid rgba(168,85,247,.22);
+
+      background:
+        rgba(168,85,247,.10);
+
+      color: #d8b4fe;
+    }
+
+    .save-btn:hover {
+      background:
+        rgba(168,85,247,.20);
+    }
+
+    .save-btn.saved {
+      border-color:
+        rgba(34,197,94,.25);
+
+      background:
+        rgba(34,197,94,.09);
+
+      color: #86efac;
+    }
+
+    .remove-btn {
+      border: 1px solid rgba(239,68,68,.18);
+
+      background:
+        rgba(239,68,68,.07);
+
+      color: #fca5a5;
+    }
+
+    .remove-btn:hover {
+      background:
+        rgba(239,68,68,.14);
     }
 
     .empty {
       padding: 35px 15px;
+
       text-align: center;
+
       color: var(--muted);
+
       border: 1px dashed rgba(255,255,255,.08);
+
       border-radius: 13px;
+    }
+
+    /* ======================================================
+       SAVED LOGINS
+    ====================================================== */
+
+    .saved-panel {
+      margin-top: 18px;
+    }
+
+    .saved-count {
+      min-width: 27px;
+      height: 27px;
+
+      padding: 0 8px;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 9px;
+
+      background:
+        rgba(168,85,247,.10);
+
+      border: 1px solid
+        rgba(168,85,247,.18);
+
+      color: #d8b4fe;
+
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .saved-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .saved-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 12px;
+
+      padding: 13px;
+
+      border-radius: 13px;
+
+      border:
+        1px solid rgba(168,85,247,.12);
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(168,85,247,.045),
+          rgba(255,255,255,.018)
+        );
+    }
+
+    .saved-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .saved-value {
+      word-break: break-all;
+
+      color: #eee7fa;
+
+      font-family: monospace;
+      font-size: 13px;
+    }
+
+    .saved-time {
+      margin-top: 5px;
+
+      color: var(--muted);
+
+      font-size: 10px;
+    }
+
+    .saved-actions {
+      display: flex;
+      gap: 7px;
+
+      flex-shrink: 0;
     }
 
     /* ======================================================
@@ -412,24 +773,34 @@
     }
 
     .generated-box {
-      background: rgba(34,197,94,.035);
-      border: 1px solid rgba(34,197,94,.15);
+      background:
+        rgba(34,197,94,.035);
+
+      border:
+        1px solid rgba(34,197,94,.15);
+
       border-radius: 14px;
       padding: 14px;
     }
 
     .generated-title {
       color: #86efac;
+
       font-size: 12px;
       font-weight: 800;
+
       margin-bottom: 10px;
     }
 
     .generated-item {
       padding: 10px 0;
-      border-bottom: 1px solid rgba(255,255,255,.06);
+
+      border-bottom:
+        1px solid rgba(255,255,255,.06);
+
       font-family: monospace;
       font-size: 13px;
+
       word-break: break-all;
     }
 
@@ -444,9 +815,13 @@
     .info-row {
       display: flex;
       justify-content: space-between;
+
       gap: 20px;
+
       padding: 14px 0;
-      border-bottom: 1px solid rgba(255,255,255,.06);
+
+      border-bottom:
+        1px solid rgba(255,255,255,.06);
     }
 
     .info-row:last-child {
@@ -460,9 +835,12 @@
 
     .info-value {
       text-align: right;
+
       font-size: 13px;
       font-weight: 700;
+
       max-width: 220px;
+
       overflow-wrap: anywhere;
     }
 
@@ -472,19 +850,32 @@
 
     #toast {
       position: fixed;
+
       right: 22px;
       bottom: 22px;
+
       padding: 13px 17px;
+
       border-radius: 12px;
+
       background: #171020;
+
       border: 1px solid var(--border);
+
       color: white;
-      box-shadow: 0 20px 50px rgba(0,0,0,.35);
+
+      box-shadow:
+        0 20px 50px rgba(0,0,0,.35);
+
       transform: translateY(20px);
       opacity: 0;
+
       pointer-events: none;
+
       transition: .25s;
+
       z-index: 100;
+
       font-size: 13px;
     }
 
@@ -504,6 +895,34 @@
 
       .grid {
         grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .stock-item {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .stock-actions {
+        width: 100%;
+      }
+
+      .stock-actions button {
+        flex: 1;
+      }
+
+      .saved-item {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .saved-actions {
+        width: 100%;
+      }
+
+      .saved-actions button {
+        flex: 1;
       }
     }
 
@@ -531,6 +950,10 @@
       .topbar {
         align-items: flex-start;
       }
+
+      .live-status {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -542,6 +965,7 @@
   ====================================================== -->
 
   <section id="loginPage">
+
     <div class="login-card">
 
       <div class="logo">N</div>
@@ -552,7 +976,10 @@
         Enter your Novi access key to open your dashboard.
       </p>
 
-      <label class="input-label" for="keyInput">
+      <label
+        class="input-label"
+        for="keyInput"
+      >
         Novi Key
       </label>
 
@@ -578,6 +1005,7 @@
       ></div>
 
     </div>
+
   </section>
 
 
@@ -592,23 +1020,43 @@
 
     <div class="dashboard-wrap">
 
+      <!-- TOPBAR -->
+
       <header class="topbar">
 
         <div class="brand">
-          <div class="brand-icon">N</div>
+
+          <div class="brand-icon">
+            N
+          </div>
 
           <div>
             <h2>Novi</h2>
             <span>Inventory Dashboard</span>
           </div>
+
         </div>
 
-        <button
-          class="logout-btn"
-          onclick="logout()"
-        >
-          Logout
-        </button>
+        <div style="display:flex;align-items:center;gap:10px;">
+
+          <div
+            id="liveStatus"
+            class="live-status"
+          >
+            <span class="live-dot"></span>
+            <span id="liveStatusText">
+              Connecting
+            </span>
+          </div>
+
+          <button
+            class="logout-btn"
+            onclick="logout()"
+          >
+            Logout
+          </button>
+
+        </div>
 
       </header>
 
@@ -620,6 +1068,7 @@
       <div class="stats">
 
         <div class="stat">
+
           <div class="stat-label">
             Key Status
           </div>
@@ -630,9 +1079,12 @@
           >
             Active
           </div>
+
         </div>
 
+
         <div class="stat">
+
           <div class="stat-label">
             Stock Available
           </div>
@@ -643,9 +1095,12 @@
           >
             0
           </div>
+
         </div>
 
+
         <div class="stat">
+
           <div class="stat-label">
             Expiration
           </div>
@@ -656,6 +1111,7 @@
           >
             —
           </div>
+
         </div>
 
       </div>
@@ -667,7 +1123,9 @@
 
       <div class="grid">
 
-        <!-- STOCK -->
+        <!-- ==================================================
+             STOCK
+        ================================================== -->
 
         <div class="panel">
 
@@ -675,12 +1133,14 @@
 
             <div>
               <h3>Stock Generator</h3>
+
               <p>
                 Generate available inventory items.
               </p>
             </div>
 
           </div>
+
 
           <div class="stock-controls">
 
@@ -702,15 +1162,20 @@
 
           </div>
 
+
           <div
             id="stockList"
             class="stock-list"
           >
+
             <div class="empty">
               Loading stock...
             </div>
+
           </div>
 
+
+          <!-- GENERATED -->
 
           <div
             id="generatedSection"
@@ -729,10 +1194,52 @@
 
           </div>
 
+
+          <!-- SAVED LOGINS -->
+
+          <div
+            id="savedPanel"
+            class="saved-panel"
+          >
+
+            <div class="panel-header">
+
+              <div>
+                <h3>Saved Logins</h3>
+
+                <p>
+                  Items you've saved for later.
+                </p>
+              </div>
+
+              <span
+                id="savedCount"
+                class="saved-count"
+              >
+                0
+              </span>
+
+            </div>
+
+            <div
+              id="savedList"
+              class="saved-list"
+            >
+
+              <div class="empty">
+                No saved logins yet.
+              </div>
+
+            </div>
+
+          </div>
+
         </div>
 
 
-        <!-- KEY INFO -->
+        <!-- ==================================================
+             KEY INFO
+        ================================================== -->
 
         <div class="panel">
 
@@ -740,6 +1247,7 @@
 
             <div>
               <h3>Key Information</h3>
+
               <p>
                 Your current Novi access.
               </p>
@@ -747,7 +1255,9 @@
 
           </div>
 
+
           <div class="info-row">
+
             <span class="info-label">
               Key
             </span>
@@ -758,9 +1268,12 @@
             >
               —
             </span>
+
           </div>
 
+
           <div class="info-row">
+
             <span class="info-label">
               Duration
             </span>
@@ -771,9 +1284,12 @@
             >
               —
             </span>
+
           </div>
 
+
           <div class="info-row">
+
             <span class="info-label">
               Device
             </span>
@@ -784,9 +1300,12 @@
             >
               —
             </span>
+
           </div>
 
+
           <div class="info-row">
+
             <span class="info-label">
               Session
             </span>
@@ -797,6 +1316,7 @@
             >
               Connected
             </span>
+
           </div>
 
         </div>
@@ -814,20 +1334,44 @@
   <script>
     const API_URL = "";
 
-    const SESSION_KEY = "noviSession";
-    const KEY_STORAGE = "noviKey";
-    const DEVICE_STORAGE = "noviDeviceId";
+    const SESSION_KEY =
+      "noviSession";
+
+    const KEY_STORAGE =
+      "noviKey";
+
+    const DEVICE_STORAGE =
+      "noviDeviceId";
+
 
     let sessionToken =
-      localStorage.getItem(SESSION_KEY) || "";
+      localStorage.getItem(
+        SESSION_KEY
+      ) || "";
 
     let currentKey =
-      localStorage.getItem(KEY_STORAGE) || "";
+      localStorage.getItem(
+        KEY_STORAGE
+      ) || "";
 
     let deviceId =
-      localStorage.getItem(DEVICE_STORAGE) || "";
+      localStorage.getItem(
+        DEVICE_STORAGE
+      ) || "";
 
     let expirationTime = null;
+
+    let savedItems = [];
+
+    let socket = null;
+
+    let socketReconnectTimer = null;
+
+    let socketReconnectDelay = 1000;
+
+    let fallbackRefreshTimer = null;
+
+    let isLoggingOut = false;
 
 
     // ======================================================
@@ -835,6 +1379,7 @@
     // ======================================================
 
     if (!deviceId) {
+
       deviceId =
         "device_" +
         crypto.randomUUID();
@@ -851,6 +1396,7 @@
     // ======================================================
 
     function escapeHtml(value) {
+
       return String(value)
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
@@ -859,11 +1405,35 @@
         .replaceAll("'", "&#039;");
     }
 
+
+    function getStockValue(item) {
+
+      if (typeof item === "string") {
+        return item;
+      }
+
+      if (!item || typeof item !== "object") {
+        return "";
+      }
+
+      return (
+        item.stock_id ??
+        item.value ??
+        item.code ??
+        item.item ??
+        item.id ??
+        ""
+      );
+    }
+
+
     function showToast(message) {
+
       const toast =
         document.getElementById("toast");
 
       toast.textContent = message;
+
       toast.classList.add("show");
 
       clearTimeout(
@@ -872,19 +1442,30 @@
 
       showToast.timeout =
         setTimeout(() => {
+
           toast.classList.remove("show");
+
         }, 2500);
     }
 
+
     function showLoginError(message) {
+
       const error =
-        document.getElementById("loginError");
+        document.getElementById(
+          "loginError"
+        );
 
       error.textContent = message;
-      error.classList.remove("hidden");
+
+      error.classList.remove(
+        "hidden"
+      );
     }
 
+
     function clearLoginError() {
+
       document
         .getElementById("loginError")
         .classList.add("hidden");
@@ -899,9 +1480,11 @@
       url,
       options = {}
     ) {
+
       const headers = {
         ...(options.headers || {}),
-        "x-novi-session": sessionToken
+        "x-novi-session":
+          sessionToken
       };
 
       return fetch(
@@ -919,6 +1502,7 @@
     // ======================================================
 
     async function unlock() {
+
       clearLoginError();
 
       const key =
@@ -928,6 +1512,7 @@
           .trim();
 
       if (!key) {
+
         showLoginError(
           "Enter your Novi key."
         );
@@ -941,34 +1526,49 @@
         );
 
       button.disabled = true;
-      button.textContent = "Checking...";
+
+      button.textContent =
+        "Checking...";
+
 
       try {
+
         const response =
           await fetch(
-            API_URL + "/api/verify",
+            API_URL +
+            "/api/verify",
             {
               method: "POST",
+
               headers: {
                 "Content-Type":
                   "application/json"
               },
-              body: JSON.stringify({
-                key,
-                deviceId
-              })
+
+              body:
+                JSON.stringify({
+                  key,
+                  deviceId
+                })
             }
           );
+
 
         const data =
           await response.json();
 
-        if (!response.ok || !data.success) {
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+
           throw new Error(
             data.error ||
             "Invalid key."
           );
         }
+
 
         sessionToken =
           data.session ||
@@ -981,6 +1581,7 @@
         expirationTime =
           data.expiresAt || null;
 
+
         localStorage.setItem(
           SESSION_KEY,
           sessionToken
@@ -991,15 +1592,20 @@
           currentKey
         );
 
+
         showDashboard();
 
       } catch (error) {
+
         showLoginError(
           error.message ||
           "Unable to unlock Novi."
         );
+
       } finally {
+
         button.disabled = false;
+
         button.textContent =
           "Unlock Novi";
       }
@@ -1011,6 +1617,7 @@
     // ======================================================
 
     function showDashboard() {
+
       document
         .getElementById("loginPage")
         .classList.add("hidden");
@@ -1019,8 +1626,14 @@
         .getElementById("dashboard")
         .classList.remove("hidden");
 
+
       updateKeyInfo();
+
       loadStock();
+
+      loadSavedItems();
+
+      startLiveUpdates();
     }
 
 
@@ -1029,17 +1642,21 @@
     // ======================================================
 
     function updateKeyInfo() {
+
       document.getElementById(
         "currentKey"
       ).textContent =
         currentKey || "—";
+
 
       document.getElementById(
         "deviceId"
       ).textContent =
         deviceId || "—";
 
+
       if (!expirationTime) {
+
         document.getElementById(
           "expiration"
         ).textContent =
@@ -1053,10 +1670,13 @@
         return;
       }
 
+
       const timestamp =
         Number(expirationTime);
 
+
       if (!Number.isFinite(timestamp)) {
+
         document.getElementById(
           "expiration"
         ).textContent =
@@ -1065,18 +1685,23 @@
         return;
       }
 
+
       const date =
         new Date(timestamp);
+
 
       document.getElementById(
         "expiration"
       ).textContent =
         date.toLocaleDateString();
 
+
       const remaining =
         timestamp - Date.now();
 
+
       if (remaining <= 0) {
+
         document.getElementById(
           "keyStatus"
         ).textContent =
@@ -1091,11 +1716,13 @@
         return;
       }
 
+
       const days =
         Math.ceil(
           remaining /
           (1000 * 60 * 60 * 24)
         );
+
 
       document.getElementById(
         "duration"
@@ -1109,46 +1736,61 @@
     // ======================================================
 
     async function loadStock() {
+
       const list =
         document.getElementById(
           "stockList"
         );
 
+
       try {
+
         const response =
           await authenticatedFetch(
             "/api/stock"
           );
 
-        if (response.status === 401) {
+
+        if (
+          response.status === 401
+        ) {
+
           forceLogout();
+
           return;
         }
 
+
         const data =
           await response.json();
+
 
         if (
           !response.ok ||
           !data.success
         ) {
+
           throw new Error(
             data.error ||
             "Failed to load stock."
           );
         }
 
+
         const stock =
           Array.isArray(data.stock)
             ? data.stock
             : [];
+
 
         document.getElementById(
           "stockCount"
         ).textContent =
           stock.length;
 
+
         if (!stock.length) {
+
           list.innerHTML = `
             <div class="empty">
               No stock available.
@@ -1158,37 +1800,51 @@
           return;
         }
 
+
         list.innerHTML =
           stock
             .map(item => {
+
               const value =
-                typeof item === "string"
-                  ? item
-                  : (
-                      item.stock_id ??
-                      item.value ??
-                      item.code ??
-                      ""
-                    );
+                getStockValue(item);
+
+              const saved =
+                isSaved(value);
+
 
               return `
                 <div class="stock-item">
+
                   <div class="stock-value">
                     ${escapeHtml(value)}
                   </div>
 
-                  <button
-                    class="copy-btn"
-                    onclick="copyValue(${JSON.stringify(value)})"
-                  >
-                    Copy
-                  </button>
+                  <div class="stock-actions">
+
+                    <button
+                      class="copy-btn"
+                      onclick='copyValue(${JSON.stringify(value)})'
+                    >
+                      Copy
+                    </button>
+
+                    <button
+                      class="save-btn ${saved ? "saved" : ""}"
+                      onclick='toggleSavedLogin(${JSON.stringify(value)})'
+                    >
+                      ${saved ? "✓ Saved" : "Save"}
+                    </button>
+
+                  </div>
+
                 </div>
               `;
             })
             .join("");
 
+
       } catch (error) {
+
         list.innerHTML = `
           <div class="empty">
             ${escapeHtml(
@@ -1206,17 +1862,21 @@
     // ======================================================
 
     async function generateStock() {
+
       const input =
         document.getElementById(
           "stockAmount"
         );
 
+
       let amount =
         Number(input.value);
+
 
       if (!Number.isFinite(amount)) {
         amount = 1;
       }
+
 
       amount =
         Math.max(
@@ -1227,73 +1887,100 @@
           )
         );
 
+
       input.value = amount;
+
 
       const button =
         document.querySelector(
           ".generate-btn"
         );
 
+
       button.disabled = true;
+
       button.textContent =
         "Generating...";
 
+
       try {
+
         const response =
           await authenticatedFetch(
             "/api/stock/generate",
             {
               method: "POST",
+
               headers: {
                 "Content-Type":
                   "application/json"
               },
-              body: JSON.stringify({
-                amount
-              })
+
+              body:
+                JSON.stringify({
+                  amount
+                })
             }
           );
 
-        if (response.status === 401) {
+
+        if (
+          response.status === 401
+        ) {
+
           forceLogout();
+
           return;
         }
 
+
         const data =
           await response.json();
+
 
         if (
           !response.ok ||
           !data.success
         ) {
+
           throw new Error(
             data.error ||
             "Generation failed."
           );
         }
 
+
         showGenerated(
           data.items || []
         );
+
 
         document.getElementById(
           "stockCount"
         ).textContent =
           data.stockRemaining ?? 0;
 
+
         await loadStock();
+
 
         showToast(
           `Generated ${data.generated} item${data.generated === 1 ? "" : "s"}`
         );
 
+
       } catch (error) {
+
         showToast(
           error.message ||
           "Unable to generate stock."
         );
+
+
       } finally {
+
         button.disabled = false;
+
         button.textContent =
           "Generate";
       }
@@ -1305,17 +1992,21 @@
     // ======================================================
 
     function showGenerated(items) {
+
       const section =
         document.getElementById(
           "generatedSection"
         );
+
 
       const list =
         document.getElementById(
           "generatedList"
         );
 
+
       if (!items.length) {
+
         section.classList.add(
           "hidden"
         );
@@ -1323,23 +2014,25 @@
         return;
       }
 
+
       list.innerHTML =
         items
           .map(item => {
+
             const value =
-              item.value ??
-              item.stock_id ??
-              "";
+              getStockValue(item);
+
 
             return `
-              <div
-                class="generated-item"
-              >
+              <div class="generated-item">
+
                 ${escapeHtml(value)}
+
               </div>
             `;
           })
           .join("");
+
 
       section.classList.remove(
         "hidden"
@@ -1348,19 +2041,444 @@
 
 
     // ======================================================
+    // SAVED LOGIN HELPERS
+    // ======================================================
+
+    function getSavedValue(item) {
+
+      if (typeof item === "string") {
+        return item;
+      }
+
+      if (!item || typeof item !== "object") {
+        return "";
+      }
+
+      return (
+        item.value ??
+        item.stock_id ??
+        item.code ??
+        item.item ??
+        ""
+      );
+    }
+
+
+    function isSaved(value) {
+
+      const target =
+        String(value).trim().toLowerCase();
+
+
+      return savedItems.some(item => {
+
+        return (
+          getSavedValue(item)
+            .trim()
+            .toLowerCase() === target
+        );
+      });
+    }
+
+
+    // ======================================================
+    // LOAD SAVED LOGINS
+    // ======================================================
+
+    async function loadSavedItems() {
+
+      const list =
+        document.getElementById(
+          "savedList"
+        );
+
+
+      try {
+
+        const response =
+          await authenticatedFetch(
+            "/api/saved-items"
+          );
+
+
+        if (
+          response.status === 401
+        ) {
+
+          forceLogout();
+
+          return;
+        }
+
+
+        const data =
+          await response.json();
+
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+
+          throw new Error(
+            data.error ||
+            "Failed to load saved logins."
+          );
+        }
+
+
+        savedItems =
+          Array.isArray(data.items)
+            ? data.items
+            : (
+                Array.isArray(data.saved)
+                  ? data.saved
+                  : []
+              );
+
+
+        renderSavedItems();
+
+
+        // Re-render stock buttons
+        // so saved buttons show correctly.
+        await loadStock();
+
+
+      } catch (error) {
+
+        list.innerHTML = `
+          <div class="empty">
+            ${escapeHtml(
+              error.message ||
+              "Unable to load saved logins."
+            )}
+        </div>
+        `;
+      }
+    }
+
+
+    // ======================================================
+    // RENDER SAVED LOGINS
+    // ======================================================
+
+    function renderSavedItems() {
+
+      const list =
+        document.getElementById(
+          "savedList"
+        );
+
+
+      const count =
+        document.getElementById(
+          "savedCount"
+        );
+
+
+      count.textContent =
+        savedItems.length;
+
+
+      if (!savedItems.length) {
+
+        list.innerHTML = `
+          <div class="empty">
+            No saved logins yet.
+          </div>
+        `;
+
+        return;
+      }
+
+
+      list.innerHTML =
+        savedItems
+          .map(item => {
+
+            const value =
+              getSavedValue(item);
+
+
+            const id =
+              item.id ||
+              item._id ||
+              "";
+
+
+            const created =
+              item.created_at ||
+              item.createdAt ||
+              null;
+
+
+            let dateText = "";
+
+
+            if (created) {
+
+              const date =
+                new Date(created);
+
+              if (
+                !Number.isNaN(
+                  date.getTime()
+                )
+              ) {
+
+                dateText =
+                  `Saved ${date.toLocaleString()}`;
+              }
+            }
+
+
+            return `
+              <div class="saved-item">
+
+                <div class="saved-main">
+
+                  <div class="saved-value">
+                    ${escapeHtml(value)}
+                  </div>
+
+                  ${
+                    dateText
+                      ? `
+                        <div class="saved-time">
+                          ${escapeHtml(dateText)}
+                        </div>
+                      `
+                      : ""
+                  }
+
+                </div>
+
+
+                <div class="saved-actions">
+
+                  <button
+                    class="copy-btn"
+                    onclick='copyValue(${JSON.stringify(value)})'
+                  >
+                    Copy
+                  </button>
+
+                  <button
+                    class="remove-btn"
+                    onclick='removeSavedLogin(${JSON.stringify(id)})'
+                  >
+                    Remove
+                  </button>
+
+                </div>
+
+              </div>
+            `;
+          })
+          .join("");
+    }
+
+
+    // ======================================================
+    // SAVE LOGIN
+    // ======================================================
+
+    async function toggleSavedLogin(value) {
+
+      if (!value) {
+
+        showToast(
+          "Nothing to save."
+        );
+
+        return;
+      }
+
+
+      const existing =
+        savedItems.find(item => {
+
+          return (
+            getSavedValue(item)
+              .trim()
+              .toLowerCase() ===
+            String(value)
+              .trim()
+              .toLowerCase()
+          );
+        });
+
+
+      // If already saved, remove it.
+      if (existing) {
+
+        await removeSavedLogin(
+          existing.id ||
+          existing._id
+        );
+
+        return;
+      }
+
+
+      try {
+
+        const response =
+          await authenticatedFetch(
+            "/api/saved-items",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body:
+                JSON.stringify({
+                  value
+                })
+            }
+          );
+
+
+        if (
+          response.status === 401
+        ) {
+
+          forceLogout();
+
+          return;
+        }
+
+
+        const data =
+          await response.json();
+
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+
+          throw new Error(
+            data.error ||
+            "Failed to save login."
+          );
+        }
+
+
+        showToast(
+          "Login saved."
+        );
+
+
+        await loadSavedItems();
+
+
+      } catch (error) {
+
+        showToast(
+          error.message ||
+          "Unable to save login."
+        );
+      }
+    }
+
+
+    // ======================================================
+    // REMOVE SAVED LOGIN
+    // ======================================================
+
+    async function removeSavedLogin(id) {
+
+      if (!id) {
+
+        showToast(
+          "Unable to remove saved login."
+        );
+
+        return;
+      }
+
+
+      try {
+
+        const response =
+          await authenticatedFetch(
+            "/api/saved-items/" +
+            encodeURIComponent(id),
+            {
+              method: "DELETE"
+            }
+          );
+
+
+        if (
+          response.status === 401
+        ) {
+
+          forceLogout();
+
+          return;
+        }
+
+
+        const data =
+          await response.json();
+
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+
+          throw new Error(
+            data.error ||
+            "Failed to remove saved login."
+          );
+        }
+
+
+        showToast(
+          "Saved login removed."
+        );
+
+
+        await loadSavedItems();
+
+
+      } catch (error) {
+
+        showToast(
+          error.message ||
+          "Unable to remove saved login."
+        );
+      }
+    }
+
+
+    // ======================================================
     // COPY
     // ======================================================
 
     async function copyValue(value) {
+
       try {
+
         await navigator.clipboard.writeText(
           String(value)
         );
 
+
         showToast(
           "Copied to clipboard."
         );
+
+
       } catch {
+
         showToast(
           "Copy failed."
         );
@@ -1369,12 +2487,333 @@
 
 
     // ======================================================
+    // LIVE WEBSOCKET
+    // ======================================================
+
+    function setLiveStatus(
+      connected,
+      message
+    ) {
+
+      const status =
+        document.getElementById(
+          "liveStatus"
+        );
+
+      const text =
+        document.getElementById(
+          "liveStatusText"
+        );
+
+
+      text.textContent =
+        message;
+
+
+      if (connected) {
+
+        status.classList.add(
+          "connected"
+        );
+
+      } else {
+
+        status.classList.remove(
+          "connected"
+        );
+      }
+    }
+
+
+    function startLiveUpdates() {
+
+      isLoggingOut = false;
+
+      connectWebSocket();
+
+      startFallbackRefresh();
+    }
+
+
+    function connectWebSocket() {
+
+      if (
+        isLoggingOut ||
+        !sessionToken
+      ) {
+        return;
+      }
+
+
+      if (
+        socket &&
+        (
+          socket.readyState ===
+          WebSocket.OPEN ||
+          socket.readyState ===
+          WebSocket.CONNECTING
+        )
+      ) {
+
+        return;
+      }
+
+
+      setLiveStatus(
+        false,
+        "Connecting"
+      );
+
+
+      const protocol =
+        location.protocol ===
+        "https:"
+          ? "wss:"
+          : "ws:";
+
+
+      const host =
+        location.host;
+
+
+      try {
+
+        socket =
+          new WebSocket(
+            `${protocol}//${host}/ws`
+          );
+
+
+        socket.onopen = () => {
+
+          socketReconnectDelay =
+            1000;
+
+
+          setLiveStatus(
+            true,
+            "Live"
+          );
+
+
+          document.getElementById(
+            "sessionStatus"
+          ).textContent =
+            "Connected";
+
+
+          // Immediately sync when
+          // WebSocket connects.
+          loadStock();
+        };
+
+
+        socket.onmessage =
+          async event => {
+
+            try {
+
+              const data =
+                JSON.parse(
+                  event.data
+                );
+
+
+              if (
+                data.type ===
+                "stock:update"
+              ) {
+
+                if (
+                  typeof data.count ===
+                  "number"
+                ) {
+
+                  document.getElementById(
+                    "stockCount"
+                  ).textContent =
+                    data.count;
+                }
+
+
+                // Fetch the actual list
+                // securely using the session.
+                await loadStock();
+              }
+
+
+              if (
+                data.type ===
+                "stock:count"
+              ) {
+
+                if (
+                  typeof data.count ===
+                  "number"
+                ) {
+
+                  document.getElementById(
+                    "stockCount"
+                  ).textContent =
+                    data.count;
+                }
+              }
+
+            } catch {
+
+              // Ignore malformed WS messages.
+            }
+          };
+
+
+        socket.onerror = () => {
+
+          setLiveStatus(
+            false,
+            "Reconnecting"
+          );
+        };
+
+
+        socket.onclose = () => {
+
+          if (isLoggingOut) {
+            return;
+          }
+
+
+          setLiveStatus(
+            false,
+            "Reconnecting"
+          );
+
+
+          scheduleWebSocketReconnect();
+        };
+
+
+      } catch {
+
+        scheduleWebSocketReconnect();
+      }
+    }
+
+
+    // ======================================================
+    // WEBSOCKET RECONNECT
+    // ======================================================
+
+    function scheduleWebSocketReconnect() {
+
+      if (isLoggingOut) {
+        return;
+      }
+
+
+      clearTimeout(
+        socketReconnectTimer
+      );
+
+
+      socketReconnectTimer =
+        setTimeout(() => {
+
+          connectWebSocket();
+
+          socketReconnectDelay =
+            Math.min(
+              socketReconnectDelay * 2,
+              15000
+            );
+
+        }, socketReconnectDelay);
+    }
+
+
+    // ======================================================
+    // FALLBACK REFRESH
+    // ======================================================
+
+    function startFallbackRefresh() {
+
+      clearInterval(
+        fallbackRefreshTimer
+      );
+
+
+      fallbackRefreshTimer =
+        setInterval(() => {
+
+          if (
+            isLoggingOut ||
+            !sessionToken
+          ) {
+            return;
+          }
+
+
+          // Only poll when the live
+          // WebSocket isn't connected.
+          if (
+            !socket ||
+            socket.readyState !==
+            WebSocket.OPEN
+          ) {
+
+            loadStock();
+          }
+
+        }, 5000);
+    }
+
+
+    // ======================================================
+    // STOP LIVE UPDATES
+    // ======================================================
+
+    function stopLiveUpdates() {
+
+      isLoggingOut = true;
+
+
+      clearTimeout(
+        socketReconnectTimer
+      );
+
+
+      clearInterval(
+        fallbackRefreshTimer
+      );
+
+
+      if (socket) {
+
+        try {
+          socket.close();
+        } catch {}
+      }
+
+
+      socket = null;
+
+
+      setLiveStatus(
+        false,
+        "Disconnected"
+      );
+    }
+
+
+    // ======================================================
     // LOGOUT
     // ======================================================
 
     async function logout() {
+
       try {
+
         if (sessionToken) {
+
           await authenticatedFetch(
             "/api/logout",
             {
@@ -1382,15 +2821,27 @@
             }
           );
         }
+
       } catch {}
+
 
       forceLogout();
     }
 
+
     function forceLogout() {
+
+      stopLiveUpdates();
+
+
       sessionToken = "";
+
       currentKey = "";
+
       expirationTime = null;
+
+      savedItems = [];
+
 
       localStorage.removeItem(
         SESSION_KEY
@@ -1400,22 +2851,41 @@
         KEY_STORAGE
       );
 
+
       document
         .getElementById("dashboard")
         .classList.add("hidden");
+
 
       document
         .getElementById("loginPage")
         .classList.remove("hidden");
 
+
       document
         .getElementById("keyInput")
         .value = "";
+
 
       document.getElementById(
         "sessionStatus"
       ).textContent =
         "Disconnected";
+
+
+      document.getElementById(
+        "savedCount"
+      ).textContent =
+        "0";
+
+
+      document.getElementById(
+        "savedList"
+      ).innerHTML = `
+        <div class="empty">
+          No saved logins yet.
+        </div>
+      `;
     }
 
 
@@ -1424,25 +2894,33 @@
     // ======================================================
 
     async function checkExistingSession() {
+
       if (!sessionToken) {
         return;
       }
 
+
       try {
+
         const response =
           await authenticatedFetch(
             "/api/stock"
           );
 
+
         if (!response.ok) {
+
           throw new Error(
             "Session invalid"
           );
         }
 
+
         showDashboard();
 
+
       } catch {
+
         forceLogout();
       }
     }
@@ -1457,9 +2935,11 @@
       .addEventListener(
         "keydown",
         event => {
+
           if (
             event.key === "Enter"
           ) {
+
             unlock();
           }
         }
@@ -1471,6 +2951,7 @@
     // ======================================================
 
     checkExistingSession();
+
   </script>
 
 </body>
