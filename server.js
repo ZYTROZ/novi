@@ -1,1788 +1,1343 @@
-<script>
+require("dotenv").config();
 
-const API_URL = "";
+const express = require("express");
+const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+const http = require("http");
+const WebSocket = require("ws");
 
-const SESSION_KEY = "noviSession";
-const KEY_STORAGE = "noviKey";
-const DEVICE_STORAGE = "noviDeviceId";
+const app = express();
+const server = http.createServer(app);
 
-let sessionToken =
-  localStorage.getItem(SESSION_KEY) || "";
+const PORT = Number(process.env.PORT) || 10000;
 
-let currentKey =
-  localStorage.getItem(KEY_STORAGE) || "";
+const PUBLIC_DIR = path.join(__dirname, "public");
+const KEY_FILE = path.join(__dirname, "keys.json");
+const STOCK_FILE = path.join(__dirname, "epicgames-stock.json");
+const SAVED_ITEMS_FILE = path.join(__dirname, "saved-items.json");
 
-let deviceId =
-  localStorage.getItem(DEVICE_STORAGE) || "";
+const ADMIN_SECRET = String(
+    process.env.NOVI_ADMIN_SECRET || ""
+).trim();
 
-let expirationTime = null;
+const SESSION_DURATION = 30 * 60 * 1000;
 
-let savedItems = [];
+/* =========================================================
+   MIDDLEWARE
+========================================================= */
 
-let socket = null;
+app.use(cors());
 
-let socketReconnectTimer = null;
+app.use(express.json({
+    limit: "5mb"
+}));
 
-let socketReconnectDelay = 1000;
+app.use(express.urlencoded({
+    extended: true,
+    limit: "5mb"
+}));
 
-let fallbackRefreshTimer = null;
+/* =========================================================
+   FILE HELPERS
+========================================================= */
 
-let isLoggingOut = false;
-
-
-/* ======================================================
-   DEVICE ID
-====================================================== */
-
-if (!deviceId) {
-
-  if (
-    window.crypto &&
-    typeof crypto.randomUUID === "function"
-  ) {
-
-    deviceId =
-      "device_" +
-      crypto.randomUUID();
-
-  } else {
-
-    deviceId =
-      "device_" +
-      Date.now() +
-      "_" +
-      Math.random()
-        .toString(36)
-        .slice(2);
-  }
-
-  localStorage.setItem(
-    DEVICE_STORAGE,
-    deviceId
-  );
+function ensureFile(file, defaultValue = []) {
+    try {
+        if (!fs.existsSync(file)) {
+            fs.writeFileSync(
+                file,
+                JSON.stringify(defaultValue, null, 2),
+                "utf8"
+            );
+        }
+    } catch (error) {
+        console.error("[FILE SETUP ERROR]", error);
+    }
 }
 
+function readJson(file, fallback = []) {
+    try {
+        ensureFile(file, fallback);
 
-/* ======================================================
-   HELPERS
-====================================================== */
+        const raw = fs.readFileSync(file, "utf8").trim();
 
-function escapeHtml(value) {
+        if (!raw) {
+            return fallback;
+        }
 
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+        return JSON.parse(raw);
+    } catch (error) {
+        console.error("[JSON READ ERROR]", file, error);
+        return fallback;
+    }
 }
 
+function writeJson(file, data) {
+    try {
+        fs.writeFileSync(
+            file,
+            JSON.stringify(data, null, 2),
+            "utf8"
+        );
 
-function getStockValue(item) {
+        return true;
+    } catch (error) {
+        console.error("[JSON WRITE ERROR]", file, error);
+        return false;
+    }
+}
 
-  if (typeof item === "string") {
+ensureFile(KEY_FILE, []);
+ensureFile(STOCK_FILE, []);
+ensureFile(SAVED_ITEMS_FILE, []);
+
+/* =========================================================
+   KEYS
+========================================================= */
+
+function readKeys() {
+    const data = readJson(KEY_FILE, []);
+
+    if (Array.isArray(data)) {
+        return data;
+    }
+
+    if (data && Array.isArray(data.keys)) {
+        return data.keys;
+    }
+
+    if (data && typeof data === "object") {
+        return Object.entries(data).map(([key, value]) => ({
+            key,
+            ...(value && typeof value === "object" ? value : {})
+        }));
+    }
+
+    return [];
+}
+
+function saveKeys(keys) {
+    return writeJson(KEY_FILE, keys);
+}
+
+/* =========================================================
+   STOCK
+========================================================= */
+
+function normalizeStockItem(value) {
+    if (value === null || value === undefined) {
+        return null;
+    }
+
+    const item = String(value).trim();
+
+    if (!item) {
+        return null;
+    }
+
     return item;
-  }
-
-  if (!item || typeof item !== "object") {
-    return "";
-  }
-
-  return (
-    item.stock_id ??
-    item.stockId ??
-    item.value ??
-    item.code ??
-    item.item ??
-    item.id ??
-    ""
-  );
 }
 
-
-function showToast(message) {
-
-  const toast =
-    document.getElementById("toast");
-
-  if (!toast) {
-    return;
-  }
-
-  toast.textContent = String(message);
-
-  toast.classList.add("show");
-
-  clearTimeout(showToast.timeout);
-
-  showToast.timeout =
-    setTimeout(() => {
-
-      toast.classList.remove("show");
-
-    }, 2500);
-}
-
-
-function showLoginError(message) {
-
-  const error =
-    document.getElementById("loginError");
-
-  error.textContent =
-    String(message);
-
-  error.classList.remove("hidden");
-}
-
-
-function clearLoginError() {
-
-  document
-    .getElementById("loginError")
-    .classList.add("hidden");
-}
-
-
-/* ======================================================
-   AUTH FETCH
-====================================================== */
-
-async function authenticatedFetch(
-  url,
-  options = {}
-) {
-
-  const headers = {
-    ...(options.headers || {}),
-    "x-novi-session": sessionToken
-  };
-
-  return fetch(
-    API_URL + url,
-    {
-      ...options,
-      headers
-    }
-  );
-}
-
-
-/* ======================================================
-   LOGIN
-====================================================== */
-
-async function unlock() {
-
-  clearLoginError();
-
-  const key =
-    document
-      .getElementById("keyInput")
-      .value
-      .trim();
-
-  if (!key) {
-
-    showLoginError(
-      "Enter your Novi key."
-    );
-
-    return;
-  }
-
-  const button =
-    document.getElementById(
-      "unlockBtn"
-    );
-
-  button.disabled = true;
-
-  button.textContent =
-    "Checking...";
-
-  try {
-
-    const response =
-      await fetch(
-        API_URL + "/api/verify",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({
-              key,
-              deviceId
-            })
-        }
-      );
-
-    let data = {};
-
-    try {
-      data = await response.json();
-    } catch {
-      data = {};
-    }
-
-    if (
-      !response.ok ||
-      !data.success
-    ) {
-
-      throw new Error(
-        data.message ||
-        data.error ||
-        "Invalid key."
-      );
-    }
-
-    /*
-     * Your server returns:
-     *
-     * sessionToken
-     * key
-     * expiresAt
-     */
-
-    sessionToken =
-      data.sessionToken ||
-      data.session ||
-      data.token ||
-      "";
-
-    currentKey =
-      data.key?.key ||
-      data.key ||
-      key;
-
-    expirationTime =
-      data.key?.expiresAt ||
-      data.expiresAt ||
-      null;
-
-    if (!sessionToken) {
-
-      throw new Error(
-        "Server did not return a session token."
-      );
-    }
-
-    localStorage.setItem(
-      SESSION_KEY,
-      sessionToken
-    );
-
-    localStorage.setItem(
-      KEY_STORAGE,
-      currentKey
-    );
-
-    showDashboard();
-
-  } catch (error) {
-
-    console.error(
-      "[NOVI] Login error:",
-      error
-    );
-
-    showLoginError(
-      error.message ||
-      "Unable to unlock Novi."
-    );
-
-  } finally {
-
-    button.disabled = false;
-
-    button.textContent =
-      "Unlock Novi";
-  }
-}
-
-
-/* ======================================================
-   DASHBOARD
-====================================================== */
-
-function showDashboard() {
-
-  document
-    .getElementById("loginPage")
-    .classList.add("hidden");
-
-  document
-    .getElementById("dashboard")
-    .classList.remove("hidden");
-
-  updateKeyInfo();
-
-  loadStock();
-
-  /*
-   * Saved Items is optional.
-   *
-   * Your current server.js does not
-   * contain saved-item endpoints, so
-   * don't let that failure log you out.
-   */
-
-  loadSavedItems();
-
-  startLiveUpdates();
-}
-
-
-/* ======================================================
-   KEY INFO
-====================================================== */
-
-function updateKeyInfo() {
-
-  document.getElementById(
-    "currentKey"
-  ).textContent =
-    currentKey || "—";
-
-  document.getElementById(
-    "deviceId"
-  ).textContent =
-    deviceId || "—";
-
-  if (!expirationTime) {
-
-    document.getElementById(
-      "expiration"
-    ).textContent =
-      "Lifetime";
-
-    document.getElementById(
-      "duration"
-    ).textContent =
-      "Lifetime";
-
-    return;
-  }
-
-  let timestamp =
-    Number(expirationTime);
-
-  if (!Number.isFinite(timestamp)) {
-
-    timestamp =
-      new Date(
-        expirationTime
-      ).getTime();
-  }
-
-  if (!Number.isFinite(timestamp)) {
-
-    document.getElementById(
-      "expiration"
-    ).textContent =
-      "Unknown";
-
-    document.getElementById(
-      "duration"
-    ).textContent =
-      "Unknown";
-
-    return;
-  }
-
-  const date =
-    new Date(timestamp);
-
-  document.getElementById(
-    "expiration"
-  ).textContent =
-    date.toLocaleDateString();
-
-  const remaining =
-    timestamp - Date.now();
-
-  if (remaining <= 0) {
-
-    document.getElementById(
-      "keyStatus"
-    ).textContent =
-      "Expired";
-
-    document.getElementById(
-      "keyStatus"
-    ).classList.remove(
-      "online"
-    );
-
-    document.getElementById(
-      "duration"
-    ).textContent =
-      "Expired";
-
-    return;
-  }
-
-  const days =
-    Math.ceil(
-      remaining /
-      (1000 * 60 * 60 * 24)
-    );
-
-  document.getElementById(
-    "duration"
-  ).textContent =
-    `${days} day${days === 1 ? "" : "s"} remaining`;
-}
-
-
-/* ======================================================
-   LOAD STOCK COUNT
-====================================================== */
-
-async function loadStock() {
-
-  const countElement =
-    document.getElementById(
-      "stockCount"
-    );
-
-  const statusText =
-    document.getElementById(
-      "stockStatusText"
-    );
-
-  try {
-
-    const response =
-      await authenticatedFetch(
-        "/api/stock"
-      );
-
-    /*
-     * ONLY a real 401 means the
-     * server rejected the session.
-     */
-
-    if (
-      response.status === 401
-    ) {
-
-      console.warn(
-        "[NOVI] Session expired."
-      );
-
-      forceLogout();
-
-      return;
-    }
-
-    let data = {};
-
-    try {
-      data = await response.json();
-    } catch {
-      data = {};
-    }
-
-    if (
-      !response.ok ||
-      !data.success
-    ) {
-
-      throw new Error(
-        data.message ||
-        data.error ||
-        "Failed to load stock."
-      );
-    }
-
-    const count =
-      Number(data.count);
-
-    const safeCount =
-      Number.isFinite(count) &&
-      count >= 0
-        ? count
-        : 0;
-
-    countElement.textContent =
-      safeCount;
-
-    if (safeCount === 0) {
-
-      statusText.textContent =
-        "No stock available right now.";
-
+function readStock() {
+    const data = readJson(STOCK_FILE, []);
+
+    let stock;
+
+    if (Array.isArray(data)) {
+        stock = data;
+    } else if (data && Array.isArray(data.stock)) {
+        stock = data.stock;
     } else {
-
-      statusText.textContent =
-        "Click Generate to receive one item.";
+        stock = [];
     }
 
-  } catch (error) {
-
-    /*
-     * IMPORTANT:
-     *
-     * Do NOT call forceLogout()
-     * here unless response.status
-     * was specifically 401.
-     */
-
-    console.error(
-      "[NOVI] Stock load error:",
-      error
-    );
-
-    countElement.textContent =
-      "—";
-
-    statusText.textContent =
-      error.message ||
-      "Unable to load stock.";
-  }
+    return stock
+        .map(normalizeStockItem)
+        .filter(Boolean);
 }
 
-
-/* ======================================================
-   GENERATE ONE ITEM
-====================================================== */
-
-async function generateStock() {
-
-  const button =
-    document.getElementById(
-      "generateButton"
-    );
-
-  if (!button || button.disabled) {
-    return;
-  }
-
-  button.disabled = true;
-
-  button.textContent =
-    "Generating...";
-
-  try {
-
-    const response =
-      await authenticatedFetch(
-        "/api/stock/generate",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({})
-        }
-      );
-
-    /*
-     * Only 401 logs the user out.
-     */
-
-    if (
-      response.status === 401
-    ) {
-
-      forceLogout();
-
-      return;
-    }
-
-    let data = {};
-
-    try {
-      data = await response.json();
-    } catch {
-      data = {};
-    }
-
-    if (
-      !response.ok ||
-      !data.success
-    ) {
-
-      throw new Error(
-        data.message ||
-        data.error ||
-        "Unable to generate item."
-      );
-    }
-
-    /*
-     * YOUR SERVER RETURNS:
-     *
-     * {
-     *   success: true,
-     *   item: "...",
-     *   remaining: 5
-     * }
-     *
-     * NOT:
-     *
-     * items
-     * stockRemaining
-     */
-
-    if (
-      data.item === null ||
-      data.item === undefined ||
-      String(data.item).trim() === ""
-    ) {
-
-      document.getElementById(
-        "stockCount"
-      ).textContent =
-        "0";
-
-      document.getElementById(
-        "stockStatusText"
-      ).textContent =
-        "No stock available right now.";
-
-      showToast(
-        "No stock available."
-      );
-
-      return;
-    }
-
-    /*
-     * Display the exact item returned
-     * by the backend.
-     */
-
-    showGenerated([
-      data.item
-    ]);
-
-    /*
-     * Update stock counter.
-     */
-
-    const remaining =
-      Number(data.remaining);
-
-    if (
-      Number.isFinite(remaining) &&
-      remaining >= 0
-    ) {
-
-      document.getElementById(
-        "stockCount"
-      ).textContent =
-        remaining;
-
-    } else {
-
-      await loadStock();
-    }
-
-    const statusText =
-      document.getElementById(
-        "stockStatusText"
-      );
-
-    if (
-      Number.isFinite(remaining) &&
-      remaining === 0
-    ) {
-
-      statusText.textContent =
-        "No stock available right now.";
-
-    } else {
-
-      statusText.textContent =
-        "Click Generate to receive another item.";
-    }
-
-    showToast(
-      "Generated 1 item."
-    );
-
-  } catch (error) {
-
-    console.error(
-      "[NOVI] Generate error:",
-      error
-    );
-
-    showToast(
-      error.message ||
-      "Unable to generate stock."
-    );
-
-    /*
-     * Refresh the count, but DON'T
-     * log the user out because of a
-     * normal generation error.
-     */
-
-    await loadStock();
-
-  } finally {
-
-    button.disabled = false;
-
-    button.textContent =
-      "Generate";
-  }
+function saveStock(stock) {
+    return writeJson(STOCK_FILE, stock);
 }
 
-
-/* ======================================================
-   SHOW GENERATED ITEM
-====================================================== */
-
-function showGenerated(items) {
-
-  const section =
-    document.getElementById(
-      "generatedSection"
-    );
-
-  const list =
-    document.getElementById(
-      "generatedList"
-    );
-
-  if (
-    !Array.isArray(items) ||
-    !items.length
-  ) {
-
-    section.classList.add(
-      "hidden"
-    );
-
-    return;
-  }
-
-  const value =
-    getStockValue(items[0]);
-
-  if (!value) {
-
-    section.classList.add(
-      "hidden"
-    );
-
-    return;
-  }
-
-  list.innerHTML = `
-    <div class="generated-item">
-
-      <div class="generated-value">
-        ${escapeHtml(value)}
-      </div>
-
-      <button
-        class="generated-copy"
-        onclick="copyValue(this.dataset.value)"
-        data-value="${escapeHtml(value)}"
-      >
-        Copy
-      </button>
-
-    </div>
-  `;
-
-  section.classList.remove(
-    "hidden"
-  );
-}
-
-
-/* ======================================================
-   SAVED ITEM HELPERS
-====================================================== */
-
-function getSavedValue(item) {
-
-  if (typeof item === "string") {
-    return item;
-  }
-
-  if (!item || typeof item !== "object") {
-    return "";
-  }
-
-  return (
-    item.value ??
-    item.stock_id ??
-    item.stockId ??
-    item.code ??
-    item.item ??
-    ""
-  );
-}
-
-
-/* ======================================================
-   LOAD SAVED ITEMS
-====================================================== */
-
-async function loadSavedItems() {
-
-  const list =
-    document.getElementById(
-      "savedList"
-    );
-
-  /*
-   * The server.js you sent does not
-   * currently have /api/saved-items.
-   *
-   * Treat 404 as "feature unavailable"
-   * instead of an authentication failure.
-   */
-
-  try {
-
-    const response =
-      await authenticatedFetch(
-        "/api/saved-items"
-      );
-
-    if (
-      response.status === 401
-    ) {
-
-      forceLogout();
-
-      return;
-    }
-
-    if (
-      response.status === 404
-    ) {
-
-      savedItems = [];
-
-      renderSavedItems();
-
-      return;
-    }
-
-    let data = {};
-
-    try {
-      data = await response.json();
-    } catch {
-      data = {};
-    }
-
-    if (
-      !response.ok ||
-      !data.success
-    ) {
-
-      throw new Error(
-        data.message ||
-        data.error ||
-        "Failed to load saved items."
-      );
-    }
-
-    savedItems =
-      Array.isArray(data.items)
-        ? data.items
-        : (
-            Array.isArray(data.saved)
-              ? data.saved
-              : []
-          );
-
-    renderSavedItems();
-
-  } catch (error) {
-
-    console.warn(
-      "[NOVI] Saved items unavailable:",
-      error.message
-    );
-
-    savedItems = [];
-
-    renderSavedItems();
-  }
-}
-
-
-/* ======================================================
-   RENDER SAVED ITEMS
-====================================================== */
-
-function renderSavedItems() {
-
-  const list =
-    document.getElementById(
-      "savedList"
-    );
-
-  const count =
-    document.getElementById(
-      "savedCount"
-    );
-
-  count.textContent =
-    savedItems.length;
-
-  if (!savedItems.length) {
-
-    list.innerHTML = `
-      <div class="empty">
-        No saved items yet.
-      </div>
-    `;
-
-    return;
-  }
-
-  list.innerHTML =
-    savedItems
-      .map(item => {
-
-        const value =
-          getSavedValue(item);
-
-        const id =
-          item.id ||
-          item._id ||
-          "";
-
-        const created =
-          item.created_at ||
-          item.createdAt ||
-          null;
-
-        let dateText = "";
-
-        if (created) {
-
-          const date =
-            new Date(created);
-
-          if (
-            !Number.isNaN(
-              date.getTime()
-            )
-          ) {
-
-            dateText =
-              `Saved ${date.toLocaleString()}`;
-          }
-        }
-
-        return `
-          <div class="saved-item">
-
-            <div class="saved-main">
-
-              <div class="saved-value">
-                ${escapeHtml(value)}
-              </div>
-
-              ${
-                dateText
-                  ? `
-                    <div class="saved-time">
-                      ${escapeHtml(dateText)}
-                    </div>
-                  `
-                  : ""
-              }
-
-            </div>
-
-            <div class="saved-actions">
-
-              <button
-                class="copy-btn"
-                onclick="copyValue(this.dataset.value)"
-                data-value="${escapeHtml(value)}"
-              >
-                Copy
-              </button>
-
-              <button
-                class="remove-btn"
-                onclick="removeSavedItem(this.dataset.id)"
-                data-id="${escapeHtml(id)}"
-              >
-                Remove
-              </button>
-
-            </div>
-
-          </div>
-        `;
-      })
-      .join("");
-}
-
-
-/* ======================================================
-   SAVE ITEM
-====================================================== */
-
-async function toggleSavedItem(value) {
-
-  if (!value) {
-
-    showToast(
-      "Nothing to save."
-    );
-
-    return;
-  }
-
-  const existing =
-    savedItems.find(item => {
-
-      return (
-        getSavedValue(item)
-          .trim()
-          .toLowerCase() ===
-        String(value)
-          .trim()
-          .toLowerCase()
-      );
+/* =========================================================
+   WEBSOCKET STOCK UPDATES
+========================================================= */
+
+const wss = new WebSocket.Server({
+    server,
+    path: "/ws"
+});
+
+function broadcastStockCount() {
+    const count = readStock().length;
+
+    const message = JSON.stringify({
+        type: "stock:update",
+        count
     });
 
-  if (existing) {
-
-    await removeSavedItem(
-      existing.id ||
-      existing._id
-    );
-
-    return;
-  }
-
-  try {
-
-    const response =
-      await authenticatedFetch(
-        "/api/saved-items",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({
-              value
-            })
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            try {
+                client.send(message);
+            } catch (error) {
+                console.error("[WS SEND ERROR]", error);
+            }
         }
-      );
-
-    if (
-      response.status === 401
-    ) {
-
-      forceLogout();
-
-      return;
-    }
-
-    if (
-      response.status === 404
-    ) {
-
-      showToast(
-        "Saved Items is not enabled on the server."
-      );
-
-      return;
-    }
-
-    let data = {};
-
-    try {
-      data = await response.json();
-    } catch {
-      data = {};
-    }
-
-    if (
-      !response.ok ||
-      !data.success
-    ) {
-
-      throw new Error(
-        data.message ||
-        data.error ||
-        "Failed to save item."
-      );
-    }
-
-    showToast(
-      "Item saved."
-    );
-
-    await loadSavedItems();
-
-  } catch (error) {
-
-    showToast(
-      error.message ||
-      "Unable to save item."
-    );
-  }
+    });
 }
 
+wss.on("connection", ws => {
+    try {
+        ws.send(JSON.stringify({
+            type: "stock:update",
+            count: readStock().length
+        }));
+    } catch (error) {
+        console.error("[WS CONNECTION ERROR]", error);
+    }
+});
 
-/* ======================================================
-   REMOVE SAVED ITEM
-====================================================== */
+/* =========================================================
+   WATCH STOCK FILE
+========================================================= */
 
-async function removeSavedItem(id) {
+let lastStockMtime = 0;
 
-  if (!id) {
+try {
+    if (fs.existsSync(STOCK_FILE)) {
+        lastStockMtime = fs.statSync(STOCK_FILE).mtimeMs;
+    }
+} catch {}
 
-    showToast(
-      "Unable to remove saved item."
-    );
-
-    return;
-  }
-
-  try {
-
-    const response =
-      await authenticatedFetch(
-        "/api/saved-items/" +
-        encodeURIComponent(id),
-        {
-          method: "DELETE"
+setInterval(() => {
+    try {
+        if (!fs.existsSync(STOCK_FILE)) {
+            return;
         }
-      );
+
+        const stat = fs.statSync(STOCK_FILE);
+
+        if (stat.mtimeMs !== lastStockMtime) {
+            lastStockMtime = stat.mtimeMs;
+            broadcastStockCount();
+        }
+    } catch (error) {
+        console.error("[STOCK WATCH ERROR]", error);
+    }
+}, 1000);
+
+/* =========================================================
+   ADMIN AUTH
+========================================================= */
+
+function requireAdmin(req, res, next) {
+    if (!ADMIN_SECRET) {
+        return res.status(500).json({
+            success: false,
+            message: "NOVI_ADMIN_SECRET is not configured."
+        });
+    }
+
+    const provided = String(
+        req.headers["x-novi-admin-secret"] || ""
+    ).trim();
+
+    if (!provided) {
+        return res.status(401).json({
+            success: false,
+            message: "Missing admin secret."
+        });
+    }
+
+    const expectedBuffer = Buffer.from(ADMIN_SECRET);
+    const providedBuffer = Buffer.from(provided);
 
     if (
-      response.status === 401
+        expectedBuffer.length !== providedBuffer.length ||
+        !crypto.timingSafeEqual(
+            expectedBuffer,
+            providedBuffer
+        )
     ) {
-
-      forceLogout();
-
-      return;
+        return res.status(403).json({
+            success: false,
+            message: "Invalid admin secret."
+        });
     }
 
-    if (
-      response.status === 404
-    ) {
+    next();
+}
 
-      showToast(
-        "Saved Items is not enabled on the server."
-      );
+/* =========================================================
+   KEY DURATIONS
+========================================================= */
 
-      return;
+const DURATIONS = {
+    "1d": {
+        name: "1 Day",
+        ms: 24 * 60 * 60 * 1000
+    },
+
+    "3d": {
+        name: "3 Days",
+        ms: 3 * 24 * 60 * 60 * 1000
+    },
+
+    "1week": {
+        name: "1 Week",
+        ms: 7 * 24 * 60 * 60 * 1000
+    },
+
+    "1month": {
+        name: "1 Month",
+        ms: 30 * 24 * 60 * 60 * 1000
+    },
+
+    "lifetime": {
+        name: "Lifetime",
+        ms: null
     }
+};
 
-    let data = {};
+/* =========================================================
+   KEY GENERATOR
+========================================================= */
 
-    try {
-      data = await response.json();
-    } catch {
-      data = {};
-    }
+function generateKey() {
+    const a = crypto
+        .randomBytes(3)
+        .toString("hex")
+        .toUpperCase();
 
-    if (
-      !response.ok ||
-      !data.success
-    ) {
+    const b = crypto
+        .randomBytes(3)
+        .toString("hex")
+        .toUpperCase();
 
-      throw new Error(
-        data.message ||
-        data.error ||
-        "Failed to remove saved item."
-      );
-    }
+    const c = crypto
+        .randomBytes(3)
+        .toString("hex")
+        .toUpperCase();
 
-    showToast(
-      "Saved item removed."
-    );
-
-    await loadSavedItems();
-
-  } catch (error) {
-
-    showToast(
-      error.message ||
-      "Unable to remove saved item."
-    );
-  }
+    return `NOVI-${a}-${b}-${c}`;
 }
 
+function createKey(duration) {
+    const info = DURATIONS[duration];
+    const now = Date.now();
 
-/* ======================================================
-   COPY
-====================================================== */
+    const expiresAt =
+        info.ms === null
+            ? null
+            : new Date(
+                now + info.ms
+            ).toISOString();
 
-async function copyValue(value) {
-
-  try {
-
-    await navigator.clipboard.writeText(
-      String(value)
-    );
-
-    showToast(
-      "Copied to clipboard."
-    );
-
-  } catch (error) {
-
-    console.error(
-      "[NOVI] Copy error:",
-      error
-    );
-
-    showToast(
-      "Copy failed."
-    );
-  }
-}
-
-
-/* ======================================================
-   LIVE STATUS
-====================================================== */
-
-function setLiveStatus(
-  connected,
-  message
-) {
-
-  const status =
-    document.getElementById(
-      "liveStatus"
-    );
-
-  const text =
-    document.getElementById(
-      "liveStatusText"
-    );
-
-  if (!status || !text) {
-    return;
-  }
-
-  text.textContent =
-    message;
-
-  if (connected) {
-
-    status.classList.add(
-      "connected"
-    );
-
-  } else {
-
-    status.classList.remove(
-      "connected"
-    );
-  }
-}
-
-
-/* ======================================================
-   LIVE UPDATES
-====================================================== */
-
-function startLiveUpdates() {
-
-  isLoggingOut = false;
-
-  connectWebSocket();
-
-  startFallbackRefresh();
-}
-
-
-function connectWebSocket() {
-
-  if (
-    isLoggingOut ||
-    !sessionToken
-  ) {
-    return;
-  }
-
-  if (
-    socket &&
-    (
-      socket.readyState ===
-      WebSocket.OPEN ||
-
-      socket.readyState ===
-      WebSocket.CONNECTING
-    )
-  ) {
-
-    return;
-  }
-
-  setLiveStatus(
-    false,
-    "Connecting"
-  );
-
-  const protocol =
-    location.protocol ===
-    "https:"
-      ? "wss:"
-      : "ws:";
-
-  const host =
-    location.host;
-
-  try {
-
-    socket =
-      new WebSocket(
-        `${protocol}//${host}/ws`
-      );
-
-    socket.onopen = () => {
-
-      socketReconnectDelay =
-        1000;
-
-      setLiveStatus(
-        true,
-        "Live"
-      );
-
-      document.getElementById(
-        "sessionStatus"
-      ).textContent =
-        "Connected";
-
-      loadStock();
+    return {
+        key: generateKey(),
+        duration,
+        durationName: info.name,
+        createdAt: new Date(now).toISOString(),
+        expiresAt,
+        activatedAt: null,
+        deviceId: null
     };
+}
 
+/* =========================================================
+   SESSIONS
+========================================================= */
 
-    socket.onmessage =
-      event => {
+const sessions = new Map();
 
+function createSession(key, deviceId) {
+    const token = crypto
+        .randomBytes(32)
+        .toString("hex");
+
+    const expiresAt =
+        Date.now() + SESSION_DURATION;
+
+    sessions.set(token, {
+        key,
+        deviceId,
+        expiresAt
+    });
+
+    return {
+        sessionToken: token,
+        expiresAt
+    };
+}
+
+function getSession(req) {
+    const token = String(
+        req.headers["x-novi-session"] || ""
+    ).trim();
+
+    if (!token) {
+        return null;
+    }
+
+    const session = sessions.get(token);
+
+    if (!session) {
+        return null;
+    }
+
+    if (Date.now() >= session.expiresAt) {
+        sessions.delete(token);
+        return null;
+    }
+
+    return {
+        token,
+        ...session
+    };
+}
+
+function requireSession(req, res, next) {
+    const session = getSession(req);
+
+    if (!session) {
+        return res.status(401).json({
+            success: false,
+            message: "Your session has expired."
+        });
+    }
+
+    req.noviSession = session;
+
+    next();
+}
+
+/* =========================================================
+   HEALTH
+========================================================= */
+
+app.get("/health", (req, res) => {
+    res.json({
+        success: true,
+        status: "online",
+        service: "Novi",
+        timestamp: new Date().toISOString()
+    });
+});
+
+/* =========================================================
+   API INFO
+========================================================= */
+
+app.get("/api", (req, res) => {
+    res.json({
+        success: true,
+        name: "Novi API",
+        status: "online"
+    });
+});
+
+/* =========================================================
+   GENERATE KEY
+========================================================= */
+
+app.post("/api/keys", requireAdmin, (req, res) => {
+    try {
+        const duration = String(
+            req.body?.duration || ""
+        )
+            .trim()
+            .toLowerCase();
+
+        if (!DURATIONS[duration]) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Invalid duration. Use 1d, 3d, 1week, 1month, or lifetime."
+            });
+        }
+
+        const keys = readKeys();
+        const keyRecord = createKey(duration);
+
+        keys.push(keyRecord);
+
+        if (!saveKeys(keys)) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to save generated key."
+            });
+        }
+
+        return res.status(201).json({
+            success: true,
+            key: keyRecord.key,
+            duration: keyRecord.duration,
+            durationName: keyRecord.durationName,
+            createdAt: keyRecord.createdAt,
+            expiresAt: keyRecord.expiresAt
+        });
+
+    } catch (error) {
+        console.error("[GENERATE KEY ERROR]", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to generate key."
+        });
+    }
+});
+
+/* =========================================================
+   GET KEYS
+========================================================= */
+
+app.get("/api/keys", requireAdmin, (req, res) => {
+    try {
+        const keys = readKeys();
+
+        res.json({
+            success: true,
+            count: keys.length,
+            keys
+        });
+
+    } catch (error) {
+        console.error("[GET KEYS ERROR]", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to read keys."
+        });
+    }
+});
+
+/* =========================================================
+   DELETE KEY
+========================================================= */
+
+app.delete("/api/keys/:key", requireAdmin, (req, res) => {
+    try {
+        const requestedKey = String(
+            req.params.key || ""
+        )
+            .trim()
+            .toUpperCase();
+
+        const keys = readKeys();
+
+        const filtered = keys.filter(item => {
+            return String(
+                item?.key || ""
+            )
+                .trim()
+                .toUpperCase() !== requestedKey;
+        });
+
+        if (filtered.length === keys.length) {
+            return res.status(404).json({
+                success: false,
+                message: "Key not found."
+            });
+        }
+
+        if (!saveKeys(filtered)) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to save keys."
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Key deleted."
+        });
+
+    } catch (error) {
+        console.error("[DELETE KEY ERROR]", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to delete key."
+        });
+    }
+});
+
+/* =========================================================
+   VERIFY KEY
+========================================================= */
+
+app.post("/api/verify", (req, res) => {
+    try {
+        const key = String(
+            req.body?.key || ""
+        )
+            .trim()
+            .toUpperCase();
+
+        const deviceId = String(
+            req.body?.deviceId || ""
+        ).trim();
+
+        if (!key) {
+            return res.status(400).json({
+                success: false,
+                valid: false,
+                message: "Key is required."
+            });
+        }
+
+        if (!deviceId) {
+            return res.status(400).json({
+                success: false,
+                valid: false,
+                message: "Device ID is required."
+            });
+        }
+
+        const keys = readKeys();
+
+        const keyRecord = keys.find(item => {
+            return String(
+                item?.key || ""
+            )
+                .trim()
+                .toUpperCase() === key;
+        });
+
+        if (!keyRecord) {
+            return res.status(404).json({
+                success: false,
+                valid: false,
+                message: "Invalid key."
+            });
+        }
+
+        if (
+            keyRecord.expiresAt &&
+            Date.now() >=
+                new Date(
+                    keyRecord.expiresAt
+                ).getTime()
+        ) {
+            return res.status(403).json({
+                success: false,
+                valid: false,
+                message: "This key has expired."
+            });
+        }
+
+        if (!keyRecord.deviceId) {
+            keyRecord.deviceId = deviceId;
+            keyRecord.activatedAt =
+                new Date().toISOString();
+
+            saveKeys(keys);
+
+        } else if (
+            String(keyRecord.deviceId) !== deviceId
+        ) {
+            return res.status(403).json({
+                success: false,
+                valid: false,
+                message:
+                    "This key is already linked to another device."
+            });
+        }
+
+        const session = createSession(
+            keyRecord.key,
+            deviceId
+        );
+
+        /*
+         * sessionToken is the main property.
+         * session/token are included for compatibility
+         * with older Novi frontends.
+         */
+
+        res.json({
+            success: true,
+            valid: true,
+
+            sessionToken:
+                session.sessionToken,
+
+            session:
+                session.sessionToken,
+
+            token:
+                session.sessionToken,
+
+            expiresAt:
+                session.expiresAt,
+
+            key: {
+                key: keyRecord.key,
+                duration: keyRecord.duration,
+                durationName: keyRecord.durationName,
+                createdAt: keyRecord.createdAt,
+                expiresAt: keyRecord.expiresAt,
+                activatedAt: keyRecord.activatedAt
+            }
+        });
+
+    } catch (error) {
+        console.error("[VERIFY ERROR]", error);
+
+        res.status(500).json({
+            success: false,
+            valid: false,
+            message: "Verification failed."
+        });
+    }
+});
+
+/* =========================================================
+   ADD ONE STOCK ITEM
+========================================================= */
+
+app.post("/api/stock/add", requireAdmin, (req, res) => {
+    try {
+        const item = normalizeStockItem(
+            req.body?.item
+        );
+
+        if (!item) {
+            return res.status(400).json({
+                success: false,
+                message: "Item is required."
+            });
+        }
+
+        const stock = readStock();
+
+        const exists = stock.some(existing => {
+            return String(existing).trim() === item;
+        });
+
+        if (exists) {
+            return res.json({
+                success: true,
+                added: 0,
+                duplicates: 1,
+                count: stock.length
+            });
+        }
+
+        stock.push(item);
+
+        if (!saveStock(stock)) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to save stock."
+            });
+        }
+
+        broadcastStockCount();
+
+        res.json({
+            success: true,
+            added: 1,
+            duplicates: 0,
+            count: stock.length
+        });
+
+    } catch (error) {
+        console.error("[STOCK ADD ERROR]", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to add stock."
+        });
+    }
+});
+
+/* =========================================================
+   ADD MANY STOCK ITEMS
+========================================================= */
+
+app.post("/api/stock/add-many", requireAdmin, (req, res) => {
+    try {
+        let items = req.body?.items;
+
+        if (!Array.isArray(items)) {
+            return res.status(400).json({
+                success: false,
+                message: "items must be an array."
+            });
+        }
+
+        const stock = readStock();
+
+        let added = 0;
+        let duplicates = 0;
+
+        for (const rawItem of items) {
+            const item = normalizeStockItem(rawItem);
+
+            if (!item) {
+                continue;
+            }
+
+            const exists = stock.some(existing => {
+                return String(existing).trim() === item;
+            });
+
+            if (exists) {
+                duplicates++;
+                continue;
+            }
+
+            stock.push(item);
+            added++;
+        }
+
+        if (!saveStock(stock)) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to save stock."
+            });
+        }
+
+        broadcastStockCount();
+
+        res.json({
+            success: true,
+            added,
+            duplicates,
+            count: stock.length
+        });
+
+    } catch (error) {
+        console.error("[STOCK ADD MANY ERROR]", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to add stock."
+        });
+    }
+});
+
+/* =========================================================
+   ADMIN STOCK
+========================================================= */
+
+app.get("/api/admin/stock", requireAdmin, (req, res) => {
+    try {
+        const stock = readStock();
+
+        res.json({
+            success: true,
+            count: stock.length,
+            stock
+        });
+
+    } catch (error) {
+        console.error("[ADMIN STOCK ERROR]", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to read stock."
+        });
+    }
+});
+
+/* =========================================================
+   PUBLIC STOCK COUNT
+========================================================= */
+
+app.get("/api/stock/count", (req, res) => {
+    try {
+        const stock = readStock();
+
+        res.json({
+            success: true,
+            count: stock.length
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            count: 0
+        });
+    }
+});
+
+/* =========================================================
+   AUTHENTICATED STOCK COUNT
+========================================================= */
+
+app.get("/api/stock", requireSession, (req, res) => {
+    const stock = readStock();
+
+    res.json({
+        success: true,
+        count: stock.length
+    });
+});
+
+/* =========================================================
+   GENERATE STOCK ITEM
+========================================================= */
+
+app.post("/api/stock/generate", requireSession, (req, res) => {
+    try {
+        const stock = readStock();
+
+        if (!stock.length) {
+            return res.json({
+                success: true,
+                item: null,
+                remaining: 0
+            });
+        }
+
+        /*
+         * The item remains one opaque inventory string.
+         * Nothing is split into credential fields.
+         */
+
+        const item = stock.shift();
+
+        if (!saveStock(stock)) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to update inventory."
+            });
+        }
+
+        broadcastStockCount();
+
+        return res.json({
+            success: true,
+            item: String(item),
+            remaining: stock.length
+        });
+
+    } catch (error) {
+        console.error("[GENERATE STOCK ERROR]", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Unable to generate inventory."
+        });
+    }
+});
+
+/* =========================================================
+   SAVED INVENTORY ITEMS
+========================================================= */
+
+function readSavedItems() {
+    const data = readJson(
+        SAVED_ITEMS_FILE,
+        []
+    );
+
+    return Array.isArray(data)
+        ? data
+        : [];
+}
+
+function saveSavedItems(items) {
+    return writeJson(
+        SAVED_ITEMS_FILE,
+        items
+    );
+}
+
+/* =========================================================
+   SAVE INVENTORY ITEM
+========================================================= */
+
+app.post(
+    "/api/saved-items",
+    requireSession,
+    (req, res) => {
         try {
-
-          const data =
-            JSON.parse(
-              event.data
+            const item = normalizeStockItem(
+                req.body?.item
             );
 
-          if (
-            data.type ===
-            "stock:update"
-          ) {
-
-            if (
-              typeof data.count ===
-              "number"
-            ) {
-
-              document.getElementById(
-                "stockCount"
-              ).textContent =
-                data.count;
-
-              document.getElementById(
-                "stockStatusText"
-              ).textContent =
-                data.count > 0
-                  ? "Click Generate to receive one item."
-                  : "No stock available right now.";
+            if (!item) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Item is required."
+                });
             }
 
-            return;
-          }
+            const saved = readSavedItems();
 
-          if (
-            data.type ===
-            "stock:count"
-          ) {
+            const duplicate = saved.some(savedItem => {
+                return (
+                    savedItem.ownerKey ===
+                        req.noviSession.key &&
+                    savedItem.item === item
+                );
+            });
 
-            if (
-              typeof data.count ===
-              "number"
-            ) {
-
-              document.getElementById(
-                "stockCount"
-              ).textContent =
-                data.count;
-
-              document.getElementById(
-                "stockStatusText"
-              ).textContent =
-                data.count > 0
-                  ? "Click Generate to receive one item."
-                  : "No stock available right now.";
+            if (duplicate) {
+                return res.status(409).json({
+                    success: false,
+                    message: "This item is already saved."
+                });
             }
 
-            return;
-          }
+            const savedItem = {
+                id: crypto.randomUUID(),
+                ownerKey: req.noviSession.key,
+                item,
+                createdAt: new Date().toISOString()
+            };
+
+            saved.push(savedItem);
+
+            if (!saveSavedItems(saved)) {
+                return res.status(500).json({
+                    success: false,
+                    message: "Failed to save item."
+                });
+            }
+
+            res.status(201).json({
+                success: true,
+                item: {
+                    id: savedItem.id,
+                    item: savedItem.item,
+                    createdAt: savedItem.createdAt
+                }
+            });
 
         } catch (error) {
+            console.error("[SAVE ITEM ERROR]", error);
 
-          console.warn(
-            "[NOVI] Invalid WebSocket message."
-          );
+            res.status(500).json({
+                success: false,
+                message: "Failed to save item."
+            });
         }
-      };
+    }
+);
 
+/* =========================================================
+   GET SAVED ITEMS
+========================================================= */
 
-    socket.onerror =
-      error => {
+app.get(
+    "/api/saved-items",
+    requireSession,
+    (req, res) => {
+        try {
+            const saved = readSavedItems();
 
-        console.warn(
-          "[NOVI] WebSocket error."
-        );
+            const items = saved
+                .filter(item => {
+                    return (
+                        item.ownerKey ===
+                        req.noviSession.key
+                    );
+                })
+                .map(item => ({
+                    id: item.id,
+                    item: item.item,
+                    createdAt: item.createdAt
+                }));
 
-        setLiveStatus(
-          false,
-          "Reconnecting"
-        );
-      };
+            res.json({
+                success: true,
+                count: items.length,
+                items
+            });
 
+        } catch (error) {
+            console.error(
+                "[GET SAVED ITEMS ERROR]",
+                error
+            );
 
-    socket.onclose =
-      () => {
-
-        if (isLoggingOut) {
-          return;
+            res.status(500).json({
+                success: false,
+                message: "Failed to load saved items."
+            });
         }
+    }
+);
 
-        setLiveStatus(
-          false,
-          "Reconnecting"
-        );
+/* =========================================================
+   GET ONE SAVED ITEM
+========================================================= */
 
-        scheduleWebSocketReconnect();
-      };
+app.get(
+    "/api/saved-items/:id",
+    requireSession,
+    (req, res) => {
+        try {
+            const id = String(
+                req.params.id || ""
+            ).trim();
 
-  } catch (error) {
+            const saved = readSavedItems();
 
-    console.warn(
-      "[NOVI] WebSocket connection failed:",
-      error
-    );
+            const item = saved.find(savedItem => {
+                return (
+                    savedItem.id === id &&
+                    savedItem.ownerKey ===
+                        req.noviSession.key
+                );
+            });
 
-    scheduleWebSocketReconnect();
-  }
-}
+            if (!item) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Saved item not found."
+                });
+            }
 
+            res.json({
+                success: true,
+                item: {
+                    id: item.id,
+                    item: item.item,
+                    createdAt: item.createdAt
+                }
+            });
 
-/* ======================================================
-   WEBSOCKET RECONNECT
-====================================================== */
+        } catch (error) {
+            console.error(
+                "[GET SAVED ITEM ERROR]",
+                error
+            );
 
-function scheduleWebSocketReconnect() {
+            res.status(500).json({
+                success: false,
+                message: "Failed to load saved item."
+            });
+        }
+    }
+);
 
-  if (isLoggingOut) {
-    return;
-  }
+/* =========================================================
+   DELETE SAVED ITEM
+========================================================= */
 
-  clearTimeout(
-    socketReconnectTimer
-  );
+app.delete(
+    "/api/saved-items/:id",
+    requireSession,
+    (req, res) => {
+        try {
+            const id = String(
+                req.params.id || ""
+            ).trim();
 
-  socketReconnectTimer =
-    setTimeout(() => {
+            const saved = readSavedItems();
 
-      connectWebSocket();
+            const filtered = saved.filter(item => {
+                return !(
+                    item.id === id &&
+                    item.ownerKey ===
+                        req.noviSession.key
+                );
+            });
 
-      socketReconnectDelay =
-        Math.min(
-          socketReconnectDelay * 2,
-          15000
-        );
+            if (filtered.length === saved.length) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Saved item not found."
+                });
+            }
 
-    }, socketReconnectDelay);
-}
+            if (!saveSavedItems(filtered)) {
+                return res.status(500).json({
+                    success: false,
+                    message: "Failed to delete item."
+                });
+            }
 
+            res.json({
+                success: true,
+                message: "Saved item deleted."
+            });
 
-/* ======================================================
-   FALLBACK REFRESH
-====================================================== */
+        } catch (error) {
+            console.error(
+                "[DELETE SAVED ITEM ERROR]",
+                error
+            );
 
-function startFallbackRefresh() {
+            res.status(500).json({
+                success: false,
+                message: "Failed to delete item."
+            });
+        }
+    }
+);
 
-  clearInterval(
-    fallbackRefreshTimer
-  );
-
-  fallbackRefreshTimer =
-    setInterval(() => {
-
-      if (
-        isLoggingOut ||
-        !sessionToken
-      ) {
-        return;
-      }
-
-      if (
-        !socket ||
-        socket.readyState !==
-        WebSocket.OPEN
-      ) {
-
-        loadStock();
-      }
-
-    }, 5000);
-}
-
-
-/* ======================================================
-   STOP LIVE UPDATES
-====================================================== */
-
-function stopLiveUpdates() {
-
-  isLoggingOut = true;
-
-  clearTimeout(
-    socketReconnectTimer
-  );
-
-  clearInterval(
-    fallbackRefreshTimer
-  );
-
-  if (socket) {
-
-    try {
-      socket.close();
-    } catch {}
-  }
-
-  socket = null;
-
-  setLiveStatus(
-    false,
-    "Disconnected"
-  );
-}
-
-
-/* ======================================================
+/* =========================================================
    LOGOUT
-====================================================== */
+========================================================= */
 
-async function logout() {
+app.post("/api/logout", (req, res) => {
+    const token = String(
+        req.headers["x-novi-session"] || ""
+    ).trim();
 
-  try {
+    if (token) {
+        sessions.delete(token);
+    }
 
-    if (sessionToken) {
+    res.json({
+        success: true
+    });
+});
 
-      await authenticatedFetch(
-        "/api/logout",
-        {
-          method: "POST"
+/* =========================================================
+   SESSION CLEANUP
+========================================================= */
+
+setInterval(() => {
+    const now = Date.now();
+
+    for (const [
+        token,
+        session
+    ] of sessions) {
+        if (now >= session.expiresAt) {
+            sessions.delete(token);
         }
-      );
     }
+}, 60 * 1000);
 
-  } catch (error) {
+/* =========================================================
+   WEBSITE
+========================================================= */
 
-    console.warn(
-      "[NOVI] Logout request failed."
+if (fs.existsSync(PUBLIC_DIR)) {
+    app.use(
+        express.static(PUBLIC_DIR)
     );
-  }
-
-  forceLogout();
 }
 
+/* =========================================================
+   FRONTEND FALLBACK
+========================================================= */
 
-/* ======================================================
-   FORCE LOGOUT
-====================================================== */
-
-function forceLogout() {
-
-  stopLiveUpdates();
-
-  sessionToken = "";
-
-  currentKey = "";
-
-  expirationTime = null;
-
-  savedItems = [];
-
-  localStorage.removeItem(
-    SESSION_KEY
-  );
-
-  localStorage.removeItem(
-    KEY_STORAGE
-  );
-
-  document
-    .getElementById("dashboard")
-    .classList.add("hidden");
-
-  document
-    .getElementById("loginPage")
-    .classList.remove("hidden");
-
-  document
-    .getElementById("keyInput")
-    .value = "";
-
-  document.getElementById(
-    "sessionStatus"
-  ).textContent =
-    "Disconnected";
-
-  document.getElementById(
-    "savedCount"
-  ).textContent =
-    "0";
-
-  document.getElementById(
-    "savedList"
-  ).innerHTML = `
-    <div class="empty">
-      No saved items yet.
-    </div>
-  `;
-}
-
-
-/* ======================================================
-   EXISTING SESSION
-====================================================== */
-
-async function checkExistingSession() {
-
-  if (!sessionToken) {
-    return;
-  }
-
-  try {
-
-    const response =
-      await authenticatedFetch(
-        "/api/stock"
-      );
-
-    /*
-     * Only a 401 means the session
-     * is invalid.
-     */
+app.get("/{*splat}", (req, res, next) => {
+    const indexFile =
+        path.join(
+            PUBLIC_DIR,
+            "index.html"
+        );
 
     if (
-      response.status === 401
+        fs.existsSync(indexFile) &&
+        !req.path.startsWith("/api/")
     ) {
-
-      forceLogout();
-
-      return;
+        return res.sendFile(indexFile);
     }
 
-    if (!response.ok) {
+    next();
+});
 
-      /*
-       * Don't destroy the stored session
-       * because of a temporary server error.
-       */
+/* =========================================================
+   404
+========================================================= */
 
-      console.warn(
-        "[NOVI] Existing session check returned:",
-        response.status
-      );
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: "Route not found.",
+        path: req.path,
+        method: req.method
+    });
+});
 
-      showDashboard();
+/* =========================================================
+   ERROR HANDLER
+========================================================= */
 
-      return;
-    }
-
-    let data = {};
-
-    try {
-      data = await response.json();
-    } catch {
-      data = {};
-    }
-
-    if (
-      !data.success
-    ) {
-
-      console.warn(
-        "[NOVI] Existing session response was invalid."
-      );
-
-      showDashboard();
-
-      return;
-    }
-
-    showDashboard();
-
-  } catch (error) {
-
-    /*
-     * Network/server failure is NOT
-     * automatically treated as logout.
-     */
-
-    console.warn(
-      "[NOVI] Session check failed:",
-      error
+app.use((error, req, res, next) => {
+    console.error(
+        "[EXPRESS ERROR]",
+        error
     );
 
-    showDashboard();
-  }
-}
+    res.status(500).json({
+        success: false,
+        message: "Internal server error."
+    });
+});
 
+/* =========================================================
+   START SERVER
+========================================================= */
 
-/* ======================================================
-   ENTER KEY LOGIN
-====================================================== */
-
-document
-  .getElementById("keyInput")
-  .addEventListener(
-    "keydown",
-    event => {
-
-      if (
-        event.key === "Enter"
-      ) {
-
-        unlock();
-      }
+server.listen(
+    PORT,
+    "0.0.0.0",
+    () => {
+        console.log("");
+        console.log(
+            "========================================"
+        );
+        console.log(
+            "           NOVI SERVER ONLINE"
+        );
+        console.log(
+            "========================================"
+        );
+        console.log(
+            "Port:",
+            PORT
+        );
+        console.log(
+            "Health: /health"
+        );
+        console.log(
+            "API: /api"
+        );
+        console.log(
+            "Verify: POST /api/verify"
+        );
+        console.log(
+            "Keys: POST /api/keys"
+        );
+        console.log(
+            "Stock: POST /api/stock/add"
+        );
+        console.log(
+            "Bulk Stock: POST /api/stock/add-many"
+        );
+        console.log(
+            "Generate: POST /api/stock/generate"
+        );
+        console.log(
+            "Saved Items: /api/saved-items"
+        );
+        console.log(
+            "WebSocket: /ws"
+        );
+        console.log(
+            "========================================"
+        );
+        console.log("");
     }
-  );
+);
 
+server.on("error", error => {
+    console.error(
+        "[SERVER ERROR]",
+        error
+    );
+});
 
-/* ======================================================
-   START
-====================================================== */
-
-checkExistingSession();
-
-</script>
+module.exports = {
+    app,
+    server,
+    readStock,
+    saveStock,
+    broadcastStockCount
+};
