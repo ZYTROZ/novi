@@ -479,7 +479,7 @@
       border: 0;
       border-radius: 12px;
 
-      min-height: 48px;
+      min-height: 52px;
       padding: 13px 20px;
 
       color: white;
@@ -495,8 +495,7 @@
       box-shadow:
         0 10px 25px rgba(124,58,237,.20);
 
-      transition:
-        .2s;
+      transition: .2s;
     }
 
     .generate-btn:hover {
@@ -504,26 +503,149 @@
       transform: translateY(-1px);
     }
 
+    .generate-btn:disabled {
+      transform: none;
+    }
+
     /* ======================================================
        STOCK STATUS
     ====================================================== */
 
-    .stock-list {
+    .stock-status-card {
       display: flex;
-      flex-direction: column;
-      gap: 9px;
-    }
+      align-items: center;
+      justify-content: center;
 
-    .empty {
-      padding: 35px 15px;
+      min-height: 150px;
+
+      padding: 25px;
+
+      border-radius: 16px;
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(168,85,247,.055),
+          rgba(255,255,255,.018)
+        );
+
+      border:
+        1px solid rgba(168,85,247,.12);
 
       text-align: center;
+    }
 
+    .stock-status-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stock-icon {
+      width: 48px;
+      height: 48px;
+
+      display: grid;
+      place-items: center;
+
+      border-radius: 14px;
+
+      background:
+        rgba(168,85,247,.10);
+
+      border:
+        1px solid rgba(168,85,247,.16);
+
+      font-size: 22px;
+    }
+
+    .stock-status-title {
+      font-weight: 800;
+      font-size: 15px;
+    }
+
+    .stock-status-text {
       color: var(--muted);
+      font-size: 12px;
+    }
 
-      border: 1px dashed rgba(255,255,255,.08);
+    /* ======================================================
+       GENERATED
+    ====================================================== */
 
-      border-radius: 13px;
+    .generated {
+      margin-top: 18px;
+    }
+
+    .generated-box {
+      background:
+        rgba(34,197,94,.035);
+
+      border:
+        1px solid rgba(34,197,94,.15);
+
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .generated-title {
+      color: #86efac;
+
+      font-size: 12px;
+      font-weight: 800;
+
+      margin-bottom: 10px;
+    }
+
+    .generated-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 12px;
+
+      padding: 12px;
+
+      border-radius: 10px;
+
+      background: rgba(255,255,255,.025);
+
+      border:
+        1px solid rgba(255,255,255,.05);
+    }
+
+    .generated-value {
+      font-family: monospace;
+      font-size: 13px;
+
+      word-break: break-all;
+
+      color: #f1f5f9;
+
+      flex: 1;
+      min-width: 0;
+    }
+
+    .generated-copy {
+      flex-shrink: 0;
+
+      border: 1px solid rgba(34,197,94,.18);
+
+      background: rgba(34,197,94,.08);
+
+      color: #86efac;
+
+      border-radius: 9px;
+
+      padding: 8px 11px;
+
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .generated-copy:hover {
+      background: rgba(34,197,94,.14);
     }
 
     /* ======================================================
@@ -667,49 +789,16 @@
         rgba(239,68,68,.14);
     }
 
-    /* ======================================================
-       GENERATED
-    ====================================================== */
+    .empty {
+      padding: 35px 15px;
 
-    .generated {
-      margin-top: 18px;
-    }
+      text-align: center;
 
-    .generated-box {
-      background:
-        rgba(34,197,94,.035);
+      color: var(--muted);
 
-      border:
-        1px solid rgba(34,197,94,.15);
+      border: 1px dashed rgba(255,255,255,.08);
 
-      border-radius: 14px;
-      padding: 14px;
-    }
-
-    .generated-title {
-      color: #86efac;
-
-      font-size: 12px;
-      font-weight: 800;
-
-      margin-bottom: 10px;
-    }
-
-    .generated-item {
-      padding: 12px;
-
-      border:
-        1px solid rgba(34,197,94,.10);
-
-      border-radius: 10px;
-
-      background:
-        rgba(255,255,255,.025);
-
-      font-family: monospace;
-      font-size: 13px;
-
-      word-break: break-all;
+      border-radius: 13px;
     }
 
     /* ======================================================
@@ -817,6 +906,15 @@
       .saved-actions button {
         flex: 1;
       }
+
+      .generated-item {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .generated-copy {
+        width: 100%;
+      }
     }
 
     @media (max-width: 550px) {
@@ -827,10 +925,6 @@
 
       .login-card {
         padding: 26px;
-      }
-
-      .generate-btn {
-        padding: 13px;
       }
 
       .topbar {
@@ -923,25 +1017,17 @@
 
         </div>
 
-        <div
-          style="
-            display:flex;
-            align-items:center;
-            gap:10px;
-          "
-        >
+        <div style="display:flex;align-items:center;gap:10px;">
 
           <div
             id="liveStatus"
             class="live-status"
           >
-
             <span class="live-dot"></span>
 
             <span id="liveStatusText">
               Connecting
             </span>
-
           </div>
 
           <button
@@ -1018,9 +1104,7 @@
 
       <div class="grid">
 
-        <!-- ==================================================
-             STOCK
-        ================================================== -->
+        <!-- STOCK PANEL -->
 
         <div class="panel">
 
@@ -1033,15 +1117,13 @@
               </h3>
 
               <p>
-                Generate one available inventory item.
+                Generate one available inventory item at a time.
               </p>
 
             </div>
 
           </div>
 
-
-          <!-- ONLY GENERATE BUTTON -->
 
           <div class="stock-controls">
 
@@ -1056,21 +1138,33 @@
           </div>
 
 
-          <!-- STOCK COUNT / STATUS ONLY -->
+          <!-- PRIVATE STOCK MESSAGE -->
 
-          <div
-            id="stockList"
-            class="stock-list"
-          >
+          <div class="stock-status-card">
 
-            <div class="empty">
-              Loading stock...
+            <div class="stock-status-inner">
+
+              <div class="stock-icon">
+                📦
+              </div>
+
+              <div class="stock-status-title">
+                Stock is ready
+              </div>
+
+              <div
+                id="stockStatusText"
+                class="stock-status-text"
+              >
+                Click Generate to receive one item.
+              </div>
+
             </div>
 
           </div>
 
 
-          <!-- GENERATED -->
+          <!-- GENERATED ITEM -->
 
           <div
             id="generatedSection"
@@ -1136,9 +1230,7 @@
         </div>
 
 
-        <!-- ==================================================
-             KEY INFO
-        ================================================== -->
+        <!-- KEY INFO -->
 
         <div class="panel">
 
@@ -1632,8 +1724,16 @@
 
     async function loadStock() {
 
-      const list =
-        document.getElementById("stockList");
+      const countElement =
+        document.getElementById(
+          "stockCount"
+        );
+
+      const statusText =
+        document.getElementById(
+          "stockStatusText"
+        );
+
 
       try {
 
@@ -1670,48 +1770,46 @@
 
 
         const count =
-          Number(data.count || 0);
+          Number(data.count);
 
 
-        document.getElementById(
-          "stockCount"
-        ).textContent =
-          count;
+        const safeCount =
+          Number.isFinite(count) &&
+          count >= 0
+            ? count
+            : 0;
 
 
-        /*
-          IMPORTANT:
-          Never display the available stock here.
-          Users only see the count.
-        */
+        countElement.textContent =
+          safeCount;
 
-        list.innerHTML = `
-          <div class="empty">
-            ${
-              count > 0
-                ? `${count} item${count === 1 ? "" : "s"} available. Click Generate to receive one.`
-                : "No stock available."
-            }
-          </div>
-        `;
+
+        if (safeCount === 0) {
+
+          statusText.textContent =
+            "No stock available right now.";
+
+        } else {
+
+          statusText.textContent =
+            "Click Generate to receive one item.";
+        }
 
 
       } catch (error) {
 
-        list.innerHTML = `
-          <div class="empty">
-            ${escapeHtml(
-              error.message ||
-              "Unable to load stock."
-            )}
-          </div>
-        `;
+        countElement.textContent =
+          "—";
+
+        statusText.textContent =
+          error.message ||
+          "Unable to load stock.";
       }
     }
 
 
     // ======================================================
-    // GENERATE — ALWAYS EXACTLY 1
+    // GENERATE ONE ITEM
     // ======================================================
 
     async function generateStock() {
@@ -1735,6 +1833,14 @@
 
       try {
 
+        /*
+          IMPORTANT:
+
+          The backend should ignore any amount
+          supplied by the browser and always
+          remove exactly ONE item.
+        */
+
         const response =
           await authenticatedFetch(
             "/api/stock/generate",
@@ -1747,9 +1853,7 @@
               },
 
               body:
-                JSON.stringify({
-                  amount: 1
-                })
+                JSON.stringify({})
             }
           );
 
@@ -1775,32 +1879,82 @@
 
           throw new Error(
             data.error ||
-            "Generation failed."
+            "No stock available."
+          );
+        }
+
+
+        const items =
+          Array.isArray(data.items)
+            ? data.items
+            : [];
+
+
+        if (!items.length) {
+
+          throw new Error(
+            "No item was generated."
           );
         }
 
 
         /*
-          The server returns exactly one item.
+          Only the item that was generated
+          is displayed.
         */
 
-        showGenerated(
-          data.items ||
-          (data.item ? [data.item] : [])
-        );
+        showGenerated(items.slice(0, 1));
 
 
-        document.getElementById(
-          "stockCount"
-        ).textContent =
-          data.stockRemaining ?? 0;
+        /*
+          Update remaining count from backend.
+        */
+
+        if (
+          typeof data.stockRemaining ===
+          "number"
+        ) {
+
+          document.getElementById(
+            "stockCount"
+          ).textContent =
+            data.stockRemaining;
+
+        } else {
+
+          await loadStock();
+        }
 
 
-        await loadStock();
+        const remaining =
+          Number(
+            data.stockRemaining
+          );
+
+
+        const statusText =
+          document.getElementById(
+            "stockStatusText"
+          );
+
+
+        if (
+          Number.isFinite(remaining) &&
+          remaining === 0
+        ) {
+
+          statusText.textContent =
+            "No stock available right now.";
+
+        } else {
+
+          statusText.textContent =
+            "Click Generate to receive another item.";
+        }
 
 
         showToast(
-          "Generated 1 item"
+          "Generated 1 item."
         );
 
 
@@ -1810,6 +1964,9 @@
           error.message ||
           "Unable to generate stock."
         );
+
+
+        await loadStock();
 
 
       } finally {
@@ -1823,7 +1980,7 @@
 
 
     // ======================================================
-    // GENERATED ITEM
+    // SHOW GENERATED ITEM
     // ======================================================
 
     function showGenerated(items) {
@@ -1854,22 +2011,37 @@
 
 
       /*
-        Only show the first item.
-        The backend is also enforcing
-        exactly one item.
+        Only display the first item.
       */
 
-      const item =
-        items[0];
-
-
       const value =
-        getStockValue(item);
+        getStockValue(items[0]);
+
+
+      if (!value) {
+
+        section.classList.add(
+          "hidden"
+        );
+
+        return;
+      }
 
 
       list.innerHTML = `
         <div class="generated-item">
-          ${escapeHtml(value)}
+
+          <div class="generated-value">
+            ${escapeHtml(value)}
+          </div>
+
+          <button
+            class="generated-copy"
+            onclick='copyValue(${JSON.stringify(value)})'
+          >
+            Copy
+          </button>
+
         </div>
       `;
 
@@ -1902,25 +2074,6 @@
         item.item ??
         ""
       );
-    }
-
-
-    function isSaved(value) {
-
-      const target =
-        String(value)
-          .trim()
-          .toLowerCase();
-
-
-      return savedItems.some(item => {
-
-        return (
-          getSavedValue(item)
-            .trim()
-            .toLowerCase() === target
-        );
-      });
     }
 
 
@@ -2455,6 +2608,15 @@
                 );
 
 
+              /*
+                IMPORTANT:
+
+                WebSocket should only send the
+                stock COUNT.
+
+                It should NOT send the stock list.
+              */
+
               if (
                 data.type ===
                 "stock:update"
@@ -2469,15 +2631,17 @@
                     "stockCount"
                   ).textContent =
                     data.count;
+
+
+                  document.getElementById(
+                    "stockStatusText"
+                  ).textContent =
+                    data.count > 0
+                      ? "Click Generate to receive one item."
+                      : "No stock available right now.";
                 }
 
-
-                /*
-                  Only reload the COUNT.
-                  Never request a stock list.
-                */
-
-                await loadStock();
+                return;
               }
 
 
@@ -2495,7 +2659,17 @@
                     "stockCount"
                   ).textContent =
                     data.count;
+
+
+                  document.getElementById(
+                    "stockStatusText"
+                  ).textContent =
+                    data.count > 0
+                      ? "Click Generate to receive one item."
+                      : "No stock available right now.";
                 }
+
+                return;
               }
 
             } catch {
@@ -2723,26 +2897,6 @@
           No saved items yet.
         </div>
       `;
-
-
-      document.getElementById(
-        "stockCount"
-      ).textContent =
-        "0";
-
-
-      document.getElementById(
-        "stockList"
-      ).innerHTML = `
-        <div class="empty">
-          No stock available.
-        </div>
-      `;
-
-
-      document
-        .getElementById("generatedSection")
-        .classList.add("hidden");
     }
 
 
