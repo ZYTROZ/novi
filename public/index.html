@@ -464,7 +464,7 @@
     }
 
     /* ======================================================
-       GENERATE BUTTON
+       GENERATE
     ====================================================== */
 
     .stock-controls {
@@ -505,144 +505,13 @@
     }
 
     /* ======================================================
-       STOCK LIST
+       STOCK STATUS
     ====================================================== */
 
     .stock-list {
       display: flex;
       flex-direction: column;
       gap: 9px;
-
-      max-height: 420px;
-      overflow-y: auto;
-
-      padding-right: 3px;
-    }
-
-    .stock-list::-webkit-scrollbar,
-    .saved-list::-webkit-scrollbar {
-      width: 5px;
-    }
-
-    .stock-list::-webkit-scrollbar-thumb,
-    .saved-list::-webkit-scrollbar-thumb {
-      background: rgba(168,85,247,.25);
-      border-radius: 10px;
-    }
-
-    .stock-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-
-      gap: 15px;
-
-      padding: 14px;
-
-      border-radius: 13px;
-
-      border: 1px solid rgba(255,255,255,.06);
-
-      background: rgba(255,255,255,.025);
-
-      transition:
-        border-color .2s,
-        background .2s,
-        transform .2s;
-    }
-
-    .stock-item:hover {
-      background: rgba(168,85,247,.045);
-
-      border-color:
-        rgba(168,85,247,.20);
-
-      transform: translateY(-1px);
-    }
-
-    .stock-value {
-      word-break: break-all;
-
-      font-family: monospace;
-      font-size: 13px;
-
-      color: #e9ddff;
-
-      min-width: 0;
-      flex: 1;
-    }
-
-    .stock-actions {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-
-      flex-shrink: 0;
-    }
-
-    .copy-btn,
-    .save-btn,
-    .remove-btn {
-      border-radius: 9px;
-
-      padding: 8px 11px;
-
-      font-size: 12px;
-      font-weight: 700;
-
-      transition: .2s;
-    }
-
-    .copy-btn {
-      border: 1px solid var(--border);
-
-      background:
-        rgba(168,85,247,.08);
-
-      color: #d8b4fe;
-    }
-
-    .copy-btn:hover {
-      background:
-        rgba(168,85,247,.16);
-    }
-
-    .save-btn {
-      border: 1px solid rgba(168,85,247,.22);
-
-      background:
-        rgba(168,85,247,.10);
-
-      color: #d8b4fe;
-    }
-
-    .save-btn:hover {
-      background:
-        rgba(168,85,247,.20);
-    }
-
-    .save-btn.saved {
-      border-color:
-        rgba(34,197,94,.25);
-
-      background:
-        rgba(34,197,94,.09);
-
-      color: #86efac;
-    }
-
-    .remove-btn {
-      border: 1px solid rgba(239,68,68,.18);
-
-      background:
-        rgba(239,68,68,.07);
-
-      color: #fca5a5;
-    }
-
-    .remove-btn:hover {
-      background:
-        rgba(239,68,68,.14);
     }
 
     .empty {
@@ -698,6 +567,15 @@
       overflow-y: auto;
     }
 
+    .saved-list::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .saved-list::-webkit-scrollbar-thumb {
+      background: rgba(168,85,247,.25);
+      border-radius: 10px;
+    }
+
     .saved-item {
       display: flex;
       align-items: center;
@@ -749,6 +627,46 @@
       flex-shrink: 0;
     }
 
+    .copy-btn,
+    .remove-btn {
+      border-radius: 9px;
+
+      padding: 8px 11px;
+
+      font-size: 12px;
+      font-weight: 700;
+
+      transition: .2s;
+    }
+
+    .copy-btn {
+      border: 1px solid var(--border);
+
+      background:
+        rgba(168,85,247,.08);
+
+      color: #d8b4fe;
+    }
+
+    .copy-btn:hover {
+      background:
+        rgba(168,85,247,.16);
+    }
+
+    .remove-btn {
+      border: 1px solid rgba(239,68,68,.18);
+
+      background:
+        rgba(239,68,68,.07);
+
+      color: #fca5a5;
+    }
+
+    .remove-btn:hover {
+      background:
+        rgba(239,68,68,.14);
+    }
+
     /* ======================================================
        GENERATED
     ====================================================== */
@@ -778,19 +696,20 @@
     }
 
     .generated-item {
-      padding: 10px 0;
+      padding: 12px;
 
-      border-bottom:
-        1px solid rgba(255,255,255,.06);
+      border:
+        1px solid rgba(34,197,94,.10);
+
+      border-radius: 10px;
+
+      background:
+        rgba(255,255,255,.025);
 
       font-family: monospace;
       font-size: 13px;
 
       word-break: break-all;
-    }
-
-    .generated-item:last-child {
-      border-bottom: 0;
     }
 
     /* ======================================================
@@ -874,6 +793,7 @@
     ====================================================== */
 
     @media (max-width: 850px) {
+
       .stats {
         grid-template-columns: 1fr;
       }
@@ -884,18 +804,6 @@
     }
 
     @media (max-width: 650px) {
-      .stock-item {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .stock-actions {
-        width: 100%;
-      }
-
-      .stock-actions button {
-        flex: 1;
-      }
 
       .saved-item {
         align-items: flex-start;
@@ -912,6 +820,7 @@
     }
 
     @media (max-width: 550px) {
+
       #dashboard {
         padding: 15px;
       }
@@ -1014,17 +923,25 @@
 
         </div>
 
-        <div style="display:flex;align-items:center;gap:10px;">
+        <div
+          style="
+            display:flex;
+            align-items:center;
+            gap:10px;
+          "
+        >
 
           <div
             id="liveStatus"
             class="live-status"
           >
+
             <span class="live-dot"></span>
 
             <span id="liveStatusText">
               Connecting
             </span>
+
           </div>
 
           <button
@@ -1138,6 +1055,8 @@
 
           </div>
 
+
+          <!-- STOCK COUNT / STATUS ONLY -->
 
           <div
             id="stockList"
@@ -1708,14 +1627,13 @@
 
 
     // ======================================================
-    // LOAD STOCK
+    // LOAD STOCK COUNT ONLY
     // ======================================================
 
     async function loadStock() {
 
       const list =
         document.getElementById("stockList");
-
 
       try {
 
@@ -1751,70 +1669,31 @@
         }
 
 
-        const stock =
-          Array.isArray(data.stock)
-            ? data.stock
-            : [];
+        const count =
+          Number(data.count || 0);
 
 
         document.getElementById(
           "stockCount"
         ).textContent =
-          stock.length;
+          count;
 
 
-        if (!stock.length) {
+        /*
+          IMPORTANT:
+          Never display the available stock here.
+          Users only see the count.
+        */
 
-          list.innerHTML = `
-            <div class="empty">
-              No stock available.
-            </div>
-          `;
-
-          return;
-        }
-
-
-        list.innerHTML =
-          stock
-            .map(item => {
-
-              const value =
-                getStockValue(item);
-
-              const saved =
-                isSaved(value);
-
-
-              return `
-                <div class="stock-item">
-
-                  <div class="stock-value">
-                    ${escapeHtml(value)}
-                  </div>
-
-                  <div class="stock-actions">
-
-                    <button
-                      class="copy-btn"
-                      onclick='copyValue(${JSON.stringify(value)})'
-                    >
-                      Copy
-                    </button>
-
-                    <button
-                      class="save-btn ${saved ? "saved" : ""}"
-                      onclick='toggleSavedItem(${JSON.stringify(value)})'
-                    >
-                      ${saved ? "✓ Saved" : "Save"}
-                    </button>
-
-                  </div>
-
-                </div>
-              `;
-            })
-            .join("");
+        list.innerHTML = `
+          <div class="empty">
+            ${
+              count > 0
+                ? `${count} item${count === 1 ? "" : "s"} available. Click Generate to receive one.`
+                : "No stock available."
+            }
+          </div>
+        `;
 
 
       } catch (error) {
@@ -1901,8 +1780,13 @@
         }
 
 
+        /*
+          The server returns exactly one item.
+        */
+
         showGenerated(
-          data.items || []
+          data.items ||
+          (data.item ? [data.item] : [])
         );
 
 
@@ -1939,7 +1823,7 @@
 
 
     // ======================================================
-    // GENERATED ITEMS
+    // GENERATED ITEM
     // ======================================================
 
     function showGenerated(items) {
@@ -1956,7 +1840,10 @@
         );
 
 
-      if (!items.length) {
+      if (
+        !Array.isArray(items) ||
+        !items.length
+      ) {
 
         section.classList.add(
           "hidden"
@@ -1965,6 +1852,12 @@
         return;
       }
 
+
+      /*
+        Only show the first item.
+        The backend is also enforcing
+        exactly one item.
+      */
 
       const item =
         items[0];
@@ -2088,8 +1981,6 @@
 
 
         renderSavedItems();
-
-        await loadStock();
 
 
       } catch (error) {
@@ -2581,6 +2472,11 @@
                 }
 
 
+                /*
+                  Only reload the COUNT.
+                  Never request a stock list.
+                */
+
                 await loadStock();
               }
 
@@ -2827,6 +2723,26 @@
           No saved items yet.
         </div>
       `;
+
+
+      document.getElementById(
+        "stockCount"
+      ).textContent =
+        "0";
+
+
+      document.getElementById(
+        "stockList"
+      ).innerHTML = `
+        <div class="empty">
+          No stock available.
+        </div>
+      `;
+
+
+      document
+        .getElementById("generatedSection")
+        .classList.add("hidden");
     }
 
 
