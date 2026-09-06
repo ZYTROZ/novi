@@ -149,16 +149,12 @@
 
     .input {
       width: 100%;
-
       border: 1px solid var(--border);
       outline: none;
-
       color: white;
       background: rgba(255,255,255,.035);
-
       border-radius: 13px;
       padding: 15px 16px;
-
       transition: .2s;
     }
 
@@ -171,10 +167,8 @@
 
     .primary-btn {
       width: 100%;
-
       border: 0;
       border-radius: 13px;
-
       padding: 15px;
       margin-top: 16px;
 
@@ -272,23 +266,17 @@
 
     .brand span {
       display: block;
-
       color: var(--muted);
       font-size: 12px;
-
       margin-top: 2px;
     }
 
     .logout-btn {
       border: 1px solid var(--border);
-
       background: rgba(255,255,255,.03);
-
       color: #ddd6e8;
-
       border-radius: 11px;
       padding: 10px 15px;
-
       transition: .2s;
     }
 
@@ -365,12 +353,8 @@
 
     .stats {
       display: grid;
-
-      grid-template-columns:
-        repeat(3, minmax(0, 1fr));
-
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 16px;
-
       margin-bottom: 18px;
     }
 
@@ -422,7 +406,6 @@
     .stat-value {
       font-size: 25px;
       font-weight: 850;
-
       margin-top: 8px;
     }
 
@@ -477,26 +460,27 @@
     .panel-header p {
       color: var(--muted);
       font-size: 12px;
-
       margin-top: 4px;
     }
+
+    /* ======================================================
+       GENERATE BUTTON
+    ====================================================== */
 
     .stock-controls {
       display: flex;
       gap: 10px;
-
       margin-bottom: 18px;
     }
 
-    .stock-controls .input {
-      max-width: 130px;
-    }
-
     .generate-btn {
+      width: 100%;
+
       border: 0;
       border-radius: 12px;
 
-      padding: 0 20px;
+      min-height: 48px;
+      padding: 13px 20px;
 
       color: white;
       font-weight: 800;
@@ -511,7 +495,8 @@
       box-shadow:
         0 10px 25px rgba(124,58,237,.20);
 
-      transition: .2s;
+      transition:
+        .2s;
     }
 
     .generate-btn:hover {
@@ -673,7 +658,7 @@
     }
 
     /* ======================================================
-       SAVED LOGINS
+       SAVED ITEMS
     ====================================================== */
 
     .saved-panel {
@@ -935,14 +920,6 @@
         padding: 26px;
       }
 
-      .stock-controls {
-        flex-direction: column;
-      }
-
-      .stock-controls .input {
-        max-width: none;
-      }
-
       .generate-btn {
         padding: 13px;
       }
@@ -1044,6 +1021,7 @@
             class="live-status"
           >
             <span class="live-dot"></span>
+
             <span id="liveStatusText">
               Connecting
             </span>
@@ -1132,28 +1110,26 @@
           <div class="panel-header">
 
             <div>
-              <h3>Stock Generator</h3>
+
+              <h3>
+                Stock Generator
+              </h3>
 
               <p>
-                Generate available inventory items.
+                Generate one available inventory item.
               </p>
+
             </div>
 
           </div>
 
 
+          <!-- ONLY GENERATE BUTTON -->
+
           <div class="stock-controls">
 
-            <input
-              id="stockAmount"
-              class="input"
-              type="number"
-              min="1"
-              max="100"
-              value="1"
-            >
-
             <button
+              id="generateButton"
               class="generate-btn"
               onclick="generateStock()"
             >
@@ -1185,7 +1161,7 @@
             <div class="generated-box">
 
               <div class="generated-title">
-                GENERATED ITEMS
+                GENERATED ITEM
               </div>
 
               <div id="generatedList"></div>
@@ -1195,7 +1171,7 @@
           </div>
 
 
-          <!-- SAVED LOGINS -->
+          <!-- SAVED ITEMS -->
 
           <div
             id="savedPanel"
@@ -1205,11 +1181,15 @@
             <div class="panel-header">
 
               <div>
-                <h3>Saved Logins</h3>
+
+                <h3>
+                  Saved Items
+                </h3>
 
                 <p>
                   Items you've saved for later.
                 </p>
+
               </div>
 
               <span
@@ -1227,7 +1207,7 @@
             >
 
               <div class="empty">
-                No saved logins yet.
+                No saved items yet.
               </div>
 
             </div>
@@ -1246,11 +1226,15 @@
           <div class="panel-header">
 
             <div>
-              <h3>Key Information</h3>
+
+              <h3>
+                Key Information
+              </h3>
 
               <p>
                 Your current Novi access.
               </p>
+
             </div>
 
           </div>
@@ -1332,32 +1316,22 @@
 
 
   <script>
+
     const API_URL = "";
 
-    const SESSION_KEY =
-      "noviSession";
-
-    const KEY_STORAGE =
-      "noviKey";
-
-    const DEVICE_STORAGE =
-      "noviDeviceId";
+    const SESSION_KEY = "noviSession";
+    const KEY_STORAGE = "noviKey";
+    const DEVICE_STORAGE = "noviDeviceId";
 
 
     let sessionToken =
-      localStorage.getItem(
-        SESSION_KEY
-      ) || "";
+      localStorage.getItem(SESSION_KEY) || "";
 
     let currentKey =
-      localStorage.getItem(
-        KEY_STORAGE
-      ) || "";
+      localStorage.getItem(KEY_STORAGE) || "";
 
     let deviceId =
-      localStorage.getItem(
-        DEVICE_STORAGE
-      ) || "";
+      localStorage.getItem(DEVICE_STORAGE) || "";
 
     let expirationTime = null;
 
@@ -1418,6 +1392,7 @@
 
       return (
         item.stock_id ??
+        item.stockId ??
         item.value ??
         item.code ??
         item.item ??
@@ -1436,9 +1411,7 @@
 
       toast.classList.add("show");
 
-      clearTimeout(
-        showToast.timeout
-      );
+      clearTimeout(showToast.timeout);
 
       showToast.timeout =
         setTimeout(() => {
@@ -1452,15 +1425,11 @@
     function showLoginError(message) {
 
       const error =
-        document.getElementById(
-          "loginError"
-        );
+        document.getElementById("loginError");
 
       error.textContent = message;
 
-      error.classList.remove(
-        "hidden"
-      );
+      error.classList.remove("hidden");
     }
 
 
@@ -1483,8 +1452,7 @@
 
       const headers = {
         ...(options.headers || {}),
-        "x-novi-session":
-          sessionToken
+        "x-novi-session": sessionToken
       };
 
       return fetch(
@@ -1520,10 +1488,9 @@
         return;
       }
 
+
       const button =
-        document.getElementById(
-          "unlockBtn"
-        );
+        document.getElementById("unlockBtn");
 
       button.disabled = true;
 
@@ -1535,8 +1502,7 @@
 
         const response =
           await fetch(
-            API_URL +
-            "/api/verify",
+            API_URL + "/api/verify",
             {
               method: "POST",
 
@@ -1594,6 +1560,7 @@
 
 
         showDashboard();
+
 
       } catch (error) {
 
@@ -1671,8 +1638,17 @@
       }
 
 
-      const timestamp =
+      let timestamp =
         Number(expirationTime);
+
+
+      if (!Number.isFinite(timestamp)) {
+
+        const parsed =
+          new Date(expirationTime).getTime();
+
+        timestamp = parsed;
+      }
 
 
       if (!Number.isFinite(timestamp)) {
@@ -1738,9 +1714,7 @@
     async function loadStock() {
 
       const list =
-        document.getElementById(
-          "stockList"
-        );
+        document.getElementById("stockList");
 
 
       try {
@@ -1830,7 +1804,7 @@
 
                     <button
                       class="save-btn ${saved ? "saved" : ""}"
-                      onclick='toggleSavedLogin(${JSON.stringify(value)})'
+                      onclick='toggleSavedItem(${JSON.stringify(value)})'
                     >
                       ${saved ? "✓ Saved" : "Save"}
                     </button>
@@ -1858,43 +1832,20 @@
 
 
     // ======================================================
-    // GENERATE
+    // GENERATE — ALWAYS EXACTLY 1
     // ======================================================
 
     async function generateStock() {
 
-      const input =
-        document.getElementById(
-          "stockAmount"
-        );
-
-
-      let amount =
-        Number(input.value);
-
-
-      if (!Number.isFinite(amount)) {
-        amount = 1;
-      }
-
-
-      amount =
-        Math.max(
-          1,
-          Math.min(
-            100,
-            Math.floor(amount)
-          )
-        );
-
-
-      input.value = amount;
-
-
       const button =
-        document.querySelector(
-          ".generate-btn"
+        document.getElementById(
+          "generateButton"
         );
+
+
+      if (!button || button.disabled) {
+        return;
+      }
 
 
       button.disabled = true;
@@ -1918,7 +1869,7 @@
 
               body:
                 JSON.stringify({
-                  amount
+                  amount: 1
                 })
             }
           );
@@ -1965,7 +1916,7 @@
 
 
         showToast(
-          `Generated ${data.generated} item${data.generated === 1 ? "" : "s"}`
+          "Generated 1 item"
         );
 
 
@@ -2015,23 +1966,19 @@
       }
 
 
-      list.innerHTML =
-        items
-          .map(item => {
-
-            const value =
-              getStockValue(item);
+      const item =
+        items[0];
 
 
-            return `
-              <div class="generated-item">
+      const value =
+        getStockValue(item);
 
-                ${escapeHtml(value)}
 
-              </div>
-            `;
-          })
-          .join("");
+      list.innerHTML = `
+        <div class="generated-item">
+          ${escapeHtml(value)}
+        </div>
+      `;
 
 
       section.classList.remove(
@@ -2041,7 +1988,7 @@
 
 
     // ======================================================
-    // SAVED LOGIN HELPERS
+    // SAVED ITEM HELPERS
     // ======================================================
 
     function getSavedValue(item) {
@@ -2057,6 +2004,7 @@
       return (
         item.value ??
         item.stock_id ??
+        item.stockId ??
         item.code ??
         item.item ??
         ""
@@ -2067,7 +2015,9 @@
     function isSaved(value) {
 
       const target =
-        String(value).trim().toLowerCase();
+        String(value)
+          .trim()
+          .toLowerCase();
 
 
       return savedItems.some(item => {
@@ -2082,7 +2032,7 @@
 
 
     // ======================================================
-    // LOAD SAVED LOGINS
+    // LOAD SAVED ITEMS
     // ======================================================
 
     async function loadSavedItems() {
@@ -2122,7 +2072,7 @@
 
           throw new Error(
             data.error ||
-            "Failed to load saved logins."
+            "Failed to load saved items."
           );
         }
 
@@ -2139,9 +2089,6 @@
 
         renderSavedItems();
 
-
-        // Re-render stock buttons
-        // so saved buttons show correctly.
         await loadStock();
 
 
@@ -2151,16 +2098,16 @@
           <div class="empty">
             ${escapeHtml(
               error.message ||
-              "Unable to load saved logins."
+              "Unable to load saved items."
             )}
-        </div>
+          </div>
         `;
       }
     }
 
 
     // ======================================================
-    // RENDER SAVED LOGINS
+    // RENDER SAVED ITEMS
     // ======================================================
 
     function renderSavedItems() {
@@ -2185,7 +2132,7 @@
 
         list.innerHTML = `
           <div class="empty">
-            No saved logins yet.
+            No saved items yet.
           </div>
         `;
 
@@ -2266,7 +2213,7 @@
 
                   <button
                     class="remove-btn"
-                    onclick='removeSavedLogin(${JSON.stringify(id)})'
+                    onclick='removeSavedItem(${JSON.stringify(id)})'
                   >
                     Remove
                   </button>
@@ -2281,10 +2228,10 @@
 
 
     // ======================================================
-    // SAVE LOGIN
+    // SAVE ITEM
     // ======================================================
 
-    async function toggleSavedLogin(value) {
+    async function toggleSavedItem(value) {
 
       if (!value) {
 
@@ -2310,10 +2257,9 @@
         });
 
 
-      // If already saved, remove it.
       if (existing) {
 
-        await removeSavedLogin(
+        await removeSavedItem(
           existing.id ||
           existing._id
         );
@@ -2364,13 +2310,13 @@
 
           throw new Error(
             data.error ||
-            "Failed to save login."
+            "Failed to save item."
           );
         }
 
 
         showToast(
-          "Login saved."
+          "Item saved."
         );
 
 
@@ -2381,22 +2327,22 @@
 
         showToast(
           error.message ||
-          "Unable to save login."
+          "Unable to save item."
         );
       }
     }
 
 
     // ======================================================
-    // REMOVE SAVED LOGIN
+    // REMOVE SAVED ITEM
     // ======================================================
 
-    async function removeSavedLogin(id) {
+    async function removeSavedItem(id) {
 
       if (!id) {
 
         showToast(
-          "Unable to remove saved login."
+          "Unable to remove saved item."
         );
 
         return;
@@ -2436,13 +2382,13 @@
 
           throw new Error(
             data.error ||
-            "Failed to remove saved login."
+            "Failed to remove saved item."
           );
         }
 
 
         showToast(
-          "Saved login removed."
+          "Saved item removed."
         );
 
 
@@ -2453,7 +2399,7 @@
 
         showToast(
           error.message ||
-          "Unable to remove saved login."
+          "Unable to remove saved item."
         );
       }
     }
@@ -2550,6 +2496,7 @@
         (
           socket.readyState ===
           WebSocket.OPEN ||
+
           socket.readyState ===
           WebSocket.CONNECTING
         )
@@ -2602,8 +2549,6 @@
             "Connected";
 
 
-          // Immediately sync when
-          // WebSocket connects.
           loadStock();
         };
 
@@ -2636,8 +2581,6 @@
                 }
 
 
-                // Fetch the actual list
-                // securely using the session.
                 await loadStock();
               }
 
@@ -2661,7 +2604,7 @@
 
             } catch {
 
-              // Ignore malformed WS messages.
+              // Ignore malformed messages.
             }
           };
 
@@ -2752,8 +2695,6 @@
           }
 
 
-          // Only poll when the live
-          // WebSocket isn't connected.
           if (
             !socket ||
             socket.readyState !==
@@ -2883,7 +2824,7 @@
         "savedList"
       ).innerHTML = `
         <div class="empty">
-          No saved logins yet.
+          No saved items yet.
         </div>
       `;
     }
