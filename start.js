@@ -4,8 +4,8 @@ console.log("======================================");
 console.log("           STARTING NOVI");
 console.log("======================================");
 
-// START WEBSITE
-const website = spawn(process.execPath, ["index.js"], {
+// START WEBSITE + WEBSOCKET SERVER
+const website = spawn(process.execPath, ["server.js"], {
   stdio: "inherit",
   env: process.env
 });
