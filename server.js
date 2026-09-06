@@ -17,7 +17,8 @@ const KEYS_FILE = path.join(__dirname, "keys.json");
 const STOCK_FILE = path.join(__dirname, "stock-data.json");
 const SAVED_FILE = path.join(__dirname, "saved-items.json");
 
-const ADMIN_SECRET = process.env.NOVI_ADMIN_SECRET || "";
+const ADMIN_SECRET =
+  process.env.NOVI_ADMIN_SECRET || "";
 
 const sessions = new Map();
 
@@ -57,14 +58,17 @@ function readJson(file, fallback) {
       return fallback;
     }
 
-    const raw = fs.readFileSync(file, "utf8").trim();
+    const raw =
+      fs.readFileSync(file, "utf8").trim();
 
     if (!raw) {
       return fallback;
     }
 
     return JSON.parse(raw);
+
   } catch (error) {
+
     console.error(
       `Failed reading ${path.basename(file)}:`,
       error.message
@@ -83,7 +87,10 @@ function writeJson(file, data) {
     "utf8"
   );
 
-  fs.renameSync(tempFile, file);
+  fs.renameSync(
+    tempFile,
+    file
+  );
 }
 
 ensureJsonFile(KEYS_FILE, []);
@@ -95,11 +102,14 @@ ensureJsonFile(SAVED_FILE, []);
 ========================================================= */
 
 /*
-  Novi stock is for legitimate inventory/product/license
-  codes. Raw account credentials are not accepted.
+  Generic stock parser.
+
+  Novi treats each stock value as an opaque inventory
+  string. It does not require a specific format.
 */
 
 function cleanStockValue(value) {
+
   if (
     value === null ||
     value === undefined
@@ -115,15 +125,10 @@ function cleanStockValue(value) {
     return null;
   }
 
-  const cleaned = String(value).trim();
+  const cleaned =
+    String(value).trim();
 
   if (!cleaned) {
-    return null;
-  }
-
-  if (
-    /^[^@\s:]+@[^@\s:]+:[^\s]+$/.test(cleaned)
-  ) {
     return null;
   }
 
@@ -131,6 +136,7 @@ function cleanStockValue(value) {
 }
 
 function normalizeStock(stock) {
+
   if (!Array.isArray(stock)) {
     return [];
   }
@@ -139,36 +145,52 @@ function normalizeStock(stock) {
     .map((item) => {
 
       if (typeof item === "string") {
-        const value = cleanStockValue(item);
+
+        const value =
+          cleanStockValue(item);
 
         if (!value) {
           return null;
         }
 
         return {
-          id: crypto.randomUUID(),
-          stock_id: value,
-          created_at: Date.now()
+          id:
+            crypto.randomUUID(),
+
+          stock_id:
+            value,
+
+          created_at:
+            Date.now()
         };
       }
 
-      if (item && typeof item === "object") {
+      if (
+        item &&
+        typeof item === "object"
+      ) {
 
-        const value = cleanStockValue(
-          item.stock_id ??
-          item.stockId ??
-          item.value ??
-          item.code ??
-          item.item
-        );
+        const value =
+          cleanStockValue(
+            item.stock_id ??
+            item.stockId ??
+            item.value ??
+            item.code ??
+            item.item
+          );
 
         if (!value) {
           return null;
         }
 
         return {
-          id: item.id || crypto.randomUUID(),
-          stock_id: value,
+          id:
+            item.id ||
+            crypto.randomUUID(),
+
+          stock_id:
+            value,
+
           created_at:
             item.created_at ??
             item.createdAt ??
@@ -177,28 +199,27 @@ function normalizeStock(stock) {
       }
 
       return null;
+
     })
     .filter(Boolean);
 }
 
 function getStock() {
-  const raw = readJson(
-    STOCK_FILE,
-    []
-  );
+
+  const raw =
+    readJson(
+      STOCK_FILE,
+      []
+    );
 
   const normalized =
     normalizeStock(raw);
-
-  /*
-    Keep the actual file synchronized with
-    what Novi considers valid stock.
-  */
 
   if (
     JSON.stringify(raw) !==
     JSON.stringify(normalized)
   ) {
+
     writeJson(
       STOCK_FILE,
       normalized
@@ -209,9 +230,11 @@ function getStock() {
 }
 
 function extractStockValues(input) {
+
   const values = [];
 
   function add(value) {
+
     const cleaned =
       cleanStockValue(value);
 
@@ -234,13 +257,16 @@ function extractStockValues(input) {
       typeof value === "number" ||
       typeof value === "bigint"
     ) {
+
       add(value);
       return;
     }
 
     if (Array.isArray(value)) {
 
-      for (const item of value) {
+      for (
+        const item of value
+      ) {
         walk(item);
       }
 
@@ -263,7 +289,9 @@ function extractStockValues(input) {
         "product_code"
       ];
 
-      for (const key of directKeys) {
+      for (
+        const key of directKeys
+      ) {
 
         if (
           value[key] !== undefined
@@ -283,7 +311,9 @@ function extractStockValues(input) {
         "stock_ids"
       ];
 
-      for (const key of arrayKeys) {
+      for (
+        const key of arrayKeys
+      ) {
 
         if (
           value[key] !== undefined
@@ -305,53 +335,60 @@ function extractStockValues(input) {
    WEBSOCKET
 ========================================================= */
 
-const wss = new WebSocketServer({
-  server,
-  path: "/ws"
-});
+const wss =
+  new WebSocketServer({
+    server,
+    path: "/ws"
+  });
 
-const wsClients = new Set();
+const wsClients =
+  new Set();
 
-wss.on("connection", (ws) => {
-
-  console.log(
-    "Novi real-time client connected"
-  );
-
-  wsClients.add(ws);
-
-  /*
-    IMPORTANT:
-    Use getStock(), not readJson(), so the
-    WebSocket count matches the generator.
-  */
-
-  const stock = getStock();
-
-  ws.send(
-    JSON.stringify({
-      type: "stock:update",
-      count: stock.length
-    })
-  );
-
-  ws.on("close", () => {
-
-    wsClients.delete(ws);
+wss.on(
+  "connection",
+  (ws) => {
 
     console.log(
-      "Novi real-time client disconnected"
+      "Novi real-time client connected"
     );
-  });
 
-  ws.on("error", () => {
-    wsClients.delete(ws);
-  });
-});
+    wsClients.add(ws);
+
+    const stock =
+      getStock();
+
+    ws.send(
+      JSON.stringify({
+        type: "stock:update",
+        count: stock.length
+      })
+    );
+
+    ws.on(
+      "close",
+      () => {
+
+        wsClients.delete(ws);
+
+        console.log(
+          "Novi real-time client disconnected"
+        );
+      }
+    );
+
+    ws.on(
+      "error",
+      () => {
+        wsClients.delete(ws);
+      }
+    );
+  }
+);
 
 function broadcastStockUpdate() {
 
-  const stock = getStock();
+  const stock =
+    getStock();
 
   const message =
     JSON.stringify({
@@ -359,7 +396,9 @@ function broadcastStockUpdate() {
       count: stock.length
     });
 
-  for (const client of wsClients) {
+  for (
+    const client of wsClients
+  ) {
 
     if (
       client.readyState === 1
@@ -375,8 +414,8 @@ function broadcastStockUpdate() {
 }
 
 /*
-  Discord bot changes stock-data.json directly.
-  Watch the file and notify connected dashboards.
+  Watch stock-data.json so Discord imports
+  automatically update connected dashboards.
 */
 
 let lastStockSignature =
@@ -387,7 +426,9 @@ function getStockSignature() {
   try {
 
     const stat =
-      fs.statSync(STOCK_FILE);
+      fs.statSync(
+        STOCK_FILE
+      );
 
     return `${stat.mtimeMs}:${stat.size}`;
 
@@ -400,27 +441,30 @@ function getStockSignature() {
 lastStockSignature =
   getStockSignature();
 
-setInterval(() => {
+setInterval(
+  () => {
 
-  const currentSignature =
-    getStockSignature();
+    const currentSignature =
+      getStockSignature();
 
-  if (
-    currentSignature !==
-    lastStockSignature
-  ) {
+    if (
+      currentSignature !==
+      lastStockSignature
+    ) {
 
-    lastStockSignature =
-      currentSignature;
+      lastStockSignature =
+        currentSignature;
 
-    console.log(
-      "Stock file changed - broadcasting update"
-    );
+      console.log(
+        "Stock file changed - broadcasting update"
+      );
 
-    broadcastStockUpdate();
-  }
+      broadcastStockUpdate();
+    }
 
-}, 500);
+  },
+  500
+);
 
 /* =========================================================
    ADMIN AUTH
@@ -429,14 +473,18 @@ setInterval(() => {
 function getAdminSecret(req) {
 
   const headerSecret =
-    req.headers["x-admin-secret"];
+    req.headers[
+      "x-admin-secret"
+    ];
 
   if (headerSecret) {
     return String(headerSecret);
   }
 
   const apiKey =
-    req.headers["x-api-key"];
+    req.headers[
+      "x-api-key"
+    ];
 
   if (apiKey) {
     return String(apiKey);
@@ -447,8 +495,11 @@ function getAdminSecret(req) {
 
   if (
     authorization &&
-    authorization.startsWith("Bearer ")
+    authorization.startsWith(
+      "Bearer "
+    )
   ) {
+
     return authorization
       .slice(7)
       .trim();
@@ -458,6 +509,7 @@ function getAdminSecret(req) {
     req.body &&
     req.body.adminSecret
   ) {
+
     return String(
       req.body.adminSecret
     );
@@ -467,6 +519,7 @@ function getAdminSecret(req) {
     req.query &&
     req.query.adminSecret
   ) {
+
     return String(
       req.query.adminSecret
     );
@@ -500,7 +553,8 @@ function requireAdmin(
 
     return res.status(401).json({
       success: false,
-      error: "Unauthorized"
+      error:
+        "Unauthorized"
     });
   }
 
@@ -514,8 +568,12 @@ function requireAdmin(
 function getSessionToken(req) {
 
   const headerToken =
-    req.headers["x-novi-session"] ||
-    req.headers["x-session-token"];
+    req.headers[
+      "x-novi-session"
+    ] ||
+    req.headers[
+      "x-session-token"
+    ];
 
   if (headerToken) {
     return String(headerToken);
@@ -526,7 +584,9 @@ function getSessionToken(req) {
 
   if (
     authorization &&
-    authorization.startsWith("Bearer ")
+    authorization.startsWith(
+      "Bearer "
+    )
   ) {
 
     return authorization
@@ -607,7 +667,8 @@ app.get(
       status: "online",
       name: "Novi",
       websocket: true,
-      stock: getStock().length,
+      stock:
+        getStock().length,
       time:
         new Date().toISOString()
     });
@@ -741,10 +802,10 @@ app.post(
         ? null
         : Date.now() +
           durationDays *
-            24 *
-            60 *
-            60 *
-            1000;
+          24 *
+          60 *
+          60 *
+          1000;
 
     const record = {
       key,
@@ -756,9 +817,12 @@ app.post(
     if (
       existingIndex >= 0
     ) {
+
       keys[existingIndex] =
         record;
+
     } else {
+
       keys.push(record);
     }
 
@@ -862,16 +926,21 @@ app.post(
     sessions.set(
       sessionToken,
       {
-        key: record.key,
+        key:
+          record.key,
+
         deviceId,
+
         durationDays:
           record.durationDays,
+
         expiresAt:
           record.expiresAt
             ? Number(
                 record.expiresAt
               )
             : null,
+
         createdAt:
           Date.now()
       }
@@ -934,6 +1003,7 @@ function handleAddStock(
     );
 
   let added = 0;
+  let duplicate = 0;
 
   for (
     const value of values
@@ -948,14 +1018,18 @@ function handleAddStock(
     if (
       existing.has(lower)
     ) {
+
+      duplicate++;
       continue;
     }
 
     stock.push({
       id:
         crypto.randomUUID(),
+
       stock_id:
         normalized,
+
       created_at:
         Date.now()
     });
@@ -975,11 +1049,9 @@ function handleAddStock(
   res.json({
     success: true,
     added,
-    duplicate:
-      values.length - added,
+    duplicate,
     count:
-      stock.length,
-    stock
+      stock.length
   });
 }
 
@@ -1022,8 +1094,17 @@ app.get(
 );
 
 /* =========================================================
-   STOCK LIST
+   STOCK
 ========================================================= */
+
+/*
+  IMPORTANT:
+
+  Never return the complete stock list to normal
+  authenticated users.
+
+  The frontend only needs the number available.
+*/
 
 app.get(
   "/api/stock",
@@ -1033,27 +1114,10 @@ app.get(
     const stock =
       getStock();
 
-    const items =
-      stock.map(item => ({
-        id:
-          item.id,
-        value:
-          item.stock_id,
-        stock_id:
-          item.stock_id,
-        created_at:
-          item.created_at
-      }));
-
     res.json({
       success: true,
-      stock:
-        items,
-      items,
-      accounts:
-        items,
       count:
-        items.length
+        stock.length
     });
   }
 );
@@ -1080,7 +1144,7 @@ app.get(
 );
 
 /* =========================================================
-   GENERATE STOCK
+   GENERATE ONE STOCK ITEM
 ========================================================= */
 
 app.post(
@@ -1088,43 +1152,11 @@ app.post(
   requireSession,
   (req, res) => {
 
-    let amount =
-      Number(
-        req.body.amount ||
-        req.body.quantity ||
-        1
-      );
-
-    if (
-      !Number.isFinite(amount)
-    ) {
-      amount = 1;
-    }
-
-    amount =
-      Math.floor(amount);
-
-    amount =
-      Math.max(
-        1,
-        Math.min(
-          100,
-          amount
-        )
-      );
-
-    /*
-      IMPORTANT:
-      Always use getStock().
-      This is the same stock used by
-      /api/stock and the WebSocket count.
-    */
-
     const stock =
       getStock();
 
     console.log(
-      `[Novi] Generate requested: ${amount} | Actual stock: ${stock.length}`
+      `[Novi] Generate requested | Actual stock: ${stock.length}`
     );
 
     if (!stock.length) {
@@ -1138,17 +1170,14 @@ app.post(
       });
     }
 
-    const quantity =
-      Math.min(
-        amount,
-        stock.length
-      );
+    /*
+      EXACTLY ONE ITEM.
+
+      Ignore amount/quantity sent by the frontend.
+    */
 
     const generated =
-      stock.splice(
-        0,
-        quantity
-      );
+      stock.shift();
 
     writeJson(
       STOCK_FILE,
@@ -1157,27 +1186,31 @@ app.post(
 
     broadcastStockUpdate();
 
-    const items =
-      generated.map(
-        item => ({
-          id:
-            item.id,
-          value:
-            item.stock_id,
-          stock_id:
-            item.stock_id,
-          created_at:
-            item.created_at
-        })
-      );
+    const item = {
+      id:
+        generated.id,
+
+      value:
+        generated.stock_id,
+
+      stock_id:
+        generated.stock_id,
+
+      created_at:
+        generated.created_at
+    };
 
     res.json({
       success: true,
-      requested:
-        amount,
-      generated:
-        items.length,
-      items,
+
+      generated: 1,
+
+      item,
+
+      items: [
+        item
+      ],
+
       stockRemaining:
         stock.length
     });
@@ -1216,8 +1249,7 @@ app.post(
       );
 
     const deviceId =
-      req.noviSession
-        .deviceId ||
+      req.noviSession.deviceId ||
       "unknown";
 
     const existing =
@@ -1242,11 +1274,15 @@ app.post(
     }
 
     const item = {
+
       id:
         crypto.randomUUID(),
+
       value,
+
       device_id:
         deviceId,
+
       created_at:
         Date.now()
     };
@@ -1277,8 +1313,7 @@ app.get(
       );
 
     const deviceId =
-      req.noviSession
-        .deviceId ||
+      req.noviSession.deviceId ||
       "unknown";
 
     const items =
@@ -1307,8 +1342,7 @@ app.delete(
       );
 
     const deviceId =
-      req.noviSession
-        .deviceId ||
+      req.noviSession.deviceId ||
       "unknown";
 
     const index =
@@ -1495,13 +1529,18 @@ function shutdown(signal) {
     } catch {}
   }
 
-  server.close(() => {
-    process.exit(0);
-  });
+  server.close(
+    () => {
+      process.exit(0);
+    }
+  );
 
-  setTimeout(() => {
-    process.exit(0);
-  }, 5000);
+  setTimeout(
+    () => {
+      process.exit(0);
+    },
+    5000
+  );
 }
 
 process.on(
