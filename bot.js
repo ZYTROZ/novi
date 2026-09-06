@@ -8,7 +8,6 @@ const {
 
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
 
 // ============================================================
 // CONFIG
@@ -17,13 +16,15 @@ const crypto = require("crypto");
 const KEY_FILE = path.join(__dirname, "keys.json");
 const STOCK_FILE = path.join(__dirname, "stock-data.json");
 
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+const TOKEN = process.env.DISCORD_TOKEN;
 
-// Optional: put Discord user IDs here separated by commas
-// Example: DISCORD_ADMIN_IDS=123456789,987654321
+// Optional admin IDs.
+// If empty, commands work for everyone.
+// Example:
+// DISCORD_ADMIN_IDS=123456789012345678,987654321098765432
 const ADMIN_IDS = String(process.env.DISCORD_ADMIN_IDS || "")
   .split(",")
-  .map(x => x.trim())
+  .map(id => id.trim())
   .filter(Boolean);
 
 // ============================================================
@@ -44,15 +45,19 @@ function readJson(file, fallback) {
   try {
     ensureFile(file, fallback);
 
-    const data = fs.readFileSync(file, "utf8").trim();
+    const text = fs.readFileSync(file, "utf8").trim();
 
-    if (!data) return fallback;
+    if (!text) {
+      return fallback;
+    }
 
-    const parsed = JSON.parse(data);
+    return JSON.parse(text);
+  } catch (error) {
+    console.error(
+      `Failed reading ${path.basename(file)}:`,
+      error.message
+    );
 
-    return parsed;
-  } catch (err) {
-    console.error(`Failed reading ${path.basename(file)}:`, err);
     return fallback;
   }
 }
@@ -69,30 +74,8 @@ ensureFile(KEY_FILE, []);
 ensureFile(STOCK_FILE, []);
 
 // ============================================================
-// ADMIN CHECK
+// ID HELPER
 // ============================================================
-
-function isAdmin(message) {
-  // If DISCORD_ADMIN_IDS is configured, enforce it.
-  if (ADMIN_IDS.length > 0) {
-    return ADMIN_IDS.includes(message.author.id);
-  }
-
-  // If no IDs are configured, allow commands.
-  // You can lock this down later with DISCORD_ADMIN_IDS.
-  return true;
-}
-
-// ============================================================
-// KEY GENERATOR
-// ============================================================
-
-function generateKey() {
-  return `NOVI-${crypto
-    .randomBytes(12)
-    .toString("hex")
-    .toUpperCase()}`;
-}
 
 function getNextId(items) {
   if (!Array.isArray(items) || items.length === 0) {
@@ -113,15 +96,103 @@ function getNextId(items) {
 }
 
 // ============================================================
-// DURATION PARSER
+// ADMIN
 // ============================================================
 
+function isAdmin(message) {
+  if (ADMIN_IDS.length === 0) {
+    return true;
+  }
+
+  return ADMIN_IDS.includes(message.author.id);
+}
+
+// ============================================================
+// STOCK
+// ============================================================
+
+function cleanStockValue(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const valueString = String(value).trim();
+
+  if (!valueString) {
+    return null;
+  }
+
+  // Allow normal stock IDs:
+  // ITEM-123
+  // ABC123
+  // FORTNITE-001
+  // etc.
+  return valueString;
+}
+
+function addStock(values) {
+  const stock = readJson(STOCK_FILE, []);
+
+  let added = 0;
+  let duplicate = 0;
+
+  for (const rawValue of values) {
+    const value = cleanStockValue(rawValue);
+
+    if (!value) {
+      continue;
+    }
+
+    const alreadyExists = stock.some(
+      item =>
+        String(item.stock_id).trim().toLowerCase() ===
+        value.toLowerCase()
+    );
+
+    if (alreadyExists) {
+      duplicate++;
+      continue;
+    }
+
+    stock.push({
+      id: getNextId(stock),
+      stock_id: value,
+      created_at: new Date().toISOString()
+    });
+
+    added++;
+  }
+
+  writeJson(STOCK_FILE, stock);
+
+  return {
+    added,
+    duplicate,
+    total: stock.length
+  };
+}
+
+// ============================================================
+// KEY GENERATOR
+// ============================================================
+
+function generateKey() {
+  const random = require("crypto")
+    .randomBytes(12)
+    .toString("hex")
+    .toUpperCase();
+
+  return `NOVI-${random}`;
+}
+
 function parseDuration(input) {
-  const value = String(input || "").toLowerCase().trim();
+  const value = String(input || "")
+    .trim()
+    .toLowerCase();
 
   if (value === "lifetime") {
     return {
-      name: "Lifetime",
+      label: "Lifetime",
       days: null,
       expiresAt: null
     };
@@ -142,36 +213,37 @@ function parseDuration(input) {
 
   let days;
 
-  if (unit === "d") {
-    days = amount;
-  } else if (unit === "w") {
-    days = amount * 7;
-  } else if (unit === "mo") {
-    days = amount * 30;
+  switch (unit) {
+    case "d":
+      days = amount;
+      break;
+
+    case "w":
+      days = amount * 7;
+      break;
+
+    case "mo":
+      days = amount * 30;
+      break;
+
+    default:
+      return null;
   }
 
-  const expiresAt = new Date(
-    Date.now() + days * 86400000
-  ).toISOString();
-
   return {
-    name: value,
+    label: value,
     days,
-    expiresAt
+    expiresAt: new Date(
+      Date.now() + days * 86400000
+    ).toISOString()
   };
 }
 
-// ============================================================
-// GENERATE KEYS
-// ============================================================
-
 function generateKeys(amount, duration) {
-  const parsedDuration = parseDuration(duration);
+  const parsed = parseDuration(duration);
 
-  if (!parsedDuration) {
-    return {
-      error: "Invalid duration"
-    };
+  if (!parsed) {
+    return null;
   }
 
   const keys = readJson(KEY_FILE, []);
@@ -181,18 +253,17 @@ function generateKeys(amount, duration) {
   for (let i = 0; i < amount; i++) {
     const key = generateKey();
 
-    const record = {
+    keys.push({
       id: getNextId(keys),
       key,
       duration:
-        parsedDuration.days === null
+        parsed.days === null
           ? "lifetime"
-          : parsedDuration.days,
+          : parsed.days,
       created_at: new Date().toISOString(),
-      expires_at: parsedDuration.expiresAt
-    };
+      expires_at: parsed.expiresAt
+    });
 
-    keys.push(record);
     generated.push(key);
   }
 
@@ -200,70 +271,8 @@ function generateKeys(amount, duration) {
 
   return {
     keys: generated,
-    duration: parsedDuration.name
+    duration: parsed.label
   };
-}
-
-// ============================================================
-// STOCK CLEANING
-// ============================================================
-
-function cleanStockValue(value) {
-  if (value === null || value === undefined) {
-    return null;
-  }
-
-  const cleaned = String(value).trim();
-
-  if (!cleaned) {
-    return null;
-  }
-
-  // Don't allow credential-style email:password data.
-  if (/^[^@\s:]+@[^@\s:]+:[^\s]+$/.test(cleaned)) {
-    return null;
-  }
-
-  return cleaned;
-}
-
-// ============================================================
-// ADD STOCK
-// ============================================================
-
-function addStock(values) {
-  const stock = readJson(STOCK_FILE, []);
-
-  let added = 0;
-
-  for (const value of values) {
-    const cleaned = cleanStockValue(value);
-
-    if (!cleaned) {
-      continue;
-    }
-
-    // Don't duplicate an existing stock ID.
-    const exists = stock.some(
-      item => String(item.stock_id) === cleaned
-    );
-
-    if (exists) {
-      continue;
-    }
-
-    stock.push({
-      id: getNextId(stock),
-      stock_id: cleaned,
-      created_at: new Date().toISOString()
-    });
-
-    added++;
-  }
-
-  writeJson(STOCK_FILE, stock);
-
-  return added;
 }
 
 // ============================================================
@@ -287,23 +296,30 @@ client.once("ready", () => {
   console.log("       NOVI DISCORD BOT ONLINE");
   console.log("======================================");
   console.log(`Logged in as: ${client.user.tag}`);
-  console.log("Commands: !gen !add !stock !clearstock !help");
   console.log("======================================");
 });
 
 // ============================================================
-// COMMANDS
+// MESSAGE COMMANDS
 // ============================================================
 
 client.on("messageCreate", async message => {
   try {
-    if (message.author.bot) return;
+    if (message.author.bot) {
+      return;
+    }
+
+    if (!message.content) {
+      return;
+    }
 
     if (!message.content.startsWith("!")) {
       return;
     }
 
-    const args = message.content.trim().split(/\s+/);
+    const args = message.content
+      .trim()
+      .split(/\s+/);
 
     const command = args.shift().toLowerCase();
 
@@ -315,50 +331,59 @@ client.on("messageCreate", async message => {
       return message.reply(
         "```text\n" +
         "NOVI COMMANDS\n" +
-        "────────────────────────\n" +
-        "!gen 1d        Generate 1 day key\n" +
-        "!gen 3d        Generate 3 day key\n" +
-        "!gen 1w        Generate 1 week key\n" +
-        "!gen 1mo       Generate 1 month key\n" +
-        "!gen lifetime  Generate lifetime key\n" +
+        "────────────────────────────\n" +
+        "!gen 1d         Generate 1 day key\n" +
+        "!gen 3d         Generate 3 day key\n" +
+        "!gen 1w         Generate 1 week key\n" +
+        "!gen 1mo        Generate 1 month key\n" +
+        "!gen lifetime   Generate lifetime key\n" +
         "\n" +
-        "!gen 5 1d      Generate 5 one-day keys\n" +
-        "!gen 5 3d      Generate 5 three-day keys\n" +
-        "!gen 5 1w      Generate 5 one-week keys\n" +
-        "!gen 5 1mo     Generate 5 one-month keys\n" +
-        "!gen 5 lifetime Generate 5 lifetime keys\n" +
+        "!gen 5 1d       Generate 5 one-day keys\n" +
+        "!gen 5 3d       Generate 5 three-day keys\n" +
+        "!gen 5 1w       Generate 5 one-week keys\n" +
+        "!gen 5 1mo      Generate 5 one-month keys\n" +
+        "!gen 5 lifetime  Generate 5 lifetime keys\n" +
         "\n" +
-        "!add ITEM-123  Add stock\n" +
-        "!add + TXT     Import TXT attachment\n" +
-        "!stock         Check stock\n" +
-        "!clearstock    Clear all stock\n" +
-        "!help          Show commands\n" +
+        "!add ITEM-123   Add one stock ID\n" +
+        "!add + TXT      Import TXT stock\n" +
+        "!stock          Check stock\n" +
+        "!clearstock     Clear all stock\n" +
+        "!help           Show commands\n" +
         "```"
       );
     }
 
-    // Everything below this point is admin-only.
+    // ========================================================
+    // ADMIN CHECK
+    // ========================================================
+
     if (!isAdmin(message)) {
-      return message.reply("❌ You don't have permission to use Novi commands.");
+      return message.reply(
+        "❌ You don't have permission to use this command."
+      );
     }
 
     // ========================================================
-    // GENERATE
+    // !GEN
     // ========================================================
 
     if (command === "!gen") {
       if (args.length === 0) {
         return message.reply(
-          "❌ Usage: `!gen 1d`, `!gen 3d`, `!gen 1w`, `!gen 1mo`, `!gen lifetime`"
+          "❌ Usage: `!gen 1d` or `!gen 5 1d`"
         );
       }
 
       let amount = 1;
       let duration;
 
+      // !gen 1d
       if (args.length === 1) {
         duration = args[0];
-      } else {
+      }
+
+      // !gen 5 1d
+      else {
         amount = Number(args[0]);
         duration = args[1];
       }
@@ -373,109 +398,126 @@ client.on("messageCreate", async message => {
         );
       }
 
-      const parsed = parseDuration(duration);
+      const result = generateKeys(
+        amount,
+        duration
+      );
 
-      if (!parsed) {
+      if (!result) {
         return message.reply(
-          "❌ Invalid duration.\nUse: `1d`, `3d`, `1w`, `1mo`, or `lifetime`."
+          "❌ Invalid duration.\n\nUse:\n`1d` • `3d` • `1w` • `1mo` • `lifetime`"
         );
-      }
-
-      const result = generateKeys(amount, duration);
-
-      if (result.error) {
-        return message.reply("❌ Failed to generate keys.");
       }
 
       // One key
       if (result.keys.length === 1) {
         return message.reply(
-          `✅ **Generated ${parsed.name} key**\n\n` +
+          `✅ **Generated ${result.duration} key**\n\n` +
           `\`${result.keys[0]}\``
         );
       }
 
       // Multiple keys
-      const text = result.keys
+      const output = result.keys
         .map(key => `\`${key}\``)
         .join("\n");
 
-      // Discord message limit protection
-      if (text.length > 1800) {
-        const buffer = Buffer.from(
+      // If Discord message would be too large,
+      // send a TXT file instead.
+      if (output.length > 1800) {
+        const file = Buffer.from(
           result.keys.join("\n"),
           "utf8"
         );
 
-        const attachment = new AttachmentBuilder(buffer, {
-          name: "novi-keys.txt"
-        });
+        const attachment = new AttachmentBuilder(
+          file,
+          {
+            name: "novi-keys.txt"
+          }
+        );
 
         return message.reply({
           content:
-            `✅ Generated **${result.keys.length} ${parsed.name} keys**.`,
+            `✅ Generated **${result.keys.length} ${result.duration} keys**.`,
           files: [attachment]
         });
       }
 
       return message.reply(
-        `✅ **Generated ${result.keys.length} ${parsed.name} keys**\n\n${text}`
+        `✅ **Generated ${result.keys.length} ${result.duration} keys**\n\n${output}`
       );
     }
 
     // ========================================================
-    // ADD STOCK
+    // !ADD
     // ========================================================
 
     if (command === "!add") {
+
+      // ------------------------------------------------------
       // !add ITEM-123
+      // ------------------------------------------------------
+
       if (args.length > 0) {
-        const value = args.join(" ");
+        const value = args.join(" ").trim();
 
-        const cleaned = cleanStockValue(value);
-
-        if (!cleaned) {
+        if (!value) {
           return message.reply(
             "❌ Invalid stock ID."
           );
         }
 
-        const added = addStock([cleaned]);
+        const result = addStock([value]);
 
-        if (added === 0) {
+        if (result.added === 0) {
+          if (result.duplicate > 0) {
+            return message.reply(
+              `⚠️ \`${value}\` is already in stock.`
+            );
+          }
+
           return message.reply(
-            "⚠️ That stock ID already exists or is invalid."
+            "❌ Could not add that stock ID."
           );
         }
 
         return message.reply(
-          `✅ Added stock: \`${cleaned}\``
+          `✅ Added stock:\n\`${value}\`\n\n📦 Stock: **${result.total}**`
         );
       }
 
-      // !add + TXT attachment
-      const attachment = message.attachments.first();
+      // ------------------------------------------------------
+      // !add + TXT ATTACHMENT
+      // ------------------------------------------------------
+
+      const attachment =
+        message.attachments.first();
 
       if (!attachment) {
         return message.reply(
-          "❌ Usage:\n`!add ITEM-123`\n\nOr attach a `.txt` file with `!add`."
+          "❌ Use `!add ITEM-123` or attach a `.txt` file to `!add`."
         );
       }
 
-      if (
-        !attachment.name.toLowerCase().endsWith(".txt")
-      ) {
+      const filename =
+        String(attachment.name || "")
+          .toLowerCase();
+
+      if (!filename.endsWith(".txt")) {
         return message.reply(
-          "❌ Please attach a `.txt` file."
+          "❌ The attached file must be a `.txt` file."
         );
       }
 
       try {
-        const response = await fetch(attachment.url);
+        const response = await fetch(
+          attachment.url
+        );
 
         if (!response.ok) {
-          return message.reply(
-            "❌ Failed to download the TXT file."
+          throw new Error(
+            `HTTP ${response.status}`
           );
         }
 
@@ -486,92 +528,126 @@ client.on("messageCreate", async message => {
           .map(line => line.trim())
           .filter(Boolean);
 
-        if (!values.length) {
+        if (values.length === 0) {
           return message.reply(
             "❌ The TXT file is empty."
           );
         }
 
-        const added = addStock(values);
+        const result = addStock(values);
 
         return message.reply(
-          `✅ Imported **${added}** stock item(s).`
+          `✅ **TXT imported successfully!**\n\n` +
+          `Added: **${result.added}**\n` +
+          `Duplicates: **${result.duplicate}**\n` +
+          `Total stock: **${result.total}**`
         );
-      } catch (err) {
-        console.error("TXT import error:", err);
+
+      } catch (error) {
+        console.error(
+          "TXT import error:",
+          error
+        );
 
         return message.reply(
-          "❌ Failed to import the TXT file."
+          "❌ Failed to read the TXT file."
         );
       }
     }
 
     // ========================================================
-    // STOCK
+    // !STOCK
     // ========================================================
 
     if (command === "!stock") {
-      const stock = readJson(STOCK_FILE, []);
+      const stock = readJson(
+        STOCK_FILE,
+        []
+      );
 
       return message.reply(
-        `📦 **Novi Stock**\n\n` +
+        `📦 **NOVI STOCK**\n\n` +
         `Available: **${stock.length}**`
       );
     }
 
     // ========================================================
-    // CLEAR STOCK
+    // !CLEARSTOCK
     // ========================================================
 
     if (command === "!clearstock") {
-      const stock = readJson(STOCK_FILE, []);
+      const stock = readJson(
+        STOCK_FILE,
+        []
+      );
 
-      const oldCount = stock.length;
+      const amount = stock.length;
 
-      writeJson(STOCK_FILE, []);
+      writeJson(
+        STOCK_FILE,
+        []
+      );
 
       return message.reply(
-        `🗑️ Cleared **${oldCount}** stock item(s).`
+        `🗑️ Cleared **${amount}** stock item(s).`
       );
     }
-  } catch (err) {
-    console.error("Discord command error:", err);
+
+  } catch (error) {
+    console.error(
+      "Discord command error:",
+      error
+    );
 
     try {
       await message.reply(
-        "❌ Something went wrong while processing that command."
+        "❌ An error occurred while processing the command."
       );
     } catch {}
   }
 });
 
 // ============================================================
-// DISCORD ERRORS
+// ERRORS
 // ============================================================
 
 client.on("error", error => {
-  console.error("Discord error:", error);
+  console.error(
+    "Discord client error:",
+    error
+  );
 });
 
 client.on("shardError", error => {
-  console.error("Discord shard error:", error);
+  console.error(
+    "Discord shard error:",
+    error
+  );
 });
 
 process.on("unhandledRejection", error => {
-  console.error("Unhandled rejection:", error);
+  console.error(
+    "Unhandled rejection:",
+    error
+  );
 });
 
 // ============================================================
 // LOGIN
 // ============================================================
 
-if (!DISCORD_TOKEN) {
-  console.error("❌ DISCORD_TOKEN is missing from Render.");
+if (!TOKEN) {
+  console.error(
+    "❌ DISCORD_TOKEN is missing from Render Environment Variables."
+  );
+
   process.exit(1);
 }
 
-client.login(DISCORD_TOKEN).catch(error => {
-  console.error("❌ Discord login failed:");
+client.login(TOKEN).catch(error => {
+  console.error(
+    "❌ Discord login failed:"
+  );
+
   console.error(error);
-  process.exit(1);
 });
